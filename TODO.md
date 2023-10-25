@@ -1,0 +1,3 @@
+- Add different rules of logic as tactics
+- Decide on if 'tactic' is a good name
+- Add logic for predicate.Implies, predicate.And and others
