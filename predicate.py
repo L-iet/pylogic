@@ -4,6 +4,7 @@ Proposition = p.Proposition
 P_Implies = p.Implies
 P_And = p.And
 P_Or = p.Or
+P_Forall = p.Forall
 Set = p.Set
 Object = p.Object
 ArgTypes = p.ArgTypes
@@ -18,15 +19,13 @@ class Predicate(p._Statement):
         show_arg_position_names: bool = False,
         _completed_args: dict[str, ArgValueTypes] | None = None,  # compute
         _completed_args_order: list[str] | None = None,  # compute
-        _quantified_arg: tuple[str, ArgValueTypes] | None = None,  # receive
     ) -> "Predicate | Proposition":
-        if args is None:
+        if args is None or len(args) == 0:
             return Proposition(
                 name,
                 completed_args=_completed_args,
                 completed_args_order=_completed_args_order,
                 show_arg_position_names=show_arg_position_names,
-                quantified_arg=_quantified_arg,
             )
         return super().__new__(cls)
 
@@ -37,7 +36,6 @@ class Predicate(p._Statement):
         show_arg_position_names: bool = False,
         _completed_args: dict[str, ArgValueTypes] | None = None,
         _completed_args_order: list[str] | None = None,
-        _quantified_arg: tuple[str, ArgValueTypes] | None = None,
     ) -> None:
         """
         name: str
@@ -56,6 +54,7 @@ class Predicate(p._Statement):
             Dictionary of argument position identifiers and their values. The values are
             typically Set or Object instances.
         """
+        assert set(name.split("_")) != {""}, "Predicate name cannot be empty"
         self.name = name
         self.args = args
         self.args_order = sorted(args.keys())
@@ -67,7 +66,6 @@ class Predicate(p._Statement):
             self._completed_args_order
         ), f"Length of completed args and completed args order do not match \
 {self._completed_args}\n{self._completed_args_order}"
-        self._quantified_arg = _quantified_arg
 
     def __call__(self, **kwds: ArgValueTypes) -> "Predicate | Proposition":
         if len(kwds) == 0:
@@ -83,11 +81,6 @@ class Predicate(p._Statement):
 
                 new_completed_args[argument] = kwds[argument]
                 new_completed_args_order.append(argument)
-                # filled_args += (
-                #     f"{argument}={kwds[argument]} "
-                #     if self.show_arg_position_names
-                #     else f"{kwds[argument]} "
-                # )
         new_args = {k: v for k, v in self.args.items() if k not in kwds}
         return Predicate(
             self.name,
@@ -118,7 +111,13 @@ class Predicate(p._Statement):
         return self_name_parts == other_name_parts and self.args == other.args
 
     def copy(self) -> "Predicate":
-        return Predicate(self.name, self.args.copy())
+        return Predicate(
+            self.name,
+            self.args.copy(),
+            self.show_arg_position_names,
+            self._completed_args.copy(),
+            self._completed_args_order.copy(),
+        )
 
     def implies(self, other: "Predicate | Proposition") -> "Implies":
         return Implies(self, other)
@@ -149,6 +148,7 @@ class Implies(Predicate):
         self,
         antecedent: Predicate | Proposition,
         consequent: Predicate | Proposition,
+        show_arg_position_names: bool = False,
     ) -> None:
         """If given two propositions, return an Implication Proposition."""
         assert any(
@@ -159,12 +159,21 @@ class Implies(Predicate):
         args = getattr(antecedent, "args", {}).copy()
         args.update(getattr(consequent, "args", {}))
         name = f"{antecedent.name} -> {consequent.name}"
-        super().__init__(name, args)
+        super().__init__(name, args, show_arg_position_names)
         self.args_order: list[str] = []
         antecedent_args_order = getattr(antecedent, "args_order", [])
         self.args_order.extend(antecedent_args_order)
         consequent_args_order = getattr(consequent, "args_order", [])
         self.args_order.extend(consequent_args_order)
+
+        self._completed_args = getattr(antecedent, "_completed_args", {}).copy()
+        self._completed_args.update(getattr(consequent, "_completed_args", {}))
+        self._completed_args_order = getattr(
+            antecedent, "_completed_args_order", []
+        ).copy()
+        self._completed_args_order.extend(
+            getattr(consequent, "_completed_args_order", [])
+        )
 
     def __call__(self, **kwds: ArgValueTypes) -> "Implies | P_Implies":
         new_antecedent = self.antecedent.copy()
@@ -300,7 +309,7 @@ if __name__ == "__main__":
     print(p(X=s1, y=o1))  # p X=S1 y=o1
     print(p(X=s1))  # p X=S1 _
 
-    p2 = Predicate("p2", {"a": Object, "b": Object})
+    p2 = Predicate("p2", {"a": Object, "b": Object}, show_arg_position_names=True)
     p3 = Predicate("p3", {"a": Object, "c": Object})
     p2ImpliesP3 = p2.implies(p3)
     print(
@@ -311,5 +320,6 @@ if __name__ == "__main__":
     )
     p4 = Predicate("p4", {"s": Set, "a": Object})
     conj = And(p2, p3, p4)(a=o1)
-    print(p2(a=o1)._completed_args_order)
+    p_ = p2(a=o1, b=o2)
+    print(p_)
     print(p2(b=o1)._completed_args_order)

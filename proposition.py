@@ -1,11 +1,18 @@
 import re
+from typing import Self
 
 ####################################################
 
 
 class Object:
     def __init__(self, name: str):
+        name = name.strip()
+        assert set(name.split("_")) != {""}, "Object name cannot be empty"
+        assert " " not in name, "Object name cannot contain spaces"
         self.name = name
+
+    def __eq__(self, other: "ArgValueTypes") -> bool:
+        return self.name == other.name
 
     def __repr__(self) -> str:
         return self.name
@@ -13,7 +20,13 @@ class Object:
 
 class Set:
     def __init__(self, name: str):
+        name = name.strip()
+        assert set(name.split("_")) != {""}, "Set name cannot be empty"
+        assert " " not in name, "Set name cannot contain spaces"
         self.name = name
+
+    def __eq__(self, other: "ArgValueTypes") -> bool:
+        return self.name == other.name
 
     def __contains__(self, other: Object) -> "Proposition":
         return Proposition(f"{other.name} in {self.name}")
@@ -50,7 +63,6 @@ class Proposition(_Statement):
         is_assumption: bool = False,
         completed_args: dict[str, ArgValueTypes] | None = None,
         completed_args_order: list[str] | None = None,
-        quantified_arg: tuple[str, ArgValueTypes] | None = None,
         show_arg_position_names: bool = False,
         _is_proven: bool = False,
     ) -> None:
@@ -62,8 +74,6 @@ class Proposition(_Statement):
         completed_args: dict[str, ArgValueTypes]
             Dictionary of argument position identifiers and their values. The values are
             typically Set or Object instances.
-        quantified_arg: tuple[str, ArgValueTypes]
-            Argument position identifier and its value. The value is typically a Set or Object instance.
         show_arg_position_names: bool
             Whether to show the argument position identifiers in the __repr__.
             This is useful for propositions with multiple arguments of the same type.
@@ -72,16 +82,18 @@ class Proposition(_Statement):
             If this is True, the __repr__ will be p x=x1 y=x2.
         """
         completed_args = completed_args or {}
-        completed_args_order = completed_args_order or []
+        if len(completed_args) == 0:
+            completed_args_order = []
+        elif completed_args_order is None or len(completed_args_order) == 0:
+            completed_args_order = sorted(list(completed_args.keys()))
+        completed_args = {k: completed_args[k] for k in completed_args_order}
         name = name.strip()
+        assert set(name.split("_")) != {""}, "Proposition name cannot be empty"
         self.name = name
         self.show_arg_position_names = show_arg_position_names
         self.is_assumption = is_assumption
         self.completed_args = completed_args
         self.completed_args_order = completed_args_order
-        if self.name.startswith("forall") or self.name.startswith("exists"):
-            assert quantified_arg is not None, f"{self} must have a quantified arg"
-        self.quantified_arg = quantified_arg
         self._is_proven = _is_proven
 
     def __eq__(self, other: "Proposition") -> bool:
@@ -106,7 +118,14 @@ class Proposition(_Statement):
         raise ValueError("Cannot set is_proven directly.")
 
     def copy(self) -> "Proposition":
-        return Proposition(self.name, self.is_assumption)
+        return Proposition(
+            self.name,
+            self.is_assumption,
+            completed_args=self.completed_args.copy(),
+            completed_args_order=self.completed_args_order.copy(),
+            show_arg_position_names=self.show_arg_position_names,
+            _is_proven=self.is_proven,
+        )
 
     def implies(self, other: "Proposition", is_assumption: bool = False) -> "Implies":
         return Implies(self, other, is_assumption)
@@ -128,7 +147,7 @@ class Proposition(_Statement):
         new_p._is_proven = True
         return new_p
 
-    def is_one_of(self, other: "And", _recursive: bool = False) -> "Proposition":
+    def is_one_of(self, other: "And", _recursive: bool = False) -> Self:
         rf"""
         Logical tactic.
         If we have proven {other}, we can prove any of the propositions in it.
@@ -149,6 +168,30 @@ class Proposition(_Statement):
                 except ValueError:
                     continue
         raise ValueError(f"{self} is not in {other}")
+
+    def is_special_case_of(self, other: "Forall") -> Self:
+        """
+        Logical tactic.
+        other: Proposition
+            A proven forall proposition that implies this proposition.
+        """
+        assert isinstance(other, Forall), f"{other} is not a forall statement"
+        assert other.is_proven, f"{other} is not proven"
+        assert (
+            self.name == other.inner_proposition.name
+        ), f"{self} is not a special case of {other}"
+        for arg_id in self.completed_args:
+            if arg_id in other.completed_args:
+                assert type(self.completed_args[arg_id]) == type(
+                    other.completed_args[arg_id]
+                ), f"{self} is not a special case of {other}: {arg_id} is not the same type"
+            else:
+                raise ValueError(
+                    f"{self} is not a special case of {other}: {arg_id} is not in the completed arguments of {other}"
+                )
+        new_p = self.copy()
+        new_p._is_proven = True
+        return new_p
 
 
 class Not(Proposition):
@@ -172,6 +215,17 @@ class Implies(Proposition):
         self.consequent = consequent
         name = f"{antecedent.name} -> {consequent.name}"
         super().__init__(name, is_assumption)
+        self.completed_args = getattr(self.antecedent, "completed_args", {}).copy()
+        self.completed_args.update(getattr(self.consequent, "completed_args", {}))
+        self.completed_args_order = getattr(
+            self.antecedent, "completed_args_order", []
+        ).copy()
+        self.completed_args_order.extend(
+            getattr(self.consequent, "completed_args_order", [])
+        )
+
+    def __repr__(self) -> str:
+        return f"{self.antecedent} -> {self.consequent}"
 
     def copy(self) -> "Implies":
         return Implies(
@@ -182,8 +236,8 @@ class Implies(Proposition):
         """
         Logical tactic.
         """
-        assert self.is_proven, f"{self.name} is not proven"
-        assert other.is_proven, f"{other.name} is not proven"
+        assert self.is_proven, f"{self} is not proven"
+        assert other.is_proven, f"{other} is not proven"
         assert (
             self.consequent == other.antecedent
         ), f"Does not follow logically: {self.name},  {other.name}"
@@ -226,18 +280,54 @@ class Or(Proposition):
         )
 
 
+class Forall(Proposition):
+    def __init__(
+        self,
+        inner_proposition: Proposition,
+        is_assumption: bool = False,
+        quantified_arg: tuple[str, ArgValueTypes] | None = None,
+        show_arg_position_names: bool = False,
+        _is_proven: bool = False,
+    ) -> None:
+        assert quantified_arg is not None, f"{self} must have a quantified arg"
+        assert (
+            quantified_arg[0] in inner_proposition.completed_args
+            and inner_proposition.completed_args[quantified_arg[0]] == quantified_arg[1]
+        ), f"The quantified argument {quantified_arg} is not in {inner_proposition.completed_args}"
+        super().__init__(
+            f"forall {quantified_arg[1]}: {inner_proposition.name}",
+            is_assumption,
+            completed_args=inner_proposition.completed_args,
+            completed_args_order=inner_proposition.completed_args_order,
+            show_arg_position_names=show_arg_position_names,
+            _is_proven=_is_proven,
+        )
+        self.inner_proposition = inner_proposition
+        self.quantified_arg = quantified_arg
+
+    def __repr__(self) -> str:
+        return f"forall {self.quantified_arg[1]}: {self.inner_proposition}"
+
+    def copy(self) -> "Forall":
+        return Forall(
+            self.inner_proposition.copy(),
+            self.is_assumption,
+            self.quantified_arg,
+            self.show_arg_position_names,
+            self.is_proven,
+        )
+
+
 if __name__ == "__main__":
     p = Proposition
-    P = p("P")
+    Px = p("P", completed_args={"arg1": Object("x")})
+    Py = p("P", completed_args={"arg1": Object("y")})
     Q = p("Q")
     R = p("R")
     S = p("S")
     T = p("T")
+    forallXPx = Forall(Px, quantified_arg=("arg1", Object("x")), is_assumption=True)
 
-    Ax = p("A", completed_args={"arg1": Object("x")})
-
-    PAndQ = P.and_(Q)
-    PAndQ_AndR = PAndQ.and_(R, is_assumption=True)
-    P_And_QAndR = P.and_(Q.and_(R))
-    proofq: Proposition = Q.is_one_of(PAndQ_AndR)
-    print(Ax.is_proven)
+    print(Py, forallXPx)
+    py = Py.is_special_case_of(forallXPx)
+    print(py.is_proven)

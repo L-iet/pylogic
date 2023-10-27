@@ -3,40 +3,73 @@ from predicate import (
     ArgValueTypes,
     Object,
     Predicate,
+    Implies,
+    And,
+    Or,
     Proposition,
     P_Implies,
     P_And,
     P_Or,
+    P_Forall,
     p,
 )
 
 
 class Forall(Predicate):
-    def __new__(cls, predicate: Predicate, arg_name: str = "x") -> Predicate:
+    def __new__(
+        cls,
+        predicate: Predicate,
+        quantified_arg: tuple[str, ArgTypes] = ("arg1", Object),
+        quantified_arg_value: ArgValueTypes | None = None,
+        show_arg_position_names: bool = False,
+    ) -> Predicate | P_Forall:
+        if isinstance(predicate, Proposition):
+            assert (
+                quantified_arg_value is not None
+            ), f"Received Proposition {predicate} but no quantified arg_value"
+            return P_Forall(
+                predicate,
+                False,
+                (quantified_arg[0], quantified_arg_value),
+                show_arg_position_names,
+            )
         return object.__new__(cls)
 
-    def __init__(self, predicate: Predicate, arg_name: str = "x") -> None:
-        name = f"forall _: {predicate.name}"
+    def __init__(
+        self,
+        predicate: Predicate,
+        quantified_arg: tuple[str, ArgTypes] = ("arg1", Object),
+        quantified_arg_value: ArgValueTypes | None = None,
+        show_arg_position_names: bool = False,
+    ) -> None:
+        name = f"forall {quantified_arg_value if quantified_arg_value else '_'}: {predicate.name}"
         args = predicate.args.copy()
-        self.predicate = predicate
-        assert arg_name in args, f"{predicate} does not have argument {arg_name}"
+        self.predicate = predicate.copy()
+        assert (
+            quantified_arg[0] in args
+        ), f"{predicate} does not have argument id {quantified_arg[0]}"
         super().__init__(name, args)
-        self.quantified_arg_id: str = arg_name
+        self.quantified_arg_id, self.quantified_arg_type = quantified_arg
+        self.quantified_arg_value: ArgValueTypes | None = quantified_arg_value
+        self.show_arg_position_names = show_arg_position_names
 
     def __call__(self, **kwds: ArgValueTypes) -> "Forall | Predicate | Proposition":
-        if self.quantified_arg_id in kwds:
-            new_pred_name = f"forall {kwds[self.quantified_arg_id]}: "
-            new_pred_name += self.predicate.name
-            new_pred = Predicate(
-                new_pred_name,
-                self.predicate.args.copy(),
-                _quantified_arg=(self.quantified_arg_id, kwds[self.quantified_arg_id]),
-            )(**kwds)
-            return new_pred
+        if self.quantified_arg_id in kwds and self.quantified_arg_value is None:
+            return Forall(
+                self.predicate(**kwds),  # type: ignore
+                (self.quantified_arg_id, self.quantified_arg_type),
+                kwds[self.quantified_arg_id],
+                self.show_arg_position_names,
+            )
         else:
             new_pred = self.predicate(**kwds)
             if isinstance(new_pred, Predicate):
-                return Forall(new_pred, self.quantified_arg_id)
+                return Forall(
+                    new_pred,
+                    (self.quantified_arg_id, self.quantified_arg_type),
+                    self.quantified_arg_value,
+                    self.show_arg_position_names,
+                )
             else:
                 # new_pred is a Proposition, but quantified argument is not filled
                 # ideally should never happen
@@ -56,7 +89,17 @@ if __name__ == "__main__":
     x1 = Object("x1")
     y1 = Object("y1")
     z = Object("z")
-    p = Predicate("P", {"arg1": Object})
-    fp = Forall(p, "arg1")
-    forallxPx = fp(arg1=x)
-    print(forallxPx, forallxPx.completed_args)
+    P = Predicate("P", {"arg1": Object})
+    Q = Predicate("Q", {"arg1": Object})
+
+    P_ImplyQ_ = Implies(P, Q)
+    forall___P_ImplyQ_ = Forall(P_ImplyQ_)
+    filled = forall___P_ImplyQ_(arg1=x)  # forall x: P x -> Q x
+    filled.is_assumption = True
+    # Px0ImpQx0 = P_ImplyQ_(arg1=x0)
+    Px0ImpQx0 = Implies(P(arg1=x0), Q(arg1=x0))
+    Px0 = P(arg1=x0)
+    Px0.is_assumption = True
+    print(
+        Px0.modus_ponens((Px0ImpQx0).is_special_case_of(filled)),
+    )
