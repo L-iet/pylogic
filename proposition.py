@@ -1,5 +1,5 @@
-import re
 from typing import Self
+from sympy import Interval, Set as SympySet, FiniteSet as SympyFiniteSet, S as sympy_S
 
 ####################################################
 
@@ -33,6 +33,39 @@ class Set:
 
     def __repr__(self) -> str:
         return self.name
+
+
+class Arbitrary:
+    def __init__(self, instance: Object | Set):
+        self.instance = instance
+
+    def __eq__(self, other) -> bool:
+        return False
+
+
+class Specific:
+    def __init__(self, instance: Object | Set, prop: "Proposition"):
+        self.instance = instance
+        self.proposition = prop
+
+    def __eq__(self, other: "Specific") -> bool:
+        return self.instance == other.instance and self.proposition == other.proposition
+
+
+class Number(Object):
+    pass
+
+
+class RealNumber(Number):
+    pass
+
+
+class ComplexNumber(Number):
+    pass
+
+
+class PostivetiveReal(RealNumber):
+    pass
 
 
 #####################################################
@@ -331,3 +364,7 @@ if __name__ == "__main__":
     print(Py, forallXPx)
     py = Py.is_special_case_of(forallXPx)
     print(py.is_proven)
+
+    print(
+        sympy_S.Rationals,
+    )
