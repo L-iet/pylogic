@@ -34,4 +34,15 @@ Forall x, P => Q
 Exists x, P
 Therefore, Exists x, Q.
 
+A  B  C  (A=>B)=>C  A=>(B=>C)
+T  T  T      T          T
+T  T  F      F          F
+T  F  T      T          T
+T  F  F      T          T
+F  T  T      T          T
+F  T  F      T          T
+F  F  T      T          T
+F  F  F      F         *T
+
+=> is "almost" associative
 

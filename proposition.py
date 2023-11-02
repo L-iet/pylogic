@@ -9,7 +9,7 @@ from sympy import (
     symbols,
 )
 import sympy as sp
-from sympy.assumptions import global_assumptions
+import copy
 
 SympyExpression = sp.Basic | int | float
 
@@ -156,18 +156,38 @@ class Proposition(_Statement):
             _is_proven=self.is_proven,
         )
 
-    def implies(self, other: "Proposition", is_assumption: bool = False) -> "Implies":
-        return Implies(self, other, is_assumption)
+    def replace(
+        self, current_val: ArgValueTypes, new_val: ArgValueTypes
+    ) -> "Proposition":
+        new_p = self.copy()
+        for arg_id in new_p.completed_args:
+            if new_p.completed_args[arg_id] == current_val:
+                new_p.completed_args[arg_id] = new_val
+        new_p._is_proven = False
+        return new_p
 
-    def and_(self, other: "Proposition", is_assumption: bool = False) -> "And":
-        return And(self, other, is_assumption=is_assumption)
+    def implies(
+        self,
+        other: "Proposition",
+        is_assumption: bool = False,
+        _is_proven: bool = False,
+    ) -> "Implies":
+        return Implies(self, other, is_assumption, _is_proven=_is_proven)
+
+    def and_(
+        self,
+        other: "Proposition",
+        is_assumption: bool = False,
+        _is_proven: bool = False,
+    ) -> "And":
+        return And(self, other, is_assumption=is_assumption, _is_proven=_is_proven)
 
     def modus_ponens(self, other: "Implies") -> "Proposition":
-        f"""
+        """
         Logical tactic.
         other: Implies
             Must be an implication that has been proven whose structure is
-            {self.name} -> OtherProposition
+            self.name -> OtherProposition
         """
         assert self.is_proven, f"{self.name} is not proven"
         assert other.is_proven, f"{other.name} is not proven"
@@ -177,12 +197,12 @@ class Proposition(_Statement):
         return new_p
 
     def is_one_of(self, other: "And", _recursive: bool = False) -> Self:
-        rf"""
+        r"""
         Logical tactic.
-        If we have proven {other}, we can prove any of the propositions in it.
+        If we have proven other, we can prove any of the propositions in it.
         other: And
             Must be an And that has been proven whose structure is
-            {self} /\ OtherProposition
+            self /\ OtherProposition
         """
         if not _recursive:
             assert other.is_proven, f"{other} is not proven"
@@ -222,6 +242,49 @@ class Proposition(_Statement):
         new_p._is_proven = True
         return new_p
 
+    def follows_from(self, *assumptions: "Proposition") -> Self:
+        """
+        Logical tactic.
+        assumptions: Proposition
+            A list of propositions that imply this proposition.
+        This function only accepts propositions that were explicitly declared as assumptions.
+        """
+        assert self.is_proven, f"{self} is not proven"
+        assert len(assumptions) > 0, "Must provide at least one assumption"
+        for a in assumptions:
+            assert a.is_assumption, f"{a} is not an assumption"
+        if len(assumptions) == 1:
+            return assumptions[0].implies(self, _is_proven=True)
+        else:
+            return And(*assumptions).implies(self, _is_proven=True)
+
+    def thus_there_exists(
+        self, existential_var: ArgValueTypes, expression_to_replace: ArgValueTypes
+    ) -> Self:
+        """
+        Logical tactic.
+        Given self is proven, return a new proposition that there exists an existential_var such that
+        self is true, when self is expressed in terms of that existential_var.
+        For example, if self is x^2 + x > 0, existential_var is y and expression_to_replace is x^2, then
+        we return the proven proposition Exists y: y + x > 0.
+
+        All occurences of the expression will be replaced according to sympy.subs.
+
+        existential_var: ArgValueTypes
+            A new variable that is introduced into our new existential proposition.
+        expression_to_replace: ArgValueTypes
+            An expression that is replaced by the new variable.
+        """
+        assert self.is_proven, f"{self} is not proven"
+
+        new_inner_prop = self.replace(expression_to_replace, existential_var)
+        new_p = Exists(
+            new_inner_prop,
+            quantified_arg=("arg0", existential_var),
+            _is_proven=True,
+        )
+        return new_p
+
 
 class Not(Proposition):
     def __init__(self, negated: Proposition, is_assumption: bool = False) -> None:
@@ -234,16 +297,18 @@ class Not(Proposition):
 
 
 class Implies(Proposition):
+    # TODO: Implement __eq__ for Implies, And, Or, Forall, Contains, Relation, Equals etc
     def __init__(
         self,
         antecedent: Proposition,
         consequent: Proposition,
         is_assumption: bool = False,
+        _is_proven: bool = False,
     ) -> None:
         self.antecedent = antecedent
         self.consequent = consequent
         name = f"{antecedent.name} -> {consequent.name}"
-        super().__init__(name, is_assumption)
+        super().__init__(name, is_assumption, _is_proven=_is_proven)
         self.completed_args = getattr(self.antecedent, "completed_args", {}).copy()
         self.completed_args.update(getattr(self.consequent, "completed_args", {}))
         self.completed_args_order = getattr(
@@ -258,8 +323,18 @@ class Implies(Proposition):
 
     def copy(self) -> "Implies":
         return Implies(
-            self.antecedent.copy(), self.consequent.copy(), self.is_assumption
+            self.antecedent.copy(),
+            self.consequent.copy(),
+            self.is_assumption,
+            _is_proven=self.is_proven,
         )
+
+    def replace(self, current_val: ArgValueTypes, new_val: ArgValueTypes) -> "Implies":
+        new_p = self.copy()
+        new_p.antecedent = new_p.antecedent.replace(current_val, new_val)
+        new_p.consequent = new_p.consequent.replace(current_val, new_val)
+        new_p._is_proven = False
+        return new_p
 
     def hypothetical_syllogism(self, other: "Implies") -> "Implies":
         """
@@ -280,16 +355,32 @@ class And(Proposition):
         self,
         *propositions: Proposition,
         is_assumption: bool = False,
+        _is_proven: bool = False,
     ) -> None:
         assert len(propositions) > 1, "'And' must have at least two propositions"
+        completed_args = {}  # TODO: Figure out completed_args for And, Or, Implies
         self.propositions = propositions
         name = rf" /\ ".join([p.name for p in propositions])
-        super().__init__(name, is_assumption)
+        super().__init__(name, is_assumption, _is_proven=_is_proven)
 
     def copy(self) -> "And":
         return And(
-            *[p.copy() for p in self.propositions], is_assumption=self.is_assumption
+            *[p.copy() for p in self.propositions],
+            is_assumption=self.is_assumption,
+            _is_proven=self.is_proven,
         )
+
+    def replace(self, current_val: ArgValueTypes, new_val: ArgValueTypes) -> "And":
+        new_p = self.copy()
+        new_p.propositions = [
+            p.replace(current_val, new_val) for p in new_p.propositions
+        ]
+        new_p._is_proven = False
+        return new_p
+
+    def __repr__(self) -> str:
+        s = r" /\ ".join([p.__repr__() for p in self.propositions])
+        return f"({s})"
 
 
 class Or(Proposition):
@@ -300,7 +391,7 @@ class Or(Proposition):
     ) -> None:
         assert len(propositions) > 1, "'Or' must have at least two propositions"
         self.propositions = propositions
-        name = rf" \/ ".join([p.name for p in propositions])
+        name = r" \/ ".join([p.name for p in propositions])
         super().__init__(name, is_assumption)
 
     def copy(self) -> "Or":
@@ -308,10 +399,23 @@ class Or(Proposition):
             *[p.copy() for p in self.propositions], is_assumption=self.is_assumption
         )
 
+    def replace(self, current_val: ArgValueTypes, new_val: ArgValueTypes) -> "Or":
+        new_p = self.copy()
+        new_p.propositions = [
+            p.replace(current_val, new_val) for p in new_p.propositions
+        ]
+        new_p._is_proven = False
+        return new_p
 
-class Forall(Proposition):
+    def __repr__(self) -> str:
+        s = r" \/ ".join([p.__repr__() for p in self.propositions])
+        return f"({s})"
+
+
+class _Quantified(Proposition):
     def __init__(
         self,
+        _q: str,
         inner_proposition: Proposition,
         is_assumption: bool = False,
         quantified_arg: tuple[str, ArgValueTypes] | None = None,
@@ -319,12 +423,12 @@ class Forall(Proposition):
         _is_proven: bool = False,
     ) -> None:
         assert quantified_arg is not None, f"{self} must have a quantified arg"
-        assert (
-            quantified_arg[0] in inner_proposition.completed_args
-            and inner_proposition.completed_args[quantified_arg[0]] == quantified_arg[1]
-        ), f"The quantified argument {quantified_arg} is not in {inner_proposition.completed_args}"
+        # assert (
+        #     quantified_arg[0] in inner_proposition.completed_args
+        #     and inner_proposition.completed_args[quantified_arg[0]] == quantified_arg[1]
+        # ), f"The quantified argument {quantified_arg} is not in {inner_proposition.completed_args}"
         super().__init__(
-            f"forall {quantified_arg[1]}: {inner_proposition.name}",
+            f"{_q} {quantified_arg[1]}: {inner_proposition.name}",
             is_assumption,
             completed_args=inner_proposition.completed_args,
             completed_args_order=inner_proposition.completed_args_order,
@@ -333,18 +437,72 @@ class Forall(Proposition):
         )
         self.inner_proposition = inner_proposition
         self.quantified_arg = quantified_arg
+        self._q = _q
 
     def __repr__(self) -> str:
-        return f"forall {self.quantified_arg[1]}: {self.inner_proposition}"
+        return f"{self._q} {self.quantified_arg[1]}: {self.inner_proposition}"
 
-    def copy(self) -> "Forall":
-        return Forall(
-            self.inner_proposition.copy(),
-            self.is_assumption,
-            self.quantified_arg,
-            self.show_arg_position_names,
-            self.is_proven,
+    @classmethod
+    def copy(cls, instance) -> Self:
+        return cls(
+            instance.inner_proposition.copy(),
+            instance.is_assumption,
+            instance.quantified_arg,
+            instance.show_arg_position_names,
+            instance.is_proven,
         )
+
+    def replace(self, current_val: ArgValueTypes, new_val: ArgValueTypes) -> Self:
+        new_p = self.copy()
+        new_p.inner_proposition = new_p.inner_proposition.replace(current_val, new_val)
+        if new_p.quantified_arg[1] == current_val:
+            new_p.quantified_arg = (new_p.quantified_arg[0], new_val)
+        new_p._is_proven = False
+        return new_p
+
+
+class Forall(_Quantified):
+    def __init__(
+        self,
+        inner_proposition: Proposition,
+        is_assumption: bool = False,
+        quantified_arg: tuple[str, ArgValueTypes] | None = None,
+        show_arg_position_names: bool = False,
+        _is_proven: bool = False,
+    ) -> None:
+        super().__init__(
+            "forall",
+            inner_proposition,
+            is_assumption,
+            quantified_arg,
+            show_arg_position_names,
+            _is_proven,
+        )
+
+    def copy(self):
+        return super().copy(self)
+
+
+class Exists(_Quantified):
+    def __init__(
+        self,
+        inner_proposition: Proposition,
+        is_assumption: bool = False,
+        quantified_arg: tuple[str, ArgValueTypes] | None = None,
+        show_arg_position_names: bool = False,
+        _is_proven: bool = False,
+    ) -> None:
+        super().__init__(
+            "exists",
+            inner_proposition,
+            is_assumption,
+            quantified_arg,
+            show_arg_position_names,
+            _is_proven,
+        )
+
+    def copy(self):
+        return super().copy(self)
 
 
 class Contains(Proposition):
@@ -354,6 +512,7 @@ class Contains(Proposition):
         element: SympyExpression | Set,
         is_assumption: bool = False,
         show_arg_position_names: bool = False,
+        _is_proven: bool = False,
     ) -> None:
         self.set_: Set = set_
         self.element: SympyExpression | Set = element
@@ -363,6 +522,7 @@ class Contains(Proposition):
             is_assumption,
             completed_args={"set": set_, "element": element},
             show_arg_position_names=show_arg_position_names,
+            _is_proven=_is_proven,
         )
 
     def __repr__(self) -> str:
@@ -370,7 +530,24 @@ class Contains(Proposition):
 
     def copy(self) -> "Contains":
         return Contains(
-            self.set_.copy(), self.element.__copy__(), is_assumption=self.is_assumption
+            self.set_.copy(),
+            copy.copy(self.element),
+            is_assumption=self.is_assumption,
+            _is_proven=self.is_proven,
+        )
+
+    def replace(self, current_val: ArgValueTypes, new_val: ArgValueTypes) -> "Contains":
+        new_p = self.copy()
+        if new_p.set_ == current_val:
+            new_p.set_ = new_val
+        if new_p.element == current_val:
+            new_p.element = new_val
+        return Contains(
+            new_p.set_,
+            new_p.element,
+            is_assumption=self.is_assumption,
+            show_arg_position_names=self.show_arg_position_names,
+            _is_proven=False,
         )
 
 
@@ -404,6 +581,20 @@ class Relation(Proposition):
             _is_proven=self.is_proven,
         )
 
+    def replace(self, current_val: ArgValueTypes, new_val: ArgValueTypes) -> "Relation":
+        new_p = self.copy()
+        new_p.completed_args = {
+            k: new_val if v == current_val else v
+            for k, v in new_p.completed_args.items()
+        }
+        return Relation(
+            new_p.name,
+            completed_args=new_p.completed_args,
+            is_assumption=self.is_assumption,
+            show_arg_position_names=self.show_arg_position_names,
+            _is_proven=False,
+        )
+
 
 class Equals(Relation):
     def __init__(
@@ -429,10 +620,23 @@ class Equals(Relation):
 
     def copy(self) -> "Equals":
         return Equals(
-            self.left.__copy__(),
-            self.right.__copy__(),
+            copy.copy(self.left),
+            copy.copy(self.right),
             is_assumption=self.is_assumption,
             _is_proven=self.is_proven,
+        )
+
+    def replace(self, current_val: ArgValueTypes, new_val: ArgValueTypes) -> "Equals":
+        new_p = self.copy()
+        if new_p.left == current_val:
+            new_p.left = new_val
+        if new_p.right == current_val:
+            new_p.right = new_val
+        return Equals(
+            new_p.left,
+            new_p.right,
+            is_assumption=self.is_assumption,
+            _is_proven=False,
         )
 
     def by_simplification(self):
@@ -566,10 +770,25 @@ class GreaterThan(Relation, _Ordering):
 
     def copy(self) -> "GreaterThan":
         return GreaterThan(
-            self.left.__copy__(),
-            self.right.__copy__(),
+            self.left,
+            self.right,
             self.is_assumption,
             _is_proven=self.is_proven,
+        )
+
+    def replace(
+        self, current_val: SympyExpression, new_val: SympyExpression
+    ) -> "GreaterThan":
+        new_p = self.copy()
+        if new_p.left == current_val:
+            new_p.left = new_val
+        if new_p.right == current_val:
+            new_p.right = new_val
+        return GreaterThan(
+            new_p.left,
+            new_p.right,
+            is_assumption=self.is_assumption,
+            _is_proven=False,
         )
 
     def to_positive_inequality(self):
@@ -657,10 +876,25 @@ class LessThan(Relation, _Ordering):
 
     def copy(self) -> "LessThan":
         return LessThan(
-            self.left.__copy__(),
-            self.right.__copy__(),
+            self.left,
+            self.right,
             self.is_assumption,
             _is_proven=self.is_proven,
+        )
+
+    def replace(
+        self, current_val: SympyExpression, new_val: SympyExpression
+    ) -> "LessThan":
+        new_p = self.copy()
+        if new_p.left == current_val:
+            new_p.left = new_val
+        if new_p.right == current_val:
+            new_p.right = new_val
+        return LessThan(
+            new_p.left,
+            new_p.right,
+            is_assumption=self.is_assumption,
+            _is_proven=False,
         )
 
     def to_positive_inequality(self):
@@ -751,9 +985,8 @@ if __name__ == "__main__":
     # print(py.is_proven)
 
     x = sp.Symbol("x", real=True)
-    y = sp.Symbol("y", real=True)
-    z = sp.Symbol("z", real=True)
     eps = sp.Symbol("eps", real=True)
+    delta = sp.Symbol("delta", real=True)
     eps_positive = GreaterThan(eps, 0, is_assumption=True)
     absolute_x_positive = GreaterThan.is_absolute(sp.Abs(x))
     root_eps_positive = GreaterThan.is_rational_power(sp.sqrt(eps), eps_positive)
@@ -767,9 +1000,17 @@ if __name__ == "__main__":
     xsq_lt_eps = xsq_lt_eps_t_absx.transitive(eps_t_absx_lt_eps)
     print(xsq_lt_eps, xsq_lt_eps.is_proven)
 
-    # print(
-    #     # x**2 > -1,
-    #     # Set(Interval(0, 1, True, True)).contains(sp.Symbol("x")),
-    #     type((sp.cbrt(x)).exp),
-    #     type(x ** Rational(1, 2)),
-    # )
+    print(
+        (xsq_lt_eps)
+        .follows_from(absx_lt_sqrt_eps)
+        .thus_there_exists(delta, sp.sqrt(eps))
+        .follows_from(eps_positive)
+    )
+
+    # TODO
+    # Option 1: Implement a way to determine what equations need to hold for two propositions
+    # to be equivalent
+    # Option 2: Implement a way to replace an expression with another expression in a
+    # complex proposition using sympy
+    # Figure out representing specific variables
+    print()
