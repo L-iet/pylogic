@@ -6,7 +6,7 @@ P_And = p.And
 P_Or = p.Or
 P_Forall = p.Forall
 Set = p.Set
-Object = p.Object
+Object = p.SympyExpression
 ArgTypes = p.ArgTypes
 ArgValueTypes = p.ArgValueTypes
 

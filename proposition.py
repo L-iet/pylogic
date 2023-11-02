@@ -1,42 +1,51 @@
 from typing import Self
-from sympy import Interval, Set as SympySet, FiniteSet as SympyFiniteSet, S as sympy_S
+from sympy import (
+    Interval,
+    Set as SympySet,
+    FiniteSet as SympyFiniteSet,
+    S as sympy_S,
+    Rational,
+    var,
+    symbols,
+)
+import sympy as sp
+from sympy.assumptions import global_assumptions
+
+SympyExpression = sp.Basic | int | float
 
 ####################################################
 
 
-class Object:
-    def __init__(self, name: str):
-        name = name.strip()
-        assert set(name.split("_")) != {""}, "Object name cannot be empty"
-        assert " " not in name, "Object name cannot contain spaces"
-        self.name = name
-
-    def __eq__(self, other: "ArgValueTypes") -> bool:
-        return self.name == other.name
-
-    def __repr__(self) -> str:
-        return self.name
-
-
 class Set:
-    def __init__(self, name: str):
-        name = name.strip()
-        assert set(name.split("_")) != {""}, "Set name cannot be empty"
+    def __init__(self, sympy_set: SympySet, name: str | None = None):
+        if name:
+            name = name.strip()
+        else:
+            name = ""
         assert " " not in name, "Set name cannot contain spaces"
-        self.name = name
+        self.name = name or str(sympy_set)
+        self.sympy_set = sympy_set
 
     def __eq__(self, other: "ArgValueTypes") -> bool:
-        return self.name == other.name
+        return self.name == str(other)
 
-    def __contains__(self, other: Object) -> "Proposition":
-        return Proposition(f"{other.name} in {self.name}")
+    def contains(
+        self, other: "SympyExpression | Set", is_assumption: bool = False
+    ) -> "Proposition":
+        return Contains(self, other, is_assumption=is_assumption)
 
     def __repr__(self) -> str:
         return self.name
+
+    def __copy__(self) -> "Set":
+        return self.copy()
+
+    def copy(self) -> "Set":
+        return Set(self.sympy_set, self.name)
 
 
 class Arbitrary:
-    def __init__(self, instance: Object | Set):
+    def __init__(self, instance: SympyExpression | Set):
         self.instance = instance
 
     def __eq__(self, other) -> bool:
@@ -44,7 +53,7 @@ class Arbitrary:
 
 
 class Specific:
-    def __init__(self, instance: Object | Set, prop: "Proposition"):
+    def __init__(self, instance: SympyExpression | Set, prop: "Proposition"):
         self.instance = instance
         self.proposition = prop
 
@@ -52,26 +61,10 @@ class Specific:
         return self.instance == other.instance and self.proposition == other.proposition
 
 
-class Number(Object):
-    pass
-
-
-class RealNumber(Number):
-    pass
-
-
-class ComplexNumber(Number):
-    pass
-
-
-class PostivetiveReal(RealNumber):
-    pass
-
-
 #####################################################
 
-ArgTypes = type[Set] | type[Object]
-ArgValueTypes = Set | Object
+ArgTypes = type[Set] | type[SympyExpression]
+ArgValueTypes = Set | SympyExpression
 
 
 class _Statement:
@@ -106,7 +99,7 @@ class Proposition(_Statement):
             Whether this proposition is an assumption.
         completed_args: dict[str, ArgValueTypes]
             Dictionary of argument position identifiers and their values. The values are
-            typically Set or Object instances.
+            typically Set or SympyExpression instances.
         show_arg_position_names: bool
             Whether to show the argument position identifiers in the __repr__.
             This is useful for propositions with multiple arguments of the same type.
@@ -141,6 +134,9 @@ class Proposition(_Statement):
                 else f"{self.completed_args[arg_id]} "
             )
         return f"{self.name} {s}".strip()
+
+    def __copy__(self) -> "Proposition":
+        return self.copy()
 
     @property
     def is_proven(self) -> bool:
@@ -351,20 +347,429 @@ class Forall(Proposition):
         )
 
 
+class Contains(Proposition):
+    def __init__(
+        self,
+        set_: Set,
+        element: SympyExpression | Set,
+        is_assumption: bool = False,
+        show_arg_position_names: bool = False,
+    ) -> None:
+        self.set_: Set = set_
+        self.element: SympyExpression | Set = element
+        name = rf"Contains"
+        super().__init__(
+            name,
+            is_assumption,
+            completed_args={"set": set_, "element": element},
+            show_arg_position_names=show_arg_position_names,
+        )
+
+    def __repr__(self) -> str:
+        return f"{self.element} in {self.set_}"
+
+    def copy(self) -> "Contains":
+        return Contains(
+            self.set_.copy(), self.element.__copy__(), is_assumption=self.is_assumption
+        )
+
+
+class Relation(Proposition):
+    def __init__(
+        self,
+        name: str,
+        completed_args: dict[str, ArgValueTypes],
+        is_assumption: bool = False,
+        show_arg_position_names: bool = False,
+        _is_proven: bool = False,
+    ) -> None:
+        assert len(completed_args) > 1, "Relation must have at least two arguments"
+        super().__init__(
+            name,
+            is_assumption,
+            completed_args=completed_args,
+            show_arg_position_names=show_arg_position_names,
+            _is_proven=_is_proven,
+        )
+
+    def __repr__(self) -> str:
+        return super().__repr__()
+
+    def copy(self) -> "Relation":
+        return Relation(
+            self.name,
+            completed_args=self.completed_args.copy(),
+            is_assumption=self.is_assumption,
+            show_arg_position_names=self.show_arg_position_names,
+            _is_proven=self.is_proven,
+        )
+
+
+class Equals(Relation):
+    def __init__(
+        self,
+        left: ArgValueTypes,
+        right: ArgValueTypes,
+        is_assumption: bool = False,
+        _is_proven: bool = False,
+    ) -> None:
+        name = "Equals"
+        super().__init__(
+            name,
+            completed_args={"left": left, "right": right},
+            is_assumption=is_assumption,
+            show_arg_position_names=False,
+            _is_proven=_is_proven,
+        )
+        self.left: ArgValueTypes = left
+        self.right: ArgValueTypes = right
+
+    def __repr__(self) -> str:
+        return f"{self.completed_args['left']} = {self.completed_args['right']}"
+
+    def copy(self) -> "Equals":
+        return Equals(
+            self.left.__copy__(),
+            self.right.__copy__(),
+            is_assumption=self.is_assumption,
+            _is_proven=self.is_proven,
+        )
+
+    def by_simplification(self):
+        """Logical tactic."""
+        proven = False
+        if self.completed_args["left"] == self.completed_args["right"]:
+            proven = True
+        elif isinstance(self.completed_args["left"], sp.Basic):
+            if self.completed_args["left"].equals(self.completed_args["right"]):
+                proven = True
+        elif isinstance(self.completed_args["right"], sp.Basic):
+            if self.completed_args["right"].equals(self.completed_args["left"]):
+                proven = True
+        if proven:
+            new_p = self.copy()
+            new_p._is_proven = True
+            return new_p
+        else:
+            raise ValueError(f"{self} cannot be proven by simplification")
+
+
+class _Ordering:
+    @classmethod
+    def _multiply_by(
+        cls,
+        instance: "GreaterThan | LessThan",
+        x: SympyExpression,
+        p: "GreaterThan | LessThan",
+        _sign: str = "positive",
+    ) -> "GreaterThan | LessThan":
+        assert p.is_proven, f"{p} is not proven"
+        if (_sign == "positive" and isinstance(p, LessThan)) or (
+            _sign == "negative" and isinstance(p, GreaterThan)
+        ):
+            assert p.left == 0 and p.right == x, f"{p} does not say that {x} is {_sign}"
+        elif (_sign == "positive" and isinstance(p, GreaterThan)) or (
+            _sign == "negative" and isinstance(p, LessThan)
+        ):
+            assert p.left == x and p.right == 0, f"{p} does not say that {x} is {_sign}"
+        if _sign == "positive":
+            new_p = cls(x * instance.left, x * instance.right)  # type: ignore
+        elif _sign == "negative":
+            new_p = cls(x * instance.right, x * instance.left)  # type: ignore
+        else:
+            raise ValueError(f"Invalid sign: {_sign}")
+        return new_p
+
+    @classmethod
+    def _mul(
+        cls, instance: "GreaterThan | LessThan", other: SympyExpression
+    ) -> "LessThan":
+        if isinstance(other, int) or isinstance(other, float):
+            sign = "positive" if other > 0 else "negative"
+            proof = (
+                GreaterThan(other, 0, _is_proven=True)
+                if sign == "positive"
+                else LessThan(other, 0, _is_proven=True)
+            )
+            return cls._multiply_by(instance, other, proof, _sign=sign)  # type: ignore
+        else:
+            raise ValueError(
+                f"Cannot multiply {instance} by {other}, use multiply_by_positive or multiply_by_negative"
+            )
+
+
+class GreaterThan(Relation, _Ordering):
+    @staticmethod
+    def is_absolute(expr: SympyExpression) -> "GreaterThan":
+        """Logical tactic.
+        Given an expr of the form sympy.Abs(x), return a proven proposition that says
+        sympy.Abs(x) > 0
+        """
+        assert isinstance(expr, sp.Abs), f"{expr} is not an absolute value"
+        return GreaterThan(expr, 0, _is_proven=True)
+
+    @staticmethod
+    def is_even_power(expr: SympyExpression) -> "GreaterThan":
+        """Logical tactic.
+        Given an expr of the form x**(2n), return a proven proposition that says
+        x**(2n) > 0
+        """
+        assert isinstance(expr, sp.Pow), f"{expr} is not a power"
+        assert expr.base.is_real, f"{expr.base} is not a real number"
+        assert sp.ask(sp.Q.even(expr.exp)), f"{expr} is not a square or even power"
+        return GreaterThan(expr, 0, _is_proven=True)
+
+    @staticmethod
+    def is_rational_power(
+        expr: SympyExpression, proof_base_is_positive: "GreaterThan"
+    ) -> "GreaterThan":
+        """Logical tactic.
+        Given an expr of the form x**(p/q) and a proof that x > 0,
+        return a proven proposition that says
+        x**(p/q) > 0
+        """
+        assert isinstance(expr, sp.Pow), f"{expr} is not a power"
+        assert expr.base.is_real, f"{expr.base} is not a real number"
+        assert (
+            proof_base_is_positive.is_proven
+        ), f"{proof_base_is_positive} is not proven"
+        assert isinstance(
+            proof_base_is_positive, GreaterThan
+        ), f"{proof_base_is_positive} is not a GreaterThan"
+        assert (
+            proof_base_is_positive.left == expr.base
+            and proof_base_is_positive.right == 0
+        ), f"{proof_base_is_positive} does not say that {expr.base} is positive"
+        assert sp.ask(sp.Q.rational(expr.exp)), f"{expr} is not a rational power"
+        return GreaterThan(expr, 0, _is_proven=True)
+
+    def __init__(
+        self,
+        left: SympyExpression,
+        right: SympyExpression,
+        is_assumption: bool = False,
+        _is_proven: bool = False,
+    ) -> None:
+        name = "GreaterThan"
+        super().__init__(
+            name,
+            completed_args={"left": left, "right": right},
+            is_assumption=is_assumption,
+            show_arg_position_names=False,
+            _is_proven=_is_proven,
+        )
+        self.left: SympyExpression = left
+        self.right: SympyExpression = right
+
+    def __repr__(self) -> str:
+        return f"{self.completed_args['left']} > {self.completed_args['right']}"
+
+    def copy(self) -> "GreaterThan":
+        return GreaterThan(
+            self.left.__copy__(),
+            self.right.__copy__(),
+            self.is_assumption,
+            _is_proven=self.is_proven,
+        )
+
+    def to_positive_inequality(self):
+        """If self is of the form a > b, returns an inequality of the form a - b > 0"""
+        return GreaterThan(self.left - self.right, sympy_S.Zero)
+
+    def to_negative_inequality(self):
+        """If self is of the form a > b, returns an inequality of the form b - a < 0"""
+        return LessThan(self.right - self.left, sympy_S.Zero)
+
+    def multiply_by_positive(
+        self, x: SympyExpression, proof_x_is_positive: "GreaterThan | LessThan"
+    ) -> "GreaterThan":
+        return super()._multiply_by(self, x, proof_x_is_positive, _sign="positive")  # type: ignore
+
+    def multiply_by_negative(
+        self, x: SympyExpression, proof_x_is_negative: "GreaterThan | LessThan"
+    ) -> "GreaterThan":
+        return super()._multiply_by(self, x, proof_x_is_negative, _sign="negative")
+
+    def p_multiply_by_positive(
+        self, x: SympyExpression, proof_x_is_positive: "GreaterThan | LessThan"
+    ) -> "GreaterThan":
+        """Logical tactic.
+        Same as multiply_by_positive, but returns a proven proposition"""
+        assert self.is_proven, f"{self} is not proven"
+        new_p = self.multiply_by_positive(x, proof_x_is_positive)
+        new_p._is_proven = True
+        return new_p
+
+    def p_multiply_by_negative(
+        self, x: SympyExpression, proof_x_is_negative: "GreaterThan | LessThan"
+    ) -> "GreaterThan":
+        """Logical tactic.
+        Same as multiply_by_negative, but returns a proven proposition"""
+        assert self.is_proven, f"{self} is not proven"
+        new_p = self.multiply_by_negative(x, proof_x_is_negative)
+        new_p._is_proven = True
+        return new_p
+
+    def mul_inverse(self):
+        return GreaterThan(
+            1 / self.right, 1 / self.left, is_assumption=self.is_assumption
+        )
+
+    def to_less_than(self):
+        """If self is of the form a > b, returns an inequality of the form b < a"""
+        return LessThan(self.right, self.left, is_assumption=self.is_assumption)
+
+    def p_to_less_than(self):
+        """Logical tactic. Same as to_less_than, but returns a proven proposition"""
+        assert self.is_proven, f"{self} is not proven"
+        new_p = self.to_less_than()
+        new_p._is_proven = True
+        return new_p
+
+    def __mul__(self, other: SympyExpression) -> "GreaterThan":
+        return super()._mul(self, other)
+
+    def __rmul__(self, other: SympyExpression) -> "GreaterThan":
+        return super()._mul(self, other)
+
+
+class LessThan(Relation, _Ordering):
+    def __init__(
+        self,
+        left: SympyExpression,
+        right: SympyExpression,
+        is_assumption: bool = False,
+        _is_proven: bool = False,
+    ) -> None:
+        name = "LessThan"
+        super().__init__(
+            name,
+            completed_args={"left": left, "right": right},
+            is_assumption=is_assumption,
+            show_arg_position_names=False,
+            _is_proven=_is_proven,
+        )
+        self.left: SympyExpression = left
+        self.right: SympyExpression = right
+
+    def __repr__(self) -> str:
+        return f"{self.completed_args['left']} < {self.completed_args['right']}"
+
+    def copy(self) -> "LessThan":
+        return LessThan(
+            self.left.__copy__(),
+            self.right.__copy__(),
+            self.is_assumption,
+            _is_proven=self.is_proven,
+        )
+
+    def to_positive_inequality(self):
+        """If self is of the form a < b, returns an inequality of the form b - a > 0"""
+        return GreaterThan(self.right - self.left, sympy_S.Zero)
+
+    def to_negative_inequality(self):
+        """If self is of the form a < b, returns an inequality of the form a - b < 0"""
+        return LessThan(self.left - self.right, sympy_S.Zero)
+
+    def multiply_by_positive(
+        self, x: SympyExpression, proof_x_is_positive: "GreaterThan | LessThan"
+    ) -> "LessThan":
+        return super()._multiply_by(self, x, proof_x_is_positive, _sign="positive")  # type: ignore
+
+    def multiply_by_negative(
+        self, x: SympyExpression, proof_x_is_negative: "GreaterThan | LessThan"
+    ) -> "LessThan":
+        return super()._multiply_by(self, x, proof_x_is_negative, _sign="negative")
+
+    def p_multiply_by_positive(
+        self, x: SympyExpression, proof_x_is_positive: "GreaterThan | LessThan"
+    ) -> "LessThan":
+        """Logical tactic.
+        Same as multiply_by_positive, but returns a proven proposition"""
+        assert self.is_proven, f"{self} is not proven"
+        new_p = self.multiply_by_positive(x, proof_x_is_positive)
+        new_p._is_proven = True
+        return new_p
+
+    def p_multiply_by_negative(
+        self, x: SympyExpression, proof_x_is_negative: "GreaterThan | LessThan"
+    ) -> "LessThan":
+        """Logical tactic.
+        Same as multiply_by_negative, but returns a proven proposition"""
+        assert self.is_proven, f"{self} is not proven"
+        new_p = self.multiply_by_negative(x, proof_x_is_negative)
+        new_p._is_proven = True
+        return new_p
+
+    def mul_inverse(self):
+        return LessThan(1 / self.right, 1 / self.left, is_assumption=self.is_assumption)
+
+    def to_greater_than(self):
+        """If self is of the form a < b, returns an inequality of the form b > a"""
+        return GreaterThan(self.right, self.left, is_assumption=self.is_assumption)
+
+    def p_to_greater_than(self):
+        """Logical tactic. Same as to_greater_than, but returns a proven proposition"""
+        assert self.is_proven, f"{self} is not proven"
+        new_p = self.to_greater_than()
+        new_p._is_proven = True
+        return new_p
+
+    def transitive(self, other: "LessThan") -> "LessThan":
+        """Logical Tactic. If self is of the form a < b and other is of the form b < c,
+        returns a proven inequality of the form a < c.
+        """
+        assert self.is_proven, f"{self} is not proven"
+        assert other.is_proven, f"{other} is not proven"
+        assert isinstance(other, LessThan), f"{other} is not a LessThan"
+        assert (
+            self.right == other.left
+        ), f"{self} and {other} do not fulfill transitivity"
+        new_p = LessThan(self.left, other.right)
+        new_p._is_proven = True
+        return new_p
+
+    def __mul__(self, other: SympyExpression) -> "LessThan":
+        return super()._mul(self, other)
+
+    def __rmul__(self, other: SympyExpression) -> "LessThan":
+        return super()._mul(self, other)
+
+
 if __name__ == "__main__":
     p = Proposition
-    Px = p("P", completed_args={"arg1": Object("x")})
-    Py = p("P", completed_args={"arg1": Object("y")})
+    Px = p("P", completed_args={"arg1": sp.Symbol("x")})
+    Py = p("P", completed_args={"arg1": sp.Symbol("y")})
     Q = p("Q")
     R = p("R")
     S = p("S")
     T = p("T")
-    forallXPx = Forall(Px, quantified_arg=("arg1", Object("x")), is_assumption=True)
+    forallXPx = Forall(Px, quantified_arg=("arg1", sp.Symbol("x")), is_assumption=True)
 
-    print(Py, forallXPx)
+    # print(Py, forallXPx)
     py = Py.is_special_case_of(forallXPx)
-    print(py.is_proven)
+    # print(py.is_proven)
 
-    print(
-        sympy_S.Rationals,
+    x = sp.Symbol("x", real=True)
+    y = sp.Symbol("y", real=True)
+    z = sp.Symbol("z", real=True)
+    eps = sp.Symbol("eps", real=True)
+    eps_positive = GreaterThan(eps, 0, is_assumption=True)
+    absolute_x_positive = GreaterThan.is_absolute(sp.Abs(x))
+    root_eps_positive = GreaterThan.is_rational_power(sp.sqrt(eps), eps_positive)
+    absx_lt_sqrt_eps = LessThan(sp.Abs(x), sp.sqrt(eps), is_assumption=True)
+    xsq_lt_eps_t_absx = absx_lt_sqrt_eps.p_multiply_by_positive(
+        abs(x), GreaterThan.is_absolute(abs(x))
     )
+    eps_t_absx_lt_eps = absx_lt_sqrt_eps.p_multiply_by_positive(
+        sp.sqrt(eps), root_eps_positive
+    )
+    xsq_lt_eps = xsq_lt_eps_t_absx.transitive(eps_t_absx_lt_eps)
+    print(xsq_lt_eps, xsq_lt_eps.is_proven)
+
+    # print(
+    #     # x**2 > -1,
+    #     # Set(Interval(0, 1, True, True)).contains(sp.Symbol("x")),
+    #     type((sp.cbrt(x)).exp),
+    #     type(x ** Rational(1, 2)),
+    # )
