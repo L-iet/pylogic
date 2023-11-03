@@ -10,6 +10,7 @@ from sympy import (
 )
 import sympy as sp
 import copy
+import p_symbol as ps
 
 SympyExpression = sp.Basic | int | float
 
@@ -17,6 +18,12 @@ SympyExpression = sp.Basic | int | float
 
 
 class Set:
+    _is_arbitrary: bool = True
+
+    @property
+    def is_arbitrary(self) -> bool:
+        return self._is_arbitrary
+
     def __init__(self, sympy_set: SympySet, name: str | None = None):
         if name:
             name = name.strip()
@@ -142,10 +149,6 @@ class Proposition(_Statement):
     def is_proven(self) -> bool:
         return self._is_proven or self.is_assumption
 
-    @is_proven.setter
-    def is_proven(self, value: bool) -> None:
-        raise ValueError("Cannot set is_proven directly.")
-
     def copy(self) -> "Proposition":
         return Proposition(
             self.name,
@@ -156,9 +159,7 @@ class Proposition(_Statement):
             _is_proven=self.is_proven,
         )
 
-    def replace(
-        self, current_val: ArgValueTypes, new_val: ArgValueTypes
-    ) -> "Proposition":
+    def replace(self, current_val: ArgValueTypes, new_val: ArgValueTypes) -> Self:
         new_p = self.copy()
         for arg_id in new_p.completed_args:
             if new_p.completed_args[arg_id] == current_val:
@@ -170,17 +171,27 @@ class Proposition(_Statement):
         self,
         other: "Proposition",
         is_assumption: bool = False,
-        _is_proven: bool = False,
     ) -> "Implies":
-        return Implies(self, other, is_assumption, _is_proven=_is_proven)
+        return Implies(self, other, is_assumption)
 
     def and_(
         self,
-        other: "Proposition",
+        *others: "Proposition",
         is_assumption: bool = False,
-        _is_proven: bool = False,
     ) -> "And":
-        return And(self, other, is_assumption=is_assumption, _is_proven=_is_proven)
+        return And(self, *others, is_assumption=is_assumption)
+
+    def p_and(self, *others: "Proposition") -> "And":
+        """Logical tactic.
+        Same as and_, but returns a proven proposition when self and all others are proven.
+        """
+        assert len(others) > 0, "Must provide at least one proposition"
+        assert self.is_proven, f"{self} is not proven"
+        for o in others:
+            assert o.is_proven, f"{o} is not proven"
+        new_p = self.and_(*others)
+        new_p._is_proven = True
+        return new_p
 
     def modus_ponens(self, other: "Implies") -> "Proposition":
         """
@@ -242,25 +253,27 @@ class Proposition(_Statement):
         new_p._is_proven = True
         return new_p
 
-    def follows_from(self, *assumptions: "Proposition") -> Self:
+    def follows_from(self, *assumptions: "Proposition") -> "Implies":
         """
         Logical tactic.
-        assumptions: Proposition
-            A list of propositions that imply this proposition.
+        *assumptions: Proposition
+            Propositions that imply this proposition.
         This function only accepts propositions that were explicitly declared as assumptions.
         """
         assert self.is_proven, f"{self} is not proven"
-        assert len(assumptions) > 0, "Must provide at least one assumption"
+        assert len(assumptions) > 0, "Must provide at least one other assumption"
         for a in assumptions:
             assert a.is_assumption, f"{a} is not an assumption"
         if len(assumptions) == 1:
-            return assumptions[0].implies(self, _is_proven=True)
+            new_p = assumptions[0].implies(self)
         else:
-            return And(*assumptions).implies(self, _is_proven=True)
+            new_p = And(*assumptions).implies(self)
+        new_p._is_proven = True
+        return new_p
 
     def thus_there_exists(
-        self, existential_var: ArgValueTypes, expression_to_replace: ArgValueTypes
-    ) -> Self:
+        self, existential_var: str, expression_to_replace: ArgValueTypes
+    ) -> "Exists":
         """
         Logical tactic.
         Given self is proven, return a new proposition that there exists an existential_var such that
@@ -270,17 +283,31 @@ class Proposition(_Statement):
 
         All occurences of the expression will be replaced according to sympy.subs.
 
-        existential_var: ArgValueTypes
+        existential_var: str
             A new variable that is introduced into our new existential proposition.
         expression_to_replace: ArgValueTypes
             An expression that is replaced by the new variable.
         """
         assert self.is_proven, f"{self} is not proven"
 
-        new_inner_prop = self.replace(expression_to_replace, existential_var)
         new_p = Exists(
-            new_inner_prop,
-            quantified_arg=("arg0", existential_var),
+            existential_var_name=existential_var,
+            inner_proposition=self,
+            expression_to_replace=expression_to_replace,
+            _is_proven=True,
+        )
+        return new_p
+
+    def thus_forall(self, quantified_arg: Set | sp.Basic) -> "Forall":
+        """
+        Logical tactic.
+        Given self is proven, return a new proposition that for all variables, self is true.
+        """
+        assert self.is_proven, f"{self} is not proven"
+        assert quantified_arg.is_arbitrary, f"{quantified_arg} is not arbitrary"
+        new_p = Forall(
+            inner_proposition=self,
+            quantified_arg=quantified_arg,
             _is_proven=True,
         )
         return new_p
@@ -319,7 +346,7 @@ class Implies(Proposition):
         )
 
     def __repr__(self) -> str:
-        return f"{self.antecedent} -> {self.consequent}"
+        return f"[{self.antecedent} -> {self.consequent}]"
 
     def copy(self) -> "Implies":
         return Implies(
@@ -465,19 +492,21 @@ class Forall(_Quantified):
     def __init__(
         self,
         inner_proposition: Proposition,
+        quantified_arg: Set | SympyExpression,
         is_assumption: bool = False,
-        quantified_arg: tuple[str, ArgValueTypes] | None = None,
         show_arg_position_names: bool = False,
         _is_proven: bool = False,
     ) -> None:
+        q_arg = ("arg0", quantified_arg)
         super().__init__(
             "forall",
             inner_proposition,
             is_assumption,
-            quantified_arg,
-            show_arg_position_names,
-            _is_proven,
+            quantified_arg=q_arg,
+            show_arg_position_names=show_arg_position_names,
+            _is_proven=_is_proven,
         )
+        self.quantified_arg_value = self.quantified_arg[1]
 
     def copy(self):
         return super().copy(self)
@@ -487,11 +516,29 @@ class Exists(_Quantified):
     def __init__(
         self,
         inner_proposition: Proposition,
+        existential_var_name: str,
+        expression_to_replace: ArgValueTypes,
+        existential_var_type: type[Set] | type[sp.Basic] = ps.Symbol,
         is_assumption: bool = False,
-        quantified_arg: tuple[str, ArgValueTypes] | None = None,
         show_arg_position_names: bool = False,
         _is_proven: bool = False,
     ) -> None:
+        if existential_var_type in [ps.Symbol, ps.Function, ps.MatrixSymbol]:
+            is_real = (
+                isinstance(expression_to_replace, int)
+                or isinstance(expression_to_replace, float)
+                or expression_to_replace.is_real
+            )
+            existential_var = existential_var_type(existential_var_name, real=is_real)  # type: ignore
+            existential_var._is_arbitrary = False  # type: ignore
+        else:
+            # Set
+            existential_var = Set(sp.Set(existential_var_name))
+            existential_var._is_arbitrary = False
+        inner_proposition = inner_proposition.replace(
+            expression_to_replace, existential_var
+        )
+        quantified_arg = ("arg0", existential_var)
         super().__init__(
             "exists",
             inner_proposition,
@@ -500,6 +547,10 @@ class Exists(_Quantified):
             show_arg_position_names,
             _is_proven,
         )
+        self.existential_var = existential_var
+
+    def __iter__(self):
+        return iter((self.existential_var, self.inner_proposition))
 
     def copy(self):
         return super().copy(self)
@@ -755,6 +806,8 @@ class GreaterThan(Relation, _Ordering):
         _is_proven: bool = False,
     ) -> None:
         name = "GreaterThan"
+        if (left - right).is_positive is False and (is_assumption or _is_proven):
+            raise ValueError(f"Some assumptions in {left}, {right} are contradictory")
         super().__init__(
             name,
             completed_args={"left": left, "right": right},
@@ -861,6 +914,8 @@ class LessThan(Relation, _Ordering):
         _is_proven: bool = False,
     ) -> None:
         name = "LessThan"
+        if (right - left).is_positive is False and (is_assumption or _is_proven):
+            raise ValueError(f"Some assumptions in {left}, {right} are contradictory")
         super().__init__(
             name,
             completed_args={"left": left, "right": right},
@@ -972,21 +1027,22 @@ class LessThan(Relation, _Ordering):
 
 if __name__ == "__main__":
     p = Proposition
-    Px = p("P", completed_args={"arg1": sp.Symbol("x")})
-    Py = p("P", completed_args={"arg1": sp.Symbol("y")})
+    Px = p("P", completed_args={"arg1": ps.Symbol("x")})
+    Py = p("P", completed_args={"arg1": ps.Symbol("y")})
     Q = p("Q")
     R = p("R")
     S = p("S")
     T = p("T")
-    forallXPx = Forall(Px, quantified_arg=("arg1", sp.Symbol("x")), is_assumption=True)
+    forallXPx = Forall(Px, quantified_arg=("arg1", ps.Symbol("x")), is_assumption=True)
 
     # print(Py, forallXPx)
     py = Py.is_special_case_of(forallXPx)
     # print(py.is_proven)
 
-    x = sp.Symbol("x", real=True)
-    eps = sp.Symbol("eps", real=True)
-    delta = sp.Symbol("delta", real=True)
+    x = ps.Symbol("x", real=True)
+    eps = ps.Symbol("eps", real=True)
+    f = sp.Function("f")
+    z = sp.MatrixSymbol("z", 2, 1)
     eps_positive = GreaterThan(eps, 0, is_assumption=True)
     absolute_x_positive = GreaterThan.is_absolute(sp.Abs(x))
     root_eps_positive = GreaterThan.is_rational_power(sp.sqrt(eps), eps_positive)
@@ -998,13 +1054,12 @@ if __name__ == "__main__":
         sp.sqrt(eps), root_eps_positive
     )
     xsq_lt_eps = xsq_lt_eps_t_absx.transitive(eps_t_absx_lt_eps)
-    print(xsq_lt_eps, xsq_lt_eps.is_proven)
-
     print(
-        (xsq_lt_eps)
-        .follows_from(absx_lt_sqrt_eps)
-        .thus_there_exists(delta, sp.sqrt(eps))
+        (root_eps_positive.p_and((xsq_lt_eps).follows_from(absx_lt_sqrt_eps)))
+        .thus_there_exists("delta", sp.sqrt(eps))
         .follows_from(eps_positive)
+        .thus_forall(eps)
+        .thus_forall(x)
     )
 
     # TODO
