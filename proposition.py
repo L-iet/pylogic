@@ -253,11 +253,13 @@ class Proposition(_Statement):
         new_p._is_proven = True
         return new_p
 
-    def follows_from(self, *assumptions: "Proposition") -> "Implies":
+    def followed_from(self, *assumptions: "Proposition") -> "Implies":
         """
         Logical tactic.
+        Given self is proven, return a new proposition that is an implication of the form
+        assumptions -> self.
         *assumptions: Proposition
-            Propositions that imply this proposition.
+            Propositions that implied this proposition.
         This function only accepts propositions that were explicitly declared as assumptions.
         """
         assert self.is_proven, f"{self} is not proven"
@@ -450,10 +452,6 @@ class _Quantified(Proposition):
         _is_proven: bool = False,
     ) -> None:
         assert quantified_arg is not None, f"{self} must have a quantified arg"
-        # assert (
-        #     quantified_arg[0] in inner_proposition.completed_args
-        #     and inner_proposition.completed_args[quantified_arg[0]] == quantified_arg[1]
-        # ), f"The quantified argument {quantified_arg} is not in {inner_proposition.completed_args}"
         super().__init__(
             f"{_q} {quantified_arg[1]}: {inner_proposition.name}",
             is_assumption,
@@ -1033,7 +1031,7 @@ if __name__ == "__main__":
     R = p("R")
     S = p("S")
     T = p("T")
-    forallXPx = Forall(Px, quantified_arg=("arg1", ps.Symbol("x")), is_assumption=True)
+    forallXPx = Forall(Px, quantified_arg=ps.Symbol("x"), is_assumption=True)
 
     # print(Py, forallXPx)
     py = Py.is_special_case_of(forallXPx)
@@ -1041,8 +1039,6 @@ if __name__ == "__main__":
 
     x = ps.Symbol("x", real=True)
     eps = ps.Symbol("eps", real=True)
-    f = sp.Function("f")
-    z = sp.MatrixSymbol("z", 2, 1)
     eps_positive = GreaterThan(eps, 0, is_assumption=True)
     absolute_x_positive = GreaterThan.is_absolute(sp.Abs(x))
     root_eps_positive = GreaterThan.is_rational_power(sp.sqrt(eps), eps_positive)
@@ -1054,10 +1050,10 @@ if __name__ == "__main__":
         sp.sqrt(eps), root_eps_positive
     )
     xsq_lt_eps = xsq_lt_eps_t_absx.transitive(eps_t_absx_lt_eps)
-    print(
-        (root_eps_positive.p_and((xsq_lt_eps).follows_from(absx_lt_sqrt_eps)))
+    x_squared_is_continuous = (
+        (root_eps_positive.p_and((xsq_lt_eps).followed_from(absx_lt_sqrt_eps)))
         .thus_there_exists("delta", sp.sqrt(eps))
-        .follows_from(eps_positive)
+        .followed_from(eps_positive)
         .thus_forall(eps)
         .thus_forall(x)
     )
@@ -1065,7 +1061,5 @@ if __name__ == "__main__":
     # TODO
     # Option 1: Implement a way to determine what equations need to hold for two propositions
     # to be equivalent
-    # Option 2: Implement a way to replace an expression with another expression in a
-    # complex proposition using sympy
-    # Figure out representing specific variables
-    print()
+
+    print(x_squared_is_continuous, x_squared_is_continuous.is_proven)
