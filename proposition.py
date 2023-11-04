@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Self, Protocol
 from sympy import (
     Interval,
     Set as SympySet,
@@ -9,10 +9,14 @@ from sympy import (
     symbols,
 )
 import sympy as sp
+from sympy.printing.latex import LatexPrinter
 import copy
 import p_symbol as ps
+from helpers import replace
 
 SympyExpression = sp.Basic | int | float
+
+latex_printer = LatexPrinter()
 
 ####################################################
 
@@ -34,7 +38,10 @@ class Set:
         self.sympy_set = sympy_set
 
     def __eq__(self, other: "ArgValueTypes") -> bool:
-        return self.name == str(other)
+        return self.sympy_set == other.sympy_set
+
+    def dummy_eq(self, other: "Set") -> bool:
+        return self.sympy_set == other.sympy_set
 
     def contains(
         self, other: "SympyExpression | Set", is_assumption: bool = False
@@ -47,25 +54,14 @@ class Set:
     def __copy__(self) -> "Set":
         return self.copy()
 
+    def _latex(self, printer=latex_printer) -> str:
+        return self.name
+
+    def _repr_latex_(self) -> str:
+        return f"$${self._latex()}$$"
+
     def copy(self) -> "Set":
         return Set(self.sympy_set, self.name)
-
-
-class Arbitrary:
-    def __init__(self, instance: SympyExpression | Set):
-        self.instance = instance
-
-    def __eq__(self, other) -> bool:
-        return False
-
-
-class Specific:
-    def __init__(self, instance: SympyExpression | Set, prop: "Proposition"):
-        self.instance = instance
-        self.proposition = prop
-
-    def __eq__(self, other: "Specific") -> bool:
-        return self.instance == other.instance and self.proposition == other.proposition
 
 
 #####################################################
@@ -145,6 +141,20 @@ class Proposition(_Statement):
     def __copy__(self) -> "Proposition":
         return self.copy()
 
+    def _latex(self, printer=latex_printer) -> str:
+        s = ""
+        for arg_id in self.completed_args_order:
+            printed_arg = printer._print(self.completed_args[arg_id])
+            s += (
+                f"{arg_id}={printed_arg} "
+                if self.show_arg_position_names
+                else f"{printed_arg} "
+            )
+        return rf"\text{{{self.name}}} {s}"
+
+    def _repr_latex_(self) -> str:
+        return f"$${self._latex()}$$"
+
     @property
     def is_proven(self) -> bool:
         return self._is_proven or self.is_assumption
@@ -167,6 +177,36 @@ class Proposition(_Statement):
         new_p._is_proven = False
         return new_p
 
+    def substitute(self, side: str, equality: "Equals") -> Self:
+        """
+        Parameters
+        ----------
+        side: str
+            "left" or "right"
+        equality: Equals
+            An equality proposition. We look for the other side of the equality
+            in self and replace it with the 'side'.
+        """
+        return equality.substitute_into(side, self)
+
+    def p_substitute(self, side: str, equality: "Equals") -> Self:
+        """
+        Logical tactic.
+        Parameters
+        ----------
+        side: str
+            "left" or "right"
+        equality: Equals
+            An equality proposition. We look for the other side of the equality
+            in self and replace it with the 'side'.
+        Returns a proven proposition.
+        """
+        assert self.is_proven, f"{self} is not proven"
+        assert equality.is_proven, f"{equality} is not proven"
+        new_p = self.substitute(side, equality)
+        new_p._is_proven = True
+        return new_p
+
     def implies(
         self,
         other: "Proposition",
@@ -181,6 +221,13 @@ class Proposition(_Statement):
     ) -> "And":
         return And(self, *others, is_assumption=is_assumption)
 
+    def and_reverse(
+        self,
+        *others: "Proposition",
+        is_assumption: bool = False,
+    ) -> "And":
+        return And(*others, self, is_assumption=is_assumption)
+
     def p_and(self, *others: "Proposition") -> "And":
         """Logical tactic.
         Same as and_, but returns a proven proposition when self and all others are proven.
@@ -190,6 +237,18 @@ class Proposition(_Statement):
         for o in others:
             assert o.is_proven, f"{o} is not proven"
         new_p = self.and_(*others)
+        new_p._is_proven = True
+        return new_p
+
+    def p_and_reverse(self, *others: "Proposition") -> "And":
+        """Logical tactic.
+        Same as and_reverse, but returns a proven proposition when self and all others are proven.
+        """
+        assert len(others) > 0, "Must provide at least one proposition"
+        assert self.is_proven, f"{self} is not proven"
+        for o in others:
+            assert o.is_proven, f"{o} is not proven"
+        new_p = self.and_reverse(*others)
         new_p._is_proven = True
         return new_p
 
@@ -306,7 +365,6 @@ class Proposition(_Statement):
         Given self is proven, return a new proposition that for all variables, self is true.
         """
         assert self.is_proven, f"{self} is not proven"
-        assert quantified_arg.is_arbitrary, f"{quantified_arg} is not arbitrary"
         new_p = Forall(
             inner_proposition=self,
             quantified_arg=quantified_arg,
@@ -318,7 +376,7 @@ class Proposition(_Statement):
 class Not(Proposition):
     def __init__(self, negated: Proposition, is_assumption: bool = False) -> None:
         self.negated = negated
-        name = rf"~[{negated.name}]"
+        name = rf"~{negated.name}"
         super().__init__(name, is_assumption)
 
     def copy(self) -> "Not":
@@ -349,6 +407,9 @@ class Implies(Proposition):
 
     def __repr__(self) -> str:
         return f"[{self.antecedent} -> {self.consequent}]"
+
+    def _latex(self, printer=latex_printer) -> str:
+        return rf"\left({self.antecedent._latex()} \rightarrow {self.consequent._latex()}\right)"
 
     def copy(self) -> "Implies":
         return Implies(
@@ -411,6 +472,10 @@ class And(Proposition):
         s = r" /\ ".join([p.__repr__() for p in self.propositions])
         return f"({s})"
 
+    def _latex(self, printer=latex_printer) -> str:
+        s = r"\wedge ".join([p._latex() for p in self.propositions])
+        return rf"\left({s}\right)"
+
 
 class Or(Proposition):
     def __init__(
@@ -439,6 +504,10 @@ class Or(Proposition):
     def __repr__(self) -> str:
         s = r" \/ ".join([p.__repr__() for p in self.propositions])
         return f"({s})"
+
+    def _latex(self, printer=latex_printer) -> str:
+        s = r"\vee ".join([p._latex() for p in self.propositions])
+        return rf"\left({s}\right)"
 
 
 class _Quantified(Proposition):
@@ -485,6 +554,11 @@ class _Quantified(Proposition):
         new_p._is_proven = False
         return new_p
 
+    def _latex(self, printer=latex_printer) -> str:
+        q_arg = self.quantified_arg[1]
+        arg_latex = q_arg._latex() if hasattr(q_arg, "_latex") else sp.latex(q_arg)
+        return rf"\{self._q} {arg_latex}: {self.inner_proposition._latex()}"
+
 
 class Forall(_Quantified):
     def __init__(
@@ -496,6 +570,7 @@ class Forall(_Quantified):
         _is_proven: bool = False,
     ) -> None:
         q_arg = ("arg0", quantified_arg)
+        assert quantified_arg.is_arbitrary, f"{quantified_arg} is not arbitrary"
         super().__init__(
             "forall",
             inner_proposition,
@@ -508,6 +583,39 @@ class Forall(_Quantified):
 
     def copy(self):
         return super().copy(self)
+
+    def hence_matrices_are_equal(self) -> "Equals":
+        """
+        Logical tactic.
+        If self is a proven proposition of the form
+        forall i: forall j: forall k:...: A[i, j, k...] = B[i, j, k...],
+        returns a proven proposition of the form A = B.
+        Note that the indices must appear in the same order in the foralls.
+        """
+        assert self.is_proven, f"{self} is not proven"
+        indices = []
+        prop = self
+        while isinstance(prop, Forall):
+            assert (
+                prop.quantified_arg_value.is_integer
+            ), f"{prop.quantified_arg} is not an integer"
+            # maybe also check for is nonnegative
+            indices.append(prop.quantified_arg_value)
+            prop = prop.inner_proposition
+        assert isinstance(prop, Equals), f"{prop} is not an equality"
+        MatEl = sp.matrices.expressions.matexpr.MatrixElement
+        assert isinstance(prop.left, MatEl) and isinstance(
+            prop.right, MatEl
+        ), f"The inner equality {prop} is not between matrix elements"
+        left_mat, *left_indices = prop.left.args
+        right_mat, *right_indices = prop.right.args
+        for i, index in enumerate(indices):
+            assert (
+                index == left_indices[i] == right_indices[i]
+            ), f"Indices mismatch: {index}, {left_indices[i]}, {right_indices[i]}"
+        new_p = Equals(left_mat, right_mat)
+        new_p._is_proven = True
+        return new_p
 
 
 class Exists(_Quantified):
@@ -577,6 +685,11 @@ class Contains(Proposition):
     def __repr__(self) -> str:
         return f"{self.element} in {self.set_}"
 
+    def _latex(self, printer=latex_printer) -> str:
+        el = self.element
+        el_latex = el._latex() if hasattr(el, "_latex") else sp.latex(el)
+        return rf"{el_latex} \in {self.set_._latex()}"
+
     def copy(self) -> "Contains":
         return Contains(
             self.set_.copy(),
@@ -621,6 +734,9 @@ class Relation(Proposition):
     def __repr__(self) -> str:
         return super().__repr__()
 
+    def _latex(self, printer=latex_printer) -> str:
+        return super()._latex()
+
     def copy(self) -> "Relation":
         return Relation(
             self.name,
@@ -633,8 +749,7 @@ class Relation(Proposition):
     def replace(self, current_val: ArgValueTypes, new_val: ArgValueTypes) -> "Relation":
         new_p = self.copy()
         new_p.completed_args = {
-            k: new_val if v == current_val else v
-            for k, v in new_p.completed_args.items()
+            k: replace(current_val, new_val, v) for k, v in new_p.completed_args.items()
         }
         return Relation(
             new_p.name,
@@ -645,7 +760,11 @@ class Relation(Proposition):
         )
 
 
-class Equals(Relation):
+class BinaryRelation(Relation):
+    is_transitive: bool = False
+    name: str = "BR"
+    infix_symbol: str = "BR"
+
     def __init__(
         self,
         left: ArgValueTypes,
@@ -653,9 +772,8 @@ class Equals(Relation):
         is_assumption: bool = False,
         _is_proven: bool = False,
     ) -> None:
-        name = "Equals"
         super().__init__(
-            name,
+            self.name,
             completed_args={"left": left, "right": right},
             is_assumption=is_assumption,
             show_arg_position_names=False,
@@ -665,40 +783,122 @@ class Equals(Relation):
         self.right: ArgValueTypes = right
 
     def __repr__(self) -> str:
-        return f"{self.completed_args['left']} = {self.completed_args['right']}"
+        return f"{self.left} {self.infix_symbol} {self.right}"
 
-    def copy(self) -> "Equals":
-        return Equals(
+    def _latex(self, printer=latex_printer) -> str:
+        left_ = self.left
+        left_latex = left_._latex() if hasattr(left_, "_latex") else sp.latex(left_)
+        right_ = self.right
+        right_latex = right_._latex() if hasattr(right_, "_latex") else sp.latex(right_)
+        return f"{left_latex} {self.infix_symbol} {right_latex}"
+
+    def copy(self) -> Self:
+        return self.__class__(
             copy.copy(self.left),
             copy.copy(self.right),
             is_assumption=self.is_assumption,
             _is_proven=self.is_proven,
         )
 
-    def replace(self, current_val: ArgValueTypes, new_val: ArgValueTypes) -> "Equals":
+    def replace(self, current_val: ArgValueTypes, new_val: ArgValueTypes) -> Self:
         new_p = self.copy()
-        if new_p.left == current_val:
+        if isinstance(new_p.left, sp.Basic):
+            new_p.left = new_p.left.subs(current_val, new_val)
+        elif new_p.left == current_val:
             new_p.left = new_val
-        if new_p.right == current_val:
+        if isinstance(new_p.right, sp.Basic):
+            new_p.right = new_p.right.subs(current_val, new_val)
+        elif new_p.right == current_val:
             new_p.right = new_val
-        return Equals(
+        return self.__class__(
             new_p.left,
             new_p.right,
             is_assumption=self.is_assumption,
             _is_proven=False,
         )
 
+    def transitive(self, other: Self) -> Self:
+        """Logical Tactic. If self is of the form a Relation b and other is of the form b Relation c,
+        returns a proven relation of the form a Relation c.
+        """
+        assert self.__class__.is_transitive, f"{self.__class__} is not transitive"
+        assert self.is_proven, f"{self} is not proven"
+        assert other.is_proven, f"{other} is not proven"
+        assert isinstance(other, self.__class__), f"{other} is not a {self.__class__}"
+        assert (
+            self.right == other.left
+        ), f"{self} and {other} do not fulfill transitivity"
+        new_p = self.__class__(self.left, other.right)
+        new_p._is_proven = True
+        return new_p
+
+
+class Equals(BinaryRelation):
+    is_transitive = True
+    name = "Equals"
+    infix_symbol = "="
+
+    def __init__(
+        self,
+        left: ArgValueTypes,
+        right: ArgValueTypes,
+        is_assumption: bool = False,
+        _is_proven: bool = False,
+    ) -> None:
+        super().__init__(
+            left,
+            right,
+            is_assumption=is_assumption,
+            _is_proven=_is_proven,
+        )
+        self.left: ArgValueTypes = left
+        self.right: ArgValueTypes = right
+        self.left_doit = (
+            self.left.doit() if isinstance(self.left, sp.Basic) else self.left
+        )
+        self.right_doit = (
+            self.right.doit() if isinstance(self.right, sp.Basic) else self.right
+        )
+        self.doit_args = {"left": self.left_doit, "right": self.right_doit}
+
+    def _check_provable_by_simplification(self, _checking_side: str) -> bool:
+        """
+        To check if we can use sympy methods to simplify and prove this equality.
+        Parameters
+        ----------
+        _checking_side: str
+            "left" or "right"
+        tried_doit: bool
+            Whether we have tried using doit() on the arguments.
+        """
+        other_side = "right" if _checking_side == "left" else "left"
+        proven = False
+        if self.left == self.right:
+            proven = True
+        elif isinstance(self.completed_args[_checking_side], sp.Basic):
+            try:
+                if self.completed_args[_checking_side].equals(
+                    self.completed_args[other_side]
+                ):
+                    proven = True
+            except ValueError:
+                if self.doit_args[_checking_side] == self.doit_args[other_side]:
+                    proven = True
+
+        if not proven and not (
+            isinstance(self.completed_args[_checking_side], int)
+            or isinstance(self.completed_args[_checking_side], float)
+        ):
+            if self.doit_args[_checking_side].dummy_eq(self.doit_args[other_side]):
+                proven = True
+        return proven
+
     def by_simplification(self):
         """Logical tactic."""
-        proven = False
-        if self.completed_args["left"] == self.completed_args["right"]:
-            proven = True
-        elif isinstance(self.completed_args["left"], sp.Basic):
-            if self.completed_args["left"].equals(self.completed_args["right"]):
-                proven = True
-        elif isinstance(self.completed_args["right"], sp.Basic):
-            if self.completed_args["right"].equals(self.completed_args["left"]):
-                proven = True
+
+        proven = self._check_provable_by_simplification("left")
+        if not proven:
+            proven = self._check_provable_by_simplification("right")
         if proven:
             new_p = self.copy()
             new_p._is_proven = True
@@ -706,8 +906,45 @@ class Equals(Relation):
         else:
             raise ValueError(f"{self} cannot be proven by simplification")
 
+    def substitute_into(self, side: str, other_prop: Proposition) -> Proposition:
+        """
+        If side == "left", will look for self.right in other_prop and replace it with self.left.
+        Parameters
+        ----------
+        side: str
+            "left" or "right"
+        other_prop: Proposition
+            Proposition to search for the other side in.
+        """
+        if side not in ["left", "right"]:
+            raise ValueError(f"Invalid side: {side}")
+        other_side = "right" if side == "left" else "left"
+        new_prop = other_prop.replace(
+            self.completed_args[other_side], self.completed_args[side]
+        )
+        new_prop._is_proven = False
+        return new_prop
 
-class _Ordering:
+    def p_substitute_into(self, side: str, other_prop: Proposition) -> Proposition:
+        """
+        Logical tactic.
+        If side == "left", will look for self.right in other_prop and replace it with self.left.
+        Returns a proven proposition.
+        Parameters
+        ----------
+        side: str
+            "left" or "right"
+        other_prop: Proposition
+            Proposition to search for the other side in.
+        """
+        assert self.is_proven, f"{self} is not proven"
+        assert other_prop.is_proven, f"{other_prop} is not proven"
+        new_prop = self.substitute_into(side, other_prop)
+        new_prop._is_proven = True
+        return new_prop
+
+
+class _Ordering(Protocol):
     @classmethod
     def _multiply_by(
         cls,
@@ -715,7 +952,7 @@ class _Ordering:
         x: SympyExpression,
         p: "GreaterThan | LessThan",
         _sign: str = "positive",
-    ) -> "GreaterThan | LessThan":
+    ) -> Self:
         assert p.is_proven, f"{p} is not proven"
         if (_sign == "positive" and isinstance(p, LessThan)) or (
             _sign == "negative" and isinstance(p, GreaterThan)
@@ -751,7 +988,11 @@ class _Ordering:
             )
 
 
-class GreaterThan(Relation, _Ordering):
+class GreaterThan(BinaryRelation, _Ordering):
+    is_transitive = True
+    name = "GreaterThan"
+    infix_symbol = ">"
+
     @staticmethod
     def is_absolute(expr: SympyExpression) -> "GreaterThan":
         """Logical tactic.
@@ -803,14 +1044,12 @@ class GreaterThan(Relation, _Ordering):
         is_assumption: bool = False,
         _is_proven: bool = False,
     ) -> None:
-        name = "GreaterThan"
         if (left - right).is_positive is False and (is_assumption or _is_proven):
             raise ValueError(f"Some assumptions in {left}, {right} are contradictory")
         super().__init__(
-            name,
-            completed_args={"left": left, "right": right},
+            left,
+            right,
             is_assumption=is_assumption,
-            show_arg_position_names=False,
             _is_proven=_is_proven,
         )
         self.left: SympyExpression = left
@@ -825,21 +1064,6 @@ class GreaterThan(Relation, _Ordering):
             self.right,
             self.is_assumption,
             _is_proven=self.is_proven,
-        )
-
-    def replace(
-        self, current_val: SympyExpression, new_val: SympyExpression
-    ) -> "GreaterThan":
-        new_p = self.copy()
-        if new_p.left == current_val:
-            new_p.left = new_val
-        if new_p.right == current_val:
-            new_p.right = new_val
-        return GreaterThan(
-            new_p.left,
-            new_p.right,
-            is_assumption=self.is_assumption,
-            _is_proven=False,
         )
 
     def to_positive_inequality(self):
@@ -903,7 +1127,11 @@ class GreaterThan(Relation, _Ordering):
         return super()._mul(self, other)
 
 
-class LessThan(Relation, _Ordering):
+class LessThan(BinaryRelation, _Ordering):
+    is_transitive = True
+    name = "LessThan"
+    infix_symbol = "<"
+
     def __init__(
         self,
         left: SympyExpression,
@@ -915,39 +1143,10 @@ class LessThan(Relation, _Ordering):
         if (right - left).is_positive is False and (is_assumption or _is_proven):
             raise ValueError(f"Some assumptions in {left}, {right} are contradictory")
         super().__init__(
-            name,
-            completed_args={"left": left, "right": right},
+            left,
+            right,
             is_assumption=is_assumption,
-            show_arg_position_names=False,
             _is_proven=_is_proven,
-        )
-        self.left: SympyExpression = left
-        self.right: SympyExpression = right
-
-    def __repr__(self) -> str:
-        return f"{self.completed_args['left']} < {self.completed_args['right']}"
-
-    def copy(self) -> "LessThan":
-        return LessThan(
-            self.left,
-            self.right,
-            self.is_assumption,
-            _is_proven=self.is_proven,
-        )
-
-    def replace(
-        self, current_val: SympyExpression, new_val: SympyExpression
-    ) -> "LessThan":
-        new_p = self.copy()
-        if new_p.left == current_val:
-            new_p.left = new_val
-        if new_p.right == current_val:
-            new_p.right = new_val
-        return LessThan(
-            new_p.left,
-            new_p.right,
-            is_assumption=self.is_assumption,
-            _is_proven=False,
         )
 
     def to_positive_inequality(self):
@@ -1002,20 +1201,6 @@ class LessThan(Relation, _Ordering):
         new_p._is_proven = True
         return new_p
 
-    def transitive(self, other: "LessThan") -> "LessThan":
-        """Logical Tactic. If self is of the form a < b and other is of the form b < c,
-        returns a proven inequality of the form a < c.
-        """
-        assert self.is_proven, f"{self} is not proven"
-        assert other.is_proven, f"{other} is not proven"
-        assert isinstance(other, LessThan), f"{other} is not a LessThan"
-        assert (
-            self.right == other.left
-        ), f"{self} and {other} do not fulfill transitivity"
-        new_p = LessThan(self.left, other.right)
-        new_p._is_proven = True
-        return new_p
-
     def __mul__(self, other: SympyExpression) -> "LessThan":
         return super()._mul(self, other)
 
@@ -1038,6 +1223,7 @@ if __name__ == "__main__":
     # print(py.is_proven)
 
     x = ps.Symbol("x", real=True)
+    print(x.is_integer)
     eps = ps.Symbol("eps", real=True)
     eps_positive = GreaterThan(eps, 0, is_assumption=True)
     absolute_x_positive = GreaterThan.is_absolute(sp.Abs(x))
@@ -1051,7 +1237,8 @@ if __name__ == "__main__":
     )
     xsq_lt_eps = xsq_lt_eps_t_absx.transitive(eps_t_absx_lt_eps)
     x_squared_is_continuous = (
-        (root_eps_positive.p_and((xsq_lt_eps).followed_from(absx_lt_sqrt_eps)))
+        xsq_lt_eps.followed_from(absx_lt_sqrt_eps)
+        .p_and_reverse(root_eps_positive)
         .thus_there_exists("delta", sp.sqrt(eps))
         .followed_from(eps_positive)
         .thus_forall(eps)
