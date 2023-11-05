@@ -169,11 +169,43 @@ class Proposition(_Statement):
             _is_proven=self.is_proven,
         )
 
-    def replace(self, current_val: ArgValueTypes, new_val: ArgValueTypes) -> Self:
+    def replace(
+        self,
+        current_val: ArgValueTypes,
+        new_val: ArgValueTypes,
+        positions: list[list[int]] | None = None,
+    ) -> Self:
+        r"""
+        Parameters
+        ----------
+        positions: list[list[int]]
+            This is a list containing the positions of the expression_to_replace in self.
+            If None, we will replace for all occurences of the expression_to_replace in self.
+            This is a nested list representing the path we need to go down in the proposition tree,
+            For example, if self is
+            (forall x: (p1 x -> p2 x) /\ (p3 x) /\ (p4 x)) -> (p5 x)
+            current_val = x
+            new_val = p
+            and positions = [[0, 0, 0], [0, 2], [1]]
+            we end up with
+            exists q: (forall x: (p1 q -> p2 x) /\ (p3 x) /\ (p4 q)) -> (p5 q)
+            The quantified variable in a forall is never replaced itself. Due to this,
+            the positions array for forall goes directly into the inner proposition.
+            Same for exists.
+            In the example above, the first list [0,0,0] refers to the x in p1 x, not (p1 x -> p2 x).
+        """
         new_p = self.copy()
-        for arg_id in new_p.completed_args:
+        index = -1
+        for arg_id in new_p.completed_args_order:
+            index += 1
+            if (positions is not None) and not [index] in positions:
+                continue
             if new_p.completed_args[arg_id] == current_val:
                 new_p.completed_args[arg_id] = new_val
+            elif isinstance(new_p.completed_args[arg_id], sp.Basic):
+                new_p.completed_args[arg_id] = new_p.completed_args[arg_id].subs(
+                    current_val, new_val
+                )
         new_p._is_proven = False
         return new_p
 
@@ -333,9 +365,12 @@ class Proposition(_Statement):
         return new_p
 
     def thus_there_exists(
-        self, existential_var: str, expression_to_replace: ArgValueTypes
+        self,
+        existential_var: str,
+        expression_to_replace: ArgValueTypes,
+        positions: list[list[int]] | None = None,
     ) -> "Exists":
-        """
+        r"""
         Logical tactic.
         Given self is proven, return a new proposition that there exists an existential_var such that
         self is true, when self is expressed in terms of that existential_var.
@@ -348,13 +383,24 @@ class Proposition(_Statement):
             A new variable that is introduced into our new existential proposition.
         expression_to_replace: ArgValueTypes
             An expression that is replaced by the new variable.
+        positions: list[list[int]]
+            This is a list containing the positions of the expression_to_replace in self.
+            If None, we will search for all occurences of the expression_to_replace in self.
+            This is a nested list representing the path we need to go down in the proposition tree,
+            For example, if self is
+            (forall x: (p1 x -> p2 x) /\ (p3 x) /\ (p4 x)) -> (p5 x)
+            existential_var = q
+            and positions = [[0, 0, 0], [0, 2], [1]]
+            we end up with
+            exists q: (forall x: (p1 q -> p2 x) /\ (p3 x) /\ (p4 q)) -> (p5 q)
         """
         assert self.is_proven, f"{self} is not proven"
 
         new_p = Exists(
             existential_var_name=existential_var,
-            inner_proposition=self,
             expression_to_replace=expression_to_replace,
+            inner_proposition=self,
+            positions=positions,
             _is_proven=True,
         )
         return new_p
@@ -366,8 +412,8 @@ class Proposition(_Statement):
         """
         assert self.is_proven, f"{self} is not proven"
         new_p = Forall(
-            inner_proposition=self,
             quantified_arg=quantified_arg,
+            inner_proposition=self,
             _is_proven=True,
         )
         return new_p
@@ -419,10 +465,27 @@ class Implies(Proposition):
             _is_proven=self.is_proven,
         )
 
-    def replace(self, current_val: ArgValueTypes, new_val: ArgValueTypes) -> "Implies":
+    def replace(
+        self,
+        current_val: ArgValueTypes,
+        new_val: ArgValueTypes,
+        positions: list[list[int]] | None = None,
+    ) -> "Implies":
+        if positions is not None:
+            ante_positions = [p[1:] for p in positions if p[0] == 0]
+            cons_positions = [p[1:] for p in positions if p[0] == 1]
+            ante_positions = None if [] in ante_positions else ante_positions
+            cons_positions = None if [] in cons_positions else cons_positions
+        else:
+            ante_positions = None
+            cons_positions = None
         new_p = self.copy()
-        new_p.antecedent = new_p.antecedent.replace(current_val, new_val)
-        new_p.consequent = new_p.consequent.replace(current_val, new_val)
+        new_p.antecedent = new_p.antecedent.replace(
+            current_val, new_val, ante_positions
+        )
+        new_p.consequent = new_p.consequent.replace(
+            current_val, new_val, cons_positions
+        )
         new_p._is_proven = False
         return new_p
 
@@ -460,10 +523,27 @@ class And(Proposition):
             _is_proven=self.is_proven,
         )
 
-    def replace(self, current_val: ArgValueTypes, new_val: ArgValueTypes) -> "And":
+    def replace(
+        self,
+        current_val: ArgValueTypes,
+        new_val: ArgValueTypes,
+        positions: list[list[int]] | None = None,
+    ) -> "And":
+        if positions is not None:
+            prop_positions_lists = [
+                [p[1:] for p in positions if p[0] == i]
+                for i in range(len(self.propositions))
+            ]
+            prop_positions_lists = list(
+                map(lambda x: None if [] in x else x, prop_positions_lists)
+            )
+        else:
+            prop_positions_lists = [None] * len(self.propositions)
+        print(prop_positions_lists)
         new_p = self.copy()
         new_p.propositions = [
-            p.replace(current_val, new_val) for p in new_p.propositions
+            p.replace(current_val, new_val, prop_positions)
+            for p, prop_positions in zip(new_p.propositions, prop_positions_lists)
         ]
         new_p._is_proven = False
         return new_p
@@ -493,10 +573,26 @@ class Or(Proposition):
             *[p.copy() for p in self.propositions], is_assumption=self.is_assumption
         )
 
-    def replace(self, current_val: ArgValueTypes, new_val: ArgValueTypes) -> "Or":
+    def replace(
+        self,
+        current_val: ArgValueTypes,
+        new_val: ArgValueTypes,
+        positions: list[list[int]] | None = None,
+    ) -> "Or":
+        if positions is not None:
+            prop_positions_lists = [
+                [p[1:] for p in positions if p[0] == i]
+                for i in range(len(self.propositions))
+            ]
+            prop_positions_lists = list(
+                map(lambda x: None if [] in x else x, prop_positions_lists)
+            )
+        else:
+            prop_positions_lists = [None] * len(self.propositions)
         new_p = self.copy()
         new_p.propositions = [
-            p.replace(current_val, new_val) for p in new_p.propositions
+            p.replace(current_val, new_val, prop_positions)
+            for p, prop_positions in zip(new_p.propositions, prop_positions_lists)
         ]
         new_p._is_proven = False
         return new_p
@@ -546,9 +642,16 @@ class _Quantified(Proposition):
             instance.is_proven,
         )
 
-    def replace(self, current_val: ArgValueTypes, new_val: ArgValueTypes) -> Self:
+    def replace(
+        self,
+        current_val: ArgValueTypes,
+        new_val: ArgValueTypes,
+        positions: list[list[int]] | None = None,
+    ) -> Self:
         new_p = self.copy()
-        new_p.inner_proposition = new_p.inner_proposition.replace(current_val, new_val)
+        new_p.inner_proposition = new_p.inner_proposition.replace(
+            current_val, new_val, positions
+        )
         if new_p.quantified_arg[1] == current_val:
             new_p.quantified_arg = (new_p.quantified_arg[0], new_val)
         new_p._is_proven = False
@@ -563,8 +666,8 @@ class _Quantified(Proposition):
 class Forall(_Quantified):
     def __init__(
         self,
-        inner_proposition: Proposition,
         quantified_arg: Set | SympyExpression,
+        inner_proposition: Proposition,
         is_assumption: bool = False,
         show_arg_position_names: bool = False,
         _is_proven: bool = False,
@@ -621,14 +724,27 @@ class Forall(_Quantified):
 class Exists(_Quantified):
     def __init__(
         self,
-        inner_proposition: Proposition,
         existential_var_name: str,
         expression_to_replace: ArgValueTypes,
+        inner_proposition: Proposition,
+        positions: list[list[int]] | None = None,
         existential_var_type: type[Set] | type[sp.Basic] = ps.Symbol,
         is_assumption: bool = False,
         show_arg_position_names: bool = False,
         _is_proven: bool = False,
     ) -> None:
+        """
+        positions: list[list[int]]
+            This is a list containing the positions of the expression_to_replace in self.
+            If None, we will search for all occurences of the expression_to_replace in self.
+            This is a nested list representing the path we need to go down in the proposition tree,
+            For example, if self is
+            (forall x: (p1 x -> p2 x) /\ (p3 x) /\ (p4 x)) -> (p5 x)
+            existential_var = q
+            and positions = [[0, 0, 0], [0, 2], [1]]
+            we end up with
+            exists q: (forall x: (p1 q -> p2 x) /\ (p3 x) /\ (p4 q)) -> (p5 q)
+        """
         if existential_var_type in [ps.Symbol, ps.Function, ps.MatrixSymbol]:
             is_real = (
                 isinstance(expression_to_replace, int)
@@ -642,7 +758,7 @@ class Exists(_Quantified):
             existential_var = Set(sp.Set(existential_var_name))
             existential_var._is_arbitrary = False
         inner_proposition = inner_proposition.replace(
-            expression_to_replace, existential_var
+            expression_to_replace, existential_var, positions=positions
         )
         quantified_arg = ("arg0", existential_var)
         super().__init__(
@@ -660,57 +776,6 @@ class Exists(_Quantified):
 
     def copy(self):
         return super().copy(self)
-
-
-class Contains(Proposition):
-    def __init__(
-        self,
-        set_: Set,
-        element: SympyExpression | Set,
-        is_assumption: bool = False,
-        show_arg_position_names: bool = False,
-        _is_proven: bool = False,
-    ) -> None:
-        self.set_: Set = set_
-        self.element: SympyExpression | Set = element
-        name = rf"Contains"
-        super().__init__(
-            name,
-            is_assumption,
-            completed_args={"set": set_, "element": element},
-            show_arg_position_names=show_arg_position_names,
-            _is_proven=_is_proven,
-        )
-
-    def __repr__(self) -> str:
-        return f"{self.element} in {self.set_}"
-
-    def _latex(self, printer=latex_printer) -> str:
-        el = self.element
-        el_latex = el._latex() if hasattr(el, "_latex") else sp.latex(el)
-        return rf"{el_latex} \in {self.set_._latex()}"
-
-    def copy(self) -> "Contains":
-        return Contains(
-            self.set_.copy(),
-            copy.copy(self.element),
-            is_assumption=self.is_assumption,
-            _is_proven=self.is_proven,
-        )
-
-    def replace(self, current_val: ArgValueTypes, new_val: ArgValueTypes) -> "Contains":
-        new_p = self.copy()
-        if new_p.set_ == current_val:
-            new_p.set_ = new_val
-        if new_p.element == current_val:
-            new_p.element = new_val
-        return Contains(
-            new_p.set_,
-            new_p.element,
-            is_assumption=self.is_assumption,
-            show_arg_position_names=self.show_arg_position_names,
-            _is_proven=False,
-        )
 
 
 class Relation(Proposition):
@@ -746,24 +811,12 @@ class Relation(Proposition):
             _is_proven=self.is_proven,
         )
 
-    def replace(self, current_val: ArgValueTypes, new_val: ArgValueTypes) -> "Relation":
-        new_p = self.copy()
-        new_p.completed_args = {
-            k: replace(current_val, new_val, v) for k, v in new_p.completed_args.items()
-        }
-        return Relation(
-            new_p.name,
-            completed_args=new_p.completed_args,
-            is_assumption=self.is_assumption,
-            show_arg_position_names=self.show_arg_position_names,
-            _is_proven=False,
-        )
-
 
 class BinaryRelation(Relation):
     is_transitive: bool = False
     name: str = "BR"
     infix_symbol: str = "BR"
+    infix_symbol_latex: str = "BR"
 
     def __init__(
         self,
@@ -790,7 +843,7 @@ class BinaryRelation(Relation):
         left_latex = left_._latex() if hasattr(left_, "_latex") else sp.latex(left_)
         right_ = self.right
         right_latex = right_._latex() if hasattr(right_, "_latex") else sp.latex(right_)
-        return f"{left_latex} {self.infix_symbol} {right_latex}"
+        return f"{left_latex} {self.infix_symbol_latex} {right_latex}"
 
     def copy(self) -> Self:
         return self.__class__(
@@ -800,16 +853,24 @@ class BinaryRelation(Relation):
             _is_proven=self.is_proven,
         )
 
-    def replace(self, current_val: ArgValueTypes, new_val: ArgValueTypes) -> Self:
+    def replace(
+        self,
+        current_val: ArgValueTypes,
+        new_val: ArgValueTypes,
+        positions: list[list[int]] | None = None,
+    ) -> Self:
         new_p = self.copy()
-        if isinstance(new_p.left, sp.Basic):
-            new_p.left = new_p.left.subs(current_val, new_val)
-        elif new_p.left == current_val:
-            new_p.left = new_val
-        if isinstance(new_p.right, sp.Basic):
-            new_p.right = new_p.right.subs(current_val, new_val)
-        elif new_p.right == current_val:
-            new_p.right = new_val
+
+        if positions is None or [0] in positions:
+            if isinstance(new_p.left, sp.Basic):
+                new_p.left = new_p.left.subs(current_val, new_val)
+            elif new_p.left == current_val:
+                new_p.left = new_val
+        if positions is None or [1] in positions:
+            if isinstance(new_p.right, sp.Basic):
+                new_p.right = new_p.right.subs(current_val, new_val)
+            elif new_p.right == current_val:
+                new_p.right = new_val
         return self.__class__(
             new_p.left,
             new_p.right,
@@ -837,6 +898,7 @@ class Equals(BinaryRelation):
     is_transitive = True
     name = "Equals"
     infix_symbol = "="
+    infix_symbol_latex = "="
 
     def __init__(
         self,
@@ -944,6 +1006,44 @@ class Equals(BinaryRelation):
         return new_prop
 
 
+class Contains(BinaryRelation):
+    is_transitive = False
+    name = "Contains"
+    infix_symbol = "in"
+    infix_symbol_latex = r"\in"
+
+    def __init__(
+        self,
+        right: Set,
+        left: SympyExpression | Set,
+        is_assumption: bool = False,
+        show_arg_position_names: bool = False,
+        _is_proven: bool = False,
+    ) -> None:
+        self.right: Set = right
+        self.left: SympyExpression | Set = left
+        name = rf"Contains"
+        super().__init__(
+            left, right, is_assumption=is_assumption, _is_proven=_is_proven
+        )
+
+    @property
+    def set_(self) -> Set:
+        return self.right
+
+    @property
+    def element(self) -> SympyExpression | Set:
+        return self.left
+
+    def copy(self) -> "Contains":
+        return Contains(
+            self.set_.copy(),
+            copy.copy(self.element),
+            is_assumption=self.is_assumption,
+            _is_proven=self.is_proven,
+        )
+
+
 class _Ordering(Protocol):
     @classmethod
     def _multiply_by(
@@ -992,6 +1092,7 @@ class GreaterThan(BinaryRelation, _Ordering):
     is_transitive = True
     name = "GreaterThan"
     infix_symbol = ">"
+    infix_symbol_latex = ">"
 
     @staticmethod
     def is_absolute(expr: SympyExpression) -> "GreaterThan":
@@ -1131,6 +1232,7 @@ class LessThan(BinaryRelation, _Ordering):
     is_transitive = True
     name = "LessThan"
     infix_symbol = "<"
+    infix_symbol_latex = "<"
 
     def __init__(
         self,
@@ -1210,19 +1312,19 @@ class LessThan(BinaryRelation, _Ordering):
 
 if __name__ == "__main__":
     p = Proposition
-    Px = p("P", completed_args={"arg1": ps.Symbol("x")})
+    x = ps.Symbol("x", real=True)
+    Px = Proposition("P", completed_args={"arg1": x})
     Py = p("P", completed_args={"arg1": ps.Symbol("y")})
     Q = p("Q")
     R = p("R")
     S = p("S")
     T = p("T")
-    forallXPx = Forall(Px, quantified_arg=ps.Symbol("x"), is_assumption=True)
+    forallXPx = Forall(x, Px, is_assumption=True)
 
     # print(Py, forallXPx)
     py = Py.is_special_case_of(forallXPx)
     # print(py.is_proven)
 
-    x = ps.Symbol("x", real=True)
     print(x.is_integer)
     eps = ps.Symbol("eps", real=True)
     eps_positive = GreaterThan(eps, 0, is_assumption=True)
