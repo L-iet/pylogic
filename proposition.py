@@ -539,7 +539,6 @@ class And(Proposition):
             )
         else:
             prop_positions_lists = [None] * len(self.propositions)
-        print(prop_positions_lists)
         new_p = self.copy()
         new_p.propositions = [
             p.replace(current_val, new_val, prop_positions)
