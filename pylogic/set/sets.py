@@ -1,11 +1,8 @@
+from __future__ import annotations
 from sympy import Set as SympySet
 from sympy.printing.latex import LatexPrinter
 import sympy as sp
-import sys
-
-import pylogic.proposition.proposition as prop
-
-Proposition, Contains = prop.Proposition, prop.Contains  # type: ignore
+from pylogic.proposition.relation.contains import Contains
 
 SympyExpression = sp.Basic | int | float
 
@@ -37,8 +34,9 @@ class Set:
 
     def contains(
         self, other: "SympyExpression | Set", is_assumption: bool = False
-    ) -> "Proposition":
+    ) -> Contains:
         """elementhood"""
+
         return Contains(self, other, is_assumption=is_assumption)
 
     def __repr__(self) -> str:
