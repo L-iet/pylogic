@@ -3,3 +3,6 @@ I started coding around 12:12 AM. I'm trying to restrcuture the code into packag
 
 I found out I can't use circular imports even with packages in Python, if I want to use values at the top-level of modules. Most of these values are for typing.
 I'm consdiering using type-stubs.
+
+# Saturday, Mar 02, 2024, 4:47 AM PT
+Begin session at 4:47am.
