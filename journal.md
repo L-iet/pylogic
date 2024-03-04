@@ -16,3 +16,7 @@ I need to do two main things at this point:
 - Remove argValueTypes and argValues from propositions
 
 I'm inclined to start on the second task first as I think it'll clean up the code.
+
+# Monday, Mar 04, 2024, 6:30 AM PT
+Begin session around 5:45am. I forgot to make the initial commit.
+
