@@ -20,3 +20,17 @@ I'm inclined to start on the second task first as I think it'll clean up the cod
 # Monday, Mar 04, 2024, 6:30 AM PT
 Begin session around 5:45am. I forgot to make the initial commit.
 
+9:47am: end session. I've modified the following files:
+
+- pylogic/proposition/proposition.py
+- pylogic/proposition/quantified/exists.py
+- pylogic/proposition/quantified/forall.py
+- pylogic/proposition/quantified/quantified.py
+- pylogic/proposition/relation/contains.py
+- pylogic/proposition/relation/equals.py
+- pylogic/set/sets.py
+
+- pylogic/variable.py
+
+I've fixed types in all except contains.py for now. Removed argValueTypes and argValues. Introduced Variable which also subclasses sp.Basic.
+

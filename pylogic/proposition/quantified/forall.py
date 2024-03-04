@@ -1,40 +1,44 @@
 from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
 from pylogic.proposition.quantified.quantified import _Quantified
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Self, TypeVar, Generic
 
 if TYPE_CHECKING:
     from sympy import Basic as SympyExpression
-    from pylogic.set.sets import Set
+    from pylogic.proposition.relation.equals import Equals
+    from pylogic.variable import Variable
 from sympy.printing.latex import LatexPrinter
 import sympy as sp
 
+TProposition = TypeVar("TProposition", bound="Proposition")
+UProposition = TypeVar("UProposition", bound="Proposition")
 
-class Forall(_Quantified):
+
+class Forall(_Quantified[TProposition]):
     def __init__(
         self,
-        quantified_arg: Set | SympyExpression,
-        inner_proposition: Proposition,
+        variable: Variable,
+        inner_proposition: TProposition,
         is_assumption: bool = False,
-        show_arg_position_names: bool = False,
         _is_proven: bool = False,
     ) -> None:
-        q_arg = ("arg0", quantified_arg)
-        assert quantified_arg.is_arbitrary, f"{quantified_arg} is not arbitrary"
         super().__init__(
             "forall",
+            variable,
             inner_proposition,
             is_assumption,
-            quantified_arg=q_arg,
-            show_arg_position_names=show_arg_position_names,
             _is_proven=_is_proven,
         )
-        self.quantified_arg_value = self.quantified_arg[1]
 
     def copy(self):
-        return super().copy(self)
+        return Forall(
+            self.variable.copy(),
+            self.inner_proposition.copy(),
+            self.is_assumption,
+            self.is_proven,
+        )
 
-    def hence_matrices_are_equal(self) -> "Equals":
+    def hence_matrices_are_equal(self) -> Equals:
         """
         Logical tactic.
         If self is a proven proposition of the form
@@ -43,14 +47,13 @@ class Forall(_Quantified):
         Note that the indices must appear in the same order in the foralls.
         """
         assert self.is_proven, f"{self} is not proven"
-        indices = []
+        indices: list[Variable] = []
         prop = self
         while isinstance(prop, Forall):
-            assert (
-                prop.quantified_arg_value.is_integer
-            ), f"{prop.quantified_arg} is not an integer"
+            # TODO: check why is_integer is not seen
+            assert prop.variable.is_integer, f"{prop.variable} is not an integer"  # type: ignore
             # maybe also check for is nonnegative
-            indices.append(prop.quantified_arg_value)
+            indices.append(prop.variable)
             prop = prop.inner_proposition
         assert isinstance(prop, Equals), f"{prop} is not an equality"
         MatEl = sp.matrices.expressions.matexpr.MatrixElement
