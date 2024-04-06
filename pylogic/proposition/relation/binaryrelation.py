@@ -45,9 +45,10 @@ class BinaryRelation(Relation):
         return f"{left_latex} {self.infix_symbol_latex} {right_latex}"
 
     def copy(self) -> Self:
+        # copy.copy and deepcopy are evaluating unevaluated expressions
         return self.__class__(
-            copy.copy(self.left),
-            copy.copy(self.right),
+            self.left,  # was copy.copy(self.left), same for right
+            self.right,
             is_assumption=self.is_assumption,
             _is_proven=self.is_proven,
         )

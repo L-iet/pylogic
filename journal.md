@@ -37,3 +37,15 @@ I've fixed types in all except contains.py for now. Removed argValueTypes and ar
 # Saturday, Apr 06, 2024, 12:30 PM PT
 Begin session around 12:30pm.
 
+1:34pm I'm trying to add axioms/theorems to the system. I need sympy to not evaluate certain expressions. Found this: https://github-wiki-see.page/m/sympy/sympy/wiki/Unevaluated-Expressions
+
+So we can use syntax like
+```python
+with evaluate(False):
+...     print(Integer(3)*4)
+```
+or
+```python
+sympify('3*4', evaluate=False)
+```
+
