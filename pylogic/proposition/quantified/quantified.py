@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 
 if TYPE_CHECKING:
     from sympy import Basic as SympyExpression
+
+    Term = SympyExpression
     from pylogic.set.sets import Set
     from pylogic.variable import Variable
 from sympy.printing.latex import LatexPrinter
@@ -13,7 +15,6 @@ import sympy as sp
 latex_printer = LatexPrinter()
 
 TProposition = TypeVar("TProposition", bound="Proposition")
-Term = SympyExpression
 
 
 class _Quantified(Proposition, Generic[TProposition], ABC):

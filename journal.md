@@ -34,3 +34,6 @@ Begin session around 5:45am. I forgot to make the initial commit.
 
 I've fixed types in all except contains.py for now. Removed argValueTypes and argValues. Introduced Variable which also subclasses sp.Basic.
 
+# Saturday, Apr 06, 2024, 12:30 PM PT
+Begin session around 12:30pm.
+
