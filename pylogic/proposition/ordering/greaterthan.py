@@ -80,7 +80,7 @@ class GreaterThan(BinaryRelation, _Ordering):
         self.right: SympyExpression = right
 
     def __repr__(self) -> str:
-        return f"{self.completed_args['left']} > {self.completed_args['right']}"
+        return f"{self.left} > {self.right}"
 
     def copy(self) -> "GreaterThan":
         return GreaterThan(

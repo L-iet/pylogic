@@ -14,17 +14,14 @@ class Relation(Proposition):
     def __init__(
         self,
         name: str,
-        completed_args: dict[str, Set | SympyExpression],
+        args: list[Set | SympyExpression],
         is_assumption: bool = False,
-        show_arg_position_names: bool = False,
         _is_proven: bool = False,
     ) -> None:
-        assert len(completed_args) > 1, "Relation must have at least two arguments"
         super().__init__(
             name,
             is_assumption,
-            completed_args=completed_args,
-            show_arg_position_names=show_arg_position_names,
+            args=args,
             _is_proven=_is_proven,
         )
 
@@ -37,8 +34,7 @@ class Relation(Proposition):
     def copy(self) -> "Relation":
         return Relation(
             self.name,
-            completed_args=self.completed_args.copy(),
+            args=self.args.copy(),
             is_assumption=self.is_assumption,
-            show_arg_position_names=self.show_arg_position_names,
             _is_proven=self.is_proven,
         )

@@ -27,9 +27,8 @@ class BinaryRelation(Relation):
     ) -> None:
         super().__init__(
             self.name,
-            completed_args={"left": left, "right": right},
+            args=[left, right],
             is_assumption=is_assumption,
-            show_arg_position_names=False,
             _is_proven=_is_proven,
         )
         self.left: Set | SympyExpression = left
