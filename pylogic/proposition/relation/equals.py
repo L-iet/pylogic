@@ -1,13 +1,17 @@
 from __future__ import annotations
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from pylogic.proposition.proposition import Proposition
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, TypeVar, Self
 
 if TYPE_CHECKING:
     from sympy import Basic as SympyExpression
     from pylogic.set.sets import Set
 from sympy.printing.latex import LatexPrinter
 import sympy as sp
+
+TProposition = TypeVar("TProposition", bound="Proposition")
+
+Side = Literal["left", "right"]
 
 latex_printer = LatexPrinter()
 
@@ -39,9 +43,18 @@ class Equals(BinaryRelation):
         self.right_doit = (
             self.right.doit() if isinstance(self.right, sp.Basic) else self.right
         )
-        self.doit_args = {"left": self.left_doit, "right": self.right_doit}
+        self.doit_results: dict[Side, Set | SympyExpression] = {
+            "left": self.left_doit,
+            "right": self.right_doit,
+        }
 
-    def _check_provable_by_simplification(self, _checking_side: str) -> bool:
+    def get(self, side: Side) -> Set | SympyExpression:
+        if side == "left":
+            return self.left
+        else:
+            return self.right
+
+    def _check_provable_by_simplification(self, _checking_side: Side) -> bool:
         """
         To check if we can use sympy methods to simplify and prove this equality.
         Parameters
@@ -51,29 +64,29 @@ class Equals(BinaryRelation):
         tried_doit: bool
             Whether we have tried using doit() on the arguments.
         """
-        other_side = "right" if _checking_side == "left" else "left"
+        other_side: Side = "right" if _checking_side == "left" else "left"
         proven = False
         if self.left == self.right:
             proven = True
-        elif isinstance(self.completed_args[_checking_side], sp.Basic):
+        elif isinstance(self.get(_checking_side), sp.Basic):
             try:
-                if self.completed_args[_checking_side].equals(
-                    self.completed_args[other_side]
-                ):
+                if self.get(_checking_side).equals(self.get(other_side)):  # type: ignore
                     proven = True
-            except ValueError:
-                if self.doit_args[_checking_side] == self.doit_args[other_side]:
+            except ValueError:  # TODO: Basic.equals sometimes raises ValueError
+                if self.doit_results[_checking_side] == self.doit_results[other_side]:
                     proven = True
 
         if not proven and not (
-            isinstance(self.completed_args[_checking_side], int)
-            or isinstance(self.completed_args[_checking_side], float)
+            isinstance(self.get(_checking_side), int)
+            or isinstance(self.get(_checking_side), float)
         ):
-            if self.doit_args[_checking_side].dummy_eq(self.doit_args[other_side]):
+            if self.doit_results[_checking_side].dummy_eq(
+                self.doit_results[other_side]
+            ):  # TODO: understand more about sympy dummy_eq
                 proven = True
         return proven
 
-    def by_simplification(self):
+    def by_simplification(self) -> Self:
         """Logical tactic."""
 
         proven = self._check_provable_by_simplification("left")
@@ -86,7 +99,7 @@ class Equals(BinaryRelation):
         else:
             raise ValueError(f"{self} cannot be proven by simplification")
 
-    def substitute_into(self, side: str, other_prop: Proposition) -> Proposition:
+    def substitute_into(self, side: Side, other_prop: TProposition) -> TProposition:
         """
         If side == "left", will look for self.right in other_prop and replace it with self.left.
         Parameters
@@ -98,14 +111,14 @@ class Equals(BinaryRelation):
         """
         if side not in ["left", "right"]:
             raise ValueError(f"Invalid side: {side}")
-        other_side = "right" if side == "left" else "left"
-        new_prop = other_prop.replace(
-            self.completed_args[other_side], self.completed_args[side]
+        other_side: Side = "right" if side == "left" else "left"
+        new_prop: TProposition = other_prop.replace(
+            self.get(other_side), self.get(side)
         )
         new_prop._is_proven = False
         return new_prop
 
-    def p_substitute_into(self, side: str, other_prop: Proposition) -> Proposition:
+    def p_substitute_into(self, side: Side, other_prop: TProposition) -> TProposition:
         """
         Logical tactic.
         If side == "left", will look for self.right in other_prop and replace it with self.left.
@@ -119,6 +132,6 @@ class Equals(BinaryRelation):
         """
         assert self.is_proven, f"{self} is not proven"
         assert other_prop.is_proven, f"{other_prop} is not proven"
-        new_prop = self.substitute_into(side, other_prop)
+        new_prop: TProposition = self.substitute_into(side, other_prop)
         new_prop._is_proven = True
         return new_prop

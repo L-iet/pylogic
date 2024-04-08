@@ -27,9 +27,8 @@ class BinaryRelation(Relation):
     ) -> None:
         super().__init__(
             self.name,
-            completed_args={"left": left, "right": right},
+            args=[left, right],
             is_assumption=is_assumption,
-            show_arg_position_names=False,
             _is_proven=_is_proven,
         )
         self.left: Set | SympyExpression = left
@@ -46,9 +45,10 @@ class BinaryRelation(Relation):
         return f"{left_latex} {self.infix_symbol_latex} {right_latex}"
 
     def copy(self) -> Self:
+        # copy.copy and deepcopy are evaluating unevaluated expressions
         return self.__class__(
-            copy.copy(self.left),
-            copy.copy(self.right),
+            self.left,  # was copy.copy(self.left), same for right
+            self.right,
             is_assumption=self.is_assumption,
             _is_proven=self.is_proven,
         )

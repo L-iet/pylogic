@@ -3,14 +3,15 @@ from pylogic.proposition.quantified.forall import Forall
 from pylogic.proposition.ordering.greaterthan import GreaterThan
 from pylogic.proposition.ordering.lessthan import LessThan
 from pylogic import p_symbol as ps
+from pylogic.variable import Variable
 import sympy as sp
 
 
 # print(sys.path)
 p = Proposition
-x = ps.Symbol("x", real=True)
-Px = Proposition("P", completed_args={"arg1": x})
-Py = p("P", completed_args={"arg1": ps.Symbol("y")})
+x = Variable("x", real=True)
+Px = Proposition("P", args=[x])
+Py = p("P", args=[ps.Symbol("y", real=True)])
 Q = p("Q")
 R = p("R")
 S = p("S")
@@ -22,7 +23,7 @@ py = Py.is_special_case_of(forallXPx)
 # print(py.is_proven)
 
 print(x.is_integer)
-eps = ps.Symbol("eps", real=True)
+eps = Variable("eps", real=True)
 eps_positive = GreaterThan(eps, 0, is_assumption=True)
 absolute_x_positive = GreaterThan.is_absolute(sp.Abs(x))
 root_eps_positive = GreaterThan.is_rational_power(sp.sqrt(eps), eps_positive)

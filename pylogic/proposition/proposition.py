@@ -4,7 +4,7 @@ from typing import Self, Protocol
 import sympy as sp
 from sympy.printing.latex import LatexPrinter
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from pylogic.set.sets import Set
@@ -13,9 +13,14 @@ if TYPE_CHECKING:
     from pylogic.proposition.implies import Implies
     from pylogic.proposition.quantified.exists import Exists
     from pylogic.proposition.quantified.forall import Forall
+    from pylogic.variable import Variable
 
 
 SympyExpression = sp.Basic | int | float
+
+Term = SympyExpression  # or variable
+
+Side = Literal["left", "right"]
 
 latex_printer = LatexPrinter()
 
@@ -37,13 +42,29 @@ class _Statement:
 
 
 class Proposition(_Statement):
+    """
+    Attributes
+    ----------
+    name: str
+        Name of the proposition. Typically the first part of the __repr__.
+    is_assumption: bool
+        Whether this proposition is an assumption.
+    args: list[Set | SympyExpression] | None
+        The arguments of the proposition. If None, we assume the proposition has no arguments.
+    arity: int
+        The number of arguments of the proposition.
+    is_proven: bool
+        Whether the proposition is proven.
+    """
+
     def __init__(
         self,
         name: str,
         is_assumption: bool = False,
-        completed_args: dict[str, Set | SympyExpression] | None = None,
-        completed_args_order: list[str] | None = None,
-        show_arg_position_names: bool = False,
+        args: list[Set | SympyExpression] | None = None,
+        # completed_args: dict[str, Set | SympyExpression] | None = None,
+        # completed_args_order: list[str] | None = None,
+        # show_arg_position_names: bool = False,
         _is_proven: bool = False,
     ) -> None:
         """
@@ -51,57 +72,29 @@ class Proposition(_Statement):
             Name of the proposition. Typically the first part of the __repr__.
         is_assumption: bool
             Whether this proposition is an assumption.
-        completed_args: dict[str, Set | SympyExpression]
-            Dictionary of argument position identifiers and their values. The values are
-            typically Set or SympyExpression instances.
-        show_arg_position_names: bool
-            Whether to show the argument position identifiers in the __repr__.
-            This is useful for propositions with multiple arguments of the same type.
-            In p(completed_args={x:x1, y:x2}), the argument position identifiers are x and y.
-            If this is False, the __repr__ will be p x1 x2.
-            If this is True, the __repr__ will be p x=x1 y=x2.
+        args: list[Set | SympyExpression] | None
+            The arguments of the proposition. If None, we assume the proposition has no arguments.
+
         """
-        completed_args = completed_args or {}
-        if len(completed_args) == 0:
-            completed_args_order = []
-        elif completed_args_order is None or len(completed_args_order) == 0:
-            completed_args_order = sorted(list(completed_args.keys()))
-        completed_args = {k: completed_args[k] for k in completed_args_order}
         name = name.strip()
         assert set(name.split("_")) != {""}, "Proposition name cannot be empty"
-        self.name = name
-        self.show_arg_position_names = show_arg_position_names
-        self.is_assumption = is_assumption
-        self.completed_args = completed_args
-        self.completed_args_order = completed_args_order
-        self._is_proven = _is_proven
+        self.name: str = name
+        self.is_assumption: bool = is_assumption
+        self.args: list[Set | Term] = args or []
+        self.arity: int = len(self.args)
+        self._is_proven: bool = _is_proven
 
     def __eq__(self, other: "Proposition") -> bool:
-        return self.name == other.name and self.completed_args == other.completed_args
+        return self.name == other.name and self.args == other.args
 
     def __repr__(self) -> str:
-        s = ""
-        for arg_id in self.completed_args_order:
-            s += (
-                f"{arg_id}={self.completed_args[arg_id]} "
-                if self.show_arg_position_names
-                else f"{self.completed_args[arg_id]} "
-            )
-        return f"{self.name} {s}".strip()
+        return f"{self.name} {tuple(self.args)}"
 
     def __copy__(self) -> "Proposition":
         return self.copy()
 
     def _latex(self, printer=latex_printer) -> str:
-        s = ""
-        for arg_id in self.completed_args_order:
-            printed_arg = printer._print(self.completed_args[arg_id])
-            s += (
-                f"{arg_id}={printed_arg} "
-                if self.show_arg_position_names
-                else f"{printed_arg} "
-            )
-        return rf"\text{{{self.name}}} {s}"
+        return rf"\text{{{self.name}}} {self.args}"
 
     def _repr_latex_(self) -> str:
         return f"$${self._latex()}$$"
@@ -110,13 +103,11 @@ class Proposition(_Statement):
     def is_proven(self) -> bool:
         return self._is_proven or self.is_assumption
 
-    def copy(self) -> "Proposition":
-        return Proposition(
+    def copy(self) -> Self:
+        return self.__class__(
             self.name,
             self.is_assumption,
-            completed_args=self.completed_args.copy(),
-            completed_args_order=self.completed_args_order.copy(),
-            show_arg_position_names=self.show_arg_position_names,
+            self.args.copy(),  # TODO: check if we need deepcopy
             _is_proven=self.is_proven,
         )
 
@@ -147,20 +138,19 @@ class Proposition(_Statement):
         """
         new_p = self.copy()
         index = -1
-        for arg_id in new_p.completed_args_order:
+        for arg in new_p.args:
             index += 1
             if (positions is not None) and not [index] in positions:
                 continue
-            if new_p.completed_args[arg_id] == current_val:
-                new_p.completed_args[arg_id] = new_val
-            elif isinstance(new_p.completed_args[arg_id], sp.Basic):
-                new_p.completed_args[arg_id] = new_p.completed_args[arg_id].subs(
-                    current_val, new_val
-                )
+            if arg == current_val:
+                new_p.args[index] = new_val
+            elif isinstance(arg, sp.Basic):
+                new_p.args[index] = arg.subs(current_val, new_val)
+
         new_p._is_proven = False
         return new_p
 
-    def substitute(self, side: str, equality: "Equals") -> Self:
+    def substitute(self, side: Side, equality: "Equals") -> Self:
         """
         Parameters
         ----------
@@ -172,7 +162,7 @@ class Proposition(_Statement):
         """
         return equality.substitute_into(side, self)
 
-    def p_substitute(self, side: str, equality: "Equals") -> Self:
+    def p_substitute(self, side: Side, equality: "Equals") -> Self:
         """
         Logical tactic.
         Parameters
@@ -255,15 +245,14 @@ class Proposition(_Statement):
         new_p._is_proven = True
         return new_p
 
-    def is_one_of(self, other: "And", _recursive: bool = False) -> Self:
+    def is_one_of(self, other: "And", _recursing: bool = False) -> Self:
         r"""
         Logical tactic.
         If we have proven other, we can prove any of the propositions in it.
         other: And
-            Must be an And that has been proven whose structure is
-            self /\ OtherProposition
+            Must be a conjunction that has been proven where one of the propositions is self.
         """
-        if not _recursive:
+        if not _recursing:
             assert other.is_proven, f"{other} is not proven"
         from pylogic.proposition.and_ import And
 
@@ -274,7 +263,7 @@ class Proposition(_Statement):
                 return new_p
             elif isinstance(p, And):
                 try:
-                    return self.is_one_of(p, _recursive=True)
+                    return self.is_one_of(p, _recursing=True)
                 except ValueError:
                     continue
         raise ValueError(f"{self} is not in {other}")
@@ -291,16 +280,22 @@ class Proposition(_Statement):
         assert other.is_proven, f"{other} is not proven"
         assert (
             self.name == other.inner_proposition.name
+            and self.arity == other.inner_proposition.arity
         ), f"{self} is not a special case of {other}"
-        for arg_id in self.completed_args:
-            if arg_id in other.completed_args:
-                assert type(self.completed_args[arg_id]) == type(
-                    other.completed_args[arg_id]
-                ), f"{self} is not a special case of {other}: {arg_id} is not the same type"
-            else:
-                raise ValueError(
-                    f"{self} is not a special case of {other}: {arg_id} is not in the completed arguments of {other}"
-                )
+
+        # last case: if the inner proposition is a proposition, we check to see
+        # if the self args matches inner proposition args
+        value_in_self: Term | Set | None = None
+        if isinstance(other.inner_proposition, Proposition):
+            for tself, tother in zip(self.args, other.inner_proposition.args):
+                if tother == other.variable:
+                    if value_in_self is None:
+                        value_in_self = tself
+                    elif value_in_self != tself:
+                        raise ValueError(
+                            f"{self} is not a special case of {other}: {value_in_self} != {tself}"
+                        )
+
         new_p = self.copy()
         new_p._is_proven = True
         return new_p
@@ -369,7 +364,7 @@ class Proposition(_Statement):
         )
         return new_p
 
-    def thus_forall(self, quantified_arg: Set | sp.Basic) -> "Forall":
+    def thus_forall(self, variable: Variable) -> "Forall":
         """
         Logical tactic.
         Given self is proven, return a new proposition that for all variables, self is true.
@@ -378,7 +373,7 @@ class Proposition(_Statement):
         from pylogic.proposition.quantified.forall import Forall
 
         new_p = Forall(
-            quantified_arg=quantified_arg,
+            variable=variable,
             inner_proposition=self,
             _is_proven=True,
         )

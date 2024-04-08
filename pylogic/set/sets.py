@@ -29,7 +29,14 @@ class Set:
     # def __eq__(self, other: "ArgValueTypes") -> bool:
     #     return self.sympy_set == other.sympy_set
 
-    def dummy_eq(self, other: "Set") -> bool:
+    def equals(self, other: object) -> bool:
+        if not isinstance(other, Set):
+            return False
+        return self.sympy_set == other.sympy_set
+
+    def dummy_eq(self, other: object) -> bool:
+        if not isinstance(other, Set):
+            return False
         return self.sympy_set == other.sympy_set
 
     def contains(

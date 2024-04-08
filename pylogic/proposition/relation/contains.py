@@ -3,7 +3,9 @@ from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from sympy import Basic as SympyExpression
+    from sympy import Basic
+
+    SympyExpression = Basic | int | float
     from pylogic.set.sets import Set
 import copy
 
