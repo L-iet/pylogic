@@ -57,4 +57,4 @@ class IsContainedIn(BinaryRelation):
                 is_assumption=self.is_assumption,
                 _is_proven=True,
             )
-        raise ValueError(f"Cannot prove that {self.left}")
+        raise ValueError(f"Cannot prove that {self.right} contains {self.left}")
