@@ -41,8 +41,8 @@ class IsContainedIn(BinaryRelation):
 
     def copy(self) -> "IsContainedIn":
         return IsContainedIn(
-            self.set_.copy(),
             copy.copy(self.element),
+            self.set_.copy(),
             is_assumption=self.is_assumption,
             _is_proven=self.is_proven,
         )
@@ -52,8 +52,8 @@ class IsContainedIn(BinaryRelation):
         contains the element"""
         if self.right.containment_function(self.left):
             return IsContainedIn(
-                self.set_.copy(),
                 copy.copy(self.element),
+                self.set_.copy(),
                 is_assumption=self.is_assumption,
                 _is_proven=True,
             )
