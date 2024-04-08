@@ -48,13 +48,32 @@ class IsContainedIn(BinaryRelation):
         )
 
     def by_containment_func(self) -> IsContainedIn:
-        """Logical tactic. Use the set's containment function to check if it
-        contains the element"""
+        """Logical tactic. Use the set's containment function to prove that it
+        contains the element
+        """
         if self.right.containment_function(self.left):
             return IsContainedIn(
                 copy.copy(self.element),
                 self.set_.copy(),
                 is_assumption=self.is_assumption,
                 _is_proven=True,
+            )
+        raise ValueError(f"Cannot prove that {self.right} contains {self.left}")
+
+    def by_def(self) -> IsContainedIn:
+        """Logical tactic. Use sympy's definition of the set to prove that
+        it contains the element.
+        """
+        try:
+            if self.left in self.right.sympy_set:
+                return IsContainedIn(
+                    copy.copy(self.element),
+                    self.set_.copy(),
+                    is_assumption=self.is_assumption,
+                    _is_proven=True,
+                )
+        except (TypeError, NotImplementedError) as e:
+            raise ValueError(
+                f"Cannot prove that {self.right} contains {self.left}\nThis was a result of\n{e}"
             )
         raise ValueError(f"Cannot prove that {self.right} contains {self.left}")

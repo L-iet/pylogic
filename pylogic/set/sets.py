@@ -20,8 +20,8 @@ class Set:
 
     def __init__(
         self,
-        sympy_set: SympySet | None = None,
         name: str | None = None,
+        sympy_set: SympySet | None = None,
         containment_function: Callable[[SympyExpression | Set], bool] | None = None,
     ):
         if name:
@@ -72,3 +72,8 @@ class Set:
 
     def copy(self) -> "Set":
         return Set(self.sympy_set, self.name)
+
+
+Integers = Set(sympy_set=sp.S.Integers)
+Rationals = Set(sympy_set=sp.S.Rationals)
+Reals = Set(sympy_set=sp.S.Reals)
