@@ -11,7 +11,7 @@ latex_printer = LatexPrinter()
 
 
 class Implies(Proposition):
-    # TODO: Implement __eq__ for Implies, And, Or, Forall, Contains, Relation, Equals etc
+    # TODO: Implement __eq__ for Implies, And, Or, Forall, IsContainedIn, Relation, Equals etc
     def __init__(
         self,
         antecedent: Proposition,
