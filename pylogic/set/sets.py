@@ -71,7 +71,7 @@ class Set:
         return f"$${self._latex()}$$"
 
     def copy(self) -> "Set":
-        return Set(self.sympy_set, self.name)
+        return Set(self.name, self.sympy_set, self.containment_function)
 
 
 Integers = Set(sympy_set=sp.S.Integers)

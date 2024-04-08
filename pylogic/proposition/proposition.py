@@ -1,4 +1,5 @@
 from __future__ import annotations
+import copy
 from typing import Self, Protocol
 
 import sympy as sp
@@ -316,9 +317,17 @@ class Proposition(_Statement):
         from pylogic.proposition.and_ import And
 
         if len(assumptions) == 1:
-            new_p = assumptions[0].implies(self)
+            new_p = assumptions[0].copy().implies(self)
+            new_p.antecedent.is_assumption = False
+            new_p.antecedent._is_proven = False
         else:
-            new_p = And(*assumptions).implies(self)
+            a_s = []
+            for a in assumptions:
+                new_a = a.copy()
+                new_a.is_assumption = False
+                new_a._is_proven = False
+                a_s.append(new_a)
+            new_p = And(*a_s).implies(self)
         new_p._is_proven = True
         return new_p
 

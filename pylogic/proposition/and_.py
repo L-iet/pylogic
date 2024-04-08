@@ -18,7 +18,6 @@ class And(Proposition):
         _is_proven: bool = False,
     ) -> None:
         assert len(propositions) > 1, "'And' must have at least two propositions"
-        completed_args = {}  # TODO: Figure out completed_args for And, Or, Implies
         self.propositions = propositions
         name = rf" /\ ".join([p.name for p in propositions])
         super().__init__(name, is_assumption, _is_proven=_is_proven)
@@ -61,3 +60,13 @@ class And(Proposition):
     def _latex(self, printer=latex_printer) -> str:
         s = r"\wedge ".join([p._latex() for p in self.propositions])
         return rf"\left({s}\right)"
+
+    def all_proven(self) -> "And":
+        """Logical tactic. If all propositions are proven, the conjunction is
+        proven."""
+        for p in self.propositions:
+            if not p.is_proven:
+                raise ValueError(f"{p} is not proven")
+        new_p = self.copy()
+        new_p._is_proven = True
+        return new_p
