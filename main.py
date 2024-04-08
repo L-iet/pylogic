@@ -20,7 +20,7 @@ forallXPx = Forall(x, Px, is_assumption=True)
 
 # print(Py, forallXPx)
 py = Py.is_special_case_of(forallXPx)
-# print(py.is_proven)
+print(py.is_proven)
 
 print(x.is_integer)
 eps = Variable("eps", real=True)
