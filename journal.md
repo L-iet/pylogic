@@ -51,3 +51,6 @@ sympify('3*4', evaluate=False)
 
 # Saturday, Apr 08, 2024, 6:18am PT
 Begin session.
+
+8:32am: end session. I added some work on sets and containment, and started a file
+called divisible.py for some theorems related to divisibility.
