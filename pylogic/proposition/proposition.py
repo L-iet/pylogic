@@ -367,7 +367,7 @@ class Proposition(_Statement):
         assert self.is_proven, f"{self} is not proven"
         from pylogic.proposition.quantified.exists import Exists
 
-        new_p = Exists(
+        new_p = Exists.from_proposition(
             existential_var_name=existential_var,
             expression_to_replace=expression_to_replace,
             inner_proposition=self,
