@@ -6,24 +6,30 @@ from typing import TYPE_CHECKING, Generic, TypeVar, Self
 
 if TYPE_CHECKING:
     from sympy import Basic
+    from pylogic.proposition.quantified.forall import Forall
+    from pylogic.proposition.implies import Implies
 
     SympyExpression = Basic | int | float
 from pylogic.set.sets import Set
 import sympy as sp
 import pylogic.p_symbol as ps
 
+TProposition = TypeVar("TProposition", bound="Proposition")
+UProposition = TypeVar("UProposition", bound="Proposition")
 
-class Exists(_Quantified):
-    def __init__(
-        self,
+
+class Exists(_Quantified[TProposition]):
+    @classmethod
+    def from_proposition(
+        cls,
         existential_var_name: str,
         expression_to_replace: Set | SympyExpression | None,
-        inner_proposition: Proposition,
+        inner_proposition: TProposition,
         positions: list[list[int]] | None = None,
         is_assumption: bool = False,
         is_real: bool = True,
         _is_proven: bool = False,
-    ) -> None:
+    ) -> Exists[TProposition]:
         r"""
         positions: list[list[int]]
             This is a list containing the positions of the expression_to_replace in self.
@@ -41,6 +47,20 @@ class Exists(_Quantified):
             inner_proposition = inner_proposition.replace(
                 expression_to_replace, variable, positions=positions
             )
+        return cls(
+            variable,
+            inner_proposition,
+            is_assumption,
+            _is_proven,
+        )
+
+    def __init__(
+        self,
+        variable: Variable,
+        inner_proposition: TProposition,
+        is_assumption: bool = False,
+        _is_proven: bool = False,
+    ) -> None:
         super().__init__(
             "exists",
             variable,
@@ -54,11 +74,25 @@ class Exists(_Quantified):
 
     def copy(self) -> Self:
         return self.__class__(
-            self.variable.name,
-            None,
+            self.variable.copy(),
             self.inner_proposition.copy(),
-            [],
             self.is_assumption,
-            self.variable.is_real or False,
-            self.is_proven,
+            _is_proven=self.is_proven,
         )
+
+    def exists_modus_ponens(self, other: Forall[Implies]) -> Exists:
+        """
+        Logical tactic. If self is exists x: P(x) and given forall x: P(x) -> Q(x)
+        and each is proven, conclude exists x: Q(x).
+        """
+        assert self.is_proven, f"{self} is not proven"
+        assert other.is_proven, f"{other} is not proven"
+
+        other_cons = other.inner_proposition.consequent.copy()
+        new_p = Exists(
+            variable=other.variable.copy(),
+            inner_proposition=other_cons,  # type: ignore
+            is_assumption=False,
+            _is_proven=True,
+        )
+        return new_p

@@ -6,7 +6,9 @@ from typing import TYPE_CHECKING, Self, TypeVar, Generic
 if TYPE_CHECKING:
     from sympy import Basic as SympyExpression
     from pylogic.proposition.relation.equals import Equals
+    from pylogic.proposition.implies import Implies
     from pylogic.variable import Variable
+    from pylogic.proposition.quantified.exists import Exists
 from sympy.printing.latex import LatexPrinter
 import sympy as sp
 
@@ -68,4 +70,25 @@ class Forall(_Quantified[TProposition]):
             ), f"Indices mismatch: {index}, {left_indices[i]}, {right_indices[i]}"
         new_p = Equals(left_mat, right_mat)
         new_p._is_proven = True
+        return new_p
+
+    def quantified_modus_ponens(
+        self, other: Forall[Implies] | Exists[Implies]
+    ) -> Forall | Exists:
+        """
+        Logical tactic. If self is forall x: P(x) and given forall x: P(x) -> Q(x)
+        (or exists x: P(x) -> Q(x)), and each is proven, conclude
+        forall x: Q(x) (or exists x: Q(x)).
+        """
+        quant_class = other.__class__
+        assert self.is_proven, f"{self} is not proven"
+        assert other.is_proven, f"{other} is not proven"
+
+        other_cons = other.inner_proposition.consequent.copy()
+        new_p = quant_class(
+            variable=other.variable.copy(),
+            inner_proposition=other_cons,  # type: ignore
+            is_assumption=False,
+            _is_proven=True,
+        )
         return new_p
