@@ -58,6 +58,18 @@ class Proposition(_Statement):
         Whether the proposition is proven.
     """
 
+    tactic: list[str] = [
+        "p_substitute",
+        "p_and",
+        "p_and_reverse",
+        "modus_ponens",
+        "is_one_of",
+        "is_special_case_of",
+        "followed_from",
+        "thus_there_exists",
+        "thus_forall",
+    ]
+
     def __init__(
         self,
         name: str,

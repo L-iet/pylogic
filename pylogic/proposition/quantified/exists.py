@@ -19,6 +19,8 @@ UProposition = TypeVar("UProposition", bound="Proposition")
 
 
 class Exists(_Quantified[TProposition]):
+    tactics: list[str] = ["exists_modus_ponens"]
+
     @classmethod
     def from_proposition(
         cls,

@@ -17,6 +17,8 @@ UProposition = TypeVar("UProposition", bound="Proposition")
 
 
 class Forall(_Quantified[TProposition]):
+    tactics: list[str] = ["quantified_modus_ponens", "hence_matrices_are_equal"]
+
     def __init__(
         self,
         variable: Variable,

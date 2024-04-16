@@ -11,6 +11,8 @@ latex_printer = LatexPrinter()
 
 
 class And(Proposition):
+    tactics: list[str] = ["all_proven"]
+
     def __init__(
         self,
         *propositions: Proposition,
