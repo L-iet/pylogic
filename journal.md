@@ -57,3 +57,8 @@ called divisible.py for some theorems related to divisibility.
 
 # Monday, Apr 15, 2024, 8:00pm PT
 Begin session. (Began earlier but forgot to log in) I'm adding proof search for the classes `Proposition`, `Forall`, `Exists`, `And`, `Or`, `Not`, `Implies`.
+
+11:21pm: end session. Added starting code for the proof search.
+
+# Tuesday Apr 16, 2024, 12:49am PT
+Begin session.
