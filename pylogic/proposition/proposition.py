@@ -265,14 +265,14 @@ class Proposition(_Statement):
         new_p._is_proven = True
         return new_p
 
-    def is_one_of(self, other: And, _recursing: bool = False) -> Self:
+    def is_one_of(self, other: And, *, __recursing: bool = False) -> Self:
         r"""
         Logical tactic.
         If we have proven other, we can prove any of the propositions in it.
         other: And
             Must be a conjunction that has been proven where one of the propositions is self.
         """
-        if not _recursing:
+        if not __recursing:
             assert other.is_proven, f"{other} is not proven"
         from pylogic.proposition.and_ import And
 
@@ -283,7 +283,7 @@ class Proposition(_Statement):
                 return new_p
             elif isinstance(p, And):
                 try:
-                    return self.is_one_of(p, _recursing=True)
+                    return self.is_one_of(p, __recursing=True)
                 except ValueError:
                     continue
         raise ValueError(f"{self} is not in {other}")
