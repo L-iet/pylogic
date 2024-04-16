@@ -13,18 +13,25 @@ V = TypeVar("V", bound="Proposition")
 
 RuleName = Literal[
     "p_substitute",
-    "p_and",
-    "p_and_reverse",
     "modus_ponens",
     "is_one_of",
     "is_special_case_of",
-    "followed_from",
-    "thus_there_exists",
     "thus_forall",
     "hypothetical_syllogism",
     "all_proven",
     "quantified_modus_ponens",
-    "hence_matrices_are_equal",
+    "exists_modus_ponens",
+]
+
+rules: list[RuleName] = [
+    "p_substitute",
+    "modus_ponens",
+    "is_one_of",
+    "is_special_case_of",
+    "thus_forall",
+    "hypothetical_syllogism",
+    "all_proven",
+    "quantified_modus_ponens",
     "exists_modus_ponens",
 ]
 

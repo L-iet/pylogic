@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
-from typing import TYPE_CHECKING, TypeVar, Generic
+from typing import TYPE_CHECKING, TypeVar, Generic, TypedDict
 
 if TYPE_CHECKING:
     from sympy import Basic as SympyExpression
@@ -12,10 +12,13 @@ latex_printer = LatexPrinter()
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
 VProposition = TypeVar("VProposition", bound="Proposition")
+Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 
 class Implies(Proposition, Generic[TProposition, UProposition]):
-    tactics: list[str] = ["hypothetical_syllogism"]
+    tactics: list[Tactic] = [
+        {"name": "hypothetical_syllogism", "arguments": ["Implies"]}
+    ]
 
     # TODO: Implement __eq__ for Implies, And, Or, Forall, IsContainedIn, Relation, Equals etc
     def __init__(

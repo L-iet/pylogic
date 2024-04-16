@@ -1,7 +1,7 @@
 from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
 from pylogic.proposition.quantified.quantified import _Quantified
-from typing import TYPE_CHECKING, Self, TypeVar
+from typing import TYPE_CHECKING, Self, TypeVar, TypedDict
 
 if TYPE_CHECKING:
     from sympy import Basic as SympyExpression
@@ -15,10 +15,14 @@ import sympy as sp
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
 B = TypeVar("B", bound="Proposition")
+Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 
 class Forall(_Quantified[TProposition]):
-    tactics: list[str] = ["quantified_modus_ponens", "hence_matrices_are_equal"]
+    tactics: list[Tactic] = [
+        {"name": "quantified_modus_ponens", "arguments": ["Implies"]},
+        {"name": "hence_matrices_are_equal", "arguments": []},
+    ]
 
     def __init__(
         self,

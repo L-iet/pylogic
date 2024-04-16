@@ -4,7 +4,7 @@ from typing import Self
 import sympy as sp
 from sympy.printing.latex import LatexPrinter
 
-from typing import TYPE_CHECKING, Literal, TypeVar
+from typing import TYPE_CHECKING, Literal, TypeVar, TypedDict
 
 if TYPE_CHECKING:
     from pylogic.set.sets import Set
@@ -25,6 +25,7 @@ Side = Literal["left", "right"]
 latex_printer = LatexPrinter()
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
+Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 #####################################################
 
@@ -59,16 +60,16 @@ class Proposition(_Statement):
         Whether the proposition is proven.
     """
 
-    tactics: list[str] = [
-        "p_substitute",
-        "p_and",
-        "p_and_reverse",
-        "modus_ponens",
-        "is_one_of",
-        "is_special_case_of",
-        "followed_from",
-        "thus_there_exists",
-        "thus_forall",
+    tactics: list[Tactic] = [
+        {"name": "p_substitute", "arguments": ["Side", "Equality"]},
+        {"name": "p_and", "arguments": []},
+        {"name": "p_and_reverse", "arguments": []},
+        {"name": "modus_ponens", "arguments": ["Implies"]},
+        {"name": "is_one_of", "arguments": ["And"]},
+        {"name": "is_special_case_of", "arguments": ["Forall"]},
+        {"name": "followed_from", "arguments": []},
+        {"name": "thus_there_exists", "arguments": ["str", "Term", "list[list[int]]"]},
+        {"name": "thus_forall", "arguments": ["Variable"]},
     ]
 
     def __init__(

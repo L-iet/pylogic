@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
     from sympy import Basic as SympyExpression
@@ -8,10 +8,11 @@ if TYPE_CHECKING:
 from sympy.printing.latex import LatexPrinter
 
 latex_printer = LatexPrinter()
+Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 
 class And(Proposition):
-    tactics: list[str] = ["all_proven"]
+    tactics: list[Tactic] = [{"name": "all_proven", "arguments": []}]
 
     def __init__(
         self,

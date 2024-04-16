@@ -2,7 +2,7 @@ from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
 from pylogic.proposition.quantified.quantified import _Quantified
 from pylogic.variable import Variable
-from typing import TYPE_CHECKING, Generic, TypeVar, Self
+from typing import TYPE_CHECKING, TypedDict, TypeVar, Self
 
 if TYPE_CHECKING:
     from sympy import Basic
@@ -17,10 +17,11 @@ import pylogic.p_symbol as ps
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
 B = TypeVar("B", bound="Proposition")
+Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 
 class Exists(_Quantified[TProposition]):
-    tactics: list[str] = ["exists_modus_ponens"]
+    tactics: list[Tactic] = [{"name": "exists_modus_ponens", "arguments": ["Forall"]}]
 
     @classmethod
     def from_proposition(
