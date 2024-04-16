@@ -86,6 +86,7 @@ class Exists(_Quantified[TProposition]):
         and each is proven, conclude exists x: Q(x).
         """
         assert self.is_proven, f"{self} is not proven"
+        assert isinstance(other, Forall), f"{other} is not a forall statement"
         assert other.is_proven, f"{other} is not proven"
 
         other_cons = other.inner_proposition.consequent.copy()

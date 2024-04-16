@@ -81,6 +81,9 @@ class Forall(_Quantified[TProposition]):
         forall x: Q(x) (or exists x: Q(x)).
         """
         quant_class = other.__class__
+        assert (
+            quant_class == Forall or quant_class == Exists
+        ), f"{other} is not a quantified proposition"
         assert self.is_proven, f"{self} is not proven"
         assert other.is_proven, f"{other} is not proven"
 
