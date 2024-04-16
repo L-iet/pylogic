@@ -14,6 +14,7 @@ import sympy as sp
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
+B = TypeVar("B", bound="Proposition")
 
 
 class Forall(_Quantified[TProposition]):
@@ -75,8 +76,8 @@ class Forall(_Quantified[TProposition]):
         return new_p
 
     def quantified_modus_ponens(
-        self, other: Forall[Implies] | Exists[Implies]
-    ) -> Forall | Exists:
+        self, other: Forall[Implies[TProposition, B]] | Exists[Implies[TProposition, B]]
+    ) -> Forall[B] | Exists[B]:
         """
         Logical tactic. If self is forall x: P(x) and given forall x: P(x) -> Q(x)
         (or exists x: P(x) -> Q(x)), and each is proven, conclude
@@ -90,7 +91,7 @@ class Forall(_Quantified[TProposition]):
         assert other.is_proven, f"{other} is not proven"
 
         other_cons = other.inner_proposition.consequent.copy()
-        new_p = quant_class(
+        new_p: Forall[B] | Exists[B] = quant_class(
             variable=other.variable.copy(),
             inner_proposition=other_cons,  # type: ignore
             is_assumption=False,

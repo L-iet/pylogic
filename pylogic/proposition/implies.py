@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar, Generic
 
 if TYPE_CHECKING:
     from sympy import Basic as SympyExpression
@@ -9,13 +9,17 @@ from sympy.printing.latex import LatexPrinter
 
 latex_printer = LatexPrinter()
 
+TProposition = TypeVar("TProposition", bound="Proposition")
+UProposition = TypeVar("UProposition", bound="Proposition")
+VProposition = TypeVar("VProposition", bound="Proposition")
 
-class Implies(Proposition):
+
+class Implies(Proposition, Generic[TProposition, UProposition]):
     # TODO: Implement __eq__ for Implies, And, Or, Forall, IsContainedIn, Relation, Equals etc
     def __init__(
         self,
-        antecedent: Proposition,
-        consequent: Proposition,
+        antecedent: TProposition,
+        consequent: UProposition,
         is_assumption: bool = False,
         _is_proven: bool = False,
     ) -> None:
@@ -71,7 +75,9 @@ class Implies(Proposition):
         new_p._is_proven = False
         return new_p
 
-    def hypothetical_syllogism(self, other: "Implies") -> "Implies":
+    def hypothetical_syllogism(
+        self, other: Implies[UProposition, VProposition]
+    ) -> Implies[TProposition, VProposition]:
         """
         Logical tactic.
         """

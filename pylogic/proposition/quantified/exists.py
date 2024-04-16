@@ -16,6 +16,7 @@ import pylogic.p_symbol as ps
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
+B = TypeVar("B", bound="Proposition")
 
 
 class Exists(_Quantified[TProposition]):
@@ -82,7 +83,7 @@ class Exists(_Quantified[TProposition]):
             _is_proven=self.is_proven,
         )
 
-    def exists_modus_ponens(self, other: Forall[Implies]) -> Exists:
+    def exists_modus_ponens(self, other: Forall[Implies[TProposition, B]]) -> Exists[B]:
         """
         Logical tactic. If self is exists x: P(x) and given forall x: P(x) -> Q(x)
         and each is proven, conclude exists x: Q(x).
