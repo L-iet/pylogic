@@ -105,7 +105,10 @@ class Proposition(_Statement):
         return self.name == other.name and self.args == other.args
 
     def __repr__(self) -> str:
-        return f"{self.name} {tuple(self.args)}"
+        if self.args:
+            return f"{self.name} {tuple(self.args)}"
+        else:
+            return self.name
 
     def __copy__(self) -> "Proposition":
         return self.copy()
