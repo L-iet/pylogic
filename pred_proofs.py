@@ -13,6 +13,9 @@ prem2 = Exists(x, Implies(Px, Qx), True)
 
 P = Proposition("P", True)
 Q = Proposition("Q")
+R = Proposition("R")
 PImpQ = Implies(P, Q, True)
+QImpR = Implies(Q, R, True)
+PImpR = Implies(P, R)
 
-print(proof_search([P, PImpQ], Q))
+print(proof_search([P, PImpQ, QImpR], PImpR))

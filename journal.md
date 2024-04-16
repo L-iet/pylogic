@@ -62,3 +62,5 @@ Begin session. (Began earlier but forgot to log in) I'm adding proof search for 
 
 # Tuesday Apr 16, 2024, 12:49am PT
 Begin session.
+
+2:53am Need to add code to store generated proposiions and use them in later infernces

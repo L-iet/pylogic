@@ -9,6 +9,7 @@ from pylogic.proposition.implies import Implies
 
 T = TypeVar("T", bound="Proposition")
 U = TypeVar("U", bound="Proposition")
+V = TypeVar("V", bound="Proposition")
 
 RuleName = Literal[
     "p_substitute",
@@ -44,21 +45,46 @@ class InferenceResult(Generic[T, U]):
         return str((self.starting_prem, *self.other_prems, self.rule, self.target))
 
 
-def mp_prop(
+def mp_search(
     prem: T, premises: list[Proposition], target: U
 ) -> InferenceResult[T, U] | None:
+    """
+    Search for if target can be inferred from the premises using modus ponens.
+    """
     for other in premises:
         if isinstance(other, Implies):
             try:
                 new_conc = prem.modus_ponens(other)
-            except AssertionError:
+            except (AssertionError, AttributeError):
                 continue
             if new_conc == target:
                 return InferenceResult(prem, other, rule="modus_ponens", target=new_conc)  # type: ignore
     return None
 
 
+def hs_search(
+    prem: Implies[T, U], premises: list[Proposition], target: Implies[T, V]
+) -> InferenceResult[Implies[T, U], Implies[T, V]] | None:
+    """Search for if target can be inferred from the premises using
+    hypothetical syllogism"""
+    for other in premises:
+        try:
+            new_conc = prem.hypothetical_syllogism(other)
+        except (AssertionError, AttributeError):
+            continue
+        if new_conc == target:
+            return InferenceResult(prem, other, rule="hypothetical_syllogism", target=new_conc)  # type: ignore
+    return None
+
+
 def proof_search(premises: list[Proposition], target: Proposition):
     for prem in premises:
         if prem.__class__ == Proposition:
-            return mp_prop(prem, premises, target)
+            res = mp_search(prem, premises, target)
+            if res:
+                return res
+        elif prem.__class__ == Implies:
+            if target.__class__ == Implies:
+                res = hs_search(prem, premises, target)
+                if res:
+                    return res

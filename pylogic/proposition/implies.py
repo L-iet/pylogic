@@ -84,6 +84,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         Logical tactic.
         """
         assert self.is_proven, f"{self} is not proven"
+        assert isinstance(other, Implies), f"{other} is not an implication"
         assert other.is_proven, f"{other} is not proven"
         assert (
             self.consequent == other.antecedent
