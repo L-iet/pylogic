@@ -1,11 +1,10 @@
 from __future__ import annotations
-import copy
-from typing import Self, Protocol
+from typing import Self
 
 import sympy as sp
 from sympy.printing.latex import LatexPrinter
 
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, TypeVar
 
 if TYPE_CHECKING:
     from pylogic.set.sets import Set
@@ -24,6 +23,8 @@ Term = SympyExpression  # or variable
 Side = Literal["left", "right"]
 
 latex_printer = LatexPrinter()
+TProposition = TypeVar("TProposition", bound="Proposition")
+UProposition = TypeVar("UProposition", bound="Proposition")
 
 #####################################################
 
@@ -198,9 +199,9 @@ class Proposition(_Statement):
 
     def implies(
         self,
-        other: "Proposition",
+        other: TProposition,
         is_assumption: bool = False,
-    ) -> "Implies":
+    ) -> Implies[Self, TProposition]:
         from pylogic.proposition.implies import Implies
 
         return Implies(self, other, is_assumption)
@@ -247,7 +248,7 @@ class Proposition(_Statement):
         new_p._is_proven = True
         return new_p
 
-    def modus_ponens(self, other: "Implies") -> "Proposition":
+    def modus_ponens(self, other: Implies[Self, TProposition]) -> TProposition:
         """
         Logical tactic.
         other: Implies
@@ -261,7 +262,7 @@ class Proposition(_Statement):
         new_p._is_proven = True
         return new_p
 
-    def is_one_of(self, other: "And", _recursing: bool = False) -> Self:
+    def is_one_of(self, other: And, _recursing: bool = False) -> Self:
         r"""
         Logical tactic.
         If we have proven other, we can prove any of the propositions in it.
@@ -284,7 +285,7 @@ class Proposition(_Statement):
                     continue
         raise ValueError(f"{self} is not in {other}")
 
-    def is_special_case_of(self, other: "Forall") -> Self:
+    def is_special_case_of(self, other: Forall[Self]) -> Self:
         """
         Logical tactic.
         other: Proposition
@@ -316,7 +317,9 @@ class Proposition(_Statement):
         new_p._is_proven = True
         return new_p
 
-    def followed_from(self, *assumptions: "Proposition") -> "Implies":
+    def followed_from(
+        self, *assumptions: "Proposition"
+    ) -> Implies[And, Self] | Implies[Proposition, Self]:
         """
         Logical tactic.
         Given self is proven, return a new proposition that is an implication of the form
@@ -351,7 +354,7 @@ class Proposition(_Statement):
         existential_var: str,
         expression_to_replace: Set | SympyExpression,
         positions: list[list[int]] | None = None,
-    ) -> "Exists":
+    ) -> Exists[Self]:
         r"""
         Logical tactic.
         Given self is proven, return a new proposition that there exists an existential_var such that
@@ -388,7 +391,7 @@ class Proposition(_Statement):
         )
         return new_p
 
-    def thus_forall(self, variable: Variable) -> "Forall":
+    def thus_forall(self, variable: Variable) -> Forall[Self]:
         """
         Logical tactic.
         Given self is proven, return a new proposition that for all variables, self is true.

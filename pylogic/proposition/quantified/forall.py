@@ -1,7 +1,7 @@
 from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
 from pylogic.proposition.quantified.quantified import _Quantified
-from typing import TYPE_CHECKING, Self, TypeVar, Generic
+from typing import TYPE_CHECKING, Self, TypeVar
 
 if TYPE_CHECKING:
     from sympy import Basic as SympyExpression
@@ -35,8 +35,8 @@ class Forall(_Quantified[TProposition]):
             _is_proven=_is_proven,
         )
 
-    def copy(self):
-        return Forall(
+    def copy(self) -> Self:
+        return self.__class__(
             self.variable.copy(),
             self.inner_proposition.copy(),
             self.is_assumption,
