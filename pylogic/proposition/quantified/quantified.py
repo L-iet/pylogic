@@ -36,6 +36,7 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
         self.inner_proposition: TProposition = inner_proposition
         self.variable: Variable = variable
         self._q = _q
+        self.is_atomic = False
 
     def __repr__(self) -> str:
         return f"{self._q} {self.variable}: {self.inner_proposition}"

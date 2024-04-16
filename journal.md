@@ -54,3 +54,6 @@ Begin session.
 
 8:32am: end session. I added some work on sets and containment, and started a file
 called divisible.py for some theorems related to divisibility.
+
+# Monday, Apr 15, 2024, 8:00pm PT
+Begin session. (Began earlier but forgot to log in) I'm adding proof search for the classes `Proposition`, `Forall`, `Exists`, `And`, `Or`, `Not`, `Implies`.
