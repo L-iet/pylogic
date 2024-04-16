@@ -59,7 +59,7 @@ class Proposition(_Statement):
         Whether the proposition is proven.
     """
 
-    tactic: list[str] = [
+    tactics: list[str] = [
         "p_substitute",
         "p_and",
         "p_and_reverse",

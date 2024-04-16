@@ -1,4 +1,4 @@
-from typing import TypeVar
+from typing import TypeVar, Generic, Literal
 
 from pylogic.proposition.proposition import Proposition
 from pylogic.proposition.quantified.forall import Forall
@@ -10,8 +10,43 @@ from pylogic.proposition.implies import Implies
 T = TypeVar("T", bound="Proposition")
 U = TypeVar("U", bound="Proposition")
 
+RuleName = Literal[
+    "p_substitute",
+    "p_and",
+    "p_and_reverse",
+    "modus_ponens",
+    "is_one_of",
+    "is_special_case_of",
+    "followed_from",
+    "thus_there_exists",
+    "thus_forall",
+    "hypothetical_syllogism",
+    "all_proven",
+    "quantified_modus_ponens",
+    "hence_matrices_are_equal",
+    "exists_modus_ponens",
+]
 
-def mp_prop(prem: Proposition, premises: list[Proposition], target: Proposition):
+
+class InferenceResult(Generic[T, U]):
+    def __init__(
+        self, starting_prem: T, *other_prems: Proposition, rule: RuleName, target: U
+    ) -> None:
+        self.starting_prem: T = starting_prem
+        self.other_prems: tuple[Proposition, ...] = other_prems
+        self.rule: RuleName = rule
+        self.target: U = target
+
+    def __repr__(self) -> str:
+        return f"InfResult{(self.starting_prem, *self.other_prems, self.rule, self.target)}"
+
+    def __str__(self) -> str:
+        return str((self.starting_prem, *self.other_prems, self.rule, self.target))
+
+
+def mp_prop(
+    prem: T, premises: list[Proposition], target: U
+) -> InferenceResult[T, U] | None:
     for other in premises:
         if isinstance(other, Implies):
             try:
@@ -19,7 +54,8 @@ def mp_prop(prem: Proposition, premises: list[Proposition], target: Proposition)
             except AssertionError:
                 continue
             if new_conc == target:
-                return [prem, other, "modus_ponens", new_conc]
+                return InferenceResult(prem, other, rule="modus_ponens", target=new_conc)  # type: ignore
+    return None
 
 
 def proof_search(premises: list[Proposition], target: Proposition):

@@ -15,6 +15,8 @@ VProposition = TypeVar("VProposition", bound="Proposition")
 
 
 class Implies(Proposition, Generic[TProposition, UProposition]):
+    tactics: list[str] = ["hypothetical_syllogism"]
+
     # TODO: Implement __eq__ for Implies, And, Or, Forall, IsContainedIn, Relation, Equals etc
     def __init__(
         self,
