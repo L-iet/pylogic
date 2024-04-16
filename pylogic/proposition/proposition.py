@@ -84,6 +84,9 @@ class Proposition(_Statement):
         self.args: list[Set | Term] = args or []
         self.arity: int = len(self.args)
         self._is_proven: bool = _is_proven
+        self.is_atomic: bool = (
+            True  # TODO: add is_atomic for other subclasses of Proposition
+        )
 
     def __eq__(self, other: "Proposition") -> bool:
         return self.name == other.name and self.args == other.args

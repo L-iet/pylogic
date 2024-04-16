@@ -20,6 +20,7 @@ class Or(Proposition):
         self.propositions = propositions
         name = r" \/ ".join([p.name for p in propositions])
         super().__init__(name, is_assumption)
+        self.is_atomic = False
 
     def copy(self) -> "Or":
         return Or(

@@ -21,6 +21,7 @@ class And(Proposition):
         self.propositions = propositions
         name = rf" /\ ".join([p.name for p in propositions])
         super().__init__(name, is_assumption, _is_proven=_is_proven)
+        self.is_atomic = False
 
     def copy(self) -> "And":
         return And(

@@ -6,6 +6,7 @@ class Not(Proposition):
         self.negated = negated
         name = rf"~{negated.name}"
         super().__init__(name, is_assumption)
+        self.is_atomic = False
 
     def copy(self) -> "Not":
         return Not(self.negated.copy(), self.is_assumption)

@@ -31,6 +31,7 @@ class Implies(Proposition):
         self.completed_args_order.extend(
             getattr(self.consequent, "completed_args_order", [])
         )
+        self.is_atomic = False
 
     def __repr__(self) -> str:
         return f"[{self.antecedent} -> {self.consequent}]"
