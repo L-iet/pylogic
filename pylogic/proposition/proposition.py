@@ -295,6 +295,7 @@ class Proposition(_Statement):
             OtherProposition -> ~self
         """
         from pylogic.proposition.not_ import neg, are_negs
+        from pylogic.proposition.not_ import Not
 
         assert self.is_proven, f"{self} is not proven"
         assert other.is_proven, f"{other} is not proven"
@@ -386,6 +387,7 @@ class Proposition(_Statement):
         for a in assumptions:
             assert a.is_assumption, f"{a} is not an assumption"  # type: ignore
         from pylogic.proposition.and_ import And
+        from pylogic.proposition.implies import Implies
 
         if len(assumptions) == 1:
             new_p = cast(
