@@ -13,15 +13,15 @@ UProposition = TypeVar("UProposition", bound="Proposition")
 
 
 @overload
-def neg(p: TProposition, is_assumption: bool = False) -> Not[TProposition]: ...
-
-
-@overload
 def neg(p: Not[TProposition], is_assumption: bool = False) -> TProposition: ...
 
 
+@overload
+def neg(p: TProposition, is_assumption: bool = False) -> Not[TProposition]: ...
+
+
 def neg(
-    p: TProposition | Not[TProposition], is_assumption: bool = False
+    p: Not[TProposition] | TProposition, is_assumption: bool = False
 ) -> Not[TProposition] | TProposition:
     if isinstance(p, Not):
         return p.negated

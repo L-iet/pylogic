@@ -4,7 +4,15 @@ from typing import Self
 import sympy as sp
 from sympy.printing.latex import LatexPrinter
 
-from typing import TYPE_CHECKING, Literal, TypeVar, TypedDict, overload
+from typing import (
+    TYPE_CHECKING,
+    Literal,
+    TypeVar,
+    TypedDict,
+    TypeVarTuple,
+    overload,
+    cast,
+)
 
 if TYPE_CHECKING:
     from pylogic.set.sets import Set
@@ -20,6 +28,7 @@ if TYPE_CHECKING:
 SympyExpression = sp.Basic | int | float
 
 Term = SympyExpression  # or variable
+Props = TypeVarTuple("Props")
 
 Side = Literal["left", "right"]
 
@@ -213,42 +222,40 @@ class Proposition(_Statement):
 
     def and_(
         self,
-        *others: "Proposition",
+        *others: *Props,
         is_assumption: bool = False,
-    ) -> "And":
+    ) -> And[Self, *Props]:
         from pylogic.proposition.and_ import And
 
         return And(self, *others, is_assumption=is_assumption)
 
     def and_reverse(
-        self,
-        *others: "Proposition",
-        is_assumption: bool = False,
-    ) -> "And":
+        self, *others: *Props, is_assumption: bool = False
+    ) -> And[*Props, Self]:
         from pylogic.proposition.and_ import And
 
         return And(*others, self, is_assumption=is_assumption)
 
-    def p_and(self, *others: "Proposition") -> "And":
+    def p_and(self, *others: *Props) -> And[Self, *Props]:
         """Logical tactic.
         Same as and_, but returns a proven proposition when self and all others are proven.
         """
         assert len(others) > 0, "Must provide at least one proposition"
         assert self.is_proven, f"{self} is not proven"
         for o in others:
-            assert o.is_proven, f"{o} is not proven"
+            assert o.is_proven, f"{o} is not proven"  # type:ignore
         new_p = self.and_(*others)
         new_p._is_proven = True
         return new_p
 
-    def p_and_reverse(self, *others: "Proposition") -> "And":
+    def p_and_reverse(self, *others: *Props) -> And[*Props, Self]:
         """Logical tactic.
         Same as and_reverse, but returns a proven proposition when self and all others are proven.
         """
         assert len(others) > 0, "Must provide at least one proposition"
         assert self.is_proven, f"{self} is not proven"
         for o in others:
-            assert o.is_proven, f"{o} is not proven"
+            assert o.is_proven, f"{o} is not proven"  # type:ignore
         new_p = self.and_reverse(*others)
         new_p._is_proven = True
         return new_p
@@ -294,7 +301,7 @@ class Proposition(_Statement):
         assert are_negs(
             other.consequent, self
         ), f"{other.consequent} is not the negation of {self}"
-        new_p = neg(other.antecedent.copy())
+        new_p = cast(TProposition | Not[TProposition], neg(other.antecedent.copy()))
         new_p._is_proven = True
         return new_p
 
@@ -357,9 +364,15 @@ class Proposition(_Statement):
         new_p._is_proven = True
         return new_p
 
+    @overload
     def followed_from(
-        self, *assumptions: "Proposition"
-    ) -> Implies[And, Self] | Implies[Proposition, Self]:
+        self, assumption: TProposition
+    ) -> Implies[TProposition, Self]: ...
+
+    @overload
+    def followed_from(self, *assumptions: *Props) -> Implies[And[*Props], Self]: ...
+
+    def followed_from(self, *assumptions):  # type: ignore
         """
         Logical tactic.
         Given self is proven, return a new proposition that is an implication of the form
@@ -371,21 +384,23 @@ class Proposition(_Statement):
         assert self.is_proven, f"{self} is not proven"
         assert len(assumptions) > 0, "Must provide at least one other assumption"
         for a in assumptions:
-            assert a.is_assumption, f"{a} is not an assumption"
+            assert a.is_assumption, f"{a} is not an assumption"  # type: ignore
         from pylogic.proposition.and_ import And
 
         if len(assumptions) == 1:
-            new_p = assumptions[0].copy().implies(self)
+            new_p = cast(
+                Implies[Proposition, Self], assumptions[0].copy().implies(self)  # type: ignore
+            )
             new_p.antecedent.is_assumption = False
             new_p.antecedent._is_proven = False
         else:
             a_s = []
             for a in assumptions:
-                new_a = a.copy()
+                new_a = a.copy()  # type: ignore
                 new_a.is_assumption = False
                 new_a._is_proven = False
                 a_s.append(new_a)
-            new_p = And(*a_s).implies(self)
+            new_p = cast(Implies[And[*Props], Self], And(*a_s).implies(self))  # type: ignore
         new_p._is_proven = True
         return new_p
 

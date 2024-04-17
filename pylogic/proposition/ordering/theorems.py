@@ -77,5 +77,5 @@ absolute_value_nonnegative = Forall(
 )
 
 
-def absolute_value_nonnegative_f(x: sp.Basic | int | float) -> Or:
+def absolute_value_nonnegative_f(x: sp.Basic | int | float) -> Or[GreaterThan, Equals]:
     return Or(GreaterThan(sp.Abs(x), 0), Equals(sp.Abs(x), 0), _is_proven=True)

@@ -3,6 +3,7 @@ from pylogic.proposition.quantified.forall import Forall
 from pylogic.proposition.ordering.greaterthan import GreaterThan
 from pylogic.proposition.ordering.lessthan import LessThan
 from pylogic.proposition.relation.equals import Equals
+from pylogic.proposition.or_ import Or
 from pylogic.proposition.ordering.theorems import (
     order_axiom_bf,
     absolute_value_nonnegative_f,
@@ -14,7 +15,7 @@ import sympy as sp
 
 
 x = Variable("x", real=True)
-xnot0 = neg(Equals(sp.Abs(x), 0), True)
+xnot0: Not[Equals] = neg(Equals(sp.Abs(x), 0), True)
 Px = Proposition("P", args=[x])
 Py = Proposition("P", args=[ps.Symbol("y", real=True)])
 forallXPx = Forall(x, Px, is_assumption=True)
@@ -52,14 +53,15 @@ lim_x_sq_at_0 = (
 print(lim_x_sq_at_0, lim_x_sq_at_0.is_proven)
 
 # TODO
-# Option 1: Implement a way to determine what equations need to hold for two propositions
+# Implement a way to determine what equations need to hold for two propositions
 # to be equivalent
 
 
 ###  Proving Theorem 1.2.6 (the converse statement) Understanding Analysis, 2nd Edition
+# if (forall eps>0, |a-b|<eps) then a = b
 a = ps.Symbol("a", real=True)
 b = ps.Symbol("b", real=True)
-abs_a_minus_b = sp.Abs(a - b)
+abs_a_minus_b = sp.Abs(a - b)  # type: ignore
 
 # We assume forall eps, eps > 0 => |a-b| < eps
 premise = Forall(
@@ -68,7 +70,7 @@ premise = Forall(
 premise2 = premise.in_particular(abs_a_minus_b)
 
 # ~ |a-b| > 0
-abs_a_minus_b_is_not_pos = (
+abs_a_minus_b_is_not_pos: Not[GreaterThan] = (
     Equals(abs_a_minus_b, abs_a_minus_b)
     .by_simplification()
     .modus_ponens(order_axiom_bf(abs_a_minus_b, abs_a_minus_b))
@@ -82,3 +84,4 @@ abs_a_minus_b_is_0: Equals = absolute_value_nonnegative_f(abs_a_minus_b).unit_re
 
 # a-b = 0
 print(abs_a_minus_b_is_0.zero_abs_is_0())
+# need a tactic to convert this to a=b
