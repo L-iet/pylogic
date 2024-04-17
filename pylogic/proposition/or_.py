@@ -22,6 +22,11 @@ class Or(Proposition):
         super().__init__(name, is_assumption)
         self.is_atomic = False
 
+    def __eq__(self, other: Proposition) -> bool:
+        if isinstance(other, Or):
+            return self.propositions == other.propositions
+        return False
+
     def copy(self) -> "Or":
         return Or(
             *[p.copy() for p in self.propositions], is_assumption=self.is_assumption

@@ -42,6 +42,14 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         )
         self.is_atomic = False
 
+    def __eq__(self, other: Proposition) -> bool:
+        if isinstance(other, Implies):
+            return (
+                self.antecedent == other.antecedent
+                and self.consequent == other.consequent
+            )
+        return False
+
     def __repr__(self) -> str:
         return f"[{self.antecedent} -> {self.consequent}]"
 

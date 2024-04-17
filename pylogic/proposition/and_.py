@@ -26,6 +26,11 @@ class And(Proposition):
         super().__init__(name, is_assumption, _is_proven=_is_proven)
         self.is_atomic = False
 
+    def __eq__(self, other: Proposition) -> bool:
+        if isinstance(other, And):
+            return self.propositions == other.propositions
+        return False
+
     def copy(self) -> "And":
         return And(
             *[p.copy() for p in self.propositions],
