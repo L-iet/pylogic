@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
-from typing import TYPE_CHECKING
+from pylogic.proposition.not_ import are_negs
+from typing import TYPE_CHECKING, TypeVar, TypedDict
 
 if TYPE_CHECKING:
     from sympy import Basic as SympyExpression
@@ -8,18 +9,23 @@ if TYPE_CHECKING:
 from sympy.printing.latex import LatexPrinter
 
 latex_printer = LatexPrinter()
+TProposition = TypeVar("TProposition", bound="Proposition")
+Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 
 class Or(Proposition):
+    tactics: list[Tactic] = [{"name": "unit_resolve", "arguments": ["Proposition"]}]
+
     def __init__(
         self,
         *propositions: Proposition,
         is_assumption: bool = False,
+        _is_proven: bool = False,
     ) -> None:
         assert len(propositions) > 1, "'Or' must have at least two propositions"
         self.propositions = propositions
         name = r" \/ ".join([p.name for p in propositions])
-        super().__init__(name, is_assumption)
+        super().__init__(name, is_assumption, _is_proven=_is_proven)
         self.is_atomic = False
 
     def __eq__(self, other: Proposition) -> bool:
@@ -63,3 +69,14 @@ class Or(Proposition):
     def _latex(self, printer=latex_printer) -> str:
         s = r"\vee ".join([p._latex() for p in self.propositions])
         return rf"\left({s}\right)"
+
+    def unit_resolve(self, p: Proposition) -> Or:
+        """
+        Logical tactic. Given self is proven, and p is proven, where p is
+        a negation of one of the propositions in self, return a proven disjunction
+        of the remaining propositions in self.
+        """
+        assert self.is_proven, f"{self} is not proven"
+        assert p.is_proven, f"{p} is not proven"
+        rem_props = [prop.copy() for prop in self.propositions if not are_negs(prop, p)]
+        return Or(*rem_props, _is_proven=True)
