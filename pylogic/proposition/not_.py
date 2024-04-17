@@ -13,6 +13,17 @@ def neg(
     return Not(p, is_assumption)
 
 
+def are_negs(p: Proposition, q: Proposition) -> bool:
+    """Given two propositions, determine if they are negations
+    of each other.
+    """
+    if isinstance(p, Not):
+        return p.negated == q
+    elif isinstance(q, Not):
+        return q.negated == p
+    return False
+
+
 class Not(Proposition, Generic[TProposition]):
     def __init__(
         self,
