@@ -20,7 +20,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         {"name": "hypothetical_syllogism", "arguments": ["Implies"]}
     ]
 
-    # TODO: Implement __eq__ for Implies, And, Or, Forall, IsContainedIn, Relation, Equals etc
+    # TODO: Implement __eq__ for Implies, And, Or, IsContainedIn, Relation, Equals etc
     def __init__(
         self,
         antecedent: TProposition,

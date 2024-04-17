@@ -73,6 +73,11 @@ class Exists(_Quantified[TProposition]):
             _is_proven,
         )
 
+    def __eq__(self, other: Proposition) -> bool:
+        if isinstance(other, Exists):
+            return self.inner_proposition == other.inner_proposition
+        return False
+
     def __iter__(self):
         return iter((self.variable, self.inner_proposition))
 

@@ -1,12 +1,14 @@
 from __future__ import annotations
+from typing import TYPE_CHECKING, Self, TypeVar, TypedDict
+
 from pylogic.proposition.proposition import Proposition
 from pylogic.proposition.quantified.quantified import _Quantified
-from typing import TYPE_CHECKING, Self, TypeVar, TypedDict
+from pylogic.proposition.implies import Implies
+
 
 if TYPE_CHECKING:
     from sympy import Basic as SympyExpression
     from pylogic.proposition.relation.equals import Equals
-    from pylogic.proposition.implies import Implies
     from pylogic.variable import Variable
     from pylogic.proposition.quantified.exists import Exists
 from sympy.printing.latex import LatexPrinter
@@ -38,6 +40,11 @@ class Forall(_Quantified[TProposition]):
             is_assumption,
             _is_proven=_is_proven,
         )
+
+    def __eq__(self, other: Proposition) -> bool:
+        if isinstance(other, Forall):
+            return self.inner_proposition == other.inner_proposition
+        return False
 
     def copy(self) -> Self:
         return self.__class__(
@@ -87,10 +94,15 @@ class Forall(_Quantified[TProposition]):
         (or exists x: P(x) -> Q(x)), and each is proven, conclude
         forall x: Q(x) (or exists x: Q(x)).
         """
+        from pylogic.proposition.quantified.exists import Exists
+
         quant_class = other.__class__
         assert (
             quant_class == Forall or quant_class == Exists
         ), f"{other} is not a quantified proposition"
+        assert isinstance(
+            other.inner_proposition, Implies
+        ), f"{other.inner_proposition} is not an implication"
         assert self.is_proven, f"{self} is not proven"
         assert other.is_proven, f"{other} is not proven"
 

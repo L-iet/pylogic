@@ -316,6 +316,10 @@ class Proposition(_Statement):
                         raise ValueError(
                             f"{self} is not a special case of {other}: {value_in_self} != {tself}"
                         )
+                elif tother != tself:
+                    raise ValueError(
+                        f"{self} is not a special case of {other}: {tself} != {tother}"
+                    )
 
         new_p = self.copy()
         new_p._is_proven = True

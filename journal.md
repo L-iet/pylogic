@@ -76,4 +76,13 @@ Also differentiate between the tactic types above. Separate functions to call ta
 to be called from the target.
 
 # Tuesday Apr 16, 2024, 5:51pm PT
-Begin session.
+Begin session. Will try to see the overall structure of each search function before merging.
+
+7:54pm: end session. The structures of quantified_modus_ponens, modus_ponens and hypothetical_syllogism search
+are the same, so will later be merging them.
+TODO: Need to check my change of `is_special_case_of` tactic. Consider the case
+```
+forall x: P(1, 2, 3)
+```
+to prove `P(x,y,z)`. The variables in the `forall` should get set to the values in the given prop,
+but not vice versa.
