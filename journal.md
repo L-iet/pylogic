@@ -74,3 +74,6 @@ For other tactics, calling it on `p` returns a different proposition that is pro
 4:53pm: end session. Will merge functions for tactics with same number of arguments.
 Also differentiate between the tactic types above. Separate functions to call tactics that need
 to be called from the target.
+
+# Tuesday Apr 16, 2024, 5:51pm PT
+Begin session.
