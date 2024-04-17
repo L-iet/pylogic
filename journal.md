@@ -86,3 +86,6 @@ forall x: P(1, 2, 3)
 ```
 to prove `P(x,y,z)`. The variables in the `forall` should get set to the values in the given prop,
 but not vice versa.
+
+# Tuesday Apr 16, 2024, 9:20pm PT
+Begin session.
