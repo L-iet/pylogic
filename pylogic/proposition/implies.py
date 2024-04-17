@@ -1,9 +1,11 @@
 from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
+from pylogic.proposition.not_ import neg
 from typing import TYPE_CHECKING, TypeVar, Generic, TypedDict
 
 if TYPE_CHECKING:
     from sympy import Basic as SympyExpression
+    from pylogic.proposition.or_ import Or
     from pylogic.set.sets import Set
 from sympy.printing.latex import LatexPrinter
 
@@ -103,3 +105,10 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         i = Implies(self.antecedent, other.consequent)
         i._is_proven = True
         return i
+
+    def impl_elim(self) -> Or:
+        r"""Logical tactic. Given self (A -> B) is proven, return the corresponding
+        disjunction form (~A \/ B)
+        """
+        assert self.is_proven, f"{self} is not proven"
+        return Or(neg(self.antecedent), self.consequent, _is_proven=True)
