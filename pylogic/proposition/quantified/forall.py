@@ -7,12 +7,13 @@ from pylogic.proposition.implies import Implies
 
 
 if TYPE_CHECKING:
-    from sympy import Basic as SympyExpression
     from pylogic.proposition.relation.equals import Equals
     from pylogic.variable import Variable
     from pylogic.proposition.quantified.exists import Exists
 from sympy.printing.latex import LatexPrinter
 import sympy as sp
+
+SympyExpression = sp.Basic | int | float
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
@@ -48,7 +49,7 @@ class Forall(_Quantified[TProposition]):
 
     def copy(self) -> Self:
         return self.__class__(
-            self.variable.copy(),
+            self.variable,
             self.inner_proposition.copy(),
             self.is_assumption,
             self.is_proven,
@@ -113,4 +114,29 @@ class Forall(_Quantified[TProposition]):
             is_assumption=False,
             _is_proven=True,
         )
+        return new_p
+
+    def replace(
+        self,
+        current_val: SympyExpression,
+        new_val: SympyExpression,
+        positions: list[list[int]] | None = None,
+    ) -> Self:
+        if current_val == self.variable:
+            raise ValueError("Cannot replace variable (not implemented)")
+        new_p = self.copy()
+        new_p.inner_proposition = new_p.inner_proposition.replace(
+            current_val, new_val, positions=positions
+        )
+        return new_p
+
+    def in_particular(self, expression_to_substitute: SympyExpression) -> TProposition:
+        """Logical tactic. Given self is proven, replace the variable in the inner
+        proposition and get a proven proposition.
+        """
+        # TODO: may need to define or override .replace for Forall to prevent
+        # unnecessarily replacing the variable in the inner proposition
+        assert self.is_proven, f"{self} is not proven"
+        new_p = self.inner_proposition.replace(self.variable, expression_to_substitute)
+        new_p._is_proven = True
         return new_p

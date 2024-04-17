@@ -4,7 +4,7 @@ from typing import Self
 import sympy as sp
 from sympy.printing.latex import LatexPrinter
 
-from typing import TYPE_CHECKING, Literal, TypeVar, TypedDict
+from typing import TYPE_CHECKING, Literal, TypeVar, TypedDict, overload
 
 if TYPE_CHECKING:
     from pylogic.set.sets import Set
@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.implies import Implies
     from pylogic.proposition.quantified.exists import Exists
     from pylogic.proposition.quantified.forall import Forall
+    from pylogic.proposition.not_ import Not
     from pylogic.variable import Variable
 
 
@@ -259,10 +260,41 @@ class Proposition(_Statement):
             Must be an implication that has been proven whose structure is
             self.name -> OtherProposition
         """
-        assert self.is_proven, f"{self.name} is not proven"
-        assert other.is_proven, f"{other.name} is not proven"
-        assert other.antecedent == self, f"{other.name} does not imply {self.name}"
+        assert self.is_proven, f"{self} is not proven"
+        assert other.is_proven, f"{other} is not proven"
+        assert other.antecedent == self, f"{other} does not imply {self}"
         new_p = other.consequent.copy()
+        new_p._is_proven = True
+        return new_p
+
+    @overload
+    def modus_tollens(
+        self, other: Implies[Not[TProposition], Not[Self]]
+    ) -> TProposition: ...
+
+    @overload
+    def modus_tollens(
+        self, other: Implies[TProposition, Not[Self]]
+    ) -> Not[TProposition]: ...
+
+    def modus_tollens(
+        self,
+        other: Implies[Not[TProposition], Not[Self]] | Implies[TProposition, Not[Self]],
+    ) -> TProposition | Not[TProposition]:
+        """
+        Logical tactic.
+        other: Implies
+            Must be an implication that has been proven whose structure is
+            OtherProposition -> ~self
+        """
+        from pylogic.proposition.not_ import neg, are_negs
+
+        assert self.is_proven, f"{self} is not proven"
+        assert other.is_proven, f"{other} is not proven"
+        assert are_negs(
+            other.consequent, self
+        ), f"{other.consequent} is not the negation of {self}"
+        new_p = neg(other.antecedent.copy())
         new_p._is_proven = True
         return new_p
 

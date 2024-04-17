@@ -94,3 +94,9 @@ Begin session.
 
 # Wednesday Apr 17, 2024, 9:51am PT
 Began session at least 1hr ago.
+
+1:08pm: Learned about `@overload` in typing, from https://adamj.eu/tech/2021/09/06/python-type-hints-how-to-vary-return-type-based-on-an-argument/ 
+to return multiple types depending on type of parameters.
+
+1:24pm: Learned about `TypeVarTuple` in typing, from https://stackoverflow.com/questions/46487583/python-3-types-custom-variadic-generic-type-with-arbitrary-number-of-contained 
+after a short stupid back-and-forth with ShitGPT (and deciding to google finally).

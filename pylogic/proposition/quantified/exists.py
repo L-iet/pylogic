@@ -83,7 +83,7 @@ class Exists(_Quantified[TProposition]):
 
     def copy(self) -> Self:
         return self.__class__(
-            self.variable.copy(),
+            self.variable,
             self.inner_proposition.copy(),
             self.is_assumption,
             _is_proven=self.is_proven,

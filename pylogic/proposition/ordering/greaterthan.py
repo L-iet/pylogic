@@ -1,5 +1,6 @@
 from __future__ import annotations
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
+from pylogic.proposition.relation.equals import Equals
 from pylogic.proposition.ordering.ordering import _Ordering
 from typing import TYPE_CHECKING
 from sympy import Basic
@@ -8,6 +9,7 @@ from sympy import S as sympy_S
 SympyExpression = Basic | int | float
 if TYPE_CHECKING:
     from pylogic.proposition.ordering.lessthan import LessThan
+    from pylogic.proposition.not_ import Not
 import sympy as sp
 
 
@@ -18,12 +20,19 @@ class GreaterThan(BinaryRelation, _Ordering):
     infix_symbol_latex = ">"
 
     @staticmethod
-    def is_absolute(expr: SympyExpression) -> "GreaterThan":
+    def is_absolute(expr: SympyExpression, expr_not_zero: Not[Equals]) -> "GreaterThan":
         """Logical tactic.
-        Given an expr of the form sympy.Abs(x), return a proven proposition that says
-        sympy.Abs(x) > 0
+        Given an expr of the form sympy.Abs(x) and a proof that the expr is
+        not zero,
+        return a proven proposition that says sympy.Abs(x) > 0
         """
         assert isinstance(expr, sp.Abs), f"{expr} is not an absolute value"
+        assert expr_not_zero.is_proven, f"{expr_not_zero} is not proven"
+        assert isinstance(
+            expr_not_zero.negated, Equals
+        ), f"{expr_not_zero} is not a proof that {expr} is not 0"
+        assert expr_not_zero.negated.left == expr
+        assert expr_not_zero.negated.right == sp.Integer(0)
         return GreaterThan(expr, 0, _is_proven=True)
 
     @staticmethod

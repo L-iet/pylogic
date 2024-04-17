@@ -70,7 +70,7 @@ class Or(Proposition):
         s = r"\vee ".join([p._latex() for p in self.propositions])
         return rf"\left({s}\right)"
 
-    def unit_resolve(self, p: Proposition) -> Or:
+    def unit_resolve(self, p: Proposition) -> Proposition | Or:
         """
         Logical tactic. Given self is proven, and p is proven, where p is
         a negation of one of the propositions in self, return a proven disjunction
@@ -79,4 +79,7 @@ class Or(Proposition):
         assert self.is_proven, f"{self} is not proven"
         assert p.is_proven, f"{p} is not proven"
         rem_props = [prop.copy() for prop in self.propositions if not are_negs(prop, p)]
+        if len(rem_props) == 1:
+            rem_props[0]._is_proven = True
+            return rem_props[0]
         return Or(*rem_props, _is_proven=True)
