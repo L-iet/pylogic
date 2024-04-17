@@ -89,3 +89,5 @@ but not vice versa.
 
 # Tuesday Apr 16, 2024, 9:20pm PT
 Begin session.
+
+10:12pm: break session.
