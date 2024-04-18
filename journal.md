@@ -54,3 +54,58 @@ Begin session.
 
 8:32am: end session. I added some work on sets and containment, and started a file
 called divisible.py for some theorems related to divisibility.
+
+# Monday, Apr 15, 2024, 8:00pm PT
+Begin session. (Began earlier but forgot to log in) I'm adding proof search for the classes `Proposition`, `Forall`, `Exists`, `And`, `Or`, `Not`, `Implies`.
+
+11:21pm: end session. Added starting code for the proof search.
+
+# Tuesday Apr 16, 2024, 12:49am PT
+Begin session.
+
+2:53am Need to add code to store generated proposiions and use them in later infernces
+
+# Tuesday Apr 16, 2024, 4:11pm PT
+Begin session.
+
+For some tactics, calling it on `p` returns `p`, but proven.
+For other tactics, calling it on `p` returns a different proposition that is proven.
+
+4:53pm: end session. Will merge functions for tactics with same number of arguments.
+Also differentiate between the tactic types above. Separate functions to call tactics that need
+to be called from the target.
+
+# Tuesday Apr 16, 2024, 5:51pm PT
+Begin session. Will try to see the overall structure of each search function before merging.
+
+7:54pm: end session. The structures of quantified_modus_ponens, modus_ponens and hypothetical_syllogism search
+are the same, so will later be merging them.
+TODO: Need to check my change of `is_special_case_of` tactic. Consider the case
+```
+forall x: P(1, 2, 3)
+```
+to prove `P(x,y,z)`. The variables in the `forall` should get set to the values in the given prop,
+but not vice versa.
+
+# Tuesday Apr 16, 2024, 9:20pm PT
+Begin session.
+
+10:12pm: break session.
+
+# Wednesday Apr 17, 2024, 9:51am PT
+Began session at least 1hr ago.
+
+1:08pm: Learned about `@overload` in typing, from https://adamj.eu/tech/2021/09/06/python-type-hints-how-to-vary-return-type-based-on-an-argument/ 
+to return multiple types depending on type of parameters.
+
+1:24pm: Learned about `TypeVarTuple` in typing, from https://stackoverflow.com/questions/46487583/python-3-types-custom-variadic-generic-type-with-arbitrary-number-of-contained 
+after a short stupid back-and-forth with ShitGPT (and deciding to google finally).
+
+5:09pm: Break session. I recorded a demo video of two proofs.
+
+# Wednesday Apr 17, 2024, 5:46pm PT
+Begin session. Continue work on predicate proof search.
+
+TODO: Need to implement hash for other props besides And, Not, Implies, Or, Proposition.
+
+8:17pm: end session.

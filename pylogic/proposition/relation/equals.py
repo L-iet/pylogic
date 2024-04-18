@@ -4,7 +4,9 @@ from pylogic.proposition.proposition import Proposition
 from typing import TYPE_CHECKING, Literal, TypeVar, Self
 
 if TYPE_CHECKING:
-    from sympy import Basic as SympyExpression
+    from sympy import Basic
+
+    SympyExpression = Basic | int | float
     from pylogic.set.sets import Set
 from sympy.printing.latex import LatexPrinter
 import sympy as sp
@@ -135,3 +137,13 @@ class Equals(BinaryRelation):
         new_prop: TProposition = self.substitute_into(side, other_prop)
         new_prop._is_proven = True
         return new_prop
+
+    def zero_abs_is_0(self) -> Equals:
+        """
+        Logical tactic. If self is of the form Abs(x) = 0,
+        return a proof of x = 0.
+        """
+        assert self.is_proven, f"{self} is not proven"
+        assert isinstance(self.left, sp.Abs)
+        assert self.right == sp.Integer(0)
+        return Equals(self.left.args[0], 0, _is_proven=True)

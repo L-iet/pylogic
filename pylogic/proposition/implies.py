@@ -1,21 +1,32 @@
 from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
-from typing import TYPE_CHECKING
+from pylogic.proposition.not_ import neg
+from typing import TYPE_CHECKING, TypeVar, Generic, TypedDict
 
 if TYPE_CHECKING:
     from sympy import Basic as SympyExpression
+    from pylogic.proposition.or_ import Or
     from pylogic.set.sets import Set
 from sympy.printing.latex import LatexPrinter
 
 latex_printer = LatexPrinter()
 
+TProposition = TypeVar("TProposition", bound="Proposition")
+UProposition = TypeVar("UProposition", bound="Proposition")
+VProposition = TypeVar("VProposition", bound="Proposition")
+Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
-class Implies(Proposition):
-    # TODO: Implement __eq__ for Implies, And, Or, Forall, IsContainedIn, Relation, Equals etc
+
+class Implies(Proposition, Generic[TProposition, UProposition]):
+    tactics: list[Tactic] = [
+        {"name": "hypothetical_syllogism", "arguments": ["Implies"]}
+    ]
+
+    # TODO: Implement __eq__ for Implies, And, Or, IsContainedIn, Relation, Equals etc
     def __init__(
         self,
-        antecedent: Proposition,
-        consequent: Proposition,
+        antecedent: TProposition,
+        consequent: UProposition,
         is_assumption: bool = False,
         _is_proven: bool = False,
     ) -> None:
@@ -31,6 +42,18 @@ class Implies(Proposition):
         self.completed_args_order.extend(
             getattr(self.consequent, "completed_args_order", [])
         )
+        self.is_atomic = False
+
+    def __eq__(self, other: Proposition) -> bool:
+        if isinstance(other, Implies):
+            return (
+                self.antecedent == other.antecedent
+                and self.consequent == other.consequent
+            )
+        return False
+
+    def __hash__(self) -> int:
+        return hash(("impl", self.antecedent, self.consequent))
 
     def __repr__(self) -> str:
         return f"[{self.antecedent} -> {self.consequent}]"
@@ -70,11 +93,14 @@ class Implies(Proposition):
         new_p._is_proven = False
         return new_p
 
-    def hypothetical_syllogism(self, other: "Implies") -> "Implies":
+    def hypothetical_syllogism(
+        self, other: Implies[UProposition, VProposition]
+    ) -> Implies[TProposition, VProposition]:
         """
         Logical tactic.
         """
         assert self.is_proven, f"{self} is not proven"
+        assert isinstance(other, Implies), f"{other} is not an implication"
         assert other.is_proven, f"{other} is not proven"
         assert (
             self.consequent == other.antecedent
@@ -82,3 +108,10 @@ class Implies(Proposition):
         i = Implies(self.antecedent, other.consequent)
         i._is_proven = True
         return i
+
+    def impl_elim(self) -> Or:
+        r"""Logical tactic. Given self (A -> B) is proven, return the corresponding
+        disjunction form (~A \/ B)
+        """
+        assert self.is_proven, f"{self} is not proven"
+        return Or(neg(self.antecedent), self.consequent, _is_proven=True)

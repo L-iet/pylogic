@@ -1,11 +1,18 @@
 from __future__ import annotations
-import copy
-from typing import Self, Protocol
+from typing import Self
 
 import sympy as sp
 from sympy.printing.latex import LatexPrinter
 
-from typing import TYPE_CHECKING, Literal
+from typing import (
+    TYPE_CHECKING,
+    Literal,
+    TypeVar,
+    TypedDict,
+    TypeVarTuple,
+    overload,
+    cast,
+)
 
 if TYPE_CHECKING:
     from pylogic.set.sets import Set
@@ -14,16 +21,21 @@ if TYPE_CHECKING:
     from pylogic.proposition.implies import Implies
     from pylogic.proposition.quantified.exists import Exists
     from pylogic.proposition.quantified.forall import Forall
+    from pylogic.proposition.not_ import Not
     from pylogic.variable import Variable
 
 
 SympyExpression = sp.Basic | int | float
 
 Term = SympyExpression  # or variable
+Props = TypeVarTuple("Props")
 
 Side = Literal["left", "right"]
 
 latex_printer = LatexPrinter()
+TProposition = TypeVar("TProposition", bound="Proposition")
+UProposition = TypeVar("UProposition", bound="Proposition")
+Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 #####################################################
 
@@ -58,6 +70,18 @@ class Proposition(_Statement):
         Whether the proposition is proven.
     """
 
+    tactics: list[Tactic] = [
+        {"name": "p_substitute", "arguments": ["Side", "Equality"]},
+        {"name": "p_and", "arguments": []},
+        {"name": "p_and_reverse", "arguments": []},
+        {"name": "modus_ponens", "arguments": ["Implies"]},
+        {"name": "is_one_of", "arguments": ["And"]},
+        {"name": "is_special_case_of", "arguments": ["Forall"]},
+        {"name": "followed_from", "arguments": []},
+        {"name": "thus_there_exists", "arguments": ["str", "Term", "list[list[int]]"]},
+        {"name": "thus_forall", "arguments": ["Variable"]},
+    ]
+
     def __init__(
         self,
         name: str,
@@ -84,12 +108,23 @@ class Proposition(_Statement):
         self.args: list[Set | Term] = args or []
         self.arity: int = len(self.args)
         self._is_proven: bool = _is_proven
+        self.is_atomic: bool = (
+            True  # TODO: add is_atomic for other subclasses of Proposition
+        )
 
-    def __eq__(self, other: "Proposition") -> bool:
-        return self.name == other.name and self.args == other.args
+    def __eq__(self, other: Proposition) -> bool:
+        if isinstance(other, Proposition):
+            return self.name == other.name and self.args == other.args
+        return False
+
+    def __hash__(self) -> int:
+        return hash((self.name, *self.args))
 
     def __repr__(self) -> str:
-        return f"{self.name} {tuple(self.args)}"
+        if self.args:
+            return f"{self.name} {tuple(self.args)}"
+        else:
+            return self.name
 
     def __copy__(self) -> "Proposition":
         return self.copy()
@@ -183,77 +218,107 @@ class Proposition(_Statement):
 
     def implies(
         self,
-        other: "Proposition",
+        other: TProposition,
         is_assumption: bool = False,
-    ) -> "Implies":
+    ) -> Implies[Self, TProposition]:
         from pylogic.proposition.implies import Implies
 
         return Implies(self, other, is_assumption)
 
     def and_(
         self,
-        *others: "Proposition",
+        *others: *Props,
         is_assumption: bool = False,
-    ) -> "And":
+    ) -> And[Self, *Props]:
         from pylogic.proposition.and_ import And
 
         return And(self, *others, is_assumption=is_assumption)
 
     def and_reverse(
-        self,
-        *others: "Proposition",
-        is_assumption: bool = False,
-    ) -> "And":
+        self, *others: *Props, is_assumption: bool = False
+    ) -> And[*Props, Self]:
         from pylogic.proposition.and_ import And
 
         return And(*others, self, is_assumption=is_assumption)
 
-    def p_and(self, *others: "Proposition") -> "And":
+    def p_and(self, *others: *Props) -> And[Self, *Props]:
         """Logical tactic.
         Same as and_, but returns a proven proposition when self and all others are proven.
         """
         assert len(others) > 0, "Must provide at least one proposition"
         assert self.is_proven, f"{self} is not proven"
         for o in others:
-            assert o.is_proven, f"{o} is not proven"
+            assert o.is_proven, f"{o} is not proven"  # type:ignore
         new_p = self.and_(*others)
         new_p._is_proven = True
         return new_p
 
-    def p_and_reverse(self, *others: "Proposition") -> "And":
+    def p_and_reverse(self, *others: *Props) -> And[*Props, Self]:
         """Logical tactic.
         Same as and_reverse, but returns a proven proposition when self and all others are proven.
         """
         assert len(others) > 0, "Must provide at least one proposition"
         assert self.is_proven, f"{self} is not proven"
         for o in others:
-            assert o.is_proven, f"{o} is not proven"
+            assert o.is_proven, f"{o} is not proven"  # type:ignore
         new_p = self.and_reverse(*others)
         new_p._is_proven = True
         return new_p
 
-    def modus_ponens(self, other: "Implies") -> "Proposition":
+    def modus_ponens(self, other: Implies[Self, TProposition]) -> TProposition:
         """
         Logical tactic.
         other: Implies
             Must be an implication that has been proven whose structure is
             self.name -> OtherProposition
         """
-        assert self.is_proven, f"{self.name} is not proven"
-        assert other.is_proven, f"{other.name} is not proven"
-        assert other.antecedent == self, f"{other.name} does not imply {self.name}"
+        assert self.is_proven, f"{self} is not proven"
+        assert other.is_proven, f"{other} is not proven"
+        assert other.antecedent == self, f"{other} does not imply {self}"
         new_p = other.consequent.copy()
         new_p._is_proven = True
         return new_p
 
-    def is_one_of(self, other: "And", _recursing: bool = False) -> Self:
+    @overload
+    def modus_tollens(
+        self, other: Implies[Not[TProposition], Not[Self]]
+    ) -> TProposition: ...
+
+    @overload
+    def modus_tollens(
+        self, other: Implies[TProposition, Not[Self]]
+    ) -> Not[TProposition]: ...
+
+    def modus_tollens(
+        self,
+        other: Implies[Not[TProposition], Not[Self]] | Implies[TProposition, Not[Self]],
+    ) -> TProposition | Not[TProposition]:
+        """
+        Logical tactic.
+        other: Implies
+            Must be an implication that has been proven whose structure is
+            OtherProposition -> ~self
+        """
+        from pylogic.proposition.not_ import neg, are_negs
+        from pylogic.proposition.not_ import Not
+
+        assert self.is_proven, f"{self} is not proven"
+        assert other.is_proven, f"{other} is not proven"
+        assert are_negs(
+            other.consequent, self
+        ), f"{other.consequent} is not the negation of {self}"
+        new_p = cast(TProposition | Not[TProposition], neg(other.antecedent.copy()))
+        new_p._is_proven = True
+        return new_p
+
+    def is_one_of(self, other: And, *, __recursing: bool = False) -> Self:
         r"""
         Logical tactic.
         If we have proven other, we can prove any of the propositions in it.
         other: And
             Must be a conjunction that has been proven where one of the propositions is self.
         """
-        if not _recursing:
+        if not __recursing:
             assert other.is_proven, f"{other} is not proven"
         from pylogic.proposition.and_ import And
 
@@ -264,12 +329,12 @@ class Proposition(_Statement):
                 return new_p
             elif isinstance(p, And):
                 try:
-                    return self.is_one_of(p, _recursing=True)
+                    return self.is_one_of(p, __recursing=True)
                 except ValueError:
                     continue
         raise ValueError(f"{self} is not in {other}")
 
-    def is_special_case_of(self, other: "Forall") -> Self:
+    def is_special_case_of(self, other: Forall[Self]) -> Self:
         """
         Logical tactic.
         other: Proposition
@@ -296,12 +361,24 @@ class Proposition(_Statement):
                         raise ValueError(
                             f"{self} is not a special case of {other}: {value_in_self} != {tself}"
                         )
+                elif tother != tself:
+                    raise ValueError(
+                        f"{self} is not a special case of {other}: {tself} != {tother}"
+                    )
 
         new_p = self.copy()
         new_p._is_proven = True
         return new_p
 
-    def followed_from(self, *assumptions: "Proposition") -> "Implies":
+    @overload
+    def followed_from(
+        self, assumption: TProposition
+    ) -> Implies[TProposition, Self]: ...
+
+    @overload
+    def followed_from(self, *assumptions: *Props) -> Implies[And[*Props], Self]: ...
+
+    def followed_from(self, *assumptions):  # type: ignore
         """
         Logical tactic.
         Given self is proven, return a new proposition that is an implication of the form
@@ -313,21 +390,24 @@ class Proposition(_Statement):
         assert self.is_proven, f"{self} is not proven"
         assert len(assumptions) > 0, "Must provide at least one other assumption"
         for a in assumptions:
-            assert a.is_assumption, f"{a} is not an assumption"
+            assert a.is_assumption, f"{a} is not an assumption"  # type: ignore
         from pylogic.proposition.and_ import And
+        from pylogic.proposition.implies import Implies
 
         if len(assumptions) == 1:
-            new_p = assumptions[0].copy().implies(self)
+            new_p = cast(
+                Implies[Proposition, Self], assumptions[0].copy().implies(self)  # type: ignore
+            )
             new_p.antecedent.is_assumption = False
             new_p.antecedent._is_proven = False
         else:
             a_s = []
             for a in assumptions:
-                new_a = a.copy()
+                new_a = a.copy()  # type: ignore
                 new_a.is_assumption = False
                 new_a._is_proven = False
                 a_s.append(new_a)
-            new_p = And(*a_s).implies(self)
+            new_p = cast(Implies[And[*Props], Self], And(*a_s).implies(self))  # type: ignore
         new_p._is_proven = True
         return new_p
 
@@ -336,7 +416,7 @@ class Proposition(_Statement):
         existential_var: str,
         expression_to_replace: Set | SympyExpression,
         positions: list[list[int]] | None = None,
-    ) -> "Exists":
+    ) -> Exists[Self]:
         r"""
         Logical tactic.
         Given self is proven, return a new proposition that there exists an existential_var such that
@@ -364,7 +444,7 @@ class Proposition(_Statement):
         assert self.is_proven, f"{self} is not proven"
         from pylogic.proposition.quantified.exists import Exists
 
-        new_p = Exists(
+        new_p = Exists.from_proposition(
             existential_var_name=existential_var,
             expression_to_replace=expression_to_replace,
             inner_proposition=self,
@@ -373,7 +453,7 @@ class Proposition(_Statement):
         )
         return new_p
 
-    def thus_forall(self, variable: Variable) -> "Forall":
+    def thus_forall(self, variable: Variable) -> Forall[Self]:
         """
         Logical tactic.
         Given self is proven, return a new proposition that for all variables, self is true.
