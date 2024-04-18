@@ -109,3 +109,5 @@ Begin session. Continue work on predicate proof search.
 TODO: Need to implement hash for other props besides And, Not, Implies, Or, Proposition.
 
 8:17pm: end session.
+
+2:02am: TODO: add De_morgan as a tactic or method to every proposition.
