@@ -106,4 +106,6 @@ after a short stupid back-and-forth with ShitGPT (and deciding to google finally
 # Wednesday Apr 17, 2024, 5:46pm PT
 Begin session. Continue work on predicate proof search.
 
-TODO: Need to implement hash for other props besides And, Not, Implies, Or, Proposition
+TODO: Need to implement hash for other props besides And, Not, Implies, Or, Proposition.
+
+8:17pm: end session.
