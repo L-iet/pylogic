@@ -94,13 +94,16 @@ class Exists(_Quantified[TProposition]):
         Logical tactic. If self is exists x: P(x) and given forall x: P(x) -> Q(x)
         and each is proven, conclude exists x: Q(x).
         """
+        from pylogic.proposition.quantified.forall import Forall
+
         assert self.is_proven, f"{self} is not proven"
         assert isinstance(other, Forall), f"{other} is not a forall statement"
         assert other.is_proven, f"{other} is not proven"
+        assert self.inner_proposition == other.inner_proposition.antecedent
 
         other_cons = other.inner_proposition.consequent.copy()
         new_p = Exists(
-            variable=other.variable.copy(),
+            variable=other.variable,
             inner_proposition=other_cons,  # type: ignore
             is_assumption=False,
             _is_proven=True,

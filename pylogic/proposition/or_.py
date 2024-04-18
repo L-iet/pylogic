@@ -15,7 +15,10 @@ Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 
 class Or(Proposition, Generic[*Props]):
-    tactics: list[Tactic] = [{"name": "unit_resolve", "arguments": ["Proposition"]}]
+    tactics: list[Tactic] = [
+        {"name": "unit_resolve", "arguments": ["Proposition"]},
+        {"name": "one_proven", "arguments": ["Proposition"]},
+    ]
 
     def __init__(
         self,
@@ -31,8 +34,11 @@ class Or(Proposition, Generic[*Props]):
 
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, Or):
-            return self.propositions == other.propositions
+            return set(self.propositions) == set(other.propositions)
         return False
+
+    def __hash__(self) -> int:
+        return hash(("or", *self.propositions))
 
     def copy(self) -> Self:
         return self.__class__(
@@ -84,3 +90,14 @@ class Or(Proposition, Generic[*Props]):
             rem_props[0]._is_proven = True
             return rem_props[0]
         return Or(*rem_props, _is_proven=True)  # type: ignore
+
+    def one_proven(self, p: Proposition) -> Self:
+        """
+        Logical tactic. Given one proven proposition in self, return
+        a proof of self (disjunction).
+        """
+        assert p.is_proven, f"{p} is not proven"
+        assert p in self.propositions, f"{p} is not present in {self}"
+        new_p = self.copy()
+        new_p._is_proven = True
+        return new_p

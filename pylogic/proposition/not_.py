@@ -59,6 +59,9 @@ class Not(Proposition, Generic[TProposition]):
             return other.negated == self.negated
         return False
 
+    def __hash__(self) -> int:
+        return hash(("not", self.negated))
+
     def copy(self) -> Self:
         return self.__class__(
             self.negated.copy(), self.is_assumption, _is_proven=self.is_proven

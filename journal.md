@@ -104,4 +104,6 @@ after a short stupid back-and-forth with ShitGPT (and deciding to google finally
 5:09pm: Break session. I recorded a demo video of two proofs.
 
 # Wednesday Apr 17, 2024, 5:46pm PT
-Begin session. Continue work on predicate proof search
+Begin session. Continue work on predicate proof search.
+
+TODO: Need to implement hash for other props besides And, Not, Implies, Or, Proposition

@@ -112,8 +112,13 @@ class Proposition(_Statement):
             True  # TODO: add is_atomic for other subclasses of Proposition
         )
 
-    def __eq__(self, other: "Proposition") -> bool:
-        return self.name == other.name and self.args == other.args
+    def __eq__(self, other: Proposition) -> bool:
+        if isinstance(other, Proposition):
+            return self.name == other.name and self.args == other.args
+        return False
+
+    def __hash__(self) -> int:
+        return hash((self.name, *self.args))
 
     def __repr__(self) -> str:
         if self.args:

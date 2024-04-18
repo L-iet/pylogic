@@ -30,8 +30,11 @@ class And(Proposition, Generic[*Props]):
 
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, And):
-            return self.propositions == other.propositions
+            return set(self.propositions) == set(other.propositions)
         return False
+
+    def __hash__(self) -> int:
+        return hash(("and", *self.propositions))
 
     def copy(self) -> Self:
         return self.__class__(

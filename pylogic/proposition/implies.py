@@ -52,6 +52,9 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             )
         return False
 
+    def __hash__(self) -> int:
+        return hash(("impl", self.antecedent, self.consequent))
+
     def __repr__(self) -> str:
         return f"[{self.antecedent} -> {self.consequent}]"
 

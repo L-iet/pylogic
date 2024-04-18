@@ -106,6 +106,7 @@ class Forall(_Quantified[TProposition]):
         ), f"{other.inner_proposition} is not an implication"
         assert self.is_proven, f"{self} is not proven"
         assert other.is_proven, f"{other} is not proven"
+        assert self.inner_proposition == other.inner_proposition.antecedent
 
         other_cons = other.inner_proposition.consequent.copy()
         new_p: Forall[B] | Exists[B] = quant_class(
