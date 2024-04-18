@@ -111,3 +111,6 @@ TODO: Need to implement hash for other props besides And, Not, Implies, Or, Prop
 8:17pm: end session.
 
 2:02am: TODO: add De_morgan as a tactic or method to every proposition.
+
+# Thursday Apr 18, 2024, 7:29am PT
+Begin session. Will finish pred proof search today.
