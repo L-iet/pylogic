@@ -1,7 +1,7 @@
 from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
 from pylogic.proposition.not_ import neg
-from typing import TYPE_CHECKING, TypeVar, Generic, TypedDict
+from typing import TYPE_CHECKING, TypeVar, Generic, TypedDict, Self
 
 if TYPE_CHECKING:
     from sympy import Basic as SympyExpression
@@ -19,10 +19,12 @@ Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 class Implies(Proposition, Generic[TProposition, UProposition]):
     tactics: list[Tactic] = [
-        {"name": "hypothetical_syllogism", "arguments": ["Implies"]}
+        {"name": "hypothetical_syllogism", "arguments": ["Implies"]},
+        {"name": "impl_elim", "arguments": []},
+        {"name": "definite_clause_resolve", "arguments": ["Proposition"]},
     ]
 
-    # TODO: Implement __eq__ for Implies, And, Or, IsContainedIn, Relation, Equals etc
+    # TODO: Implement __eq__ for IsContainedIn, Relation, Equals etc
     def __init__(
         self,
         antecedent: TProposition,
@@ -115,3 +117,27 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         """
         assert self.is_proven, f"{self} is not proven"
         return Or(neg(self.antecedent), self.consequent, _is_proven=True)
+
+    def definite_clause_resolve(
+        self, in_body: Proposition
+    ) -> Self | Implies[Proposition, UProposition]:
+        r"""
+        Logical tactic. Given self (A /\ B /\ C...) -> D is proven, and
+        given one of the props in the antecedent B is proven,
+        return a proof of the new definite clause (A /\ C /\ ...) -> D
+        or A -> D if only A is left in the body
+        """
+        from pylogic.proposition.and_ import And
+
+        assert self.is_proven, f"{self} is not proven"
+        assert in_body.is_proven, f"{in_body} is not proven"
+        assert isinstance(
+            self.antecedent, And
+        ), f"The antecedent of {self} is not a conjunction"
+        rem_props = [
+            prop.copy() for prop in self.antecedent.propositions if prop != in_body
+        ]
+        if len(rem_props) == 1:
+            return Implies(rem_props[0], self.consequent, _is_proven=True)
+        new_p = Implies(And(*rem_props), self.consequent, _is_proven=True)
+        return new_p  # type:ignore
