@@ -80,7 +80,7 @@ def inference_rule_search(
     """
     Search for if target can be inferred from the premises using the inference rule.
     premises: propositions we haven't yet called the tactic on
-    props: all proven propositions
+    all_props: all proven propositions
     """
     prem_prop = get_prop(prem)
     for other in all_props:
@@ -100,18 +100,31 @@ def inference_rule_search(
     return None
 
 
-def proof_search_one(premises: list[Proposition], target: Proposition):
-    all_inferences: list[Proposition | InferenceResult] = premises  # type: ignore
-    usable_props: list[Proposition | InferenceResult] = [
-        p for p in premises
-    ]  # propositions we can call the tactics on
+def proof_search_one(
+    premises: list[Proposition], target: Proposition, max_iters: int = 5000
+):
+    """
+    Perform a proof search to determine if the target statement can be derived from the given premises.
+
+    Args:
+        premises (list[Proposition]): The list of premises or statements in the knowledge base.
+        target (Proposition): The target statement to be proven.
+        max_iters (int, optional): The maximum number of iterations for the proof search. Defaults to 5000.
+
+    Returns:
+        InferenceResult[Proposition, Proposition] | None: The result of the proof search, which includes the proof if found, or None if no proof is found.
+    """
+    all_inferences: list[Proposition | InferenceResult] = premises
+    usable_props: list[Proposition | InferenceResult] = [p for p in premises]
     res = None
     stmt = None  # will hold the outermost non-forall statement of target
     if isinstance(target, Forall):
         stmt = target
     while isinstance(stmt, Forall):
         stmt = stmt.inner_proposition
-    while usable_props:
+    iters = 0
+    while iters <= max_iters and usable_props:
+        iters += 1
         prem = usable_props.pop()
         prem_prop = get_prop(prem)
         if target == prem_prop:
@@ -191,11 +204,23 @@ def proof_search_one(premises: list[Proposition], target: Proposition):
 
 
 def proof_search(
-    premises: list[Proposition], target: T, tries: int = 2
+    premises: list[Proposition], target: T, tries: int = 2, each_max_iters: int = 5000
 ) -> InferenceResult[Proposition, T] | None:
+    """
+    Searches a knowledge base to see if a target statement follows from it.
+
+    Args:
+        premises (list[Proposition]): The list of premises or statements in the knowledge base.
+        target (T): The target statement to be proven.
+        tries (int, optional): The number of attempts to search for a proof. Defaults to 2. Should be small.
+        each_max_iters (int, optional): The maximum number of iterations for each attempt. Defaults to 5000.
+
+    Returns:
+        InferenceResult[Proposition, T] | None: The result of the proof search, which includes the proof if found, or None if no proof is found.
+    """
     res = None
     for i in range(tries):
-        res = proof_search_one(premises, target)
+        res = proof_search_one(premises, target, max_iters=each_max_iters)
         if res:
             break
     return res  # type: ignore
