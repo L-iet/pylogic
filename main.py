@@ -16,13 +16,14 @@ import sympy as sp
 
 x = Variable("x", real=True)
 xnot0: Not[Equals] = neg(Equals(sp.Abs(x), 0), True)
+
 Px = Proposition("P", args=[x])
 Py = Proposition("P", args=[ps.Symbol("y", real=True)])
 forallXPx = Forall(x, Px, is_assumption=True)
 
 # print(Py, forallXPx)
 py = Py.is_special_case_of(forallXPx)
-print(py.is_proven)
+print(py.is_proven)  # True
 
 ### proof that lim_x->0 x^2 = 0
 
@@ -42,7 +43,7 @@ xsq_lt_eps = xsq_lt_eps_t_absx.transitive(eps_t_absx_lt_eps)
 lim_x_sq_at_0 = (
     xsq_lt_eps.followed_from(absx_lt_sqrt_eps)
     .p_and_reverse(root_eps_positive)
-    .thus_there_exists("delta", sp.sqrt(eps))
+    .thus_there_exists("delta", sp.sqrt(eps), [[0], [1, 0]])
     .followed_from(eps_positive)
     .thus_forall(eps)
     .thus_forall(x)

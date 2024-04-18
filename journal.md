@@ -100,3 +100,5 @@ to return multiple types depending on type of parameters.
 
 1:24pm: Learned about `TypeVarTuple` in typing, from https://stackoverflow.com/questions/46487583/python-3-types-custom-variadic-generic-type-with-arbitrary-number-of-contained 
 after a short stupid back-and-forth with ShitGPT (and deciding to google finally).
+
+5:09pm: Break session. I recorded a demo video of two proofs.

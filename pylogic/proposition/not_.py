@@ -1,8 +1,11 @@
 from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
 from typing import TYPE_CHECKING, TypeVar, Generic, Self, overload
+from sympy.printing.latex import LatexPrinter
 
 from pylogic.set.sets import Set
+
+latex_printer = LatexPrinter()
 
 if TYPE_CHECKING:
     import sympy as sp
@@ -98,3 +101,6 @@ class Not(Proposition, Generic[TProposition]):
             OtherProposition -> ~self
         """
         return super().modus_tollens(other)  # type: ignore
+
+    def _latex(self, printer=latex_printer) -> str:
+        return rf"\neg{{{self.negated._latex()}}}"
