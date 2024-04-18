@@ -102,3 +102,6 @@ to return multiple types depending on type of parameters.
 after a short stupid back-and-forth with ShitGPT (and deciding to google finally).
 
 5:09pm: Break session. I recorded a demo video of two proofs.
+
+# Wednesday Apr 17, 2024, 5:46pm PT
+Begin session. Continue work on predicate proof search
