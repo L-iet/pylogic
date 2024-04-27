@@ -130,3 +130,5 @@ The rules below are followed (first matching rule from top to bottom is used):
     - If a variable has been unified with a term, the rest of the instantiations of the variable must be compatible (equal) with the term.
 - Two propositions unify if they are the same type and all the sub-props unify.
 
+8:50pm: end session. Added unification.
+
