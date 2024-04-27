@@ -1,13 +1,14 @@
 from __future__ import annotations
-from pylogic.proposition.proposition import Proposition
 from typing import TYPE_CHECKING, Self, TypeVar, Generic, Literal
 from abc import ABC, abstractmethod
+
+from pylogic.proposition.proposition import Proposition
+from pylogic.variable import Variable
 
 from sympy import Basic, latex
 
 if TYPE_CHECKING:
     from pylogic.set.sets import Set
-    from pylogic.variable import Variable
     from pylogic.symbol import Symbol
 
     Term = Variable | Symbol | Set | Basic | int | float
@@ -29,7 +30,8 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
         is_assumption: bool = False,
         _is_proven: bool = False,
     ) -> None:
-        assert variable is not None, f"{self} must have a variable to quantify over"
+        if not isinstance(variable, Variable):
+            raise TypeError(f"{variable} is not a variable")
         super().__init__(
             f"{_q} {variable}: {inner_proposition.name}",
             is_assumption,
