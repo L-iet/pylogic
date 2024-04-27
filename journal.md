@@ -109,3 +109,10 @@ Begin session. Continue work on predicate proof search.
 TODO: Need to implement hash for other props besides And, Not, Implies, Or, Proposition.
 
 8:17pm: end session.
+
+2:02am: TODO: add De_morgan as a tactic or method to every proposition.
+
+# Thursday Apr 18, 2024, 7:29am PT
+Begin session. Will finish pred proof search today.
+
+8:50am: break session. I've reached satisfactory level for proof search.

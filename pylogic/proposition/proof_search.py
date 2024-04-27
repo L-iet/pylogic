@@ -25,6 +25,7 @@ RuleName = Literal[
     "quantified_modus_ponens",
     "exists_modus_ponens",
     "unit_resolve",
+    "definite_clause_resolve",
 ]
 
 rules: list[RuleName] = [
@@ -39,6 +40,7 @@ rules: list[RuleName] = [
     "quantified_modus_ponens",
     "exists_modus_ponens",
     "unit_resolve",
+    "definite_clause_resolve",
 ]
 
 
@@ -52,7 +54,7 @@ class InferenceResult(Generic[T, U]):
     ) -> None:
         self.starting_prem: T | InferenceResult | None = starting_prem
         self.other_prems: tuple[Proposition | InferenceResult, ...] = other_prems
-        self.rule: RuleName = rule
+        self.rule: RuleName = rule  # type:ignore
         self.conclusion: U = conclusion
 
     def __repr__(self) -> str:
@@ -68,161 +70,27 @@ def get_prop(p: InferenceResult[T, U] | U) -> U:
     return p
 
 
-def mp_search(
+def inference_rule_search(
+    rule: RuleName,
     prem: T | InferenceResult[Proposition, T],
     all_props: list[Proposition | InferenceResult],
     premises: list[Proposition | InferenceResult],
     target: U,
 ) -> InferenceResult[T, U] | None:
     """
-    Search for if target can be inferred from the premises using modus ponens.
+    Search for if target can be inferred from the premises using the inference rule.
     premises: propositions we haven't yet called the tactic on
-    props: all proven propositions
-    """
-    prem_prop = get_prop(prem)
-    for other in all_props:
-        other_prop: Proposition
-        other_prop = get_prop(other)
-        if isinstance(other_prop, Implies):
-            try:
-                new_conc = prem_prop.modus_ponens(other_prop)
-                inf_res = InferenceResult(
-                    prem, other, rule="modus_ponens", conclusion=new_conc
-                )
-                premises.append(inf_res)
-                all_props.append(inf_res)
-            except (AssertionError, AttributeError):
-                continue
-            if new_conc == target:
-                return inf_res
-    return None
-
-
-def mt_search(
-    prem: T | InferenceResult[Proposition, T],
-    all_props: list[Proposition | InferenceResult],
-    premises: list[Proposition | InferenceResult],
-    target: U,
-) -> InferenceResult[T, U] | None:
-    """
-    Search for if target can be inferred from the premises using modus tollens.
-    premises: propositions we haven't yet called the tactic on
-    props: all proven propositions
-    """
-    prem_prop = get_prop(prem)
-    for other in all_props:
-        other_prop: Proposition
-        other_prop = get_prop(other)
-        if isinstance(other_prop, Implies):
-            try:
-                new_conc = prem_prop.modus_tollens(other_prop)
-                inf_res = InferenceResult(
-                    prem, other, rule="modus_tollens", conclusion=new_conc
-                )
-                premises.append(inf_res)
-                all_props.append(inf_res)
-            except (AssertionError, AttributeError):
-                continue
-            if new_conc == target:
-                return inf_res
-    return None
-
-
-def hs_search(
-    prem: Implies[T, U] | InferenceResult[Proposition, Implies[T, U]],
-    all_props: list[Proposition | InferenceResult],
-    premises: list[Proposition | InferenceResult],
-    target: Implies[T, V],
-) -> InferenceResult[Implies[T, U], Implies[T, V]] | None:
-    """Search for if target can be inferred from the premises using
-    hypothetical syllogism"""
-    prem_prop = get_prop(prem)
-    for other in all_props:
-        other_prop = get_prop(other)
-        try:
-            new_conc = prem_prop.hypothetical_syllogism(other_prop)  # type: ignore
-            inf_res = InferenceResult(
-                prem, other, rule="hypothetical_syllogism", conclusion=new_conc
-            )
-            premises.append(inf_res)
-            all_props.append(inf_res)
-        except (AssertionError, AttributeError):
-            continue
-        if new_conc == target:
-            return inf_res
-    return None
-
-
-def qmp_search(
-    prem: Forall[T] | InferenceResult[Proposition, Forall[T]],
-    all_props: list[Proposition | InferenceResult],
-    premises: list[Proposition | InferenceResult],
-    target: Forall[U] | Exists[U],
-) -> InferenceResult[Forall[T], Forall[U] | Exists[U]] | None:
-    """Search for rule Quantified modus ponens"""
-    prem_prop = get_prop(prem)
-    for other in all_props:
-        other_prop = get_prop(other)
-        try:
-            new_conc: _Quantified[U] = prem_prop.quantified_modus_ponens(other_prop)  # type: ignore
-            inf_res = InferenceResult(
-                prem, other, rule="quantified_modus_ponens", conclusion=new_conc
-            )
-            premises.append(inf_res)
-            all_props.append(inf_res)
-        except (AssertionError, AttributeError):
-            continue
-        if new_conc == target:
-            return inf_res
-    return None
-
-
-def exmp_search(
-    prem: Exists[T] | InferenceResult[Proposition, Exists[T]],
-    all_props: list[Proposition | InferenceResult],
-    premises: list[Proposition | InferenceResult],
-    target: Exists[U],
-) -> InferenceResult[Exists[T], Exists[U]] | None:
-    """Search for rule exists modus ponens"""
-    prem_prop = get_prop(prem)
-    for other in all_props:
-        other_prop = get_prop(other)
-        try:
-            new_conc: Exists[U] = prem_prop.exists_modus_ponens(other_prop)  # type: ignore
-            inf_res = InferenceResult(
-                prem, other, rule="exists_modus_ponens", conclusion=new_conc
-            )
-            premises.append(inf_res)
-            all_props.append(inf_res)
-        except (AssertionError, AttributeError):
-            continue
-        if new_conc == target:
-            return inf_res
-    return None
-
-
-def ur_search(
-    prem: Or[Proposition, ...] | InferenceResult[Proposition, Or[Proposition, ...]],
-    all_props: list[Proposition | InferenceResult],
-    premises: list[Proposition | InferenceResult],
-    target: Proposition | Or[Proposition, ...],
-) -> InferenceResult[Or[Proposition, ...], Proposition | Or[Proposition, ...]] | None:
-    """
-    Search for if target can be inferred from the premises using unit resolution.
-    premises: propositions we haven't yet called the tactic on
-    props: all proven propositions
+    all_props: all proven propositions
     """
     prem_prop = get_prop(prem)
     for other in all_props:
         other_prop: Proposition
         other_prop = get_prop(other)
         try:
-            new_conc = prem_prop.unit_resolve(other_prop)
+            new_conc = getattr(prem_prop, rule)(other_prop)
             if new_conc == prem_prop:
                 continue
-            inf_res = InferenceResult(
-                prem, other, rule="unit_resolve", conclusion=new_conc
-            )
+            inf_res = InferenceResult(prem, other, rule=rule, conclusion=new_conc)
             premises.append(inf_res)
             all_props.append(inf_res)
         except (AssertionError, AttributeError) as e:
@@ -232,18 +100,31 @@ def ur_search(
     return None
 
 
-def proof_search(premises: list[Proposition], target: Proposition):
+def proof_search_one(
+    premises: list[Proposition], target: Proposition, max_iters: int = 5000
+):
+    """
+    Perform a proof search to determine if the target statement can be derived from the given premises.
+
+    Args:
+        premises (list[Proposition]): The list of premises or statements in the knowledge base.
+        target (Proposition): The target statement to be proven.
+        max_iters (int, optional): The maximum number of iterations for the proof search. Defaults to 5000.
+
+    Returns:
+        InferenceResult[Proposition, Proposition] | None: The result of the proof search, which includes the proof if found, or None if no proof is found.
+    """
     all_inferences: list[Proposition | InferenceResult] = premises
-    usable_props: list[Proposition | InferenceResult] = [
-        p.copy() for p in premises
-    ]  # propositions we can call the tactics on
+    usable_props: list[Proposition | InferenceResult] = [p for p in premises]
     res = None
     stmt = None  # will hold the outermost non-forall statement of target
     if isinstance(target, Forall):
         stmt = target
     while isinstance(stmt, Forall):
         stmt = stmt.inner_proposition
-    while usable_props:
+    iters = 0
+    while iters <= max_iters and usable_props:
+        iters += 1
         prem = usable_props.pop()
         prem_prop = get_prop(prem)
         if target == prem_prop:
@@ -251,18 +132,39 @@ def proof_search(premises: list[Proposition], target: Proposition):
         elif stmt == prem_prop:
             return InferenceResult(prem, rule="thus_forall", conclusion=target)
 
-        if res := mp_search(prem, all_inferences, usable_props, target):
+        if res := inference_rule_search(
+            "modus_ponens", prem, all_inferences, usable_props, target
+        ):
             return res
-        if res := mt_search(prem, all_inferences, usable_props, target):
+        if res := inference_rule_search(
+            "modus_tollens", prem, all_inferences, usable_props, target
+        ):
             return res
         if isinstance(prem_prop, Implies):
             if isinstance(target, Implies):
-                res = hs_search(prem, all_inferences, usable_props, target)
+                res = inference_rule_search(
+                    "hypothetical_syllogism", prem, all_inferences, usable_props, target
+                )
+            if not res and isinstance(prem_prop.antecedent, And):
+                res = inference_rule_search(
+                    "definite_clause_resolve",
+                    prem,
+                    all_inferences,
+                    usable_props,
+                    target,
+                )
         elif isinstance(prem_prop, Or):
-            res = ur_search(prem, all_inferences, usable_props, target)
+            res = inference_rule_search(
+                "unit_resolve", prem, all_inferences, usable_props, target
+            )
         elif isinstance(prem_prop, Forall):
-            if isinstance(target, _Quantified):
-                res = qmp_search(prem, all_inferences, usable_props, target)  # type: ignore
+            res = inference_rule_search(
+                "quantified_modus_ponens",
+                prem,
+                all_inferences,
+                usable_props,
+                target,
+            )
             if not res:
                 try:
                     result = target.is_special_case_of(prem_prop)
@@ -276,8 +178,8 @@ def proof_search(premises: list[Proposition], target: Proposition):
                     continue
         elif isinstance(prem_prop, Exists):
             if isinstance(target, Exists):
-                res = exmp_search(
-                    prem, all_inferences, usable_props, target  # type:ignore
+                res = inference_rule_search(
+                    "exists_modus_ponens", prem, all_inferences, usable_props, target
                 )
         elif isinstance(prem_prop, And):
             try:
@@ -299,3 +201,26 @@ def proof_search(premises: list[Proposition], target: Proposition):
             for t in target.propositions:
                 if t in all_props:
                     return InferenceResult(t, rule="one_proven", conclusion=target)
+
+
+def proof_search(
+    premises: list[Proposition], target: T, tries: int = 2, each_max_iters: int = 5000
+) -> InferenceResult[Proposition, T] | None:
+    """
+    Searches a knowledge base to see if a target statement follows from it.
+
+    Args:
+        premises (list[Proposition]): The list of premises or statements in the knowledge base.
+        target (T): The target statement to be proven.
+        tries (int, optional): The number of attempts to search for a proof. Defaults to 2. Should be small.
+        each_max_iters (int, optional): The maximum number of iterations for each attempt. Defaults to 5000.
+
+    Returns:
+        InferenceResult[Proposition, T] | None: The result of the proof search, which includes the proof if found, or None if no proof is found.
+    """
+    res = None
+    for i in range(tries):
+        res = proof_search_one(premises, target, max_iters=each_max_iters)
+        if res:
+            break
+    return res  # type: ignore
