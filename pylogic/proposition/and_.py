@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
-from typing import TYPE_CHECKING, TypedDict, TypeVarTuple, Generic, Self
+from typing import TYPE_CHECKING, Literal, TypedDict, TypeVarTuple, Generic, Self, cast
 
 if TYPE_CHECKING:
     from pylogic.set.sets import Set
@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from sympy import Basic
 
     Term = Variable | Symbol | Set | Basic | int | float
+    Unification = dict[Variable, Term]
 from sympy.printing.latex import LatexPrinter
 
 latex_printer = LatexPrinter()
@@ -88,3 +89,26 @@ class And(Proposition, Generic[*Props]):
         new_p = self.copy()
         new_p._is_proven = True
         return new_p
+
+    def unify(self, other: Self) -> Unification | Literal[True] | None:
+        if not isinstance(other, And):
+            raise TypeError(
+                f"{other} is not an instance of {self.__class__}\n\
+Occured when trying to unify `{self}` and `{other}`"
+            )
+        if len(self.propositions) != len(other.propositions):
+            return None
+        d: Unification = {}
+        for s_prop, o_prop in zip(self.propositions, other.propositions):
+            res: Unification | Literal[True] | None = s_prop.unify(o_prop)  # type: ignore
+            if res is None:
+                return None
+            if isinstance(res, dict):
+                for k in res:
+                    if k in d and d[k] != res[k]:
+                        return None
+                    d[k] = res[k]
+        if len(d) == 0:
+            return True
+        else:
+            return d

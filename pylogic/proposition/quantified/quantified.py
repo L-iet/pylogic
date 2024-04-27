@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
-from typing import TYPE_CHECKING, Self, TypeVar, Generic
+from typing import TYPE_CHECKING, Self, TypeVar, Generic, Literal
 from abc import ABC, abstractmethod
 
 from sympy import Basic, latex
@@ -11,6 +11,8 @@ if TYPE_CHECKING:
     from pylogic.symbol import Symbol
 
     Term = Variable | Symbol | Set | Basic | int | float
+    Unification = dict[Variable, Term]
+
 from sympy.printing.latex import LatexPrinter
 
 latex_printer = LatexPrinter()
@@ -64,3 +66,11 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
         q_arg = self.variable
         arg_latex = q_arg._latex() if hasattr(q_arg, "_latex") else latex(q_arg)  # type: ignore
         return rf"\{self._q} {arg_latex}: {self.inner_proposition._latex()}"
+
+    def unify(self, other: Self) -> Unification | Literal[True] | None:
+        if self.__class__ != other.__class__:
+            raise TypeError(
+                f"{other} is not an instance of {self.__class__}\n\
+Occured when trying to unify `{self}` and `{other}`"
+            )
+        return self.inner_proposition.unify(other.inner_proposition)

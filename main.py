@@ -1,3 +1,4 @@
+from pylogic.proposition.and_ import And
 from pylogic.proposition.proposition import Proposition
 from pylogic.proposition.quantified.forall import Forall
 from pylogic.proposition.ordering.greaterthan import GreaterThan
@@ -95,3 +96,25 @@ log(abs_a_minus_b_is_0.zero_abs_is_0())
 # need a tactic to convert this to a=b
 
 ##############################
+
+printing = True
+
+from pylogic.variable import Variable
+from pylogic.symbol import Symbol
+
+y = Symbol("y")
+z = Variable("z")
+
+Pxy = Proposition("P", args=[x, y])
+Qxz = Proposition("Q", args=[x, z])
+Ryz = Proposition("R", args=[y, z])
+Wxy = Proposition("W", args=[x, y])
+p = Forall(x, Or(And(Pxy.implies(Qxz), Ryz), Wxy))
+q = Forall(
+    x,
+    Or(
+        And(Proposition("P", args=[2, y]).implies(Proposition("Q", args=[2, z])), Ryz),
+        Proposition("W", args=[2, Variable("y")]),
+    ),
+)
+print(p.unify(q))

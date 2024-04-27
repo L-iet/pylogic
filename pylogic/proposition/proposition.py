@@ -459,13 +459,29 @@ class Proposition:
         return new_p
 
     def unify(self, other: Proposition) -> Unification | Literal[True] | None:
+        """
+        Algorithm to unify two propositions.
+        If unification succeeds, a dictionary of values to instantiate variables
+        to is returned.
+        The dictionary never instantiates a variable `y` to variable `y`.
+        It may instantiate a variable `y` to variable `x` or a variable
+        `y` to a symbol or value `y`.
+        If no instantiations need to be made (eg propositions are equal),
+        return True.
+        Otherwise (unification fails), return None.
+
+        This does not try to unify terms or expressions, only Propositions.
+        """
         if not isinstance(other, Proposition):
             raise TypeError(f"{other} is not a proposition")
+        assert (
+            self.is_atomic and other.is_atomic
+        ), f"{self} and {other} are not atomic sentences"
         from pylogic.helpers import unify as term_unify
 
         if self.name != other.name or len(self.args) != len(other.args):
             return None
-        d = {}
+        d: Unification = {}
         for s_arg, o_arg in zip(self.args, other.args):
             res = term_unify(s_arg, o_arg)
             if isinstance(res, dict):

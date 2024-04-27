@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
-from typing import TYPE_CHECKING, TypeVar, Generic, Self, overload
+from typing import TYPE_CHECKING, Literal, TypeVar, Generic, Self, overload
 from sympy.printing.latex import LatexPrinter
 
 latex_printer = LatexPrinter()
@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from sympy import Basic
 
     Term = Variable | Symbol | Set | Basic | int | float
+    Unification = dict[Variable, Term]
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
@@ -110,3 +111,11 @@ class Not(Proposition, Generic[TProposition]):
 
     def _latex(self, printer=latex_printer) -> str:
         return rf"\neg{{{self.negated._latex()}}}"
+
+    def unify(self, other: Self) -> Unification | Literal[True] | None:
+        if not isinstance(other, Not):
+            raise TypeError(
+                f"{other} is not an instance of {self.__class__}\n\
+Occured when trying to unify `{self}` and `{other}`"
+            )
+        return self.negated.unify(other.negated)

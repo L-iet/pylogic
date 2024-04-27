@@ -1,7 +1,7 @@
 from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
 from pylogic.proposition.not_ import neg
-from typing import TYPE_CHECKING, TypeVar, Generic, TypedDict, Self
+from typing import TYPE_CHECKING, Literal, TypeVar, Generic, TypedDict, Self
 
 if TYPE_CHECKING:
     from pylogic.proposition.or_ import Or
@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from sympy import Basic
 
     Term = Variable | Symbol | Set | Basic | int | float
+    Unification = dict[Variable, Term]
 from sympy.printing.latex import LatexPrinter
 
 latex_printer = LatexPrinter()
@@ -137,3 +138,31 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             return Implies(rem_props[0], self.consequent, _is_proven=True)
         new_p = Implies(And(*rem_props), self.consequent, _is_proven=True)
         return new_p  # type:ignore
+
+    def unify(self, other: Self) -> Unification | Literal[True] | None:
+        if not isinstance(other, Implies):
+            raise TypeError(
+                f"{other} is not an instance of {self.__class__}\n\
+Occured when trying to unify `{self}` and `{other}`"
+            )
+        d: Unification = {}
+        res1 = self.antecedent.unify(other.antecedent)
+        if res1 is None:
+            return None
+        if isinstance(res1, dict):
+            for k in res1:
+                if k in d and d[k] != res1[k]:
+                    return None
+                d[k] = res1[k]
+        res2 = self.consequent.unify(other.consequent)
+        if res2 is None:
+            return None
+        if isinstance(res2, dict):
+            for k in res2:
+                if k in d and d[k] != res2[k]:
+                    return None
+                d[k] = res2[k]
+        if len(d) == 0:
+            return True
+        else:
+            return d

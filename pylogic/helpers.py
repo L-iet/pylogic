@@ -26,11 +26,11 @@ def unify(
 ) -> Unification | Literal[True] | None:
     """ """
     # a is the variable if at least one argument is a variable
-    if isinstance(b, Variable):
+    if isinstance(b, Variable) and not isinstance(a, Variable):
         return unify(b, a)
     # Variable and Term
     if isinstance(a, Variable) and not isinstance(b, Proposition):
-        return {a: b}
+        return True if a == b else {a: b}
     # Term and Term
     if not isinstance(a, Proposition) and not isinstance(b, Proposition):
         return True if a == b else None
