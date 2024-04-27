@@ -3,10 +3,12 @@ from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from pylogic.variable import Variable
+    from pylogic.symbol import Symbol
+    from pylogic.set.sets import Set
     from sympy import Basic
 
-    SympyExpression = Basic | int | float
-    from pylogic.set.sets import Set
+    Term = Variable | Symbol | Set | Basic | int | float
 import copy
 
 
@@ -18,15 +20,14 @@ class IsContainedIn(BinaryRelation):
 
     def __init__(
         self,
-        left: SympyExpression | Set,
+        left: Term,
         right: Set,
         is_assumption: bool = False,
-        show_arg_position_names: bool = False,
         _is_proven: bool = False,
     ) -> None:
         self.right: Set = right
-        self.left: SympyExpression | Set = left
-        name = rf"IsContainedIn"
+        self.left: Term = left
+        name = "IsContainedIn"
         super().__init__(
             left, right, is_assumption=is_assumption, _is_proven=_is_proven
         )
@@ -36,10 +37,10 @@ class IsContainedIn(BinaryRelation):
         return self.right
 
     @property
-    def element(self) -> SympyExpression | Set:
+    def element(self) -> Term:
         return self.left
 
-    def copy(self) -> "IsContainedIn":
+    def copy(self) -> IsContainedIn:
         return IsContainedIn(
             copy.copy(self.element),
             self.set_.copy(),

@@ -14,14 +14,14 @@ if TYPE_CHECKING:
 from pylogic.set.sets import Integers
 
 if TYPE_CHECKING:
-    from sympy import Basic
+    from pylogic.variable import Variable
+    from pylogic.symbol import Symbol
+    from pylogic.set.sets import Set
 
-    SympyExpression = Basic | int | float
+    Term = Variable | Symbol | Set | sp.Basic | int | float
 
 
-def divisible(
-    x: SympyExpression, y: SympyExpression, is_assumption=False
-) -> IsContainedIn:
+def divisible(x: Term, y: Term, is_assumption=False) -> IsContainedIn:
     return Integers.contains(sp.Mul(x, sp.Pow(y, -1)), is_assumption=is_assumption)
 
 

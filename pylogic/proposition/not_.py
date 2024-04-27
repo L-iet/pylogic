@@ -3,13 +3,16 @@ from pylogic.proposition.proposition import Proposition
 from typing import TYPE_CHECKING, TypeVar, Generic, Self, overload
 from sympy.printing.latex import LatexPrinter
 
-from pylogic.set.sets import Set
-
 latex_printer = LatexPrinter()
 
 if TYPE_CHECKING:
-    import sympy as sp
     from pylogic.proposition.implies import Implies
+    from pylogic.variable import Variable
+    from pylogic.symbol import Symbol
+    from pylogic.set.sets import Set
+    from sympy import Basic
+
+    Term = Variable | Symbol | Set | Basic | int | float
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
@@ -69,8 +72,8 @@ class Not(Proposition, Generic[TProposition]):
 
     def replace(
         self,
-        current_val: sp.Basic | int | float,
-        new_val: sp.Basic | int | float,
+        current_val: Term,
+        new_val: Term,
         positions: list[list[int]] | None = None,
     ) -> Self:
         new_p = self.copy()

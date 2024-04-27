@@ -8,11 +8,10 @@ if TYPE_CHECKING:
     from sympy import Basic
     from pylogic.proposition.quantified.forall import Forall
     from pylogic.proposition.implies import Implies
+    from pylogic.symbol import Symbol
+    from pylogic.set.sets import Set
 
-    SympyExpression = Basic | int | float
-from pylogic.set.sets import Set
-import sympy as sp
-import pylogic.symbol as ps
+    Term = Variable | Symbol | Set | Basic | int | float
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
@@ -27,7 +26,7 @@ class Exists(_Quantified[TProposition]):
     def from_proposition(
         cls,
         existential_var_name: str,
-        expression_to_replace: Set | SympyExpression | None,
+        expression_to_replace: Term | None,
         inner_proposition: TProposition,
         positions: list[list[int]] | None = None,
         is_assumption: bool = False,

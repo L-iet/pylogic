@@ -7,8 +7,11 @@ from sympy import S as sympy_S
 
 if TYPE_CHECKING:
     from pylogic.proposition.ordering.greaterthan import GreaterThan
+    from pylogic.set.sets import Set
+    from pylogic.variable import Variable
+    from pylogic.symbol import Symbol
 
-SympyExpression = Basic | int | float
+    Term = Variable | Symbol | Set | Basic | int | float
 
 
 class LessThan(BinaryRelation, _Ordering):
@@ -19,8 +22,8 @@ class LessThan(BinaryRelation, _Ordering):
 
     def __init__(
         self,
-        left: SympyExpression,
-        right: SympyExpression,
+        left: Term,
+        right: Term,
         is_assumption: bool = False,
         *,
         _is_proven: bool = False,
@@ -44,17 +47,17 @@ class LessThan(BinaryRelation, _Ordering):
         return LessThan(self.left - self.right, sympy_S.Zero)
 
     def multiply_by_positive(
-        self, x: SympyExpression, proof_x_is_positive: "GreaterThan | LessThan"
+        self, x: Term, proof_x_is_positive: "GreaterThan | LessThan"
     ) -> "LessThan":
         return super()._multiply_by(self, x, proof_x_is_positive, _sign="positive")  # type: ignore
 
     def multiply_by_negative(
-        self, x: SympyExpression, proof_x_is_negative: "GreaterThan | LessThan"
+        self, x: Term, proof_x_is_negative: "GreaterThan | LessThan"
     ) -> "LessThan":
         return super()._multiply_by(self, x, proof_x_is_negative, _sign="negative")
 
     def p_multiply_by_positive(
-        self, x: SympyExpression, proof_x_is_positive: "GreaterThan | LessThan"
+        self, x: Term, proof_x_is_positive: "GreaterThan | LessThan"
     ) -> "LessThan":
         """Logical tactic.
         Same as multiply_by_positive, but returns a proven proposition"""
@@ -64,7 +67,7 @@ class LessThan(BinaryRelation, _Ordering):
         return new_p
 
     def p_multiply_by_negative(
-        self, x: SympyExpression, proof_x_is_negative: "GreaterThan | LessThan"
+        self, x: Term, proof_x_is_negative: "GreaterThan | LessThan"
     ) -> "LessThan":
         """Logical tactic.
         Same as multiply_by_negative, but returns a proven proposition"""
@@ -87,8 +90,8 @@ class LessThan(BinaryRelation, _Ordering):
         new_p._is_proven = True
         return new_p
 
-    def __mul__(self, other: SympyExpression) -> "LessThan":
+    def __mul__(self, other: Term) -> LessThan:
         return super()._mul(self, other)
 
-    def __rmul__(self, other: SympyExpression) -> "LessThan":
+    def __rmul__(self, other: Term) -> LessThan:
         return super()._mul(self, other)

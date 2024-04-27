@@ -3,14 +3,18 @@ from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from pylogic.proposition.relation.equals import Equals
 from pylogic.proposition.ordering.ordering import _Ordering
 from typing import TYPE_CHECKING
-from sympy import Basic
+
+import sympy as sp
 from sympy import S as sympy_S
 
-SympyExpression = Basic | int | float
 if TYPE_CHECKING:
     from pylogic.proposition.ordering.lessthan import LessThan
     from pylogic.proposition.not_ import Not
-import sympy as sp
+    from pylogic.variable import Variable
+    from pylogic.symbol import Symbol
+    from pylogic.set.sets import Set
+
+    Term = Variable | Symbol | Set | sp.Basic | int | float
 
 
 class GreaterThan(BinaryRelation, _Ordering):
@@ -20,7 +24,7 @@ class GreaterThan(BinaryRelation, _Ordering):
     infix_symbol_latex = ">"
 
     @staticmethod
-    def is_absolute(expr: SympyExpression, expr_not_zero: Not[Equals]) -> "GreaterThan":
+    def is_absolute(expr: Term, expr_not_zero: Not[Equals]) -> "GreaterThan":
         """Logical tactic.
         Given an expr of the form sympy.Abs(x) and a proof that the expr is
         not zero,
@@ -36,7 +40,7 @@ class GreaterThan(BinaryRelation, _Ordering):
         return GreaterThan(expr, 0, _is_proven=True)
 
     @staticmethod
-    def is_even_power(expr: SympyExpression) -> "GreaterThan":
+    def is_even_power(expr: Term) -> "GreaterThan":
         """Logical tactic.
         Given an expr of the form x**(2n), return a proven proposition that says
         x**(2n) > 0
@@ -48,7 +52,7 @@ class GreaterThan(BinaryRelation, _Ordering):
 
     @staticmethod
     def is_rational_power(
-        expr: SympyExpression, proof_base_is_positive: "GreaterThan"
+        expr: Term, proof_base_is_positive: "GreaterThan"
     ) -> "GreaterThan":
         """Logical tactic.
         Given an expr of the form x**(p/q) and a proof that x > 0,
@@ -72,8 +76,8 @@ class GreaterThan(BinaryRelation, _Ordering):
 
     def __init__(
         self,
-        left: SympyExpression,
-        right: SympyExpression,
+        left: Term,
+        right: Term,
         is_assumption: bool = False,
         _is_proven: bool = False,
     ) -> None:
@@ -85,8 +89,8 @@ class GreaterThan(BinaryRelation, _Ordering):
             is_assumption=is_assumption,
             _is_proven=_is_proven,
         )
-        self.left: SympyExpression = left
-        self.right: SympyExpression = right
+        self.left: Term = left
+        self.right: Term = right
 
     def __repr__(self) -> str:
         return f"{self.left} > {self.right}"
@@ -110,17 +114,17 @@ class GreaterThan(BinaryRelation, _Ordering):
         return LessThan(self.right - self.left, sympy_S.Zero)
 
     def multiply_by_positive(
-        self, x: SympyExpression, proof_x_is_positive: "GreaterThan | LessThan"
+        self, x: Term, proof_x_is_positive: "GreaterThan | LessThan"
     ) -> "GreaterThan":
         return super()._multiply_by(self, x, proof_x_is_positive, _sign="positive")  # type: ignore
 
     def multiply_by_negative(
-        self, x: SympyExpression, proof_x_is_negative: "GreaterThan | LessThan"
+        self, x: Term, proof_x_is_negative: "GreaterThan | LessThan"
     ) -> "GreaterThan":
         return super()._multiply_by(self, x, proof_x_is_negative, _sign="negative")
 
     def p_multiply_by_positive(
-        self, x: SympyExpression, proof_x_is_positive: "GreaterThan | LessThan"
+        self, x: Term, proof_x_is_positive: "GreaterThan | LessThan"
     ) -> "GreaterThan":
         """Logical tactic.
         Same as multiply_by_positive, but returns a proven proposition"""
@@ -130,7 +134,7 @@ class GreaterThan(BinaryRelation, _Ordering):
         return new_p
 
     def p_multiply_by_negative(
-        self, x: SympyExpression, proof_x_is_negative: "GreaterThan | LessThan"
+        self, x: Term, proof_x_is_negative: "GreaterThan | LessThan"
     ) -> "GreaterThan":
         """Logical tactic.
         Same as multiply_by_negative, but returns a proven proposition"""
@@ -157,8 +161,8 @@ class GreaterThan(BinaryRelation, _Ordering):
         new_p._is_proven = True
         return new_p
 
-    def __mul__(self, other: SympyExpression) -> "GreaterThan":
+    def __mul__(self, other: Term) -> GreaterThan:
         return super()._mul(self, other)
 
-    def __rmul__(self, other: SympyExpression) -> "GreaterThan":
+    def __rmul__(self, other: Term) -> GreaterThan:
         return super()._mul(self, other)

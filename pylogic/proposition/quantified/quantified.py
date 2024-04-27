@@ -3,14 +3,15 @@ from pylogic.proposition.proposition import Proposition
 from typing import TYPE_CHECKING, Self, TypeVar, Generic
 from abc import ABC, abstractmethod
 
-if TYPE_CHECKING:
-    from sympy import Basic as SympyExpression
+from sympy import Basic, latex
 
-    Term = SympyExpression
+if TYPE_CHECKING:
     from pylogic.set.sets import Set
     from pylogic.variable import Variable
+    from pylogic.symbol import Symbol
+
+    Term = Variable | Symbol | Set | Basic | int | float
 from sympy.printing.latex import LatexPrinter
-import sympy as sp
 
 latex_printer = LatexPrinter()
 
@@ -47,8 +48,8 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
 
     def replace(
         self,
-        current_val: Set | Term,
-        new_val: Set | Term,
+        current_val: Term,
+        new_val: Term,
         positions: list[list[int]] | None = None,
     ) -> Self:
         # assert not isinstance(new_val, Var), f"{new_val} is a Var"
@@ -61,5 +62,5 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
 
     def _latex(self, printer=latex_printer) -> str:
         q_arg = self.variable
-        arg_latex = q_arg._latex() if hasattr(q_arg, "_latex") else sp.latex(q_arg)  # type: ignore
+        arg_latex = q_arg._latex() if hasattr(q_arg, "_latex") else latex(q_arg)  # type: ignore
         return rf"\{self._q} {arg_latex}: {self.inner_proposition._latex()}"

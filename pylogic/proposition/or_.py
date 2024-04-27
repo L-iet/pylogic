@@ -4,8 +4,12 @@ from pylogic.proposition.not_ import are_negs
 from typing import TYPE_CHECKING, TypeVar, TypedDict, TypeVarTuple, Generic, Self
 
 if TYPE_CHECKING:
-    from sympy import Basic as SympyExpression
     from pylogic.set.sets import Set
+    from pylogic.variable import Variable
+    from pylogic.symbol import Symbol
+    from sympy import Basic
+
+    Term = Variable | Symbol | Set | Basic | int | float
 from sympy.printing.latex import LatexPrinter
 
 latex_printer = LatexPrinter()
@@ -47,8 +51,8 @@ class Or(Proposition, Generic[*Props]):
 
     def replace(
         self,
-        current_val: Set | SympyExpression,
-        new_val: Set | SympyExpression,
+        current_val: Term,
+        new_val: Term,
         positions: list[list[int]] | None = None,
     ) -> Self:
         if positions is not None:

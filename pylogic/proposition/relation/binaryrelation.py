@@ -1,13 +1,16 @@
 from __future__ import annotations
 from pylogic.proposition.relation.relation import Relation
 from typing import TYPE_CHECKING, Self
-import copy
+from sympy import Basic, latex
 
 if TYPE_CHECKING:
-    from sympy import Basic as SympyExpression
     from pylogic.set.sets import Set
+    from pylogic.variable import Variable
+    from pylogic.symbol import Symbol
+
+    Term = Variable | Symbol | Set | Basic | int | float
+
 from sympy.printing.latex import LatexPrinter
-import sympy as sp
 
 latex_printer = LatexPrinter()
 
@@ -20,8 +23,8 @@ class BinaryRelation(Relation):
 
     def __init__(
         self,
-        left: Set | SympyExpression,
-        right: Set | SympyExpression,
+        left: Term,
+        right: Term,
         is_assumption: bool = False,
         _is_proven: bool = False,
     ) -> None:
@@ -31,17 +34,17 @@ class BinaryRelation(Relation):
             is_assumption=is_assumption,
             _is_proven=_is_proven,
         )
-        self.left: Set | SympyExpression = left
-        self.right: Set | SympyExpression = right
+        self.left: Term = left
+        self.right: Term = right
 
     def __repr__(self) -> str:
         return f"{self.left} {self.infix_symbol} {self.right}"
 
     def _latex(self, printer=latex_printer) -> str:
         left_ = self.left
-        left_latex = left_._latex() if hasattr(left_, "_latex") else sp.latex(left_)
+        left_latex = left_._latex() if hasattr(left_, "_latex") else latex(left_)
         right_ = self.right
-        right_latex = right_._latex() if hasattr(right_, "_latex") else sp.latex(right_)
+        right_latex = right_._latex() if hasattr(right_, "_latex") else latex(right_)
         return f"{left_latex} {self.infix_symbol_latex} {right_latex}"
 
     def copy(self) -> Self:
@@ -55,19 +58,19 @@ class BinaryRelation(Relation):
 
     def replace(
         self,
-        current_val: Set | SympyExpression,
-        new_val: Set | SympyExpression,
+        current_val: Term,
+        new_val: Term,
         positions: list[list[int]] | None = None,
     ) -> Self:
         new_p = self.copy()
 
         if positions is None or [0] in positions:
-            if isinstance(new_p.left, sp.Basic):
+            if isinstance(new_p.left, Basic):
                 new_p.left = new_p.left.subs(current_val, new_val)
             elif new_p.left == current_val:
                 new_p.left = new_val
         if positions is None or [1] in positions:
-            if isinstance(new_p.right, sp.Basic):
+            if isinstance(new_p.right, Basic):
                 new_p.right = new_p.right.subs(current_val, new_val)
             elif new_p.right == current_val:
                 new_p.right = new_val

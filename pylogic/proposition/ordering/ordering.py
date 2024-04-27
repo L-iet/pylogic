@@ -1,20 +1,25 @@
+from __future__ import annotations
 from typing import Protocol, TYPE_CHECKING, Self
 
 if TYPE_CHECKING:
     from pylogic.proposition.ordering.greaterthan import GreaterThan
     from pylogic.proposition.ordering.lessthan import LessThan
-from sympy import Basic
+    from pylogic.variable import Variable
+    from pylogic.symbol import Symbol
+    from pylogic.set.sets import Set
 
-SympyExpression = Basic | int | float
+    from sympy import Basic
+
+    Term = Variable | Symbol | Set | Basic | int | float
 
 
 class _Ordering(Protocol):
     @classmethod
     def _multiply_by(
         cls,
-        instance: "GreaterThan | LessThan",
-        x: SympyExpression,
-        p: "GreaterThan | LessThan",
+        instance: GreaterThan | LessThan,
+        x: Term,
+        p: GreaterThan | LessThan,
         _sign: str = "positive",
     ) -> Self:
         from pylogic.proposition.ordering.greaterthan import GreaterThan
@@ -38,9 +43,7 @@ class _Ordering(Protocol):
         return new_p
 
     @classmethod
-    def _mul(
-        cls, instance: "GreaterThan | LessThan", other: SympyExpression
-    ) -> "LessThan":
+    def _mul(cls, instance: GreaterThan | LessThan, other: Term) -> LessThan:
         if isinstance(other, int) or isinstance(other, float):
             sign = "positive" if other > 0 else "negative"
             proof = (

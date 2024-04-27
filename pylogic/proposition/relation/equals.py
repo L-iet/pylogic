@@ -2,14 +2,15 @@ from __future__ import annotations
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from pylogic.proposition.proposition import Proposition
 from typing import TYPE_CHECKING, Literal, TypeVar, Self
+from sympy import Basic, Abs, Integer
 
 if TYPE_CHECKING:
-    from sympy import Basic
-
-    SympyExpression = Basic | int | float
     from pylogic.set.sets import Set
+    from pylogic.variable import Variable
+    from pylogic.symbol import Symbol
+
+    Term = Variable | Symbol | Set | Basic | int | float
 from sympy.printing.latex import LatexPrinter
-import sympy as sp
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 
@@ -26,8 +27,8 @@ class Equals(BinaryRelation):
 
     def __init__(
         self,
-        left: Set | SympyExpression,
-        right: Set | SympyExpression,
+        left: Term,
+        right: Term,
         is_assumption: bool = False,
         _is_proven: bool = False,
     ) -> None:
@@ -37,20 +38,18 @@ class Equals(BinaryRelation):
             is_assumption=is_assumption,
             _is_proven=_is_proven,
         )
-        self.left: Set | SympyExpression = left
-        self.right: Set | SympyExpression = right
-        self.left_doit = (
-            self.left.doit() if isinstance(self.left, sp.Basic) else self.left
-        )
+        self.left: Term = left
+        self.right: Term = right
+        self.left_doit = self.left.doit() if isinstance(self.left, Basic) else self.left
         self.right_doit = (
-            self.right.doit() if isinstance(self.right, sp.Basic) else self.right
+            self.right.doit() if isinstance(self.right, Basic) else self.right
         )
-        self.doit_results: dict[Side, Set | SympyExpression] = {
+        self.doit_results: dict[Side, Term] = {
             "left": self.left_doit,
             "right": self.right_doit,
         }
 
-    def get(self, side: Side) -> Set | SympyExpression:
+    def get(self, side: Side) -> Term:
         if side == "left":
             return self.left
         else:
@@ -70,7 +69,7 @@ class Equals(BinaryRelation):
         proven = False
         if self.left == self.right:
             proven = True
-        elif isinstance(self.get(_checking_side), sp.Basic):
+        elif isinstance(self.get(_checking_side), Basic):
             try:
                 if self.get(_checking_side).equals(self.get(other_side)):  # type: ignore
                     proven = True
@@ -144,6 +143,6 @@ class Equals(BinaryRelation):
         return a proof of x = 0.
         """
         assert self.is_proven, f"{self} is not proven"
-        assert isinstance(self.left, sp.Abs)
-        assert self.right == sp.Integer(0)
+        assert isinstance(self.left, Abs)
+        assert self.right == Integer(0)
         return Equals(self.left.args[0], 0, _is_proven=True)

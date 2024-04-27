@@ -3,8 +3,12 @@ from pylogic.proposition.proposition import Proposition
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from sympy import Basic as SympyExpression
     from pylogic.set.sets import Set
+    from pylogic.variable import Variable
+    from pylogic.symbol import Symbol
+    from sympy import Basic
+
+    Term = Variable | Symbol | Set | Basic | int | float
 from sympy.printing.latex import LatexPrinter
 
 latex_printer = LatexPrinter()
@@ -14,7 +18,7 @@ class Relation(Proposition):
     def __init__(
         self,
         name: str,
-        args: list[Set | SympyExpression],
+        args: list[Term],
         is_assumption: bool = False,
         _is_proven: bool = False,
     ) -> None:
@@ -31,7 +35,7 @@ class Relation(Proposition):
     def _latex(self, printer=latex_printer) -> str:
         return super()._latex()
 
-    def copy(self) -> "Relation":
+    def copy(self) -> Relation:
         return Relation(
             self.name,
             args=self.args.copy(),

@@ -5,15 +5,19 @@ from pylogic.proposition.proposition import Proposition
 from pylogic.proposition.quantified.quantified import _Quantified
 from pylogic.proposition.implies import Implies
 
+import sympy as sp
+from sympy.printing.latex import LatexPrinter
+
 
 if TYPE_CHECKING:
     from pylogic.proposition.relation.equals import Equals
     from pylogic.variable import Variable
     from pylogic.proposition.quantified.exists import Exists
-from sympy.printing.latex import LatexPrinter
-import sympy as sp
+    from pylogic.symbol import Symbol
+    from pylogic.set.sets import Set
 
-SympyExpression = sp.Basic | int | float
+    Term = Variable | Symbol | Set | sp.Basic | int | float
+
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
@@ -119,8 +123,8 @@ class Forall(_Quantified[TProposition]):
 
     def replace(
         self,
-        current_val: SympyExpression,
-        new_val: SympyExpression,
+        current_val: Term,
+        new_val: Term,
         positions: list[list[int]] | None = None,
     ) -> Self:
         if current_val == self.variable:
@@ -131,7 +135,7 @@ class Forall(_Quantified[TProposition]):
         )
         return new_p
 
-    def in_particular(self, expression_to_substitute: SympyExpression) -> TProposition:
+    def in_particular(self, expression_to_substitute: Term) -> TProposition:
         """Logical tactic. Given self is proven, replace the variable in the inner
         proposition and get a proven proposition.
         """
