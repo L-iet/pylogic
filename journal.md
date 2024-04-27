@@ -116,3 +116,6 @@ TODO: Need to implement hash for other props besides And, Not, Implies, Or, Prop
 Begin session. Will finish pred proof search today.
 
 8:50am: break session. I've reached satisfactory level for proof search.
+
+# Friday Apr 26, 2024, 5:15pm PT
+Begin session. I'll clean up the difference between Symbol and Variable.

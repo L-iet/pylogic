@@ -3,25 +3,17 @@ import sympy as sp
 MatEl = sp.matrices.expressions.matexpr.MatrixElement
 
 
-class Arbitrary:
-    _is_arbitrary: bool = True
-
-    @property
-    def is_arbitrary(self) -> bool:
-        return self._is_arbitrary
-
-
-class Symbol(sp.Symbol, Arbitrary):
+class Symbol(sp.Symbol):
     def __repr__(self):
         return super().__repr__()
 
 
-class Function(sp.Function, Arbitrary):
+class Function(sp.Function):
     def __repr__(self):
         return super().__repr__()
 
 
-class MatrixSymbol(sp.MatrixSymbol, Arbitrary):
+class MatrixSymbol(sp.MatrixSymbol):
     def __repr__(self):
         return super().__repr__()
 
@@ -39,7 +31,7 @@ class MatrixSymbol(sp.MatrixSymbol, Arbitrary):
         return self.transpose()
 
 
-class MatAdd(sp.MatAdd, Arbitrary):
+class MatAdd(sp.MatAdd):
     def __repr__(self):
         return super().__repr__()
 
@@ -55,7 +47,7 @@ class MatAdd(sp.MatAdd, Arbitrary):
         return self.transpose()
 
 
-class MatMul(sp.MatMul, Arbitrary):
+class MatMul(sp.MatMul):
     def __repr__(self):
         return super().__repr__()
 
@@ -71,12 +63,12 @@ class MatMul(sp.MatMul, Arbitrary):
         return self.transpose()
 
 
-class MatrixElement(MatEl, Arbitrary):
+class MatrixElement(MatEl):
     def __repr__(self):
         return super().__repr__()
 
 
-class Transpose(sp.Transpose, Arbitrary):
+class Transpose(sp.Transpose):
     def __repr__(self):
         return super().__repr__()
 

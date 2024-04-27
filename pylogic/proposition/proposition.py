@@ -23,11 +23,12 @@ if TYPE_CHECKING:
     from pylogic.proposition.quantified.forall import Forall
     from pylogic.proposition.not_ import Not
     from pylogic.variable import Variable
+    from pylogic.set.sets import Set
+    from pylogic.symbol import Symbol
+
+    Term = Variable | Symbol | Set | sp.Basic | int | float
 
 
-SympyExpression = sp.Basic | int | float
-
-Term = SympyExpression  # or variable
 Props = TypeVarTuple("Props")
 
 Side = Literal["left", "right"]
@@ -37,24 +38,11 @@ TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
 Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
-#####################################################
-
-
-class _Statement:
-    name: str
-    args: dict[str, type[Set] | type[SympyExpression]] = {}
-    args_order: list[str] = []
-    arg_values: dict[str, Set | SympyExpression] = {}
-    is_assumption: bool
-    is_proven: bool
-
-    def show_args(self) -> None: ...
-
 
 ####################################################
 
 
-class Proposition(_Statement):
+class Proposition:
     """
     Attributes
     ----------
@@ -62,7 +50,7 @@ class Proposition(_Statement):
         Name of the proposition. Typically the first part of the __repr__.
     is_assumption: bool
         Whether this proposition is an assumption.
-    args: list[Set | SympyExpression] | None
+    args: list[Term] | None
         The arguments of the proposition. If None, we assume the proposition has no arguments.
     arity: int
         The number of arguments of the proposition.
@@ -86,7 +74,7 @@ class Proposition(_Statement):
         self,
         name: str,
         is_assumption: bool = False,
-        args: list[Set | SympyExpression] | None = None,
+        args: list[Term] | None = None,
         # completed_args: dict[str, Set | SympyExpression] | None = None,
         # completed_args_order: list[str] | None = None,
         # show_arg_position_names: bool = False,
@@ -149,8 +137,8 @@ class Proposition(_Statement):
 
     def replace(
         self,
-        current_val: Set | SympyExpression,
-        new_val: Set | SympyExpression,
+        current_val: Term,
+        new_val: Term,
         positions: list[list[int]] | None = None,
     ) -> Self:
         r"""
@@ -417,7 +405,7 @@ class Proposition(_Statement):
     def thus_there_exists(
         self,
         existential_var: str,
-        expression_to_replace: Set | SympyExpression,
+        expression_to_replace: Term,
         positions: list[list[int]] | None = None,
     ) -> Exists[Self]:
         r"""

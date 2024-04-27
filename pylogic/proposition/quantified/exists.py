@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     SympyExpression = Basic | int | float
 from pylogic.set.sets import Set
 import sympy as sp
-import pylogic.p_symbol as ps
+import pylogic.symbol as ps
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")

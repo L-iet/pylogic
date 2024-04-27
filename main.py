@@ -9,7 +9,7 @@ from pylogic.proposition.ordering.theorems import (
     absolute_value_nonnegative_f,
 )
 from pylogic.proposition.not_ import Not, neg
-from pylogic import p_symbol as ps
+from pylogic import symbol as ps
 from pylogic.variable import Variable
 import sympy as sp
 
