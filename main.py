@@ -13,6 +13,13 @@ from pylogic import symbol as ps
 from pylogic.variable import Variable
 import sympy as sp
 
+printing = False
+
+
+def log(*args, **kwargs):
+    if printing:
+        print(*args, **kwargs)
+
 
 x = Variable("x", real=True)
 xnot0: Not[Equals] = neg(Equals(sp.Abs(x), 0), True)
@@ -23,7 +30,7 @@ forallXPx = Forall(x, Px, is_assumption=True)
 
 # print(Py, forallXPx)
 py = Py.is_special_case_of(forallXPx)
-print(py.is_proven)  # True
+log(py.is_proven)  # True
 
 ### proof that lim_x->0 x^2 = 0
 
@@ -51,7 +58,7 @@ lim_x_sq_at_0 = (
 # note that we also assumed that |x| != 0 above
 
 # forall x: forall eps: [eps > 0 -> exists delta: (delta > 0 /\ [Abs(x) < delta -> x**2 < delta**2])] True
-print(lim_x_sq_at_0, lim_x_sq_at_0.is_proven)
+log(lim_x_sq_at_0, lim_x_sq_at_0.is_proven)
 
 # TODO
 # Implement a way to determine what equations need to hold for two propositions
@@ -84,5 +91,7 @@ abs_a_minus_b_is_0: Equals = absolute_value_nonnegative_f(abs_a_minus_b).unit_re
 )  # type: ignore
 
 # a-b = 0
-print(abs_a_minus_b_is_0.zero_abs_is_0())
+log(abs_a_minus_b_is_0.zero_abs_is_0())
 # need a tactic to convert this to a=b
+
+##############################

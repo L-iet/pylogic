@@ -1,3 +1,4 @@
+from __future__ import annotations
 import sympy as sp
 from typing import Any, TYPE_CHECKING, TypedDict, Literal
 from pylogic.proposition.proposition import Proposition

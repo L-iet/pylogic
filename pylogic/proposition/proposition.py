@@ -461,7 +461,25 @@ class Proposition:
     def unify(self, other: Proposition) -> Unification | Literal[True] | None:
         if not isinstance(other, Proposition):
             raise TypeError(f"{other} is not a proposition")
-        pass
+        from pylogic.helpers import unify as term_unify
+
+        if self.name != other.name or len(self.args) != len(other.args):
+            return None
+        d = {}
+        for s_arg, o_arg in zip(self.args, other.args):
+            res = term_unify(s_arg, o_arg)
+            if isinstance(res, dict):
+                # technically this loop should only run once
+                for k in res:
+                    if k in d and d[k] != res[k]:
+                        return None
+                    d[k] = res[k]
+            elif res is None:
+                return None
+        if len(d) == 0:
+            return True
+        else:
+            return d
 
 
 if __name__ == "__main__":
