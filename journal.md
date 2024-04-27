@@ -132,3 +132,10 @@ The rules below are followed (first matching rule from top to bottom is used):
 
 8:50pm: end session. Added unification.
 
+# Saturday Apr 27, 2024, 12:27pm PT
+No session. TODO:
+- Add De Morgan
+- Add Induction
+- Add natural language descriptions
+- Fix `_is_proven` argument to be more explicit
+
