@@ -28,6 +28,7 @@ class Relation(Proposition):
             args=args,
             _is_proven=_is_proven,
         )
+        self.is_atomic = True
 
     def __repr__(self) -> str:
         return super().__repr__()

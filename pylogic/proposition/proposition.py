@@ -97,9 +97,7 @@ class Proposition:
         self.args: list[Set | Term] = args or []
         self.arity: int = len(self.args)
         self._is_proven: bool = _is_proven
-        self.is_atomic: bool = (
-            True  # TODO: add is_atomic for other subclasses of Proposition
-        )
+        self.is_atomic: bool = True
 
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, Proposition):
