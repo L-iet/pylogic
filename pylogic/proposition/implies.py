@@ -40,14 +40,6 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         self.consequent = consequent
         name = f"{antecedent.name} -> {consequent.name}"
         super().__init__(name, is_assumption, _is_proven=_is_proven)
-        self.completed_args = getattr(self.antecedent, "completed_args", {}).copy()
-        self.completed_args.update(getattr(self.consequent, "completed_args", {}))
-        self.completed_args_order = getattr(
-            self.antecedent, "completed_args_order", []
-        ).copy()
-        self.completed_args_order.extend(
-            getattr(self.consequent, "completed_args_order", [])
-        )
         self.is_atomic = False
 
     def __eq__(self, other: Proposition) -> bool:

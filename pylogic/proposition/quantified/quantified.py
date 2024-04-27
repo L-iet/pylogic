@@ -31,7 +31,7 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
         super().__init__(
             f"{_q} {variable}: {inner_proposition.name}",
             is_assumption,
-            args=inner_proposition.args,
+            args=[],
             _is_proven=_is_proven,
         )
         self.inner_proposition: TProposition = inner_proposition
