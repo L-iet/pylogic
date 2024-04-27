@@ -120,9 +120,11 @@ Begin session. Will finish pred proof search today.
 # Friday Apr 26, 2024, 5:15pm PT
 Begin session. I'll clean up the difference between Symbol and Variable.
 
-Want to implement unification. The rules below are followed (first matching rule from top to bottom is used):
+Want to implement unification. Recal that `Term = Variable | Symbol | Set | sp.Basic | int | float`.
 
-- A `Variable` unifies with any `Term` or `Variable`.
+The rules below are followed (first matching rule from top to bottom is used):
+
+- A `Variable` unifies with any `Term`.
 - Two `Term`s unify if they are equal.
 - Two atomic propositions unify if they have the same arity and all the arguments unify:
     - If a variable has been unified with a term, the rest of the instantiations of the variable must be compatible (equal) with the term.

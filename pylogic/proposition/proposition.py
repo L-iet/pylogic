@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from pylogic.symbol import Symbol
 
     Term = Variable | Symbol | Set | sp.Basic | int | float
+    Unification = dict[Variable, Term]
 
 
 Props = TypeVarTuple("Props")
@@ -458,6 +459,11 @@ class Proposition:
             _is_proven=True,
         )
         return new_p
+
+    def unify(self, other: Proposition) -> Unification | Literal[True] | None:
+        if not isinstance(other, Proposition):
+            raise TypeError(f"{other} is not a proposition")
+        pass
 
 
 if __name__ == "__main__":
