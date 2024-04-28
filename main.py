@@ -61,10 +61,6 @@ lim_x_sq_at_0 = (
 # forall x: forall eps: [eps > 0 -> exists delta: (delta > 0 /\ [Abs(x) < delta -> x**2 < delta**2])] True
 log(lim_x_sq_at_0, lim_x_sq_at_0.is_proven)
 
-# TODO
-# Implement a way to determine what equations need to hold for two propositions
-# to be equivalent
-
 
 ###  Proving Theorem 1.2.6 (the converse statement) Understanding Analysis, 2nd Edition
 # if (forall eps>0, |a-b|<eps) then a = b
@@ -97,7 +93,7 @@ log(abs_a_minus_b_is_0.zero_abs_is_0())
 
 ##############################
 
-printing = True
+printing = False
 
 from pylogic.variable import Variable
 from pylogic.symbol import Symbol
@@ -117,4 +113,9 @@ q = Forall(
         Proposition("W", args=[2, Variable("y")]),
     ),
 )
-print(p.unify(q))
+log(p.unify(q))
+
+###############################
+printing = True
+a = Forall(x, And(Px, Qxz))
+log(a.de_morgan().de_morgan())

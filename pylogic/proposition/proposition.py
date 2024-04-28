@@ -69,6 +69,7 @@ class Proposition:
         {"name": "followed_from", "arguments": []},
         {"name": "thus_there_exists", "arguments": ["str", "Term", "list[list[int]]"]},
         {"name": "thus_forall", "arguments": ["Variable"]},
+        {"name": "de_morgan", "arguments": []},
     ]
 
     def __init__(
@@ -113,7 +114,7 @@ class Proposition:
         else:
             return self.name
 
-    def __copy__(self) -> "Proposition":
+    def __copy__(self) -> Self:
         return self.copy()
 
     def _latex(self, printer=latex_printer) -> str:
@@ -457,6 +458,12 @@ class Proposition:
             _is_proven=True,
         )
         return new_p
+
+    def de_morgan(self) -> Self:
+        """
+        Apply De Morgan's law to self to return an equivalent proposition.
+        """
+        return self.copy()
 
     def unify(self, other: Proposition) -> Unification | Literal[True] | None:
         """

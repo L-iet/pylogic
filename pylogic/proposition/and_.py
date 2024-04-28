@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
-from typing import TYPE_CHECKING, Literal, TypedDict, TypeVarTuple, Generic, Self, cast
+from typing import TYPE_CHECKING, Literal, TypedDict, TypeVarTuple, Generic, Self
 
 if TYPE_CHECKING:
     from pylogic.set.sets import Set
@@ -19,7 +19,10 @@ Props = TypeVarTuple("Props")
 
 
 class And(Proposition, Generic[*Props]):
-    tactics: list[Tactic] = [{"name": "all_proven", "arguments": []}]
+    tactics: list[Tactic] = [
+        {"name": "all_proven", "arguments": []},
+        {"name": "de_morgan", "arguments": []},
+    ]
 
     def __init__(
         self,
@@ -89,6 +92,17 @@ class And(Proposition, Generic[*Props]):
         new_p = self.copy()
         new_p._is_proven = True
         return new_p
+
+    def de_morgan(self) -> Proposition:
+        """Apply De Morgan's law to the conjunction to get an
+        equivalent proposition."""
+        from pylogic.proposition.not_ import neg, Not
+        from pylogic.proposition.or_ import Or
+
+        negs: list[Proposition] = [
+            neg(p.de_morgan()) for p in self.propositions  # type:ignore
+        ]
+        return Not(Or(*negs), _is_proven=self.is_proven)
 
     def unify(self, other: Self) -> Unification | Literal[True] | None:
         if not isinstance(other, And):

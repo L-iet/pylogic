@@ -32,6 +32,7 @@ class Or(Proposition, Generic[*Props]):
     tactics: list[Tactic] = [
         {"name": "unit_resolve", "arguments": ["Proposition"]},
         {"name": "one_proven", "arguments": ["Proposition"]},
+        {"name": "de_morgan", "arguments": []},
     ]
 
     def __init__(
@@ -115,6 +116,17 @@ class Or(Proposition, Generic[*Props]):
         new_p = self.copy()
         new_p._is_proven = True
         return new_p
+
+    def de_morgan(self) -> Proposition:
+        """Apply De Morgan's law to the disjunction to get an
+        equivalent proposition."""
+        from pylogic.proposition.not_ import neg, Not
+        from pylogic.proposition.and_ import And
+
+        negs: list[Proposition] = [
+            neg(p.de_morgan()) for p in self.propositions  # type:ignore
+        ]
+        return Not(And(*negs), _is_proven=self.is_proven)
 
     def unify(self, other: Self) -> Unification | Literal[True] | None:
         if not isinstance(other, Or):

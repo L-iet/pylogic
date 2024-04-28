@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, TypedDict, TypeVar, Self
 if TYPE_CHECKING:
     from sympy import Basic
     from pylogic.proposition.quantified.forall import Forall
+    from pylogic.proposition.not_ import Not
     from pylogic.proposition.implies import Implies
     from pylogic.symbol import Symbol
     from pylogic.set.sets import Set
@@ -20,7 +21,10 @@ Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 
 class Exists(_Quantified[TProposition]):
-    tactics: list[Tactic] = [{"name": "exists_modus_ponens", "arguments": ["Forall"]}]
+    tactics: list[Tactic] = [
+        {"name": "exists_modus_ponens", "arguments": ["Forall"]},
+        {"name": "de_morgan", "arguments": []},
+    ]
 
     @classmethod
     def from_proposition(
@@ -108,3 +112,13 @@ class Exists(_Quantified[TProposition]):
             _is_proven=True,
         )
         return new_p
+
+    def de_morgan(self) -> Not[Forall[Not[TProposition]]]:
+        """
+        Apply De Morgan's law to an existentially quantified sentence.
+        """
+        from pylogic.proposition.not_ import Not, neg
+        from pylogic.proposition.quantified.forall import Forall
+
+        inner_negated = neg(self.inner_proposition.de_morgan())
+        return Not(Forall(self.variable, inner_negated), _is_proven=self.is_proven)

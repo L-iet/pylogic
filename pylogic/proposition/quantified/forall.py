@@ -11,6 +11,7 @@ from sympy.printing.latex import LatexPrinter
 
 if TYPE_CHECKING:
     from pylogic.proposition.relation.equals import Equals
+    from pylogic.proposition.not_ import Not
     from pylogic.variable import Variable
     from pylogic.proposition.quantified.exists import Exists
     from pylogic.symbol import Symbol
@@ -29,6 +30,7 @@ class Forall(_Quantified[TProposition]):
     tactics: list[Tactic] = [
         {"name": "quantified_modus_ponens", "arguments": ["Implies"]},
         {"name": "hence_matrices_are_equal", "arguments": []},
+        {"name": "de_morgan", "arguments": []},
     ]
 
     def __init__(
@@ -145,3 +147,13 @@ class Forall(_Quantified[TProposition]):
         new_p = self.inner_proposition.replace(self.variable, expression_to_substitute)
         new_p._is_proven = True
         return new_p
+
+    def de_morgan(self) -> Not[Exists[Not[TProposition]]]:
+        """
+        Apply De Morgan's law to a universally quantified sentence.
+        """
+        from pylogic.proposition.not_ import Not, neg
+        from pylogic.proposition.quantified.exists import Exists
+
+        inner_negated = neg(self.inner_proposition.de_morgan())
+        return Not(Exists(self.variable, inner_negated), _is_proven=self.is_proven)

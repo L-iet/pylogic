@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
-from typing import TYPE_CHECKING, Literal, TypeVar, Generic, Self, overload
+from typing import TYPE_CHECKING, Literal, TypeVar, Generic, Self, overload, TypedDict
 from sympy.printing.latex import LatexPrinter
 
 latex_printer = LatexPrinter()
@@ -17,22 +17,31 @@ if TYPE_CHECKING:
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
+Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 
 @overload
-def neg(p: Not[TProposition], is_assumption: bool = False) -> TProposition: ...
+def neg(
+    p: Not[TProposition], is_assumption: bool = False, **kwargs
+) -> TProposition: ...
 
 
 @overload
-def neg(p: TProposition, is_assumption: bool = False) -> Not[TProposition]: ...
+def neg(
+    p: TProposition, is_assumption: bool = False, **kwargs
+) -> Not[TProposition]: ...
 
 
 def neg(
-    p: Not[TProposition] | TProposition, is_assumption: bool = False
+    p: Not[TProposition] | TProposition, is_assumption: bool = False, **kwargs
 ) -> Not[TProposition] | TProposition:
+    """
+    Given a proposition, return its negation.
+    """
+    _is_proven = kwargs.get("_is_proven", False)
     if isinstance(p, Not):
         return p.negated
-    return Not(p, is_assumption)
+    return Not(p, is_assumption, _is_proven=_is_proven)
 
 
 def are_negs(p: Proposition, q: Proposition) -> bool:
@@ -47,6 +56,11 @@ def are_negs(p: Proposition, q: Proposition) -> bool:
 
 
 class Not(Proposition, Generic[TProposition]):
+    tactics: list[Tactic] = [
+        {"name": "modus_tollens", "arguments": ["Implies"]},
+        {"name": "de_morgan", "arguments": []},
+    ]
+
     def __init__(
         self,
         negated: TProposition,
@@ -111,6 +125,28 @@ class Not(Proposition, Generic[TProposition]):
 
     def _latex(self, printer=latex_printer) -> str:
         return rf"\neg{{{self.negated._latex()}}}"
+
+    def de_morgan(self) -> Proposition:
+        """
+        Apply De Morgan's law to this negation.
+        """
+        from pylogic.proposition.and_ import And
+        from pylogic.proposition.or_ import Or
+
+        if isinstance(self.negated, And):
+            negs: list[Proposition] = [
+                neg(p.de_morgan()) for p in self.negated.propositions  # type:ignore
+            ]
+            return Or(*negs, _is_proven=self.is_proven)  # type: ignore
+        elif isinstance(self.negated, Or):
+            negs: list[Proposition] = [
+                neg(p.de_morgan()) for p in self.negated.propositions  # type:ignore
+            ]
+            return And(*negs, _is_proven=self.is_proven)  # type: ignore
+        elif self.negated.is_atomic:
+            return self.copy()
+
+        return neg(self.negated.de_morgan(), _is_proven=self.is_proven)
 
     def unify(self, other: Self) -> Unification | Literal[True] | None:
         if not isinstance(other, Not):
