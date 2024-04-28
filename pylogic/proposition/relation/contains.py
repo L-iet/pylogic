@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
     from pylogic.variable import Variable
@@ -11,12 +11,18 @@ if TYPE_CHECKING:
     Term = Variable | Symbol | Set | Basic | int | float
 import copy
 
+Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
+
 
 class IsContainedIn(BinaryRelation):
     is_transitive = False
     name = "IsContainedIn"
     infix_symbol = "in"
     infix_symbol_latex = r"\in"
+    tactics: list[Tactic] = [
+        {"name": "by_containment_func", "arguments": []},
+        {"name": "by_def", "arguments": []},
+    ]
 
     def __init__(
         self,
