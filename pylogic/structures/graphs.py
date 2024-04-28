@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.relation.contains import IsContainedIn
     from sympy import Basic
 
-    Term = Variable | Symbol | Set | Basic | int | float
+    Term = Symbol | Set | Basic | int | float
 
 
 def vertices_edges(

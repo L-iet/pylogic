@@ -6,10 +6,9 @@ from sympy import Basic, Abs, Integer
 
 if TYPE_CHECKING:
     from pylogic.structures.sets import Set
-    from pylogic.variable import Variable
     from pylogic.symbol import Symbol
 
-    Term = Variable | Symbol | Set | Basic | int | float
+    Term = Symbol | Set | Basic | int | float
 from sympy.printing.latex import LatexPrinter
 
 TProposition = TypeVar("TProposition", bound="Proposition")

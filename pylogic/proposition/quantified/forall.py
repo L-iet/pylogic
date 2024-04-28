@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from pylogic.symbol import Symbol
     from pylogic.structures.sets import Set
 
-    Term = Variable | Symbol | Set | sp.Basic | int | float
+    Term = Symbol | Set | sp.Basic | int | float
 
 
 TProposition = TypeVar("TProposition", bound="Proposition")

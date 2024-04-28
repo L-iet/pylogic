@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from pylogic.structures.sets import Set
     from pylogic.symbol import Symbol
 
-    Term = Variable | Symbol | Set | sp.Basic | int | float
+    Term = Symbol | Set | sp.Basic | int | float
     Unification = dict[Variable, Term]
 
 

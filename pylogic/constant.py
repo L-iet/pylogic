@@ -2,8 +2,8 @@ from __future__ import annotations
 from pylogic.symbol import Symbol
 
 
-class Variable(Symbol):
+class Constant(Symbol):
     pass
 
 
-Var = Variable
+Const = Constant

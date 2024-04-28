@@ -4,11 +4,10 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from pylogic.structures.sets import Set
-    from pylogic.variable import Variable
     from pylogic.symbol import Symbol
     from sympy import Basic
 
-    Term = Variable | Symbol | Set | Basic | int | float
+    Term = Symbol | Set | Basic | int | float
 from sympy.printing.latex import LatexPrinter
 
 latex_printer = LatexPrinter()

@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from pylogic.structures.sets import Set
     from sympy import Basic
 
-    Term = Variable | Symbol | Set | Basic | int | float
+    Term = Symbol | Set | Basic | int | float
     Unification = dict[Variable, Term]
 
 TProposition = TypeVar("TProposition", bound="Proposition")

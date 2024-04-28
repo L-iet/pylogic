@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, TypedDict, TypeVar
 
 if TYPE_CHECKING:
     from pylogic.proposition.proposition import Proposition
-    from pylogic.variable import Variable
     from pylogic.symbol import Symbol
     from pylogic.structures.sets import Set
     from pylogic.proposition.relation.contains import IsContainedIn
@@ -12,7 +11,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.quantified.forall import Forall
     from sympy import Basic
 
-    Term = Variable | Symbol | Set | Basic | int | float
+    Term = Symbol | Set | Basic | int | float
 from sympy.printing.latex import LatexPrinter
 
 latex_printer = LatexPrinter()

@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from pylogic.symbol import Symbol
     from sympy import Basic
 
-    Term = Variable | Symbol | Set | Basic | int | float
+    Term = Symbol | Set | Basic | int | float
     Unification = dict[Variable, Term]
 from sympy.printing.latex import LatexPrinter
 

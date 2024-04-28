@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from pylogic.structures.sets import Set
     from pylogic.symbol import Symbol
 
-    Term = Variable | Symbol | Set | Basic | int | float
+    Term = Symbol | Set | Basic | int | float
     Unification = dict[Variable, Term]
 
 from sympy.printing.latex import LatexPrinter

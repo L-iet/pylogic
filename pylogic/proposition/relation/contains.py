@@ -3,12 +3,11 @@ from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
-    from pylogic.variable import Variable
     from pylogic.symbol import Symbol
     from pylogic.structures.sets import Set
     from sympy import Basic
 
-    Term = Variable | Symbol | Set | Basic | int | float
+    Term = Symbol | Set | Basic | int | float
 import copy
 
 Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})

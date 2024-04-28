@@ -6,11 +6,10 @@ from pylogic.proposition.relation.contains import IsContainedIn
 from typing import Callable, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pylogic.variable import Variable
     from pylogic.symbol import Symbol
     from pylogic.structures.sets import Set
 
-    Term = Variable | Symbol | Set | sp.Basic | int | float
+    Term = Symbol | Set | sp.Basic | int | float
 
 
 latex_printer = LatexPrinter()

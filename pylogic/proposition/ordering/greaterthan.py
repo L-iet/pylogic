@@ -10,11 +10,10 @@ from sympy import S as sympy_S
 if TYPE_CHECKING:
     from pylogic.proposition.ordering.lessthan import LessThan
     from pylogic.proposition.not_ import Not
-    from pylogic.variable import Variable
     from pylogic.symbol import Symbol
     from pylogic.structures.sets import Set
 
-    Term = Variable | Symbol | Set | sp.Basic | int | float
+    Term = Symbol | Set | sp.Basic | int | float
 
 
 class GreaterThan(BinaryRelation, _Ordering):

@@ -14,11 +14,10 @@ if TYPE_CHECKING:
 from pylogic.structures.sets import Integers
 
 if TYPE_CHECKING:
-    from pylogic.variable import Variable
     from pylogic.symbol import Symbol
     from pylogic.structures.sets import Set
 
-    Term = Variable | Symbol | Set | sp.Basic | int | float
+    Term = Symbol | Set | sp.Basic | int | float
 
 
 def divisible(x: Term, y: Term, is_assumption=False) -> IsContainedIn:
