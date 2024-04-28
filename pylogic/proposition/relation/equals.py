@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Literal, TypeVar, Self
 from sympy import Basic, Abs, Integer
 
 if TYPE_CHECKING:
-    from pylogic.set.sets import Set
+    from pylogic.structures.sets import Set
     from pylogic.variable import Variable
     from pylogic.symbol import Symbol
 

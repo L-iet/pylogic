@@ -123,7 +123,7 @@ log(a.de_morgan().de_morgan())
 ###############################
 printing = True
 from pylogic.proposition.relation.contains import IsContainedIn
-from pylogic.set.sets import Naturals0
+from pylogic.structures.sets import Naturals0
 from pylogic.theorems.arithmetic import weak_induction
 
 n = Variable("n", integer=True, positive=True)

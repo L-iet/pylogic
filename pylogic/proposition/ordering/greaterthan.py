@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.not_ import Not
     from pylogic.variable import Variable
     from pylogic.symbol import Symbol
-    from pylogic.set.sets import Set
+    from pylogic.structures.sets import Set
 
     Term = Variable | Symbol | Set | sp.Basic | int | float
 

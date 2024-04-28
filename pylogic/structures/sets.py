@@ -8,7 +8,7 @@ from typing import Callable, TYPE_CHECKING
 if TYPE_CHECKING:
     from pylogic.variable import Variable
     from pylogic.symbol import Symbol
-    from pylogic.set.sets import Set
+    from pylogic.structures.sets import Set
 
     Term = Variable | Symbol | Set | sp.Basic | int | float
 
@@ -82,10 +82,10 @@ Rationals = Set(sympy_set=sp.Rationals)
 Reals = Set(sympy_set=sp.Reals)
 Naturals = Set(sympy_set=sp.Naturals)
 Naturals0 = Set(sympy_set=sp.Naturals0)
-Graphs = Set(name="Graphs")
+Graphs = Set(name="Graphs", containment_function=lambda x: x.is_graph)  # type: ignore
 # Matrices = Set(name="Matrices")
 # Vectors = Set(name="Vectors")
 # Functions = Set(name="Functions")
-Sequences = Set(name="Sequences")
-# Lists = Set(name="Lists")
-# Pairs = Set(name="Pairs")
+Sequences = Set(name="Sequences", containment_function=lambda x: x.is_sequence)  # type: ignore
+# Lists = Set(name="Lists", containment_function=lambda x: x.is_list) # type: ignore
+# Pairs = Set(name="Pairs", containment_function=lambda x: x.is_pair) # type: ignore

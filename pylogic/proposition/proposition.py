@@ -15,7 +15,7 @@ from typing import (
 )
 
 if TYPE_CHECKING:
-    from pylogic.set.sets import Set
+    from pylogic.structures.sets import Set
     from pylogic.proposition.relation.equals import Equals
     from pylogic.proposition.and_ import And
     from pylogic.proposition.implies import Implies
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.quantified.forall import Forall
     from pylogic.proposition.not_ import Not
     from pylogic.variable import Variable
-    from pylogic.set.sets import Set
+    from pylogic.structures.sets import Set
     from pylogic.symbol import Symbol
 
     Term = Variable | Symbol | Set | sp.Basic | int | float

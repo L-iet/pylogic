@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Self
 from sympy import Basic, latex
 
 if TYPE_CHECKING:
-    from pylogic.set.sets import Set
+    from pylogic.structures.sets import Set
     from pylogic.variable import Variable
     from pylogic.symbol import Symbol
 

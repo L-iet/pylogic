@@ -6,7 +6,7 @@ from pylogic.variable import Variable
 
 if TYPE_CHECKING:
     from pylogic.symbol import Symbol
-    from pylogic.set.sets import Set
+    from pylogic.structures.sets import Set
 
     Term = Variable | Symbol | Set | sp.Basic | int | float
     Unification = dict[Variable, Term]

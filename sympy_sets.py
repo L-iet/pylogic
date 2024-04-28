@@ -1,5 +1,5 @@
 import sympy as sp
-from pylogic.set.sets import Set
+from pylogic.structures.sets import Set
 from pylogic.theorems.divisible import divisible
 
 # print(dir(sp.S))

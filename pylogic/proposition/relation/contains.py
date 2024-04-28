@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, TypedDict
 if TYPE_CHECKING:
     from pylogic.variable import Variable
     from pylogic.symbol import Symbol
-    from pylogic.set.sets import Set
+    from pylogic.structures.sets import Set
     from sympy import Basic
 
     Term = Variable | Symbol | Set | Basic | int | float
@@ -90,3 +90,12 @@ class IsContainedIn(BinaryRelation):
                 f"Cannot prove that {self.right} contains {self.left}\nThis was a result of\n{e}"
             )
         raise ValueError(f"Cannot prove that {self.right} contains {self.left}")
+
+    def by_inspection(self) -> IsContainedIn:
+        """Logical tactic. Use the set's containment function and sympy set to
+        prove that it contains the element.
+        """
+        try:
+            return self.by_containment_func()
+        except ValueError:
+            return self.by_def()

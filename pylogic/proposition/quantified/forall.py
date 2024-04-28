@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from pylogic.variable import Variable
     from pylogic.proposition.quantified.exists import Exists
     from pylogic.symbol import Symbol
-    from pylogic.set.sets import Set
+    from pylogic.structures.sets import Set
 
     Term = Variable | Symbol | Set | sp.Basic | int | float
 

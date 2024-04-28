@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.not_ import Not
     from pylogic.proposition.implies import Implies
     from pylogic.symbol import Symbol
-    from pylogic.set.sets import Set
+    from pylogic.structures.sets import Set
 
     Term = Variable | Symbol | Set | Basic | int | float
 

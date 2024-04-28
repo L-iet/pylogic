@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Literal, TypeVar, Generic, TypedDict, Self
 
 if TYPE_CHECKING:
     from pylogic.proposition.or_ import Or
-    from pylogic.set.sets import Set
+    from pylogic.structures.sets import Set
     from pylogic.variable import Variable
     from pylogic.symbol import Symbol
     from sympy import Basic

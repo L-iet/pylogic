@@ -8,7 +8,7 @@ from pylogic.variable import Variable
 from sympy import Basic, latex
 
 if TYPE_CHECKING:
-    from pylogic.set.sets import Set
+    from pylogic.structures.sets import Set
     from pylogic.symbol import Symbol
 
     Term = Variable | Symbol | Set | Basic | int | float

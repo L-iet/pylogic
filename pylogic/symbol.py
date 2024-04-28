@@ -4,6 +4,14 @@ MatEl = sp.matrices.expressions.matexpr.MatrixElement
 
 
 class Symbol(sp.Symbol):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.is_set_: bool = kwargs.get("set_", False)
+        self.is_set: bool = self.is_set_
+        self.is_graph: bool = kwargs.get("graph", False)
+        self.is_pair: bool = kwargs.get("pair", False)
+        self.is_sequence: bool = kwargs.get("sequence", False)
+
     def __repr__(self):
         return super().__repr__()
 

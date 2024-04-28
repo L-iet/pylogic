@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.implies import Implies
     from pylogic.variable import Variable
     from pylogic.symbol import Symbol
-    from pylogic.set.sets import Set
+    from pylogic.structures.sets import Set
     from sympy import Basic
 
     Term = Variable | Symbol | Set | Basic | int | float
