@@ -144,3 +144,5 @@ Begin session. Will add De Morgan.
 
 9:28pm: Added De-Morgan that applies to every part of proposition as much as possible.
 Might need to implement De-Morgan to apply to part of a proposition.
+
+9:56pm: will add induction on `Naturals0`.
