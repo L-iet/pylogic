@@ -3,26 +3,25 @@ from sympy import Set as SympySet
 from sympy.printing.latex import LatexPrinter
 import sympy as sp
 from pylogic.proposition.relation.contains import IsContainedIn
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 
-SympyExpression = sp.Basic | int | float
+if TYPE_CHECKING:
+    from pylogic.variable import Variable
+    from pylogic.symbol import Symbol
+    from pylogic.set.sets import Set
+
+    Term = Variable | Symbol | Set | sp.Basic | int | float
 
 
 latex_printer = LatexPrinter()
 
 
 class Set:
-    _is_arbitrary: bool = True
-
-    @property
-    def is_arbitrary(self) -> bool:
-        return self._is_arbitrary
-
     def __init__(
         self,
         name: str | None = None,
         sympy_set: SympySet | None = None,
-        containment_function: Callable[[SympyExpression | Set], bool] | None = None,
+        containment_function: Callable[[Term], bool] | None = None,
     ):
         if name:
             name = name.strip()
@@ -36,12 +35,18 @@ class Set:
         assert " " not in name, "Set name cannot contain spaces"
         self.name = name or str(sympy_set)
         self.sympy_set = sympy_set
-        self.containment_function = containment_function or (lambda x: False)
+        self.containment_function: Callable[[Term], bool] = containment_function or (
+            lambda x: False
+        )
 
-    # def __eq__(self, other: "ArgValueTypes") -> bool:
-    #     return self.sympy_set == other.sympy_set
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, sp.Set):
+            return self.sympy_set == other
+        elif not isinstance(other, Set):
+            return False
+        return self.sympy_set == other.sympy_set
 
-    def equals(self, other: object) -> bool:
+    def equals(self, other: Set) -> bool:
         if not isinstance(other, Set):
             return False
         return self.sympy_set == other.sympy_set
@@ -51,9 +56,7 @@ class Set:
             return False
         return self.sympy_set == other.sympy_set
 
-    def contains(
-        self, other: "SympyExpression | Set", is_assumption: bool = False
-    ) -> IsContainedIn:
+    def contains(self, other: Term, is_assumption: bool = False) -> IsContainedIn:
         """elementhood"""
 
         return IsContainedIn(other, self, is_assumption=is_assumption)
