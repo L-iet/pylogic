@@ -81,7 +81,12 @@ class GreaterThan(BinaryRelation, _Ordering):
         is_assumption: bool = False,
         _is_proven: bool = False,
     ) -> None:
-        if (left - right).is_positive is False and (is_assumption or _is_proven):
+        diff = left - right
+        if isinstance(diff, int) or isinstance(diff, float):
+            diff_is_positive = diff > 0
+        else:
+            diff_is_positive = diff.is_positive
+        if diff_is_positive == False and (is_assumption or _is_proven):
             raise ValueError(f"Some assumptions in {left}, {right} are contradictory")
         super().__init__(
             left,
@@ -160,6 +165,22 @@ class GreaterThan(BinaryRelation, _Ordering):
         new_p = self.to_less_than()
         new_p._is_proven = True
         return new_p
+
+    def by_inspection(self) -> GreaterThan:
+        """
+        Logical tactic. Determine if the proposition is true by inspection.
+        """
+        try:
+            if bool(self.left > self.right) is True:
+                return GreaterThan(self.left, self.right, _is_proven=True)
+            else:
+                raise ValueError(
+                    f"Cannot prove that {self.left} > {self.right} by inspection"
+                )
+        except TypeError:  # sympy raises TypeError if it can't determine the ordering
+            raise ValueError(
+                f"Cannot prove that {self.left} < {self.right} by inspection"
+            )
 
     def __mul__(self, other: Term) -> GreaterThan:
         return super()._mul(self, other)

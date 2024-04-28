@@ -116,6 +116,25 @@ q = Forall(
 log(p.unify(q))
 
 ###############################
-printing = True
+printing = False
 a = Forall(x, And(Px, Qxz))
 log(a.de_morgan().de_morgan())
+
+###############################
+printing = True
+from pylogic.proposition.relation.contains import IsContainedIn
+from pylogic.set.sets import Naturals0
+from pylogic.theorems.arithmetic import weak_induction
+
+n = Variable("n", integer=True, positive=True)
+
+bc = GreaterThan(1, 0).by_inspection()
+istep = Forall(
+    n,
+    IsContainedIn(n, Naturals0)
+    .and_(GreaterThan(n + 1, 0))
+    .implies(GreaterThan(n + 2, 0)),
+    is_assumption=True,
+)
+
+log(weak_induction(bc, istep))

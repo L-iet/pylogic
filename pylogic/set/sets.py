@@ -70,10 +70,12 @@ class Set:
     def _repr_latex_(self) -> str:
         return f"$${self._latex()}$$"
 
-    def copy(self) -> "Set":
+    def copy(self) -> Set:
         return Set(self.name, self.sympy_set, self.containment_function)
 
 
-Integers = Set(sympy_set=sp.S.Integers)
-Rationals = Set(sympy_set=sp.S.Rationals)
-Reals = Set(sympy_set=sp.S.Reals)
+Integers = Set(sympy_set=sp.Integers)
+Rationals = Set(sympy_set=sp.Rationals)
+Reals = Set(sympy_set=sp.Reals)
+Naturals = Set(sympy_set=sp.Naturals)
+Naturals0 = Set(sympy_set=sp.Naturals0)

@@ -146,3 +146,7 @@ Begin session. Will add De Morgan.
 Might need to implement De-Morgan to apply to part of a proposition.
 
 9:56pm: will add induction on `Naturals0`.
+10:58pm: end session. Added weak induction in `arithmetic.py`. May need to test a bit more.
+Should add strong induction.
+
+TODO: cleanup inequality propositions and add more tactics.
