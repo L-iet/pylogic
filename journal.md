@@ -139,3 +139,5 @@ No session. TODO:
 - Add natural language descriptions
 - Fix `_is_proven` argument to be more explicit
 
+# Saturday Apr 27, 2024, 8:10pm PT
+Begin session. Will add De Morgan.
