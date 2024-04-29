@@ -71,10 +71,11 @@ class Or(Proposition, Generic[*Props]):
         Return a text representation of the proposition.
         """
         s = ""
-        for p in self.propositions:
+        for i, p in enumerate(self.propositions):
             s += p.as_text(_indent=_indent + 1)
-            s += "  " * _indent + "or\n"
-        return s[:-3]
+            if i != len(self.propositions) - 1:
+                s += "  " * _indent + "or\n"
+        return s
 
     def replace(
         self,

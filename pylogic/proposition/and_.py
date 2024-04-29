@@ -60,10 +60,11 @@ class And(Proposition, Generic[*Props]):
         Return a text representation of the proposition.
         """
         s = ""
-        for p in self.propositions:
+        for i, p in enumerate(self.propositions):
             s += p.as_text(_indent=_indent + 1)
-            s += "  " * _indent + "and\n"
-        return s[:-4]
+            if i != len(self.propositions) - 1:
+                s += "  " * _indent + "and\n"
+        return s
 
     def replace(
         self,

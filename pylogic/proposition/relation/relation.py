@@ -38,7 +38,7 @@ class Relation(Proposition):
         """
         Return a text representation of the proposition.
         """
-        return "  " * _indent + repr(self)
+        return "  " * _indent + repr(self) + "\n"
 
     def _latex(self, printer=latex_printer) -> str:
         return super()._latex()

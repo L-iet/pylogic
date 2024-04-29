@@ -121,7 +121,7 @@ a = Forall(x, And(Px, Qxz))
 log(a.de_morgan().de_morgan())
 
 ###############################
-printing = False
+printing = True
 from pylogic.proposition.relation.contains import IsContainedIn
 from pylogic.structures.sets import Naturals0
 from pylogic.theorems.arithmetic import weak_induction
@@ -137,10 +137,10 @@ istep = Forall(
     is_assumption=True,
 )
 
-log(weak_induction(bc, istep))
+log(weak_induction(bc, istep).as_text())
 
 ###############################
-printing = True
+printing = False
 
 P = Proposition("P")
 Q = Proposition("Q")
