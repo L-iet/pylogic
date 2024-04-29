@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     Term = Symbol | Set | Basic | int | float
 
 
-def vertices_edges(
+def nodes_edges(
     obj_is_graph: IsContainedIn,
 ) -> tuple[Variable | Symbol, Variable | Symbol]:
     """

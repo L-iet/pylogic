@@ -10,10 +10,11 @@ class Symbol(sp.Symbol):
         super().__init__()
         self.is_set_: bool = kwargs.get("set_", False)
         self.is_set: bool = self.is_set_
-        self.is_graph: bool = kwargs.get("graph", False)
-        self.is_pair: bool = kwargs.get("pair", False)
-        self.is_list_: bool = kwargs.get("list_", False)
+        self.is_graph: bool = not self.is_set and kwargs.get("graph", False)
+        self.is_pair: bool = self.is_graph or kwargs.get("pair", False)
+        self.is_list_: bool = self.is_pair or kwargs.get("list_", False)
         self.is_list: bool = self.is_list_
+        self.is_sequence: bool = self.is_list or kwargs.get("sequence", False)
 
     def __repr__(self):
         return super().__repr__()
@@ -21,7 +22,8 @@ class Symbol(sp.Symbol):
     def copy(self) -> Self:
         return self.__class__(self.name)
 
-    def vertices_edges(self) -> tuple[Self, Self]:
+    @property
+    def nodes_edges(self) -> tuple[Self, Self]:
         """
         if self has `is_graph` True, return two variables representing the nodes
         and edges of self. Otherwise, raise a ValueError
@@ -32,13 +34,31 @@ class Symbol(sp.Symbol):
             )
         raise ValueError(f"{self} is not a graph")
 
-    def size(self) -> Self:
+    @property
+    def first_second(self) -> tuple[Self, Self]:
+        """
+        if self has `is_pair` True, return two variables representing the first
+        and second elements of self. Otherwise, raise a ValueError
+        """
+        if self.is_pair:
+            return self.__class__(f"{self.name}_{{first}}"), self.__class__(
+                f"{self.name}_{{second}}"
+            )
+        raise ValueError(f"{self} is not a pair")
+
+    @property
+    def size(self) -> Self | sp.Integer:
         """
         if self has `is_list` or `is_set` True, return a variable representing the
-        size of self. Otherwise, raise a ValueError
+        size of self. Otherwise, raise a ValueError.
+        Note that a graph is a pair, which is a list of two elements, so it
+        has a size. This size, however, is 2.
+        To get the number of nodes, access `self.nodes_edges[0].size`.
         """
         if self.is_list or self.is_set:
-            return self.__class__(f"size({self.name})", positive=True, integer=True)
+            return self.__class__(f"size({self.name})", nonnegative=True, integer=True)
+        elif self.is_pair:
+            return sp.Integer(2)
         raise ValueError(f"{self} is not a list or a set")
 
     __hash__ = sp.Symbol.__hash__

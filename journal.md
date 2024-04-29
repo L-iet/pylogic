@@ -150,3 +150,10 @@ Might need to implement De-Morgan to apply to part of a proposition.
 Should add strong induction.
 
 TODO: cleanup inequality propositions and add more tactics.
+
+# Sunday Apr 28, 2024, 4:46pm PT
+Forgot to log in. Worked on graphs, sets, contains. Now have `Symbol`, `Variable` and `Constant`.
+
+TODO: Create classes for Graph, List, Pair, Sequence, etc. Then one can create a
+variable graph using either `Variable('G', graph=True)`
+or `Graph('G', nodes=n, edges=e)` where `n` and `e` are variable sets themselves.
