@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from pylogic.structures.sets import Set
     from pylogic.proposition.relation.equals import Equals
     from pylogic.proposition.and_ import And
+    from pylogic.proposition.or_ import Or
     from pylogic.proposition.implies import Implies
     from pylogic.proposition.quantified.exists import Exists
     from pylogic.proposition.quantified.forall import Forall
@@ -228,6 +229,27 @@ class Proposition:
         from pylogic.proposition.and_ import And
 
         return And(*others, self, is_assumption=is_assumption)
+
+    def or_(
+        self,
+        *others: *Props,
+        is_assumption: bool = False,
+        **kwargs,
+    ) -> Or[Self, *Props]:
+        from pylogic.proposition.or_ import Or
+
+        _is_proven = kwargs.get("_is_proven", False)
+
+        return Or(self, *others, is_assumption=is_assumption, _is_proven=_is_proven)
+
+    def or_reverse(
+        self, *others: *Props, is_assumption: bool = False, **kwargs
+    ) -> Or[*Props, Self]:
+        from pylogic.proposition.or_ import Or
+
+        _is_proven = kwargs.get("_is_proven", False)
+
+        return Or(*others, self, is_assumption=is_assumption, _is_proven=_is_proven)
 
     def p_and(self, *others: *Props) -> And[Self, *Props]:
         """Logical tactic.

@@ -157,3 +157,5 @@ Forgot to log in. Worked on graphs, sets, contains. Now have `Symbol`, `Variable
 TODO: Create classes for Graph, List, Pair, Sequence, etc. Then one can create a
 variable graph using either `Variable('G', graph=True)`
 or `Graph('G', nodes=n, edges=e)` where `n` and `e` are variable sets themselves.
+
+6:05pm: break session. added strong induction and `LessOrEqual`.

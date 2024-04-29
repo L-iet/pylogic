@@ -2,13 +2,13 @@ from __future__ import annotations
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from pylogic.proposition.ordering.ordering import _Ordering
 from typing import TYPE_CHECKING
-from sympy import Basic
 from sympy import S as sympy_S
 
 if TYPE_CHECKING:
     from pylogic.proposition.ordering.greaterthan import GreaterThan
     from pylogic.structures.sets import Set
     from pylogic.symbol import Symbol
+    from sympy import Basic
 
     Term = Symbol | Set | Basic | int | float
 
