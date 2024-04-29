@@ -159,3 +159,6 @@ variable graph using either `Variable('G', graph=True)`
 or `Graph('G', nodes=n, edges=e)` where `n` and `e` are variable sets themselves.
 
 6:05pm: break session. added strong induction and `LessOrEqual`.
+
+# Monday Apr 29, 2024, 2:23pm PT
+Begin session. Will add natural language descriptions.
