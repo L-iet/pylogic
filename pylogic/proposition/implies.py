@@ -35,12 +35,15 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         antecedent: TProposition,
         consequent: UProposition,
         is_assumption: bool = False,
+        description: str = "",
         _is_proven: bool = False,
     ) -> None:
         self.antecedent = antecedent
         self.consequent = consequent
         name = f"{antecedent.name} -> {consequent.name}"
-        super().__init__(name, is_assumption, _is_proven=_is_proven)
+        super().__init__(
+            name, is_assumption, description=description, _is_proven=_is_proven
+        )
         self.is_atomic = False
 
     def __eq__(self, other: Proposition) -> bool:
@@ -60,12 +63,26 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
     def _latex(self, printer=latex_printer) -> str:
         return rf"\left({self.antecedent._latex()} \rightarrow {self.consequent._latex()}\right)"
 
-    def copy(self) -> "Implies":
-        return Implies(
+    def copy(self) -> Self:
+        return self.__class__(
             self.antecedent.copy(),
             self.consequent.copy(),
             self.is_assumption,
+            description=self.description,
             _is_proven=self.is_proven,
+        )
+
+    def as_text(self, *, _indent=0) -> str:
+        """
+        Return a text representation of the proposition.
+        """
+        return (
+            "  " * _indent
+            + "if\n"
+            + self.antecedent.as_text(_indent=_indent + 1)
+            + "  " * _indent
+            + "then\n"
+            + self.consequent.as_text(_indent=_indent + 1)
         )
 
     def replace(

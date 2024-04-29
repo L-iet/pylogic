@@ -35,6 +35,7 @@ class Exists(_Quantified[TProposition]):
         positions: list[list[int]] | None = None,
         is_assumption: bool = False,
         is_real: bool = True,
+        description: str = "",
         _is_proven: bool = False,
     ) -> Exists[TProposition]:
         r"""
@@ -58,7 +59,8 @@ class Exists(_Quantified[TProposition]):
             variable,
             inner_proposition,
             is_assumption,
-            _is_proven,
+            description=description,
+            _is_proven=_is_proven,
         )
 
     def __init__(
@@ -66,6 +68,7 @@ class Exists(_Quantified[TProposition]):
         variable: Variable,
         inner_proposition: TProposition,
         is_assumption: bool = False,
+        description: str = "",
         _is_proven: bool = False,
     ) -> None:
         super().__init__(
@@ -73,7 +76,8 @@ class Exists(_Quantified[TProposition]):
             variable,
             inner_proposition,
             is_assumption,
-            _is_proven,
+            description=description,
+            _is_proven=_is_proven,
         )
 
     def __eq__(self, other: Proposition) -> bool:
@@ -89,6 +93,7 @@ class Exists(_Quantified[TProposition]):
             self.variable,
             self.inner_proposition.copy(),
             self.is_assumption,
+            description=self.description,
             _is_proven=self.is_proven,
         )
 

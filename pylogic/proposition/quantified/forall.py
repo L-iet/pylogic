@@ -38,6 +38,7 @@ class Forall(_Quantified[TProposition]):
         variable: Variable,
         inner_proposition: TProposition,
         is_assumption: bool = False,
+        description: str = "",
         _is_proven: bool = False,
     ) -> None:
         super().__init__(
@@ -45,6 +46,7 @@ class Forall(_Quantified[TProposition]):
             variable,
             inner_proposition,
             is_assumption,
+            description=description,
             _is_proven=_is_proven,
         )
 
@@ -58,7 +60,8 @@ class Forall(_Quantified[TProposition]):
             self.variable,
             self.inner_proposition.copy(),
             self.is_assumption,
-            self.is_proven,
+            description=self.description,
+            _is_proven=self.is_proven,
         )
 
     def hence_matrices_are_equal(self) -> Equals:

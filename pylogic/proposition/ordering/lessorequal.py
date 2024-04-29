@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING
 
 from pylogic.proposition.ordering.lessthan import LessThan
 from pylogic.proposition.relation.equals import Equals
+from pylogic.proposition.relation.binaryrelation import BinaryRelation
+from pylogic.proposition.ordering.ordering import _Ordering
 
 
 if TYPE_CHECKING:
@@ -25,6 +27,7 @@ class LessOrEqual(BinaryRelation, _Ordering):
         left: Term,
         right: Term,
         is_assumption: bool = False,
+        description: str = "",
         *,
         _is_proven: bool = False,
     ) -> None:
@@ -40,6 +43,7 @@ class LessOrEqual(BinaryRelation, _Ordering):
             left,
             right,
             is_assumption=is_assumption,
+            description=description,
             _is_proven=_is_proven,
         )
 

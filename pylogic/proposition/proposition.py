@@ -77,17 +77,17 @@ class Proposition:
         self,
         name: str,
         is_assumption: bool = False,
+        description: str = "",
         args: list[Term] | None = None,
-        # completed_args: dict[str, Set | SympyExpression] | None = None,
-        # completed_args_order: list[str] | None = None,
-        # show_arg_position_names: bool = False,
         _is_proven: bool = False,
     ) -> None:
         """
         name: str
-            Name of the proposition. Typically the first part of the __repr__.
+            Name of the proposition.
         is_assumption: bool
             Whether this proposition is an assumption.
+        description: str
+            A description of what this proposition is.
         args: list[Set | SympyExpression] | None
             The arguments of the proposition. If None, we assume the proposition has no arguments.
 
@@ -100,8 +100,9 @@ class Proposition:
         self.arity: int = len(self.args)
         self._is_proven: bool = _is_proven
         self.is_atomic: bool = True
+        self.description: str = description
 
-    def __eq__(self, other: Proposition) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, Proposition):
             return self.name == other.name and self.args == other.args
         return False
@@ -128,11 +129,19 @@ class Proposition:
     def is_proven(self) -> bool:
         return self._is_proven or self.is_assumption
 
+    def as_text(self, *, _indent=0) -> str:
+        """
+        Return a textual representation of the proposition. Subpropositions
+        are indented further right. One indentation is 2 spaces.
+        """
+        return "  " * _indent + repr(self) + "\n"
+
     def copy(self) -> Self:
         return self.__class__(
             self.name,
             self.is_assumption,
-            self.args.copy(),  # TODO: check if we need deepcopy
+            description=self.description,
+            args=self.args.copy(),  # TODO: check if we need deepcopy
             _is_proven=self.is_proven,
         )
 

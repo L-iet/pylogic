@@ -28,12 +28,15 @@ class And(Proposition, Generic[*Props]):
         self,
         *propositions: *Props,
         is_assumption: bool = False,
+        description: str = "",
         _is_proven: bool = False,
     ) -> None:
         assert len(propositions) > 1, "'And' must have at least two propositions"
         self.propositions = propositions
         name = rf" /\ ".join([p.name for p in propositions])  # type: ignore
-        super().__init__(name, is_assumption, _is_proven=_is_proven)
+        super().__init__(
+            name, is_assumption, description=description, _is_proven=_is_proven
+        )
         self.is_atomic = False
 
     def __eq__(self, other: Proposition) -> bool:
@@ -48,8 +51,19 @@ class And(Proposition, Generic[*Props]):
         return self.__class__(
             *[p.copy() for p in self.propositions],  # type: ignore
             is_assumption=self.is_assumption,
+            description=self.description,
             _is_proven=self.is_proven,
         )
+
+    def as_text(self, *, _indent=0) -> str:
+        """
+        Return a text representation of the proposition.
+        """
+        s = ""
+        for p in self.propositions:
+            s += p.as_text(_indent=_indent + 1)
+            s += "  " * _indent + "and\n"
+        return s[:-4]
 
     def replace(
         self,

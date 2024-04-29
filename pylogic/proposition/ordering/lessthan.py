@@ -24,6 +24,7 @@ class LessThan(BinaryRelation, _Ordering):
         left: Term,
         right: Term,
         is_assumption: bool = False,
+        description: str = "",
         *,
         _is_proven: bool = False,
     ) -> None:
@@ -39,6 +40,7 @@ class LessThan(BinaryRelation, _Ordering):
             left,
             right,
             is_assumption=is_assumption,
+            description=description,
             _is_proven=_is_proven,
         )
 

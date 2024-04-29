@@ -39,12 +39,15 @@ class Or(Proposition, Generic[*Props]):
         self,
         *propositions: *Props,
         is_assumption: bool = False,
+        description: str = "",
         _is_proven: bool = False,
     ) -> None:
         assert len(propositions) > 1, "'Or' must have at least two propositions"
         self.propositions = propositions
         name = r" \/ ".join([p.name for p in propositions])  # type: ignore
-        super().__init__(name, is_assumption, _is_proven=_is_proven)
+        super().__init__(
+            name, is_assumption, description=description, _is_proven=_is_proven
+        )
         self.is_atomic = False
 
     def __eq__(self, other: Proposition) -> bool:
@@ -57,8 +60,21 @@ class Or(Proposition, Generic[*Props]):
 
     def copy(self) -> Self:
         return self.__class__(
-            *[p.copy() for p in self.propositions], is_assumption=self.is_assumption  # type: ignore
+            *[p.copy() for p in self.propositions],
+            is_assumption=self.is_assumption,
+            description=self.description,
+            _is_proven=self.is_proven,
         )
+
+    def as_text(self, *, _indent=0) -> str:
+        """
+        Return a text representation of the proposition.
+        """
+        s = ""
+        for p in self.propositions:
+            s += p.as_text(_indent=_indent + 1)
+            s += "  " * _indent + "or\n"
+        return s[:-3]
 
     def replace(
         self,

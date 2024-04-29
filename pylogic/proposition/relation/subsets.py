@@ -33,13 +33,18 @@ class Subset(BinaryRelation):
         left: Set,
         right: Set,
         is_assumption: bool = False,
+        description: str = "",
         _is_proven: bool = False,
     ) -> None:
         self.right: Set = right
         self.left: Set = left
         name = f"{left.name} is a subset of {right.name}"
         super().__init__(
-            left, right, is_assumption=is_assumption, _is_proven=_is_proven
+            left,
+            right,
+            is_assumption=is_assumption,
+            description=description,
+            _is_proven=_is_proven,
         )
 
     def copy(self) -> Subset:

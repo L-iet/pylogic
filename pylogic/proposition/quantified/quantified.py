@@ -28,6 +28,7 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
         variable: Variable,
         inner_proposition: TProposition,
         is_assumption: bool = False,
+        description: str = "",
         _is_proven: bool = False,
     ) -> None:
         if not isinstance(variable, Variable):
@@ -36,6 +37,7 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
             f"{_q} {variable}: {inner_proposition.name}",
             is_assumption,
             args=[],
+            description=description,
             _is_proven=_is_proven,
         )
         self.inner_proposition: TProposition = inner_proposition
@@ -45,6 +47,16 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
 
     def __repr__(self) -> str:
         return f"{self._q} {self.variable}: {self.inner_proposition}"
+
+    def as_text(self, *, _indent=0) -> str:
+        """
+        Return a text representation of the proposition.
+        """
+        return (
+            "  " * _indent
+            + f"{self._q} {self.variable}:\n"
+            + self.inner_proposition.as_text(_indent=_indent + 1)
+        )
 
     @abstractmethod
     def copy(self) -> Self:

@@ -65,11 +65,14 @@ class Not(Proposition, Generic[TProposition]):
         self,
         negated: TProposition,
         is_assumption: bool = False,
+        description: str = "",
         _is_proven: bool = False,
     ) -> None:
         self.negated: TProposition = negated
         name = rf"~{negated}"
-        super().__init__(name, is_assumption, _is_proven=_is_proven)
+        super().__init__(
+            name, is_assumption, description=description, _is_proven=_is_proven
+        )
         self.is_atomic = False
 
     def __eq__(self, other: Proposition) -> bool:
@@ -82,7 +85,20 @@ class Not(Proposition, Generic[TProposition]):
 
     def copy(self) -> Self:
         return self.__class__(
-            self.negated.copy(), self.is_assumption, _is_proven=self.is_proven
+            self.negated.copy(),
+            self.is_assumption,
+            description=self.description,
+            _is_proven=self.is_proven,
+        )
+
+    def as_text(self, *, _indent=0) -> str:
+        """
+        Return a text representation of the proposition.
+        """
+        return (
+            "  " * _indent
+            + "it is false that\n"
+            + self.negated.as_text(_indent=_indent + 1)
         )
 
     def replace(

@@ -25,12 +25,14 @@ class BinaryRelation(Relation):
         left: Term,
         right: Term,
         is_assumption: bool = False,
+        description: str = "",
         _is_proven: bool = False,
     ) -> None:
         super().__init__(
             self.name,
             args=[left, right],
             is_assumption=is_assumption,
+            description=description,
             _is_proven=_is_proven,
         )
         self.left: Term = left
@@ -49,8 +51,9 @@ class BinaryRelation(Relation):
     def copy(self) -> Self:
         # copy.copy and deepcopy are evaluating unevaluated expressions
         return self.__class__(
-            self.left,  # was copy.copy(self.left), same for right
+            self.left,
             self.right,
+            description=self.description,
             is_assumption=self.is_assumption,
             _is_proven=self.is_proven,
         )

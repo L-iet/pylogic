@@ -29,12 +29,14 @@ class Equals(BinaryRelation):
         left: Term,
         right: Term,
         is_assumption: bool = False,
+        description: str = "",
         _is_proven: bool = False,
     ) -> None:
         super().__init__(
             left,
             right,
             is_assumption=is_assumption,
+            description=description,
             _is_proven=_is_proven,
         )
         self.left: Term = left

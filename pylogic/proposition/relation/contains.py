@@ -28,13 +28,18 @@ class IsContainedIn(BinaryRelation):
         left: Term,
         right: Set,
         is_assumption: bool = False,
+        description: str = "",
         _is_proven: bool = False,
     ) -> None:
         self.right: Set = right
         self.left: Term = left
         name = "IsContainedIn"
         super().__init__(
-            left, right, is_assumption=is_assumption, _is_proven=_is_proven
+            left,
+            right,
+            is_assumption=is_assumption,
+            description=description,
+            _is_proven=_is_proven,
         )
 
     @property
@@ -44,14 +49,6 @@ class IsContainedIn(BinaryRelation):
     @property
     def element(self) -> Term:
         return self.left
-
-    def copy(self) -> IsContainedIn:
-        return IsContainedIn(
-            copy.copy(self.element),
-            self.set_.copy(),
-            is_assumption=self.is_assumption,
-            _is_proven=self.is_proven,
-        )
 
     def by_containment_func(self) -> IsContainedIn:
         """Logical tactic. Use the set's containment function to prove that it

@@ -78,6 +78,7 @@ class GreaterThan(BinaryRelation, _Ordering):
         left: Term,
         right: Term,
         is_assumption: bool = False,
+        description: str = "",
         _is_proven: bool = False,
     ) -> None:
         diff = left - right
@@ -91,6 +92,7 @@ class GreaterThan(BinaryRelation, _Ordering):
             left,
             right,
             is_assumption=is_assumption,
+            description=description,
             _is_proven=_is_proven,
         )
         self.left: Term = left
@@ -98,14 +100,6 @@ class GreaterThan(BinaryRelation, _Ordering):
 
     def __repr__(self) -> str:
         return f"{self.left} > {self.right}"
-
-    def copy(self) -> "GreaterThan":
-        return GreaterThan(
-            self.left,
-            self.right,
-            self.is_assumption,
-            _is_proven=self.is_proven,
-        )
 
     def to_positive_inequality(self):
         """If self is of the form a > b, returns an inequality of the form a - b > 0"""
