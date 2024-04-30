@@ -175,3 +175,10 @@ Need to add and verify these attributes on all rules of inference and propositio
 
 # Tuesday Apr 30, 2024, 10:31am PT
 Begin session.
+
+Logical tactic and `copy`: `_assumptions=`, `_inference=` or
+`get_assumptions()`, `.deduced_from`
+
+Change `replace`
+
+Constructor: `**kwargs`

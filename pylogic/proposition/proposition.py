@@ -173,6 +173,8 @@ class Proposition:
             description=self.description,
             args=self.args.copy(),  # TODO: check if we need deepcopy
             _is_proven=self.is_proven,
+            _inference=self.deduced_from,
+            _assumptions=self.from_assumptions,
         )
 
     def replace(
@@ -200,21 +202,25 @@ class Proposition:
             Same for exists.
             In the example above, the first list [0,0,0] refers to the x in p1 x, not (p1 x -> p2 x).
         """
-        new_p = self.copy()
+        new_p_args = self.args.copy()
         index = -1
-        for arg in new_p.args:
+        for arg in new_p_args:
             index += 1
             if (positions is not None) and not [index] in positions:
                 continue
             if arg == current_val:
-                new_p.args[index] = new_val
+                new_p_args[index] = new_val
             elif isinstance(arg, sp.Basic):
-                new_p.args[index] = arg.subs(current_val, new_val)
+                new_p_args[index] = arg.subs(current_val, new_val)
 
-        new_p._is_proven = False
+        new_p = self.__class__(
+            self.name,
+            is_assumption=False,
+            args=new_p_args,
+        )
         return new_p
 
-    def substitute(self, side: Side, equality: "Equals") -> Self:
+    def substitute(self, side: Side, equality: "Equals", **kwargs) -> Self:
         """
         Parameters
         ----------
@@ -224,7 +230,7 @@ class Proposition:
             An equality proposition. We look for the other side of the equality
             in self and replace it with the 'side'.
         """
-        return equality.substitute_into(side, self)
+        return equality.substitute_into(side, self, **kwargs)
 
     def p_substitute(self, side: Side, equality: Equals) -> Self:
         """
@@ -242,20 +248,24 @@ class Proposition:
 
         assert self.is_proven, f"{self} is not proven"
         assert equality.is_proven, f"{equality} is not proven"
-        new_p = self.substitute(side, equality)
-        new_p._is_proven = True
-        new_p.deduced_from = Inference(self, equality, "p_substitute")
-        new_p.from_assumptions = get_assumptions(self).union(get_assumptions(equality))
+        new_p = self.substitute(
+            side,
+            equality,
+            _is_proven=True,
+            _inference=Inference(self, equality, rule="p_substitute"),
+            _assumptions=get_assumptions(self).union(get_assumptions(equality)),
+        )
         return new_p
 
     def implies(
         self,
         other: TProposition,
         is_assumption: bool = False,
+        **kwargs,
     ) -> Implies[Self, TProposition]:
         from pylogic.proposition.implies import Implies
 
-        return Implies(self, other, is_assumption)
+        return Implies(self, other, is_assumption, **kwargs)
 
     def and_(
         self,
@@ -311,7 +321,7 @@ class Proposition:
             *others,
             _is_proven=True,
             _assumptions=all_assumptions,
-            _inference=Inference(self, *others, "p_and"),
+            _inference=Inference(self, *others, rule="p_and"),
         )
         return new_p
 
@@ -332,7 +342,7 @@ class Proposition:
             *others,
             _is_proven=True,
             _assumptions=all_assumptions,
-            _inference=Inference(self, *others, "p_and_reverse"),
+            _inference=Inference(self, *others, rule="p_and_reverse"),
         )
         return new_p
 
@@ -352,7 +362,7 @@ class Proposition:
         assert other.antecedent == self, f"{other} does not imply {self}"
         new_p = other.consequent.copy()
         new_p._is_proven = True
-        new_p.deduced_from = Inference(self, other, "modus_ponens")
+        new_p.deduced_from = Inference(self, other, rule="modus_ponens")
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(other))
         return new_p
 
@@ -387,7 +397,7 @@ class Proposition:
         ), f"{other.consequent} is not the negation of {self}"
         new_p = cast(TProposition | Not[TProposition], neg(other.antecedent.copy()))
         new_p._is_proven = True
-        new_p.deduced_from = Inference(self, other, "modus_tollens")
+        new_p.deduced_from = Inference(self, other, rule="modus_tollens")
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(other))
         return new_p
 
@@ -407,7 +417,7 @@ class Proposition:
             if p == self:
                 new_p = self.copy()
                 new_p._is_proven = True
-                new_p.deduced_from = Inference(self, other, "is_one_of")
+                new_p.deduced_from = Inference(self, other, rule="is_one_of")
                 new_p.from_assumptions = get_assumptions(other).copy()
                 return new_p
             elif isinstance(p, And):
@@ -452,7 +462,7 @@ class Proposition:
 
         new_p = self.copy()
         new_p._is_proven = True
-        new_p.deduced_from = Inference(self, other, "is_special_case_of")
+        new_p.deduced_from = Inference(self, other, rule="is_special_case_of")
         new_p.from_assumptions = get_assumptions(other).copy()
         return new_p
 
@@ -498,10 +508,8 @@ class Proposition:
                 a_s.append(new_a)
             new_p = cast(Implies[And[*Props], Self], And(*a_s).implies(self))  # type: ignore
         new_p._is_proven = True
-        new_p.deduced_from = Inference(self, *assumptions, "followed_from")
-        new_p.from_assumptions = {
-            a for a in assumptions
-        }  # I think this is technically unnecessary
+        new_p.deduced_from = Inference(self, *assumptions, rule="followed_from")
+        new_p.from_assumptions = set()
         return new_p
 
     def thus_there_exists(
@@ -544,7 +552,7 @@ class Proposition:
             inner_proposition=self,
             positions=positions,
             _is_proven=True,
-            _inference=Inference(self, "thus_there_exists"),
+            _inference=Inference(self, rule="thus_there_exists"),
             _assumptions=get_assumptions(self).copy(),
         )
         return new_p
@@ -556,12 +564,13 @@ class Proposition:
         """
         assert self.is_proven, f"{self} is not proven"
         from pylogic.proposition.quantified.forall import Forall
+        from pylogic.inference import Inference
 
         new_p = Forall(
             variable=variable,
             inner_proposition=self,
             _is_proven=True,
-            _inference=Inference(self, "thus_forall"),
+            _inference=Inference(self, rule="thus_forall"),
             _assumptions=get_assumptions(self).copy(),
         )
         return new_p

@@ -6,6 +6,7 @@ from pylogic.proposition.ordering.lessthan import LessThan
 from pylogic.proposition.relation.equals import Equals
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from pylogic.proposition.ordering.ordering import _Ordering
+from pylogic.inference import Inference
 
 
 if TYPE_CHECKING:
@@ -31,6 +32,7 @@ class LessOrEqual(BinaryRelation, _Ordering):
         description: str = "",
         **kwargs,
     ) -> None:
+        _is_proven = kwargs.get("_is_proven", False)
         name = "LessOrEqual"
         diff = right - left
         if isinstance(diff, int) or isinstance(diff, float):
@@ -51,5 +53,5 @@ class LessOrEqual(BinaryRelation, _Ordering):
             description=self.description,
             _is_proven=self._is_proven,
             _assumptions=get_assumptions(self),
-            _inference=self.deduced_from,
+            _inference=Inference(self, rule="to_disjunction"),
         )

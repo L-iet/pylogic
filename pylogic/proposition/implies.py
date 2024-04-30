@@ -38,14 +38,12 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         consequent: UProposition,
         is_assumption: bool = False,
         description: str = "",
-        _is_proven: bool = False,
+        **kwargs,
     ) -> None:
         self.antecedent = antecedent
         self.consequent = consequent
         name = f"{antecedent.name} -> {consequent.name}"
-        super().__init__(
-            name, is_assumption, description=description, _is_proven=_is_proven
-        )
+        super().__init__(name, is_assumption, description=description, **kwargs)
         self.is_atomic = False
 
     def __eq__(self, other: Proposition) -> bool:
@@ -72,6 +70,8 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             self.is_assumption,
             description=self.description,
             _is_proven=self.is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
         )
 
     def as_text(self, *, _indent=0) -> str:
@@ -101,14 +101,11 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         else:
             ante_positions = None
             cons_positions = None
-        new_p = self.copy()
-        new_p.antecedent = new_p.antecedent.replace(
-            current_val, new_val, ante_positions
+        new_p = self.__class__(
+            self.antecedent.replace(current_val, new_val, ante_positions),
+            self.consequent.replace(current_val, new_val, cons_positions),
+            _is_proven=False,
         )
-        new_p.consequent = new_p.consequent.replace(
-            current_val, new_val, cons_positions
-        )
-        new_p._is_proven = False
         return new_p
 
     def hypothetical_syllogism(
@@ -149,10 +146,10 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         self, in_body: Proposition
     ) -> Self | Implies[Proposition, UProposition]:
         r"""
-        Logical tactic. Given self (A /\ B /\ C...) -> D is proven, and
-        given one of the props in the antecedent B is proven,
-        return a proof of the new definite clause (A /\ C /\ ...) -> D
-        or A -> D if only A is left in the body
+        Logical tactic. Given self `(A /\ B /\ C...) -> D` is proven, and
+        given one of the props (say B) in the antecedent is proven,
+        return a proof of the new definite clause `(A /\ C /\ ...) -> D`
+        or `A -> D` if only A is left in the body
         """
         from pylogic.proposition.and_ import And
 

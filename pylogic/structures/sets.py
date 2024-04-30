@@ -55,16 +55,21 @@ class Set:
             return False
         return self.sympy_set == other.sympy_set
 
-    def contains(self, other: Term, is_assumption: bool = False) -> IsContainedIn:
+    def contains(
+        self, other: Term, is_assumption: bool = False, **kwargs
+    ) -> IsContainedIn:
         """elementhood"""
 
-        return IsContainedIn(other, self, is_assumption=is_assumption)
+        return IsContainedIn(other, self, is_assumption=is_assumption, **kwargs)
 
     def __repr__(self) -> str:
         return self.name
 
     def __copy__(self) -> "Set":
         return self.copy()
+
+    def __hash__(self) -> int:
+        return hash((self.name, self.sympy_set, self.containment_function))
 
     def _latex(self, printer=latex_printer) -> str:
         return self.name

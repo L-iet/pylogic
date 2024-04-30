@@ -1,4 +1,5 @@
 from __future__ import annotations
+from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.relation.relation import Relation
 from typing import TYPE_CHECKING, Self
 from sympy import Basic, latex
@@ -56,6 +57,8 @@ class BinaryRelation(Relation):
             description=self.description,
             is_assumption=self.is_assumption,
             _is_proven=self.is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
         )
 
     def replace(
@@ -79,7 +82,6 @@ class BinaryRelation(Relation):
         return self.__class__(
             new_p.left,
             new_p.right,
-            is_assumption=self.is_assumption,
             _is_proven=False,
         )
 
@@ -96,8 +98,11 @@ class BinaryRelation(Relation):
         assert (
             self.right == other.left
         ), f"{self} and {other} do not fulfill transitivity"
-        new_p = self.__class__(self.left, other.right)
-        new_p._is_proven = True
-        new_p.from_assumptions = self.from_assumptions.union(other.from_assumptions)
-        new_p.deduced_from = Inference(self, other, rule="transitive")
+        new_p = self.__class__(
+            self.left,
+            other.right,
+            _is_proven=True,
+            _assumptions=get_assumptions(self).union(get_assumptions(other)),
+            _inference=Inference(self, other, rule="transitive"),
+        )
         return new_p

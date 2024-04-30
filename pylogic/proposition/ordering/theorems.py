@@ -7,7 +7,7 @@ from pylogic.proposition.relation.equals import Equals
 from pylogic.proposition.not_ import neg, Not
 from pylogic.proposition.implies import Implies
 from pylogic.variable import Variable
-from typing import TYPE_CHECKING
+from pylogic.inference import Inference
 import sympy as sp
 
 x = Variable("x", real=True)
@@ -34,7 +34,13 @@ order_axiom_b = Forall(
 def order_axiom_bf(
     x: sp.Basic | int | float, y: sp.Basic | int | float
 ) -> Implies[Equals, Not[LessThan]]:
-    return Implies(Equals(x, y), Not(LessThan(x, y)), _is_proven=True)
+    return Implies(
+        Equals(x, y),
+        Not(LessThan(x, y)),
+        _is_proven=True,
+        _assumptions=set(),
+        _inference=Inference(None, rule="order_axiom_bf"),
+    )
 
 
 # equals => not greater than
@@ -78,4 +84,13 @@ absolute_value_nonnegative = Forall(
 
 
 def absolute_value_nonnegative_f(x: sp.Basic | int | float) -> Or[GreaterThan, Equals]:
-    return Or(GreaterThan(sp.Abs(x), 0), Equals(sp.Abs(x), 0), _is_proven=True)
+    """
+    Logical tactic. If x is a real number, returns a proven proposition of the form Abs(x) > 0 V Abs(x) = 0.
+    """
+    return Or(
+        GreaterThan(sp.Abs(x), 0),
+        Equals(sp.Abs(x), 0),
+        _is_proven=True,
+        _assumptions=set(),
+        _inference=Inference(None, rule="absolute_value_nonnegative_f"),
+    )

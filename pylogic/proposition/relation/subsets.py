@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
-from typing import TYPE_CHECKING, TypedDict, TypeVar
+from pylogic.proposition.proposition import get_assumptions
+from typing import TYPE_CHECKING, TypedDict, TypeVar, Self
 
 if TYPE_CHECKING:
     from pylogic.proposition.proposition import Proposition
@@ -34,7 +35,7 @@ class Subset(BinaryRelation):
         right: Set,
         is_assumption: bool = False,
         description: str = "",
-        _is_proven: bool = False,
+        **kwargs,
     ) -> None:
         self.right: Set = right
         self.left: Set = left
@@ -44,15 +45,18 @@ class Subset(BinaryRelation):
             right,
             is_assumption=is_assumption,
             description=description,
-            _is_proven=_is_proven,
+            **kwargs,
         )
 
-    def copy(self) -> Subset:
-        return Subset(
+    def copy(self) -> Self:
+        return self.__class__(
             self.left.copy(),
             self.right.copy(),
             is_assumption=self.is_assumption,
+            description=self.description,
             _is_proven=self.is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
         )
 
     def to_forall(self) -> Forall[Implies[IsContainedIn, IsContainedIn]]:
@@ -61,6 +65,7 @@ class Subset(BinaryRelation):
         """
         from pylogic.variable import Variable
         from pylogic.proposition.quantified.forall import Forall
+        from pylogic.inference import Inference
 
         x = Variable("x")
         left = IsContainedIn(x, self.left)
@@ -68,6 +73,7 @@ class Subset(BinaryRelation):
         return Forall(
             x,
             left.implies(right),
-            is_assumption=self.is_assumption,
             _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="to_forall"),
         )

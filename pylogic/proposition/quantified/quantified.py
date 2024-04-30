@@ -77,6 +77,8 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
             current_val, new_val, positions
         )
         new_p._is_proven = False
+        new_p.from_assumptions = set()
+        new_p.deduced_from = None
         return new_p
 
     def _latex(self, printer=latex_printer) -> str:

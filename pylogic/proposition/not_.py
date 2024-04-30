@@ -1,5 +1,6 @@
 from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
+from pylogic.proposition.proposition import get_assumptions
 from typing import TYPE_CHECKING, Literal, TypeVar, Generic, Self, overload, TypedDict
 from sympy.printing.latex import LatexPrinter
 
@@ -38,10 +39,9 @@ def neg(
     """
     Given a proposition, return its negation.
     """
-    _is_proven = kwargs.get("_is_proven", False)
     if isinstance(p, Not):
         return p.negated
-    return Not(p, is_assumption, _is_proven=_is_proven)
+    return Not(p, is_assumption, **kwargs)
 
 
 def are_negs(p: Proposition, q: Proposition) -> bool:
@@ -66,13 +66,11 @@ class Not(Proposition, Generic[TProposition]):
         negated: TProposition,
         is_assumption: bool = False,
         description: str = "",
-        _is_proven: bool = False,
+        **kwargs,
     ) -> None:
         self.negated: TProposition = negated
         name = rf"~{negated}"
-        super().__init__(
-            name, is_assumption, description=description, _is_proven=_is_proven
-        )
+        super().__init__(name, is_assumption, description=description, **kwargs)
         self.is_atomic = False
 
     def __eq__(self, other: Proposition) -> bool:
@@ -89,6 +87,8 @@ class Not(Proposition, Generic[TProposition]):
             self.is_assumption,
             description=self.description,
             _is_proven=self.is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
         )
 
     def as_text(self, *, _indent=0) -> str:
@@ -107,9 +107,9 @@ class Not(Proposition, Generic[TProposition]):
         new_val: Term,
         positions: list[list[int]] | None = None,
     ) -> Self:
-        new_p = self.copy()
-        new_p.negated = new_p.negated.replace(current_val, new_val, positions=positions)
-        new_p.name = rf"~{new_p.negated}"
+        new_p = self.__class__(
+            self.negated.replace(current_val, new_val, positions=positions)
+        )
         return new_p
 
     @overload
@@ -148,21 +148,37 @@ class Not(Proposition, Generic[TProposition]):
         """
         from pylogic.proposition.and_ import And
         from pylogic.proposition.or_ import Or
+        from pylogic.inference import Inference
 
         if isinstance(self.negated, And):
             negs: list[Proposition] = [
                 neg(p.de_morgan()) for p in self.negated.propositions  # type:ignore
             ]
-            return Or(*negs, _is_proven=self.is_proven)  # type: ignore
+            return Or(
+                *negs,
+                _is_proven=self.is_proven,
+                _assumptions=get_assumptions(self).copy(),
+                _inference=Inference(self, rule="de_morgan"),
+            )
         elif isinstance(self.negated, Or):
             negs: list[Proposition] = [
                 neg(p.de_morgan()) for p in self.negated.propositions  # type:ignore
             ]
-            return And(*negs, _is_proven=self.is_proven)  # type: ignore
+            return And(
+                *negs,
+                _is_proven=self.is_proven,
+                _assumptions=get_assumptions(self).copy(),
+                _inference=Inference(self, rule="de_morgan"),
+            )
         elif self.negated.is_atomic:
             return self.copy()
 
-        return neg(self.negated.de_morgan(), _is_proven=self.is_proven)
+        return neg(
+            self.negated.de_morgan(),
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self).copy(),
+            _inference=Inference(self, rule="de_morgan"),
+        )
 
     def unify(self, other: Self) -> Unification | Literal[True] | None:
         if not isinstance(other, Not):

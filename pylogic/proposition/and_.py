@@ -31,14 +31,12 @@ class And(Proposition, Generic[*Props]):
         *propositions: *Props,
         is_assumption: bool = False,
         description: str = "",
-        _is_proven: bool = False,
+        **kwargs,
     ) -> None:
         assert len(propositions) > 1, "'And' must have at least two propositions"
         self.propositions = propositions
         name = rf" /\ ".join([p.name for p in propositions])  # type: ignore
-        super().__init__(
-            name, is_assumption, description=description, _is_proven=_is_proven
-        )
+        super().__init__(name, is_assumption, description=description, **kwargs)
         self.is_atomic = False
 
     def __eq__(self, other: Proposition) -> bool:
@@ -55,6 +53,8 @@ class And(Proposition, Generic[*Props]):
             is_assumption=self.is_assumption,
             description=self.description,
             _is_proven=self.is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
         )
 
     def as_text(self, *, _indent=0) -> str:
@@ -84,12 +84,13 @@ class And(Proposition, Generic[*Props]):
             )
         else:
             prop_positions_lists = [None] * len(self.propositions)
-        new_p = self.copy()
-        new_p.propositions = [
-            p.replace(current_val, new_val, prop_positions)  # type: ignore
-            for p, prop_positions in zip(new_p.propositions, prop_positions_lists)
-        ]
-        new_p._is_proven = False
+        new_p = self.__class__(
+            *[
+                p.replace(current_val, new_val, prop_positions)  # type: ignore
+                for p, prop_positions in zip(self.propositions, prop_positions_lists)
+            ],
+            _is_proven=False,
+        )
         return new_p
 
     def __repr__(self) -> str:

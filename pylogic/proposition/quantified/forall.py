@@ -1,9 +1,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Self, TypeVar, TypedDict
 
-from pylogic.proposition.proposition import Proposition
+from pylogic.proposition.proposition import Proposition, get_assumptions
 from pylogic.proposition.quantified.quantified import _Quantified
 from pylogic.proposition.implies import Implies
+from pylogic.inference import Inference
 
 import sympy as sp
 from sympy.printing.latex import LatexPrinter
@@ -65,6 +66,8 @@ class Forall(_Quantified[TProposition]):
             self.is_assumption,
             description=self.description,
             _is_proven=self.is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
         )
 
     def hence_matrices_are_equal(self) -> Equals:
@@ -126,6 +129,8 @@ class Forall(_Quantified[TProposition]):
             inner_proposition=other_cons,  # type: ignore
             is_assumption=False,
             _is_proven=True,
+            _assumptions=get_assumptions(self).union(get_assumptions(other)),
+            _inference=Inference(self, other, rule="quantified_modus_ponens"),
         )
         return new_p
 
@@ -137,9 +142,10 @@ class Forall(_Quantified[TProposition]):
     ) -> Self:
         if current_val == self.variable:
             raise ValueError("Cannot replace variable (not implemented)")
-        new_p = self.copy()
-        new_p.inner_proposition = new_p.inner_proposition.replace(
-            current_val, new_val, positions=positions
+        new_p = self.__class__(
+            self.variable,
+            self.inner_proposition.replace(current_val, new_val, positions=positions),
+            _is_proven=False,
         )
         return new_p
 
@@ -152,6 +158,8 @@ class Forall(_Quantified[TProposition]):
         assert self.is_proven, f"{self} is not proven"
         new_p = self.inner_proposition.replace(self.variable, expression_to_substitute)
         new_p._is_proven = True
+        new_p.from_assumptions = get_assumptions(self).copy()
+        new_p.deduced_from = Inference(self, rule="in_particular")
         return new_p
 
     def de_morgan(self) -> Not[Exists[Not[TProposition]]]:
@@ -162,4 +170,9 @@ class Forall(_Quantified[TProposition]):
         from pylogic.proposition.quantified.exists import Exists
 
         inner_negated = neg(self.inner_proposition.de_morgan())
-        return Not(Exists(self.variable, inner_negated), _is_proven=self.is_proven)
+        return Not(
+            Exists(self.variable, inner_negated),
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self).copy(),
+            _inference=Inference(self, rule="de_morgan"),
+        )

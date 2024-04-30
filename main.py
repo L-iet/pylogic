@@ -14,7 +14,7 @@ from pylogic import symbol as ps
 from pylogic.variable import Variable
 import sympy as sp
 
-printing = True
+printing = False
 
 
 def log(*args, **kwargs):
@@ -59,10 +59,11 @@ lim_x_sq_at_0 = (
 # note that we also assumed that |x| != 0 above
 
 # forall x: forall eps: [eps > 0 -> exists delta: (delta > 0 /\ [Abs(x) < delta -> x**2 < delta**2])] True
-log(lim_x_sq_at_0.as_text(), lim_x_sq_at_0.is_proven)
+log(lim_x_sq_at_0.is_proven)
 
 
 ###  Proving Theorem 1.2.6 (the converse statement) Understanding Analysis, 2nd Edition
+printing = True
 # if (forall eps>0, |a-b|<eps) then a = b
 a = ps.Symbol("a", real=True)
 b = ps.Symbol("b", real=True)
@@ -88,8 +89,10 @@ abs_a_minus_b_is_0: Equals = absolute_value_nonnegative_f(abs_a_minus_b).unit_re
 )  # type: ignore
 
 # a-b = 0
-log(abs_a_minus_b_is_0.zero_abs_is_0())
+res = abs_a_minus_b_is_0.zero_abs_is_0()
 # need a tactic to convert this to a=b
+
+log(res.from_assumptions)
 
 ##############################
 
@@ -121,7 +124,7 @@ a = Forall(x, And(Px, Qxz))
 log(a.de_morgan().de_morgan())
 
 ###############################
-printing = True
+printing = False
 from pylogic.proposition.relation.contains import IsContainedIn
 from pylogic.structures.sets import Naturals0
 from pylogic.theorems.arithmetic import weak_induction

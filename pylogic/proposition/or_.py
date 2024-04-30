@@ -42,14 +42,12 @@ class Or(Proposition, Generic[*Props]):
         *propositions: *Props,
         is_assumption: bool = False,
         description: str = "",
-        _is_proven: bool = False,
+        **kwargs,
     ) -> None:
         assert len(propositions) > 1, "'Or' must have at least two propositions"
         self.propositions = propositions
         name = r" \/ ".join([p.name for p in propositions])  # type: ignore
-        super().__init__(
-            name, is_assumption, description=description, _is_proven=_is_proven
-        )
+        super().__init__(name, is_assumption, description=description, **kwargs)
         self.is_atomic = False
 
     def __eq__(self, other: Proposition) -> bool:
@@ -66,6 +64,8 @@ class Or(Proposition, Generic[*Props]):
             is_assumption=self.is_assumption,
             description=self.description,
             _is_proven=self.is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
         )
 
     def as_text(self, *, _indent=0) -> str:
@@ -95,12 +95,13 @@ class Or(Proposition, Generic[*Props]):
             )
         else:
             prop_positions_lists = [None] * len(self.propositions)
-        new_p = self.copy()
-        new_p.propositions = [
-            p.replace(current_val, new_val, prop_positions)  # type: ignore
-            for p, prop_positions in zip(new_p.propositions, prop_positions_lists)
-        ]
-        new_p._is_proven = False
+        new_p = self.__class__(
+            *[
+                p.replace(current_val, new_val, prop_positions)  # type: ignore
+                for p, prop_positions in zip(self.propositions, prop_positions_lists)
+            ],
+            _is_proven=False,
+        )
         return new_p
 
     def __repr__(self) -> str:
@@ -117,6 +118,8 @@ class Or(Proposition, Generic[*Props]):
         a negation of one of the propositions in self, return a proven disjunction
         of the remaining propositions in self.
         """
+        from pylogic.proposition.contradiction import Contradiction
+
         assert self.is_proven, f"{self} is not proven"
         assert p.is_proven, f"{p} is not proven"
         rem_props = [prop.copy() for prop in self.propositions if not are_negs(prop, p)]  # type: ignore
@@ -127,6 +130,12 @@ class Or(Proposition, Generic[*Props]):
             )
             rem_props[0].deduced_from = Inference(self, p, rule="unit_resolve")
             return rem_props[0]
+        if len(rem_props) == 0:
+            return Contradiction(
+                _is_proven=True,
+                _inference=Inference(self, p, rule="unit_resolve"),
+                _assumptions=get_assumptions(self).union(get_assumptions(p)),
+            )
         return Or(
             *rem_props,
             _is_proven=True,

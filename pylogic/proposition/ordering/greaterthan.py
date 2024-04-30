@@ -3,7 +3,7 @@ from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from pylogic.proposition.relation.equals import Equals
 from pylogic.proposition.ordering.ordering import _Ordering
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import sympy as sp
 from sympy import S as sympy_S
@@ -53,10 +53,18 @@ class GreaterThan(BinaryRelation, _Ordering):
         Given an expr of the form x**(2n), return a proven proposition that says
         x**(2n) > 0
         """
+        from pylogic.inference import Inference
+
         assert isinstance(expr, sp.Pow), f"{expr} is not a power"
         assert expr.base.is_real, f"{expr.base} is not a real number"
         assert sp.ask(sp.Q.even(expr.exp)), f"{expr} is not a square or even power"
-        return GreaterThan(expr, 0, _is_proven=True)
+        return GreaterThan(
+            expr,
+            0,
+            _is_proven=True,
+            _inference=Inference(None, rule="is_even_power"),
+            _assumptions=set(),  # TODO: change this
+        )
 
     @staticmethod
     def is_rational_power(
@@ -100,6 +108,7 @@ class GreaterThan(BinaryRelation, _Ordering):
         description: str = "",
         **kwargs,
     ) -> None:
+        _is_proven = kwargs.get("_is_proven", False)
         diff = left - right
         if isinstance(diff, int) or isinstance(diff, float):
             diff_is_positive = diff > 0
@@ -118,23 +127,66 @@ class GreaterThan(BinaryRelation, _Ordering):
 
     def to_positive_inequality(self):
         """If self is of the form a > b, returns an inequality of the form a - b > 0"""
-        return GreaterThan(self.left - self.right, sympy_S.Zero)
+        from pylogic.inference import Inference
+
+        return GreaterThan(
+            self.left - self.right,
+            sympy_S.Zero,
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="to_positive_inequality"),
+        )
 
     def to_negative_inequality(self):
         """If self is of the form a > b, returns an inequality of the form b - a < 0"""
         from pylogic.proposition.ordering.lessthan import LessThan
+        from pylogic.inference import Inference
 
-        return LessThan(self.right - self.left, sympy_S.Zero)
+        return LessThan(
+            self.right - self.left,
+            sympy_S.Zero,
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="to_negative_inequality"),
+        )
 
     def multiply_by_positive(
         self, x: Term, proof_x_is_positive: "GreaterThan | LessThan"
     ) -> "GreaterThan":
-        return super()._multiply_by(self, x, proof_x_is_positive, _sign="positive")  # type: ignore
+        from pylogic.inference import Inference
+
+        return super()._multiply_by(
+            self,
+            x,
+            proof_x_is_positive,
+            _sign="positive",
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self).union(
+                get_assumptions(proof_x_is_positive)
+            ),
+            _inference=Inference(
+                self, proof_x_is_positive, rule="multiply_by_positive"
+            ),
+        )
 
     def multiply_by_negative(
         self, x: Term, proof_x_is_negative: "GreaterThan | LessThan"
     ) -> "GreaterThan":
-        return super()._multiply_by(self, x, proof_x_is_negative, _sign="negative")
+        from pylogic.inference import Inference
+
+        return super()._multiply_by(
+            self,
+            x,
+            proof_x_is_negative,
+            _sign="negative",
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self).union(
+                get_assumptions(proof_x_is_negative)
+            ),
+            _inference=Inference(
+                self, proof_x_is_negative, rule="multiply_by_negative"
+            ),
+        )
 
     def p_multiply_by_positive(
         self, x: Term, proof_x_is_positive: "GreaterThan | LessThan"
@@ -143,7 +195,6 @@ class GreaterThan(BinaryRelation, _Ordering):
         Same as multiply_by_positive, but returns a proven proposition"""
         assert self.is_proven, f"{self} is not proven"
         new_p = self.multiply_by_positive(x, proof_x_is_positive)
-        new_p._is_proven = True
         return new_p
 
     def p_multiply_by_negative(
@@ -153,34 +204,53 @@ class GreaterThan(BinaryRelation, _Ordering):
         Same as multiply_by_negative, but returns a proven proposition"""
         assert self.is_proven, f"{self} is not proven"
         new_p = self.multiply_by_negative(x, proof_x_is_negative)
-        new_p._is_proven = True
         return new_p
 
     def mul_inverse(self):
+        from pylogic.inference import Inference
+
         return GreaterThan(
-            1 / self.right, 1 / self.left, is_assumption=self.is_assumption
+            1 / self.right,
+            1 / self.left,
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="mul_inverse"),
         )
 
     def to_less_than(self):
         """If self is of the form a > b, returns an inequality of the form b < a"""
         from pylogic.proposition.ordering.lessthan import LessThan
+        from pylogic.inference import Inference
 
-        return LessThan(self.right, self.left, is_assumption=self.is_assumption)
+        return LessThan(
+            self.right,
+            self.left,
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="to_less_than"),
+        )
 
     def p_to_less_than(self):
         """Logical tactic. Same as to_less_than, but returns a proven proposition"""
         assert self.is_proven, f"{self} is not proven"
         new_p = self.to_less_than()
-        new_p._is_proven = True
         return new_p
 
     def by_inspection(self) -> GreaterThan:
         """
         Logical tactic. Determine if the proposition is true by inspection.
         """
+        from pylogic.inference import Inference
+
         try:
             if bool(self.left > self.right) is True:
-                return GreaterThan(self.left, self.right, _is_proven=True)
+                return GreaterThan(
+                    self.left,
+                    self.right,
+                    _is_proven=True,
+                    _assumptions=set(),
+                    _inference=Inference(self, rule="by_inspection"),
+                )
             else:
                 raise ValueError(
                     f"Cannot prove that {self.left} > {self.right} by inspection"
@@ -190,8 +260,8 @@ class GreaterThan(BinaryRelation, _Ordering):
                 f"Cannot prove that {self.left} < {self.right} by inspection"
             )
 
-    def __mul__(self, other: Term) -> GreaterThan:
+    def __mul__(self, other: int | float) -> GreaterThan:
         return super()._mul(self, other)
 
-    def __rmul__(self, other: Term) -> GreaterThan:
+    def __rmul__(self, other: int | float) -> GreaterThan:
         return super()._mul(self, other)

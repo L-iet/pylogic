@@ -26,6 +26,9 @@ class Contradiction(Proposition):
     tactics: list[Tactic] = []
 
     def __init__(self, **kwargs) -> None:
+        assert (
+            len(kwargs.get("_assumptions", [])) > 1
+        ), "A contradiction must have multiple assumptions"
         super().__init__(
             "contradiction",
             is_assumption=False,

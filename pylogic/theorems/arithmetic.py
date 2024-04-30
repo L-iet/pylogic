@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TypeVar, TYPE_CHECKING
 
+from pylogic.proposition.proposition import Proposition, get_assumptions
 from pylogic.proposition.quantified.forall import Forall
 from pylogic.proposition.implies import Implies
 from pylogic.proposition.and_ import And
@@ -11,8 +12,6 @@ from pylogic.variable import Variable
 from sympy import Add, Integer
 
 if TYPE_CHECKING:
-    from pylogic.proposition.proposition import Proposition
-
     TProposition = TypeVar("TProposition", bound="Proposition")
 
 
@@ -39,6 +38,7 @@ def weak_induction(
     prove forall n: n in Naturals0 -> P(n).
     """
     from pylogic.structures.sets import Naturals0
+    from pylogic.inference import Inference
 
     assert base_case.is_proven, f"Base case {base_case} must be proven"
     assert induction_step.is_proven, f"Induction step {induction_step} must be proven"
@@ -63,7 +63,13 @@ def weak_induction(
     assert (
         p0 == base_case == prem2.replace(n, 0)
     ), f"Base case {base_case} must be the same as P(0)"
-    return Forall(n, IsContainedIn(n, Naturals0).implies(prem2))
+    return Forall(
+        n,
+        IsContainedIn(n, Naturals0).implies(prem2),
+        _is_proven=True,
+        _assumptions=get_assumptions(base_case).union(get_assumptions(induction_step)),
+        _inference=Inference(base_case, induction_step, rule="weak_induction"),
+    )
 
 
 def strong_induction(
@@ -88,6 +94,7 @@ def strong_induction(
     return a proof of forall n: n in Naturals0 -> P(n).
     """
     from pylogic.structures.sets import Naturals0
+    from pylogic.inference import Inference
 
     assert base_case.is_proven, f"Base case {base_case} must be proven"
     assert induction_step.is_proven, f"Induction step {induction_step} must be proven"
@@ -127,4 +134,10 @@ def strong_induction(
     assert (
         base_case == pred.replace(m, 0) == pred_cons.replace(n, -1)
     ), "Terms used in the base case and induction step do not match accordingly."
-    return Forall(n, IsContainedIn(n, Naturals0).implies(pred.replace(m, n)))
+    return Forall(
+        n,
+        IsContainedIn(n, Naturals0).implies(pred.replace(m, n)),
+        _is_proven=True,
+        _assumptions=get_assumptions(base_case).union(get_assumptions(induction_step)),
+        _inference=Inference(base_case, induction_step, rule="strong_induction"),
+    )

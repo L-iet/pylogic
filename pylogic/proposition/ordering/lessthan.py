@@ -29,6 +29,7 @@ class LessThan(BinaryRelation, _Ordering):
         **kwargs,
     ) -> None:
         name = "LessThan"
+        _is_proven = kwargs.get("_is_proven", False)
         diff = right - left
         if isinstance(diff, int) or isinstance(diff, float):
             diff_is_positive = diff > 0
@@ -42,21 +43,65 @@ class LessThan(BinaryRelation, _Ordering):
 
     def to_positive_inequality(self):
         """If self is of the form a < b, returns an inequality of the form b - a > 0"""
-        return GreaterThan(self.right - self.left, sympy_S.Zero)
+        from pylogic.inference import Inference
+
+        return GreaterThan(
+            self.right - self.left,
+            sympy_S.Zero,
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="to_positive_inequality"),
+        )
 
     def to_negative_inequality(self):
         """If self is of the form a < b, returns an inequality of the form a - b < 0"""
-        return LessThan(self.left - self.right, sympy_S.Zero)
+        from pylogic.inference import Inference
+
+        return LessThan(
+            self.left - self.right,
+            sympy_S.Zero,
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="to_negative_inequality"),
+        )
 
     def multiply_by_positive(
         self, x: Term, proof_x_is_positive: "GreaterThan | LessThan"
     ) -> "LessThan":
-        return super()._multiply_by(self, x, proof_x_is_positive, _sign="positive")  # type: ignore
+        from pylogic.inference import Inference
+
+        return super()._multiply_by(
+            self,
+            x,
+            proof_x_is_positive,
+            _sign="positive",
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self).union(
+                get_assumptions(proof_x_is_positive)
+            ),
+            _inference=Inference(
+                self, proof_x_is_positive, rule="multiply_by_positive"
+            ),
+        )
 
     def multiply_by_negative(
         self, x: Term, proof_x_is_negative: "GreaterThan | LessThan"
     ) -> "LessThan":
-        new_p = super()._multiply_by(self, x, proof_x_is_negative, _sign="negative")
+        from pylogic.inference import Inference
+
+        new_p = super()._multiply_by(
+            self,
+            x,
+            proof_x_is_negative,
+            _sign="negative",
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self).union(
+                get_assumptions(proof_x_is_negative)
+            ),
+            _inference=Inference(
+                self, proof_x_is_negative, rule="multiply_by_negative"
+            ),
+        )
         return new_p
 
     def p_multiply_by_positive(
@@ -66,16 +111,7 @@ class LessThan(BinaryRelation, _Ordering):
         Same as multiply_by_positive, but returns a proven proposition"""
 
         assert self.is_proven, f"{self} is not proven"
-        from pylogic.inference import Inference
-
         new_p = self.multiply_by_positive(x, proof_x_is_positive)
-        new_p._is_proven = True
-        new_p.from_assumptions = get_assumptions(self).union(
-            get_assumptions(proof_x_is_positive)
-        )
-        new_p.deduced_from = Inference(
-            self, proof_x_is_positive, rule="p_multiply_by_positive"
-        )
         return new_p
 
     def p_multiply_by_negative(
@@ -85,39 +121,53 @@ class LessThan(BinaryRelation, _Ordering):
         Same as multiply_by_negative, but returns a proven proposition"""
 
         assert self.is_proven, f"{self} is not proven"
-        from pylogic.inference import Inference
-
         new_p = self.multiply_by_negative(x, proof_x_is_negative)
-        new_p._is_proven = True
-        new_p.from_assumptions = get_assumptions(self).union(
-            get_assumptions(proof_x_is_negative)
-        )
-        new_p.deduced_from = Inference(
-            self, proof_x_is_negative, rule="p_multiply_by_negative"
-        )
         return new_p
 
     def mul_inverse(self):
-        return LessThan(1 / self.right, 1 / self.left, is_assumption=self.is_assumption)
+        from pylogic.inference import Inference
+
+        return LessThan(
+            1 / self.right,
+            1 / self.left,
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="mul_inverse"),
+        )
 
     def to_greater_than(self):
         """If self is of the form a < b, returns an inequality of the form b > a"""
-        return GreaterThan(self.right, self.left, is_assumption=self.is_assumption)
+        from pylogic.inference import Inference
+
+        return GreaterThan(
+            self.right,
+            self.left,
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="to_greater_than"),
+        )
 
     def p_to_greater_than(self):
         """Logical tactic. Same as to_greater_than, but returns a proven proposition"""
         assert self.is_proven, f"{self} is not proven"
         new_p = self.to_greater_than()
-        new_p._is_proven = True
         return new_p
 
     def by_inspection(self) -> LessThan:
         """
         Logical tactic. Determine if the proposition is true by inspection.
         """
+        from pylogic.inference import Inference
+
         try:
             if bool(self.left < self.right) is True:
-                return LessThan(self.left, self.right, _is_proven=True)
+                return LessThan(
+                    self.left,
+                    self.right,
+                    _is_proven=True,
+                    _assumptions=set(),
+                    _inference=Inference(self, rule="by_inspection"),
+                )
             else:
                 raise ValueError(
                     f"Cannot prove that {self.left} < {self.right} by inspection"
@@ -127,8 +177,8 @@ class LessThan(BinaryRelation, _Ordering):
                 f"Cannot prove that {self.left} < {self.right} by inspection"
             )
 
-    def __mul__(self, other: Term) -> LessThan:
+    def __mul__(self, other: int | float) -> LessThan:
         return super()._mul(self, other)
 
-    def __rmul__(self, other: Term) -> LessThan:
+    def __rmul__(self, other: int | float) -> LessThan:
         return super()._mul(self, other)

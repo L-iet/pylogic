@@ -1,5 +1,5 @@
 from __future__ import annotations
-from pylogic.proposition.proposition import Proposition
+from pylogic.proposition.proposition import Proposition, get_assumptions
 from pylogic.proposition.quantified.quantified import _Quantified
 from pylogic.variable import Variable
 from typing import TYPE_CHECKING, TypedDict, TypeVar, Self
@@ -36,7 +36,7 @@ class Exists(_Quantified[TProposition]):
         is_assumption: bool = False,
         is_real: bool = True,
         description: str = "",
-        _is_proven: bool = False,
+        **kwargs,
     ) -> Exists[TProposition]:
         r"""
         positions: list[list[int]]
@@ -60,7 +60,7 @@ class Exists(_Quantified[TProposition]):
             inner_proposition,
             is_assumption,
             description=description,
-            _is_proven=_is_proven,
+            **kwargs,
         )
 
     def __init__(
@@ -85,6 +85,9 @@ class Exists(_Quantified[TProposition]):
             return self.inner_proposition == other.inner_proposition
         return False
 
+    def __hash__(self) -> int:
+        return super().__hash__()
+
     def __iter__(self):
         return iter((self.variable, self.inner_proposition))
 
@@ -95,6 +98,8 @@ class Exists(_Quantified[TProposition]):
             self.is_assumption,
             description=self.description,
             _is_proven=self.is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
         )
 
     def exists_modus_ponens(self, other: Forall[Implies[TProposition, B]]) -> Exists[B]:
@@ -103,6 +108,7 @@ class Exists(_Quantified[TProposition]):
         and each is proven, conclude exists x: Q(x).
         """
         from pylogic.proposition.quantified.forall import Forall
+        from pylogic.inference import Inference
 
         assert self.is_proven, f"{self} is not proven"
         assert isinstance(other, Forall), f"{other} is not a forall statement"
@@ -115,6 +121,8 @@ class Exists(_Quantified[TProposition]):
             inner_proposition=other_cons,  # type: ignore
             is_assumption=False,
             _is_proven=True,
+            _assumptions=get_assumptions(self).union(get_assumptions(other)),
+            _inference=Inference(self, other, rule="exists_modus_ponens"),
         )
         return new_p
 
@@ -124,6 +132,12 @@ class Exists(_Quantified[TProposition]):
         """
         from pylogic.proposition.not_ import Not, neg
         from pylogic.proposition.quantified.forall import Forall
+        from pylogic.inference import Inference
 
         inner_negated = neg(self.inner_proposition.de_morgan())
-        return Not(Forall(self.variable, inner_negated), _is_proven=self.is_proven)
+        return Not(
+            Forall(self.variable, inner_negated),
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self).copy(),
+            _inference=Inference(self, rule="de_morgan"),
+        )

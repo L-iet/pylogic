@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
-from pylogic.proposition.proposition import Proposition
+from pylogic.inference import Inference
+from pylogic.proposition.proposition import Proposition, get_assumptions
 from typing import TYPE_CHECKING, Literal, TypeVar, Self
 from sympy import Basic, Abs, Integer
 
@@ -30,14 +31,14 @@ class Equals(BinaryRelation):
         right: Term,
         is_assumption: bool = False,
         description: str = "",
-        _is_proven: bool = False,
+        **kwargs,
     ) -> None:
         super().__init__(
             left,
             right,
             is_assumption=is_assumption,
             description=description,
-            _is_proven=_is_proven,
+            **kwargs,
         )
         self.left: Term = left
         self.right: Term = right
@@ -97,6 +98,8 @@ class Equals(BinaryRelation):
         if proven:
             new_p = self.copy()
             new_p._is_proven = True
+            new_p.from_assumptions = set()
+            new_p.deduced_from = Inference(self, rule="by_simplification")
             return new_p
         else:
             raise ValueError(f"{self} cannot be proven by simplification")
@@ -118,6 +121,8 @@ class Equals(BinaryRelation):
             self.get(other_side), self.get(side)
         )
         new_prop._is_proven = False
+        new_prop.from_assumptions = set()
+        new_prop.deduced_from = None
         return new_prop
 
     def p_substitute_into(self, side: Side, other_prop: TProposition) -> TProposition:
@@ -136,6 +141,10 @@ class Equals(BinaryRelation):
         assert other_prop.is_proven, f"{other_prop} is not proven"
         new_prop: TProposition = self.substitute_into(side, other_prop)
         new_prop._is_proven = True
+        new_prop.from_assumptions = get_assumptions(self).union(
+            get_assumptions(other_prop)
+        )
+        new_prop.deduced_from = Inference(self, other_prop, rule="p_substitute_into")
         return new_prop
 
     def zero_abs_is_0(self) -> Equals:
@@ -146,4 +155,10 @@ class Equals(BinaryRelation):
         assert self.is_proven, f"{self} is not proven"
         assert isinstance(self.left, Abs)
         assert self.right == Integer(0)
-        return Equals(self.left.args[0], 0, _is_proven=True)
+        return Equals(
+            self.left.args[0],
+            0,
+            _is_proven=True,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="zero_abs_is_0"),
+        )

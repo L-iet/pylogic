@@ -1,5 +1,6 @@
 from __future__ import annotations
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
+from pylogic.inference import Inference
 from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
@@ -29,7 +30,7 @@ class IsContainedIn(BinaryRelation):
         right: Set,
         is_assumption: bool = False,
         description: str = "",
-        _is_proven: bool = False,
+        **kwargs,
     ) -> None:
         self.right: Set = right
         self.left: Term = left
@@ -39,7 +40,7 @@ class IsContainedIn(BinaryRelation):
             right,
             is_assumption=is_assumption,
             description=description,
-            _is_proven=_is_proven,
+            **kwargs,
         )
 
     @property
@@ -59,8 +60,9 @@ class IsContainedIn(BinaryRelation):
                 return IsContainedIn(
                     copy.copy(self.element),
                     self.set_.copy(),
-                    is_assumption=self.is_assumption,
                     _is_proven=True,
+                    _assumptions=set(),
+                    _inference=Inference(self, rule="by_containment_func"),
                 )
         except Exception as e:
             raise ValueError(
@@ -80,6 +82,8 @@ class IsContainedIn(BinaryRelation):
                     self.set_.copy(),
                     is_assumption=self.is_assumption,
                     _is_proven=True,
+                    _assumptions=set(),
+                    _inference=Inference(self, rule="by_def"),
                 )
         except (TypeError, NotImplementedError) as e:
             raise ValueError(
