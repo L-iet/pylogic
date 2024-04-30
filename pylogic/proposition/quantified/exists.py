@@ -69,7 +69,7 @@ class Exists(_Quantified[TProposition]):
         inner_proposition: TProposition,
         is_assumption: bool = False,
         description: str = "",
-        _is_proven: bool = False,
+        **kwargs,
     ) -> None:
         super().__init__(
             "exists",
@@ -77,7 +77,7 @@ class Exists(_Quantified[TProposition]):
             inner_proposition,
             is_assumption,
             description=description,
-            _is_proven=_is_proven,
+            **kwargs,
         )
 
     def __eq__(self, other: Proposition) -> bool:

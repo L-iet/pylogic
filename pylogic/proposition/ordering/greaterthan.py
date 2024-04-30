@@ -1,4 +1,5 @@
 from __future__ import annotations
+from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from pylogic.proposition.relation.equals import Equals
 from pylogic.proposition.ordering.ordering import _Ordering
@@ -29,6 +30,8 @@ class GreaterThan(BinaryRelation, _Ordering):
         not zero,
         return a proven proposition that says sympy.Abs(x) > 0
         """
+        from pylogic.inference import Inference
+
         assert isinstance(expr, sp.Abs), f"{expr} is not an absolute value"
         assert expr_not_zero.is_proven, f"{expr_not_zero} is not proven"
         assert isinstance(
@@ -36,7 +39,13 @@ class GreaterThan(BinaryRelation, _Ordering):
         ), f"{expr_not_zero} is not a proof that {expr} is not 0"
         assert expr_not_zero.negated.left == expr
         assert expr_not_zero.negated.right == sp.Integer(0)
-        return GreaterThan(expr, 0, _is_proven=True)
+        return GreaterThan(
+            expr,
+            0,
+            _is_proven=True,
+            _inference=Inference(None, expr_not_zero, rule="is_absolute"),
+            _assumptions=get_assumptions(expr_not_zero),
+        )
 
     @staticmethod
     def is_even_power(expr: Term) -> "GreaterThan":
@@ -58,6 +67,8 @@ class GreaterThan(BinaryRelation, _Ordering):
         return a proven proposition that says
         x**(p/q) > 0
         """
+        from pylogic.inference import Inference
+
         assert isinstance(expr, sp.Pow), f"{expr} is not a power"
         assert expr.base.is_real, f"{expr.base} is not a real number"
         assert (
@@ -71,7 +82,15 @@ class GreaterThan(BinaryRelation, _Ordering):
             and proof_base_is_positive.right == 0
         ), f"{proof_base_is_positive} does not say that {expr.base} is positive"
         assert sp.ask(sp.Q.rational(expr.exp)), f"{expr} is not a rational power"
-        return GreaterThan(expr, 0, _is_proven=True)
+        return GreaterThan(
+            expr,
+            0,
+            _is_proven=True,
+            _assumptions=get_assumptions(proof_base_is_positive),
+            _inference=Inference(
+                None, proof_base_is_positive, rule="is_rational_power"
+            ),
+        )
 
     def __init__(
         self,
@@ -79,7 +98,7 @@ class GreaterThan(BinaryRelation, _Ordering):
         right: Term,
         is_assumption: bool = False,
         description: str = "",
-        _is_proven: bool = False,
+        **kwargs,
     ) -> None:
         diff = left - right
         if isinstance(diff, int) or isinstance(diff, float):
@@ -89,11 +108,7 @@ class GreaterThan(BinaryRelation, _Ordering):
         if diff_is_positive == False and (is_assumption or _is_proven):
             raise ValueError(f"Some assumptions in {left}, {right} are contradictory")
         super().__init__(
-            left,
-            right,
-            is_assumption=is_assumption,
-            description=description,
-            _is_proven=_is_proven,
+            left, right, is_assumption=is_assumption, description=description, **kwargs
         )
         self.left: Term = left
         self.right: Term = right

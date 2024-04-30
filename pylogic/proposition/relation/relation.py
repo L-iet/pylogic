@@ -20,19 +20,18 @@ class Relation(Proposition):
         args: list[Term],
         is_assumption: bool = False,
         description: str = "",
-        _is_proven: bool = False,
+        **kwargs,
     ) -> None:
         super().__init__(
-            name,
-            is_assumption,
-            description=description,
-            args=args,
-            _is_proven=_is_proven,
+            name, is_assumption, description=description, args=args, **kwargs
         )
         self.is_atomic = True
 
     def __repr__(self) -> str:
         return super().__repr__()
+
+    def __hash__(self) -> int:
+        return hash((self.name, tuple(self.args)))
 
     def as_text(self, *, _indent=0) -> str:
         """

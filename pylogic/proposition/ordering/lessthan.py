@@ -1,4 +1,5 @@
 from __future__ import annotations
+from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from pylogic.proposition.ordering.ordering import _Ordering
 from typing import TYPE_CHECKING
@@ -25,8 +26,7 @@ class LessThan(BinaryRelation, _Ordering):
         right: Term,
         is_assumption: bool = False,
         description: str = "",
-        *,
-        _is_proven: bool = False,
+        **kwargs,
     ) -> None:
         name = "LessThan"
         diff = right - left
@@ -37,11 +37,7 @@ class LessThan(BinaryRelation, _Ordering):
         if diff_is_positive == False and (is_assumption or _is_proven):
             raise ValueError(f"Some assumptions in {left}, {right} are contradictory")
         super().__init__(
-            left,
-            right,
-            is_assumption=is_assumption,
-            description=description,
-            _is_proven=_is_proven,
+            left, right, is_assumption=is_assumption, description=description, **kwargs
         )
 
     def to_positive_inequality(self):
@@ -60,16 +56,26 @@ class LessThan(BinaryRelation, _Ordering):
     def multiply_by_negative(
         self, x: Term, proof_x_is_negative: "GreaterThan | LessThan"
     ) -> "LessThan":
-        return super()._multiply_by(self, x, proof_x_is_negative, _sign="negative")
+        new_p = super()._multiply_by(self, x, proof_x_is_negative, _sign="negative")
+        return new_p
 
     def p_multiply_by_positive(
         self, x: Term, proof_x_is_positive: "GreaterThan | LessThan"
     ) -> "LessThan":
         """Logical tactic.
         Same as multiply_by_positive, but returns a proven proposition"""
+
         assert self.is_proven, f"{self} is not proven"
+        from pylogic.inference import Inference
+
         new_p = self.multiply_by_positive(x, proof_x_is_positive)
         new_p._is_proven = True
+        new_p.from_assumptions = get_assumptions(self).union(
+            get_assumptions(proof_x_is_positive)
+        )
+        new_p.deduced_from = Inference(
+            self, proof_x_is_positive, rule="p_multiply_by_positive"
+        )
         return new_p
 
     def p_multiply_by_negative(
@@ -77,9 +83,18 @@ class LessThan(BinaryRelation, _Ordering):
     ) -> "LessThan":
         """Logical tactic.
         Same as multiply_by_negative, but returns a proven proposition"""
+
         assert self.is_proven, f"{self} is not proven"
+        from pylogic.inference import Inference
+
         new_p = self.multiply_by_negative(x, proof_x_is_negative)
         new_p._is_proven = True
+        new_p.from_assumptions = get_assumptions(self).union(
+            get_assumptions(proof_x_is_negative)
+        )
+        new_p.deduced_from = Inference(
+            self, proof_x_is_negative, rule="p_multiply_by_negative"
+        )
         return new_p
 
     def mul_inverse(self):

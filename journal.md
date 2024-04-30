@@ -162,3 +162,13 @@ or `Graph('G', nodes=n, edges=e)` where `n` and `e` are variable sets themselves
 
 # Monday Apr 29, 2024, 2:23pm PT
 Begin session. Will add natural language descriptions.
+
+3:44pm: added natural language descriptions.
+
+TODO: Refactor `replace`, refactor `Ordering` (inequality) propositions.
+
+5:53pm: Need to complete adding `_assumptions=` and `_inference=` to all rules of inference.
+Also need to add `**kwargs` to all constructors.
+
+7:45pm: end session. There are errors from me trying to add `_assumptions=` and `_inference=`.
+Need to add and verify these attributes on all rules of inference and proposition constructors.

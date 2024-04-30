@@ -14,7 +14,7 @@ from pylogic import symbol as ps
 from pylogic.variable import Variable
 import sympy as sp
 
-printing = False
+printing = True
 
 
 def log(*args, **kwargs):
@@ -59,7 +59,7 @@ lim_x_sq_at_0 = (
 # note that we also assumed that |x| != 0 above
 
 # forall x: forall eps: [eps > 0 -> exists delta: (delta > 0 /\ [Abs(x) < delta -> x**2 < delta**2])] True
-log(lim_x_sq_at_0, lim_x_sq_at_0.is_proven)
+log(lim_x_sq_at_0.as_text(), lim_x_sq_at_0.is_proven)
 
 
 ###  Proving Theorem 1.2.6 (the converse statement) Understanding Analysis, 2nd Edition

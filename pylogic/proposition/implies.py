@@ -1,5 +1,7 @@
 from __future__ import annotations
+from pylogic.inference import Inference
 from pylogic.proposition.proposition import Proposition
+from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.not_ import neg
 from typing import TYPE_CHECKING, Literal, TypeVar, Generic, TypedDict, Self
 
@@ -120,9 +122,14 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         assert other.is_proven, f"{other} is not proven"
         assert (
             self.consequent == other.antecedent
-        ), f"Does not follow logically: {self.name},  {other.name}"
-        i = Implies(self.antecedent, other.consequent)
-        i._is_proven = True
+        ), f"Does not follow logically: {self},  {other}"
+        i = Implies(
+            self.antecedent,
+            other.consequent,
+            _is_proven=True,
+            _assumptions=get_assumptions(self).union(get_assumptions(other)),
+            _inference=Inference(self, other, rule="hypothetical_syllogism"),
+        )
         return i
 
     def impl_elim(self) -> Or:
@@ -130,7 +137,13 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         disjunction form (~A \/ B)
         """
         assert self.is_proven, f"{self} is not proven"
-        return Or(neg(self.antecedent), self.consequent, _is_proven=True)
+        return Or(
+            neg(self.antecedent),
+            self.consequent,
+            _is_proven=True,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="impl_elim"),
+        )
 
     def definite_clause_resolve(
         self, in_body: Proposition
@@ -152,8 +165,20 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             prop.copy() for prop in self.antecedent.propositions if prop != in_body
         ]
         if len(rem_props) == 1:
-            return Implies(rem_props[0], self.consequent, _is_proven=True)
-        new_p = Implies(And(*rem_props), self.consequent, _is_proven=True)
+            return Implies(
+                rem_props[0],
+                self.consequent,
+                _is_proven=True,
+                _assumptions=get_assumptions(self).union(get_assumptions(in_body)),
+                _inference=Inference(self, in_body, rule="definite_clause_resolve"),
+            )
+        new_p = Implies(
+            And(*rem_props),
+            self.consequent,
+            _is_proven=True,
+            _assumptions=get_assumptions(self).union(get_assumptions(in_body)),
+            _inference=Inference(self, in_body, rule="definite_clause_resolve"),
+        )
         return new_p  # type:ignore
 
     def unify(self, other: Self) -> Unification | Literal[True] | None:

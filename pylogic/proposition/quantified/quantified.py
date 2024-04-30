@@ -29,7 +29,7 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
         inner_proposition: TProposition,
         is_assumption: bool = False,
         description: str = "",
-        _is_proven: bool = False,
+        **kwargs,
     ) -> None:
         if not isinstance(variable, Variable):
             raise TypeError(f"{variable} is not a variable")
@@ -38,7 +38,7 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
             is_assumption,
             args=[],
             description=description,
-            _is_proven=_is_proven,
+            **kwargs,
         )
         self.inner_proposition: TProposition = inner_proposition
         self.variable: Variable = variable
@@ -47,6 +47,9 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
 
     def __repr__(self) -> str:
         return f"{self._q} {self.variable}: {self.inner_proposition}"
+
+    def __hash__(self) -> int:
+        return hash((self._q, self.variable, self.inner_proposition))
 
     def as_text(self, *, _indent=0) -> str:
         """

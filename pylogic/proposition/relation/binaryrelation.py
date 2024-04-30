@@ -26,14 +26,14 @@ class BinaryRelation(Relation):
         right: Term,
         is_assumption: bool = False,
         description: str = "",
-        _is_proven: bool = False,
+        **kwargs,
     ) -> None:
         super().__init__(
             self.name,
             args=[left, right],
             is_assumption=is_assumption,
             description=description,
-            _is_proven=_is_proven,
+            **kwargs,
         )
         self.left: Term = left
         self.right: Term = right
@@ -87,6 +87,8 @@ class BinaryRelation(Relation):
         """Logical Tactic. If self is of the form a Relation b and other is of the form b Relation c,
         returns a proven relation of the form a Relation c.
         """
+        from pylogic.inference import Inference
+
         assert self.__class__.is_transitive, f"{self.__class__} is not transitive"
         assert self.is_proven, f"{self} is not proven"
         assert other.is_proven, f"{other} is not proven"
@@ -96,4 +98,6 @@ class BinaryRelation(Relation):
         ), f"{self} and {other} do not fulfill transitivity"
         new_p = self.__class__(self.left, other.right)
         new_p._is_proven = True
+        new_p.from_assumptions = self.from_assumptions.union(other.from_assumptions)
+        new_p.deduced_from = Inference(self, other, rule="transitive")
         return new_p

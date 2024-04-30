@@ -39,7 +39,7 @@ class Forall(_Quantified[TProposition]):
         inner_proposition: TProposition,
         is_assumption: bool = False,
         description: str = "",
-        _is_proven: bool = False,
+        **kwargs,
     ) -> None:
         super().__init__(
             "forall",
@@ -47,13 +47,16 @@ class Forall(_Quantified[TProposition]):
             inner_proposition,
             is_assumption,
             description=description,
-            _is_proven=_is_proven,
+            **kwargs,
         )
 
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, Forall):
             return self.inner_proposition == other.inner_proposition
         return False
+
+    def __hash__(self) -> int:
+        return super().__hash__()
 
     def copy(self) -> Self:
         return self.__class__(

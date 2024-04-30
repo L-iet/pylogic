@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.ordering.lessthan import LessThan
 from pylogic.proposition.relation.equals import Equals
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
@@ -28,8 +29,7 @@ class LessOrEqual(BinaryRelation, _Ordering):
         right: Term,
         is_assumption: bool = False,
         description: str = "",
-        *,
-        _is_proven: bool = False,
+        **kwargs,
     ) -> None:
         name = "LessOrEqual"
         diff = right - left
@@ -40,13 +40,16 @@ class LessOrEqual(BinaryRelation, _Ordering):
         if diff_nonnegative == False and (is_assumption or _is_proven):
             raise ValueError(f"Some assumptions in {left}, {right} are contradictory")
         super().__init__(
-            left,
-            right,
-            is_assumption=is_assumption,
-            description=description,
-            _is_proven=_is_proven,
+            left, right, is_assumption=is_assumption, description=description, **kwargs
         )
 
     def to_disjunction(self) -> Or[LessThan, Equals]:
         """If self is of the form `a <= b`, returns a proposition of the form `a < b or a = b`"""
-        return LessThan(self.left, self.right).or_(Equals(self.left, self.right))
+        return LessThan(self.left, self.right).or_(
+            Equals(self.left, self.right),
+            is_assumption=self.is_assumption,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=self.deduced_from,
+        )
