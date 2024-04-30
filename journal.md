@@ -172,3 +172,6 @@ Also need to add `**kwargs` to all constructors.
 
 7:45pm: end session. There are errors from me trying to add `_assumptions=` and `_inference=`.
 Need to add and verify these attributes on all rules of inference and proposition constructors.
+
+# Tuesday Apr 30, 2024, 10:31am PT
+Begin session.
