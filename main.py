@@ -63,7 +63,7 @@ log(lim_x_sq_at_0.is_proven)
 
 
 ###  Proving Theorem 1.2.6 (the converse statement) Understanding Analysis, 2nd Edition
-printing = True
+printing = False
 # if (forall eps>0, |a-b|<eps) then a = b
 a = ps.Symbol("a", real=True)
 b = ps.Symbol("b", real=True)
@@ -143,9 +143,12 @@ istep = Forall(
 log(weak_induction(bc, istep).as_text())
 
 ###############################
-printing = False
+printing = True
 
 P = Proposition("P")
-Q = Proposition("Q")
+np = neg(P, is_assumption=True)
+Q = Proposition("Q", is_assumption=True)
 R = Proposition("R")
-log(P.or_(Q, R).as_text())
+QImpP = Q.implies(P, is_assumption=True)
+
+log(Q.modus_ponens(QImpP).contradicts(np).thus_assumptions_cannot_all_hold())

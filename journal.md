@@ -176,9 +176,6 @@ Need to add and verify these attributes on all rules of inference and propositio
 # Tuesday Apr 30, 2024, 10:31am PT
 Begin session.
 
-Logical tactic and `copy`: `_assumptions=`, `_inference=` or
-`get_assumptions()`, `.deduced_from`
+5:14pm: added `_assumptions=` and `_inference=` to all rules of inference.
 
-Change `replace`
-
-Constructor: `**kwargs`
+Will add `ExOr` and modify `resolve` and `definite_clause_resolve` as well as add methods on `Contradiction`.

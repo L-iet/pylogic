@@ -438,33 +438,18 @@ class Proposition:
 
         assert isinstance(other, Forall), f"{other} is not a forall statement"
         assert other.is_proven, f"{other} is not proven"
-        assert (
-            self.name == other.inner_proposition.name
-            and self.arity == other.inner_proposition.arity
-        ), f"{self} is not a special case of {other}"
-
-        # last case: if the inner proposition is a proposition, we check to see
-        # if the self args matches inner proposition args
-        value_in_self: Term | Set | None = None
-        if isinstance(other.inner_proposition, Proposition):
-            for tself, tother in zip(self.args, other.inner_proposition.args):
-                if tother == other.variable:
-                    if value_in_self is None:
-                        value_in_self = tself
-                    elif value_in_self != tself:
-                        raise ValueError(
-                            f"{self} is not a special case of {other}: {value_in_self} != {tself}"
-                        )
-                elif tother != tself:
-                    raise ValueError(
-                        f"{self} is not a special case of {other}: {tself} != {tother}"
-                    )
-
-        new_p = self.copy()
-        new_p._is_proven = True
-        new_p.deduced_from = Inference(self, other, rule="is_special_case_of")
-        new_p.from_assumptions = get_assumptions(other).copy()
-        return new_p
+        unif = other.inner_proposition.unify(self)
+        if (
+            isinstance(unif, dict)
+            and len(unif) == 1
+            and list(unif.keys())[0] == other.variable
+        ) or unif is True:
+            new_p = self.copy()
+            new_p._is_proven = True
+            new_p.deduced_from = Inference(self, other, rule="is_special_case_of")
+            new_p.from_assumptions = get_assumptions(other).copy()
+            return new_p
+        raise ValueError(f"{self} is not a special case of {other}")
 
     @overload
     def followed_from(
