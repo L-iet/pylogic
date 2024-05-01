@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Literal, TypeVar, Generic, TypedDict, Self
 
 if TYPE_CHECKING:
     from pylogic.proposition.or_ import Or
+    from pylogic.proposition.and_ import And
     from pylogic.structures.sets import Set
     from pylogic.variable import Variable
     from pylogic.symbol import Symbol
@@ -130,10 +131,12 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         return i
 
     def impl_elim(self) -> Or:
-        r"""Logical tactic. Given self (A -> B) is proven, return the corresponding
-        disjunction form (~A \/ B)
+        r"""Logical tactic. Given self (`A -> B`) is proven, return the corresponding
+        disjunction form (`~A \/ B`)
         """
         assert self.is_proven, f"{self} is not proven"
+        from pylogic.proposition.or_ import Or
+
         return Or(
             neg(self.antecedent),
             self.consequent,
@@ -143,40 +146,73 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         )
 
     def definite_clause_resolve(
-        self, in_body: Proposition
-    ) -> Self | Implies[Proposition, UProposition]:
+        self, in_body: list[Proposition] | And[Proposition, ...]
+    ) -> Self | Implies[Proposition, UProposition] | UProposition:
         r"""
         Logical tactic. Given self `(A /\ B /\ C...) -> D` is proven, and
-        given one of the props (say B) in the antecedent is proven,
-        return a proof of the new definite clause `(A /\ C /\ ...) -> D`
-        or `A -> D` if only A is left in the body
+        given a conjunction (or list representing a conjunction) of some props
+        in the antecedent (say A and B) is proven, return a proof of the new
+        definite clause `(C /\ ...) -> D` or `C -> D` if only C is left in
+        the body, or D if the antecedent is left empty.
         """
+        assert self.is_proven, f"{self} is not proven"
         from pylogic.proposition.and_ import And
 
-        assert self.is_proven, f"{self} is not proven"
-        assert in_body.is_proven, f"{in_body} is not proven"
+        in_body_is_and = isinstance(in_body, And)
+        props = set(in_body.propositions if in_body_is_and else in_body)
+
+        if in_body_is_and:
+            assert in_body.is_proven, f"{in_body} is not proven"
+            in_body_assumptions = get_assumptions(in_body)
+        else:
+            assert isinstance(in_body, list), f"{in_body} is not a list"
+            in_body_assumptions: set[Proposition] = set()
+            for prop in props:
+                assert prop.is_proven, f"{prop} is not proven"
+                in_body_assumptions = in_body_assumptions.union(get_assumptions(prop))
+
         assert isinstance(
             self.antecedent, And
         ), f"The antecedent of {self} is not a conjunction"
         rem_props = [
-            prop.copy() for prop in self.antecedent.propositions if prop != in_body
+            prop.copy() for prop in self.antecedent.propositions if prop not in props
         ]
         if len(rem_props) == 1:
             return Implies(
                 rem_props[0],
                 self.consequent,
                 _is_proven=True,
-                _assumptions=get_assumptions(self).union(get_assumptions(in_body)),
+                _assumptions=get_assumptions(self).union(in_body_assumptions),
                 _inference=Inference(self, in_body, rule="definite_clause_resolve"),
             )
+        if len(rem_props) == 0:
+            new_p = self.consequent.copy()
+            new_p._is_proven = True
+            new_p.deduced_from = Inference(
+                self, in_body, rule="definite_clause_resolve"
+            )
+            new_p.from_assumptions = get_assumptions(self).union(in_body_assumptions)
+            return new_p
         new_p = Implies(
             And(*rem_props),
             self.consequent,
             _is_proven=True,
-            _assumptions=get_assumptions(self).union(get_assumptions(in_body)),
+            _assumptions=get_assumptions(self).union(in_body_assumptions),
             _inference=Inference(self, in_body, rule="definite_clause_resolve"),
         )
         return new_p  # type:ignore
+
+    def unit_definite_clause_resolve(
+        self, in_body: Proposition
+    ) -> Self | Implies[Proposition, UProposition] | UProposition:
+        r"""
+        Logical tactic. Given self `(A /\ B /\ C...) -> D` is proven, and
+        given one of the props (say B) in the antecedent is proven,
+        return a proof of the new definite clause `(A /\ C /\ ...) -> D`
+        or `A -> D` if only A is left in the body, or D if the antecedent is
+        left empty.
+        """
+        return self.definite_clause_resolve([in_body])
 
     def unify(self, other: Self) -> Unification | Literal[True] | None:
         if not isinstance(other, Implies):

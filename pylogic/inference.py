@@ -51,6 +51,7 @@ RuleName = Literal[
     "strong_induction",
     "order_axiom_bf",
     "absolute_value_nonnegative_f",
+    "resolve",
 ]
 
 rules: list[RuleName] = [
@@ -102,6 +103,7 @@ rules: list[RuleName] = [
     "strong_induction",
     "order_axiom_bf",
     "absolute_value_nonnegative_f",
+    "resolve",
 ]
 
 T = TypeVar("T", bound="Proposition")

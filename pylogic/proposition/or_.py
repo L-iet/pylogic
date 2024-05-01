@@ -2,7 +2,7 @@ from __future__ import annotations
 from pylogic.inference import Inference
 from pylogic.proposition.proposition import Proposition
 from pylogic.proposition.proposition import get_assumptions
-from pylogic.proposition.not_ import are_negs
+from pylogic.proposition.not_ import neg, are_negs
 from typing import (
     TYPE_CHECKING,
     Literal,
@@ -15,6 +15,7 @@ from typing import (
 )
 
 if TYPE_CHECKING:
+    from pylogic.proposition.and_ import And
     from pylogic.structures.sets import Set
     from pylogic.variable import Variable
     from pylogic.symbol import Symbol
@@ -112,36 +113,61 @@ class Or(Proposition, Generic[*Props]):
         s = r"\vee ".join([p._latex() for p in self.propositions])
         return rf"\left({s}\right)"
 
+    def resolve(
+        self, p: list[Proposition] | And[Proposition, ...]
+    ) -> Proposition | Self:
+        r"""
+        Logical tactic. Given self is proven, and p is proven, where p is
+        a conjunction or list of negations of propositions in self,
+        return a proven disjunction of the remaining propositions in self.
+
+        Given `A \/ B \/ C \/ D` and `~A /\ ~B`, return `C \/ D`.
+        """
+        assert self.is_proven, f"{self} is not proven"
+        from pylogic.proposition.contradiction import Contradiction
+        from pylogic.proposition.and_ import And
+
+        p_is_and = isinstance(p, And)
+        props = set(p.propositions if p_is_and else p)
+        self_props = self.propositions
+        if p_is_and:
+            assert p.is_proven, f"{p} is not proven"
+            p_assumptions = get_assumptions(p)
+        else:
+            assert isinstance(p, list), f"{p} is not a list"
+            p_assumptions: set[Proposition] = set()
+            for prop in props:
+                assert prop.is_proven, f"{prop} is not proven"
+                p_assumptions = p_assumptions.union(get_assumptions(prop))
+
+        rem_props = [
+            self_prop.copy() for self_prop in self_props if neg(self_prop) not in props
+        ]
+        if len(rem_props) == 1:
+            rem_props[0]._is_proven = True
+            rem_props[0].from_assumptions = get_assumptions(self).union(p_assumptions)
+            rem_props[0].deduced_from = Inference(self, *props, rule="resolve")
+            return rem_props[0]
+        if len(rem_props) == 0:
+            return Contradiction(
+                _is_proven=True,
+                _inference=Inference(self, *props, rule="resolve"),
+                _assumptions=get_assumptions(self).union(p_assumptions),
+            )
+        return Or(
+            *rem_props,
+            _is_proven=True,
+            _inference=Inference(self, *props, rule="resolve"),
+            _assumptions=get_assumptions(self).union(p_assumptions),
+        )
+
     def unit_resolve(self, p: Proposition) -> Proposition | Self:
         """
         Logical tactic. Given self is proven, and p is proven, where p is
         a negation of one of the propositions in self, return a proven disjunction
         of the remaining propositions in self.
         """
-        from pylogic.proposition.contradiction import Contradiction
-
-        assert self.is_proven, f"{self} is not proven"
-        assert p.is_proven, f"{p} is not proven"
-        rem_props = [prop.copy() for prop in self.propositions if not are_negs(prop, p)]  # type: ignore
-        if len(rem_props) == 1:
-            rem_props[0]._is_proven = True
-            rem_props[0].from_assumptions = get_assumptions(self).union(
-                get_assumptions(p)
-            )
-            rem_props[0].deduced_from = Inference(self, p, rule="unit_resolve")
-            return rem_props[0]
-        if len(rem_props) == 0:
-            return Contradiction(
-                _is_proven=True,
-                _inference=Inference(self, p, rule="unit_resolve"),
-                _assumptions=get_assumptions(self).union(get_assumptions(p)),
-            )
-        return Or(
-            *rem_props,
-            _is_proven=True,
-            _inference=Inference(self, p, rule="unit_resolve"),
-            _assumptions=get_assumptions(self).union(get_assumptions(p)),
-        )
+        return self.resolve([p])
 
     def one_proven(self, p: Proposition) -> Self:
         """

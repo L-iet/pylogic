@@ -143,7 +143,7 @@ istep = Forall(
 log(weak_induction(bc, istep).as_text())
 
 ###############################
-printing = True
+printing = False
 
 P = Proposition("P")
 np = neg(P, is_assumption=True)
@@ -152,3 +152,15 @@ R = Proposition("R")
 QImpP = Q.implies(P, is_assumption=True)
 
 log(Q.modus_ponens(QImpP).contradicts(np).thus_assumptions_cannot_all_hold())
+
+###############################
+printing = True
+P = Proposition("P")
+Q = Proposition("Q")
+R = Proposition("R")
+S = Proposition("S")
+a = P.and_(Q, R).implies(S, is_assumption=True)
+b = P.and_(Q, is_assumption=True)
+p = P.is_one_of(b)
+# log(a.unit_definite_clause_resolve(p))
+log(a.impl_elim())
