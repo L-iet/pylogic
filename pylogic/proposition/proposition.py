@@ -433,6 +433,8 @@ class Proposition:
         other: Proposition
             A proven forall proposition that implies this proposition.
         """
+        # TODO: Change unification so that we cannot prove
+        # P(x) from forall x: P(1).
         from pylogic.proposition.quantified.forall import Forall
         from pylogic.inference import Inference
 

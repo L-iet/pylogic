@@ -21,10 +21,12 @@ def replace(old: Term, new: Term, expr: Term) -> Term:
         return expr
 
 
+# TODO: Change unification so that we cannot prove
+# P(x) from forall x: P(1).
 def unify(
     a: Proposition | Term, b: Proposition | Term
 ) -> Unification | Literal[True] | None:
-    """ """
+    """Unification algorithm."""
     # a is the variable if at least one argument is a variable
     if isinstance(b, Variable) and not isinstance(a, Variable):
         return unify(b, a)
