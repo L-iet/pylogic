@@ -179,3 +179,9 @@ Begin session.
 5:14pm: added `_assumptions=` and `_inference=` to all rules of inference.
 
 Will add `ExOr` and modify `resolve` and `definite_clause_resolve` as well as add methods on `Contradiction`.
+
+6:54pm: added `resolve` and `definite_clause_resolve` as well as `unit_` versions of them.
+
+TODO: Add a `_Junction` class that `And`, `Or`, `ExOr` inherit from.
+
+6:55pm: end session.
