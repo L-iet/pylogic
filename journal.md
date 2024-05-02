@@ -185,3 +185,6 @@ Will add `ExOr` and modify `resolve` and `definite_clause_resolve` as well as ad
 TODO: Add a `_Junction` class that `And`, `Or`, `ExOr` inherit from.
 
 6:55pm: end session.
+
+# Thursday May 02, 2024, 3:17pm PT
+Begin session. Will add `_Junction` class and `..InSet` quantifier classes.
