@@ -202,6 +202,9 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
         return f"forall {self.variable} in {self.set_}: {self.inner_proposition.consequent}"
 
     def to_forall(self) -> Forall[Implies[IsContainedIn, TProposition]]:
+        """
+        Convert self to a regular `forall` statement.
+        """
         return Forall(
             self.variable,
             self.inner_proposition,

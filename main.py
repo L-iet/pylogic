@@ -1,6 +1,7 @@
 from pylogic.proposition.and_ import And
 from pylogic.proposition.proposition import Proposition
 from pylogic.proposition.quantified.forall import Forall, ForallInSet
+from pylogic.proposition.quantified.exists import ExistsInSet
 from pylogic.proposition.ordering.greaterthan import GreaterThan
 from pylogic.proposition.ordering.lessthan import LessThan
 from pylogic.proposition.relation.equals import Equals
@@ -177,7 +178,7 @@ a = ExOr(P, Q, R, S, is_assumption=True)
 log(a.unit_resolve(np))
 
 ###############################
-printing = True
+printing = False
 Px = Proposition("P", args=[x])
 r = Symbol("r", real=True)
 s = Symbol("s")
@@ -186,3 +187,9 @@ a = ForallInSet(x, Reals, Px, is_assumption=True)
 log(a.in_particular(r))  # good
 # a.in_particular(eps)  # eps is a variable, bad
 # a.in_particular(s)  # s is not real, bad
+
+###############################
+printing = True
+a = ExistsInSet(x, Reals, Px, is_assumption=True)
+c, Pc = a.extract()
+log(c, Pc)

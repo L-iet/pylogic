@@ -52,6 +52,7 @@ RuleName = Literal[
     "order_axiom_bf",
     "absolute_value_nonnegative_f",
     "resolve",
+    "extract",
 ]
 
 rules: list[RuleName] = [
@@ -104,6 +105,7 @@ rules: list[RuleName] = [
     "order_axiom_bf",
     "absolute_value_nonnegative_f",
     "resolve",
+    "extract",
 ]
 
 T = TypeVar("T", bound="Proposition")

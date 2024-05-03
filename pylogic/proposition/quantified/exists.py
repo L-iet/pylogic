@@ -1,8 +1,12 @@
 from __future__ import annotations
 from pylogic.proposition.proposition import Proposition, get_assumptions
+from pylogic.proposition.and_ import And
+from pylogic.proposition.relation.contains import IsContainedIn
 from pylogic.proposition.quantified.quantified import _Quantified
 from pylogic.variable import Variable
-from typing import TYPE_CHECKING, TypedDict, TypeVar, Self
+from pylogic.constant import Constant
+from pylogic.inference import Inference
+from typing import TYPE_CHECKING, TypedDict, TypeVar
 
 if TYPE_CHECKING:
     from sympy import Basic
@@ -89,7 +93,20 @@ class Exists(_Quantified[TProposition]):
         return super().__hash__()
 
     def __iter__(self):
-        return iter((self.variable, self.inner_proposition))
+        return iter(self.extract())
+
+    def extract(self) -> tuple[Constant, TProposition]:
+        """Logical tactic.
+        If self is proven, return a constant and a proven inner proposition.
+        """
+        assert self.is_proven, f"{self} is not proven"
+
+        c = Constant(f"c_{self.variable.name}")
+        proven_inner = self.inner_proposition.replace(self.variable, c)
+        proven_inner._is_proven = True
+        proven_inner.from_assumptions = get_assumptions(self).copy()
+        proven_inner.deduced_from = Inference(self, rule="extract")
+        return (c, proven_inner)
 
     def exists_modus_ponens(self, other: Forall[Implies[TProposition, B]]) -> Exists[B]:
         """
@@ -129,4 +146,44 @@ class Exists(_Quantified[TProposition]):
             _is_proven=self.is_proven,
             _assumptions=get_assumptions(self).copy(),
             _inference=Inference(self, rule="de_morgan"),
+        )
+
+
+class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
+    def __init__(
+        self,
+        variable: Variable,
+        set_: Set,
+        inner_proposition: TProposition,
+        is_assumption: bool = False,
+        description: str = "",
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            variable,
+            And(IsContainedIn(variable, set_), inner_proposition),
+            is_assumption=is_assumption,
+            description=description,
+            **kwargs,
+        )
+        self.set_ = set_
+
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+    def __repr__(self) -> str:
+        return f"exists {self.variable} in {self.set_}: {self.inner_proposition.propositions[1]}"
+
+    def to_exists(self) -> Exists[And[IsContainedIn, TProposition]]:
+        """
+        Convert self to a regular `exists` statement.
+        """
+        return Exists(
+            self.variable,
+            self.inner_proposition,
+            is_assumption=self.is_assumption,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
         )
