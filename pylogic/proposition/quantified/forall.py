@@ -3,11 +3,11 @@ from typing import TYPE_CHECKING, Self, TypeVar, TypedDict
 
 from pylogic.proposition.proposition import Proposition, get_assumptions
 from pylogic.proposition.quantified.quantified import _Quantified
+from pylogic.proposition.relation.contains import IsContainedIn
 from pylogic.proposition.implies import Implies
 from pylogic.inference import Inference
 
 import sympy as sp
-from sympy.printing.latex import LatexPrinter
 
 
 if TYPE_CHECKING:
@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.not_ import Not
     from pylogic.variable import Variable
     from pylogic.proposition.quantified.exists import Exists
+    from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.symbol import Symbol
     from pylogic.structures.sets import Set
 
@@ -59,17 +60,6 @@ class Forall(_Quantified[TProposition]):
     def __hash__(self) -> int:
         return super().__hash__()
 
-    def copy(self) -> Self:
-        return self.__class__(
-            self.variable,
-            self.inner_proposition.copy(),
-            self.is_assumption,
-            description=self.description,
-            _is_proven=self.is_proven,
-            _assumptions=self.from_assumptions,
-            _inference=self.deduced_from,
-        )
-
     def hence_matrices_are_equal(self) -> Equals:
         """
         Logical tactic.
@@ -88,12 +78,12 @@ class Forall(_Quantified[TProposition]):
             indices.append(prop.variable)
             prop = prop.inner_proposition
         assert isinstance(prop, Equals), f"{prop} is not an equality"
-        MatEl = sp.matrices.expressions.matexpr.MatrixElement
+        MatEl = sp.matrices.expressions.matexpr.MatrixElement  # type: ignore
         assert isinstance(prop.left, MatEl) and isinstance(
             prop.right, MatEl
         ), f"The inner equality {prop} is not between matrix elements"
-        left_mat, *left_indices = prop.left.args
-        right_mat, *right_indices = prop.right.args
+        left_mat, *left_indices = prop.left.args  # type: ignore
+        right_mat, *right_indices = prop.right.args  # type: ignore
         for i, index in enumerate(indices):
             assert (
                 index == left_indices[i] == right_indices[i]
@@ -156,6 +146,14 @@ class Forall(_Quantified[TProposition]):
         # TODO: may need to define or override .replace for Forall to prevent
         # unnecessarily replacing the variable in the inner proposition
         assert self.is_proven, f"{self} is not proven"
+        from pylogic.variable import Variable
+
+        if isinstance(expression_to_substitute, sp.Basic):
+            for s in expression_to_substitute.free_symbols:
+                if isinstance(s, Variable):
+                    raise ValueError(
+                        f"Cannot substitute due to variable {s} in {expression_to_substitute}"
+                    )
         new_p = self.inner_proposition.replace(self.variable, expression_to_substitute)
         new_p._is_proven = True
         new_p.from_assumptions = get_assumptions(self).copy()
@@ -176,3 +174,56 @@ class Forall(_Quantified[TProposition]):
             _assumptions=get_assumptions(self).copy(),
             _inference=Inference(self, rule="de_morgan"),
         )
+
+
+class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
+    def __init__(
+        self,
+        variable: Variable,
+        set_: Set,
+        inner_proposition: TProposition,
+        is_assumption: bool = False,
+        description: str = "",
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            variable,
+            IsContainedIn(variable, set_).implies(inner_proposition),
+            is_assumption,
+            description=description,
+            **kwargs,
+        )
+        self.set_ = set_
+
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+    def __repr__(self) -> str:
+        return f"forall {self.variable} in {self.set_}: {self.inner_proposition.consequent}"
+
+    def to_forall(self) -> Forall[Implies[IsContainedIn, TProposition]]:
+        return Forall(
+            self.variable,
+            self.inner_proposition,
+            is_assumption=self.is_assumption,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
+        )
+
+    def in_particular(self, expression_to_substitute: Term) -> TProposition:
+        """Logical tactic. Given self is proven, replace the variable in the inner
+        proposition and get a proven proposition.
+        """
+        assert self.is_proven, f"{self} is not proven"
+        impl = super().in_particular(expression_to_substitute)
+        ante = IsContainedIn(expression_to_substitute, self.set_).by_inspection()
+        if ante == impl.antecedent:
+            new_p = impl.consequent
+            new_p._is_proven = True
+            new_p.from_assumptions = get_assumptions(self).copy()
+            new_p.deduced_from = Inference(self, rule="in_particular")
+            return new_p
+        else:
+            raise ValueError("Inconsistent substitution occured.")

@@ -169,10 +169,10 @@ class Proposition:
     def copy(self) -> Self:
         return self.__class__(
             self.name,
-            self.is_assumption,
+            is_assumption=self.is_assumption,
             description=self.description,
             args=self.args.copy(),  # TODO: check if we need deepcopy
-            _is_proven=self.is_proven,
+            _is_proven=self._is_proven,
             _inference=self.deduced_from,
             _assumptions=self.from_assumptions,
         )

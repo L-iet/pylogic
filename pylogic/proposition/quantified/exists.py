@@ -91,17 +91,6 @@ class Exists(_Quantified[TProposition]):
     def __iter__(self):
         return iter((self.variable, self.inner_proposition))
 
-    def copy(self) -> Self:
-        return self.__class__(
-            self.variable,
-            self.inner_proposition.copy(),
-            self.is_assumption,
-            description=self.description,
-            _is_proven=self.is_proven,
-            _assumptions=self.from_assumptions,
-            _inference=self.deduced_from,
-        )
-
     def exists_modus_ponens(self, other: Forall[Implies[TProposition, B]]) -> Exists[B]:
         """
         Logical tactic. If self is exists x: P(x) and given forall x: P(x) -> Q(x)

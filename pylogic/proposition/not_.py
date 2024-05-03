@@ -84,9 +84,9 @@ class Not(Proposition, Generic[TProposition]):
     def copy(self) -> Self:
         return self.__class__(
             self.negated.copy(),
-            self.is_assumption,
+            is_assumption=self.is_assumption,
             description=self.description,
-            _is_proven=self.is_proven,
+            _is_proven=self._is_proven,
             _assumptions=self.from_assumptions,
             _inference=self.deduced_from,
         )

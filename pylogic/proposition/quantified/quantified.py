@@ -61,9 +61,17 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
             + self.inner_proposition.as_text(_indent=_indent + 1)
         )
 
-    @abstractmethod
     def copy(self) -> Self:
-        pass
+        assert self.__class__ != _Quantified
+        return self.__class__(
+            self.variable,  # type: ignore
+            self.inner_proposition.copy(),  # type: ignore
+            is_assumption=self.is_assumption,  # type: ignore
+            description=self.description,
+            _is_proven=self._is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
+        )
 
     def replace(
         self,

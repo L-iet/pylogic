@@ -1,6 +1,6 @@
 from pylogic.proposition.and_ import And
 from pylogic.proposition.proposition import Proposition
-from pylogic.proposition.quantified.forall import Forall
+from pylogic.proposition.quantified.forall import Forall, ForallInSet
 from pylogic.proposition.ordering.greaterthan import GreaterThan
 from pylogic.proposition.ordering.lessthan import LessThan
 from pylogic.proposition.relation.equals import Equals
@@ -13,6 +13,7 @@ from pylogic.proposition.ordering.theorems import (
 from pylogic.proposition.not_ import Not, neg
 from pylogic import symbol as ps
 from pylogic.variable import Variable
+from pylogic.structures.sets import Naturals0, Reals
 import sympy as sp
 
 printing = False
@@ -127,7 +128,6 @@ log(a.de_morgan().de_morgan())
 ###############################
 printing = False
 from pylogic.proposition.relation.contains import IsContainedIn
-from pylogic.structures.sets import Naturals0
 from pylogic.theorems.arithmetic import weak_induction
 
 n = Variable("n", integer=True, positive=True)
@@ -167,7 +167,7 @@ p = P.is_one_of(b)
 
 
 ###############################
-printing = True
+printing = False
 P = Proposition("P", is_assumption=True)
 Q = Proposition("Q")
 R = Proposition("R")
@@ -175,3 +175,14 @@ S = Proposition("S")
 
 a = ExOr(P, Q, R, S, is_assumption=True)
 log(a.unit_resolve(np))
+
+###############################
+printing = True
+Px = Proposition("P", args=[x])
+r = Symbol("r", real=True)
+s = Symbol("s")
+
+a = ForallInSet(x, Reals, Px, is_assumption=True)
+log(a.in_particular(r))  # good
+# a.in_particular(eps)  # eps is a variable, bad
+# a.in_particular(s)  # s is not real, bad
