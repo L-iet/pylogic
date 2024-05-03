@@ -5,6 +5,7 @@ from pylogic.proposition.ordering.greaterthan import GreaterThan
 from pylogic.proposition.ordering.lessthan import LessThan
 from pylogic.proposition.relation.equals import Equals
 from pylogic.proposition.or_ import Or
+from pylogic.proposition.exor import ExOr
 from pylogic.proposition.ordering.theorems import (
     order_axiom_bf,
     absolute_value_nonnegative_f,
@@ -154,7 +155,7 @@ QImpP = Q.implies(P, is_assumption=True)
 log(Q.modus_ponens(QImpP).contradicts(np).thus_assumptions_cannot_all_hold())
 
 ###############################
-printing = True
+printing = False
 P = Proposition("P")
 Q = Proposition("Q")
 R = Proposition("R")
@@ -163,4 +164,14 @@ a = P.and_(Q, R).implies(S, is_assumption=True)
 b = P.and_(Q, is_assumption=True)
 p = P.is_one_of(b)
 # log(a.unit_definite_clause_resolve(p))
-log(a.impl_elim())
+
+
+###############################
+printing = True
+P = Proposition("P", is_assumption=True)
+Q = Proposition("Q")
+R = Proposition("R")
+S = Proposition("S")
+
+a = ExOr(P, Q, R, S, is_assumption=True)
+log(a.unit_resolve(np))
