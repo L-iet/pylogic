@@ -161,7 +161,7 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
     ) -> None:
         super().__init__(
             variable,
-            And(IsContainedIn(variable, set_), inner_proposition),
+            IsContainedIn(variable, set_).and_(inner_proposition),
             is_assumption=is_assumption,
             description=description,
             **kwargs,

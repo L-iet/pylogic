@@ -265,13 +265,34 @@ class Proposition:
         )
         return new_p
 
+    @overload
+    def implies(
+        self, other: TProposition, is_assumption: bool = False, **kwargs
+    ) -> Implies[Self, TProposition]: ...
+
+    @overload
     def implies(
         self,
-        other: TProposition,
+        other: Implies[TProposition, UProposition],
         is_assumption: bool = False,
         **kwargs,
-    ) -> Implies[Self, TProposition]:
+    ) -> Implies[And[Self, TProposition], UProposition]: ...
+
+    def implies(
+        self,
+        other: TProposition | Implies[TProposition, UProposition],
+        is_assumption: bool = False,
+        **kwargs,
+    ) -> Implies[Self, TProposition] | Implies[And[Self, TProposition], UProposition]:
+        r"""
+        Create an implication from this proposition to another.
+        If other is an implication `A -> B`, we return an implication
+        `(self /\ A) -> B`.
+        """
         from pylogic.proposition.implies import Implies
+
+        if isinstance(other, Implies):
+            return self.and_(other.antecedent).implies(other.consequent)
 
         return Implies(self, other, is_assumption, **kwargs)
 
@@ -281,9 +302,20 @@ class Proposition:
         is_assumption: bool = False,
         **kwargs,
     ) -> And[Self, *Props]:
+        """
+        Combine this proposition with others using a conjunction.
+        Continguous `And` objects are combined into one `And` sequence to reduce
+        nesting.
+        """
         from pylogic.proposition.and_ import And
 
-        return And(self, *others, is_assumption=is_assumption, **kwargs)
+        props = []
+        for p in (self, *others):
+            if isinstance(p, And):
+                props.extend(p.propositions)
+            else:
+                props.append(p)
+        return And(*props, is_assumption=is_assumption, **kwargs)  # type:ignore
 
     def and_reverse(
         self,
@@ -291,9 +323,21 @@ class Proposition:
         is_assumption: bool = False,
         **kwargs,
     ) -> And[*Props, Self]:
+        """
+        Combine this proposition with others using a conjunction, with self at
+        the end.
+        Continguous `And` objects are combined into one `And` sequence to reduce
+        nesting.
+        """
         from pylogic.proposition.and_ import And
 
-        return And(*others, self, is_assumption=is_assumption, **kwargs)
+        props = []
+        for p in (*others, self):
+            if isinstance(p, And):
+                props.extend(p.propositions)
+            else:
+                props.append(p)
+        return And(*props, is_assumption=is_assumption, **kwargs)  # type:ignore
 
     def or_(
         self,
@@ -301,16 +345,39 @@ class Proposition:
         is_assumption: bool = False,
         **kwargs,
     ) -> Or[Self, *Props]:
+        """
+        Combine this proposition with others using a disjunnction.
+        Continguous `Or` objects are combined into one `Or` sequence to reduce
+        nesting.
+        """
         from pylogic.proposition.or_ import Or
 
-        return Or(self, *others, is_assumption=is_assumption, **kwargs)
+        props = []
+        for p in (self, *others):
+            if isinstance(p, Or):
+                props.extend(p.propositions)
+            else:
+                props.append(p)
+        return Or(*props, is_assumption=is_assumption, **kwargs)  # type:ignore
 
     def or_reverse(
         self, *others: *Props, is_assumption: bool = False, **kwargs
     ) -> Or[*Props, Self]:
+        """
+        Combine this proposition with others using a disjunction, with self at
+        the end.
+        Continguous `Or` objects are combined into one `Or` sequence to reduce
+        nesting.
+        """
         from pylogic.proposition.or_ import Or
 
-        return Or(*others, self, is_assumption=is_assumption, **kwargs)
+        props = []
+        for p in (*others, self):
+            if isinstance(p, Or):
+                props.extend(p.propositions)
+            else:
+                props.append(p)
+        return Or(*props, is_assumption=is_assumption, **kwargs)  # type:ignore
 
     def p_and(self, *others: *Props) -> And[Self, *Props]:
         """Logical tactic.
