@@ -188,3 +188,5 @@ TODO: Add a `_Junction` class that `And`, `Or`, `ExOr` inherit from.
 
 # Thursday May 02, 2024, 3:17pm PT
 Begin session. Will add `_Junction` class and `..InSet` quantifier classes.
+
+6:34pm: end session. Added `_Junction` class and `..InSet` quantifier classes; corrected `in_particular` and added `extract` for `Exists`.
