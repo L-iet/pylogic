@@ -101,6 +101,18 @@ class Not(Proposition, Generic[TProposition]):
             + self.negated.as_text(_indent=_indent + 1)
         )
 
+    def describe(self, *, _indent=0) -> str:
+        """
+        Return a description of the proposition.
+        """
+        if self.description:
+            return "  " * _indent + self.description + "\n"
+        return (
+            "  " * _indent
+            + "it is false that\n"
+            + self.negated.describe(_indent=_indent + 1)
+        )
+
     def replace(
         self,
         current_val: Term,

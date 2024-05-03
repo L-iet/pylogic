@@ -12,9 +12,9 @@ from pylogic.proposition.ordering.theorems import (
     absolute_value_nonnegative_f,
 )
 from pylogic.proposition.not_ import Not, neg
-from pylogic import symbol as ps
+from pylogic.constant import Constant
 from pylogic.variable import Variable
-from pylogic.structures.sets import Naturals0, Reals
+from pylogic.structures.sets import Naturals0, Reals, Set
 import sympy as sp
 
 printing = False
@@ -29,7 +29,7 @@ x = Variable("x", real=True)
 xnot0: Not[Equals] = neg(Equals(sp.Abs(x), 0), True)
 
 Px = Proposition("P", args=[x])
-Py = Proposition("P", args=[ps.Symbol("y", real=True)])
+Py = Proposition("P", args=[Constant("y", real=True)])
 forallXPx = Forall(x, Px, is_assumption=True)
 
 # print(Py, forallXPx)
@@ -68,8 +68,8 @@ log(lim_x_sq_at_0.is_proven)
 ###  Proving Theorem 1.2.6 (the converse statement) Understanding Analysis, 2nd Edition
 printing = False
 # if (forall eps>0, |a-b|<eps) then a = b
-a = ps.Symbol("a", real=True)
-b = ps.Symbol("b", real=True)
+a = Constant("a", real=True)
+b = Constant("b", real=True)
 abs_a_minus_b = sp.Abs(a - b)  # type: ignore
 
 # We assume forall eps, eps > 0 => |a-b| < eps
@@ -100,11 +100,7 @@ log(res.from_assumptions)
 ##############################
 
 printing = False
-
-from pylogic.variable import Variable
-from pylogic.symbol import Symbol
-
-y = Symbol("y")
+y = Constant("y")
 z = Variable("z")
 
 Pxy = Proposition("P", args=[x, y])
@@ -180,8 +176,8 @@ log(a.unit_resolve(np))
 ###############################
 printing = False
 Px = Proposition("P", args=[x])
-r = Symbol("r", real=True)
-s = Symbol("s")
+r = Constant("r", real=True)
+s = Constant("s")
 
 a = ForallInSet(x, Reals, Px, is_assumption=True)
 log(a.in_particular(r))  # good
@@ -189,7 +185,31 @@ log(a.in_particular(r))  # good
 # a.in_particular(s)  # s is not real, bad
 
 ###############################
-printing = True
+printing = False
 a = ExistsInSet(x, Reals, Px, is_assumption=True)
 c, Pc = a.extract()
 log(c, Pc)
+
+###############################
+printing = True
+ub = Constant("ub", real=True)
+s = Set("S")
+is_ub = lambda ub, s: ForallInSet(
+    x,
+    s,
+    GreaterThan(ub, x).or_(Equals(ub, x)),
+    description=f"{ub} is an upper bound of {s}",
+)
+lub = Variable("lub", real=True)
+has_lub = lambda s: ExistsInSet(
+    lub,
+    Reals,
+    is_ub(lub, s).and_(
+        ForallInSet(
+            z,
+            Reals,
+            is_ub(z, s).implies(LessThan(z, lub).or_(Equals(z, lub))),
+        )
+    ),
+)
+log(has_lub(s).describe())

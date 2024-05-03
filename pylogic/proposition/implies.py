@@ -88,6 +88,21 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             + self.consequent.as_text(_indent=_indent + 1)
         )
 
+    def describe(self, *, _indent=0) -> str:
+        """
+        Return a description of the proposition.
+        """
+        if self.description:
+            return "  " * _indent + self.description + "\n"
+        return (
+            "  " * _indent
+            + "if\n"
+            + self.antecedent.describe(_indent=_indent + 1)
+            + "  " * _indent
+            + "then\n"
+            + self.consequent.describe(_indent=_indent + 1)
+        )
+
     def replace(
         self,
         current_val: Term,

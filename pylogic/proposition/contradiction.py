@@ -53,7 +53,7 @@ class Contradiction(Proposition):
 
         return Or(
             *[neg(a) for a in self.from_assumptions],
-            description="A contradiction was derived. Therefore, the assumptions cannot all hold.",
+            description="",
             _is_proven=True,
             _assumptions=self.from_assumptions,
             _inference=Inference(self, rule="thus_assumptions_cannot_all_hold"),

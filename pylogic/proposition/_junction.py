@@ -69,6 +69,19 @@ class _Junction(Proposition, Generic[*Ps]):
                 s += "  " * _indent + f"{self._join_symbol}\n"
         return s
 
+    def describe(self, *, _indent=0) -> str:
+        """
+        Return a description of the proposition.
+        """
+        if self.description:
+            return "  " * _indent + self.description + "\n"
+        s = ""
+        for i, p in enumerate(self.propositions):
+            s += p.describe(_indent=_indent + 1)  # type: ignore
+            if i != len(self.propositions) - 1:
+                s += "  " * _indent + f"{self._join_symbol}\n"
+        return s
+
     def replace(
         self,
         current_val: Term,

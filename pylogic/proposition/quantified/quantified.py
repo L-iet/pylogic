@@ -61,6 +61,18 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
             + self.inner_proposition.as_text(_indent=_indent + 1)
         )
 
+    def describe(self, *, _indent=0) -> str:
+        """
+        Return a text representation of the proposition.
+        """
+        if self.description:
+            return "  " * _indent + self.description + "\n"
+        return (
+            "  " * _indent
+            + f"{self._q} {self.variable}:\n"
+            + self.inner_proposition.describe(_indent=_indent + 1)
+        )
+
     def copy(self) -> Self:
         assert self.__class__ != _Quantified
         return self.__class__(

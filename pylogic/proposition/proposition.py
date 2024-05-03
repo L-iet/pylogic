@@ -166,6 +166,14 @@ class Proposition:
         """
         return "  " * _indent + repr(self) + "\n"
 
+    def describe(self, *, _indent=0) -> str:
+        """
+        Return a description of the proposition.
+        """
+        if self.description:
+            return "  " * _indent + self.description + "\n"
+        return self.as_text(_indent=_indent)
+
     def copy(self) -> Self:
         return self.__class__(
             self.name,
