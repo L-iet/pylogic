@@ -40,6 +40,9 @@ class Or(_Junction[*Ps]):
     def __hash__(self) -> int:
         return super().__hash__()
 
+    def remove_duplicates(self) -> Or:
+        return super().remove_duplicates()  # type: ignore
+
     def one_proven(self, p: Proposition) -> Self:
         """
         Logical tactic. Given one proven proposition in self, return

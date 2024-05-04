@@ -40,6 +40,9 @@ class And(_Junction[*Ps]):
     def __hash__(self) -> int:
         return super().__hash__()
 
+    def remove_duplicates(self) -> And:
+        return super().remove_duplicates()  # type: ignore
+
     def all_proven(self) -> Self:
         """Logical tactic. If all propositions are proven, the conjunction is
         proven."""

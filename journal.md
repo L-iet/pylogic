@@ -190,3 +190,25 @@ TODO: Add a `_Junction` class that `And`, `Or`, `ExOr` inherit from.
 Begin session. Will add `_Junction` class and `..InSet` quantifier classes.
 
 6:34pm: end session. Added `_Junction` class and `..InSet` quantifier classes; corrected `in_particular` and added `extract` for `Exists`.
+
+# Friday May 03, 2024, 10:48pm PT
+I've been thinking about replacing the `Variable` in `Exists` with a `Constant`.
+When we make an exists statement, the thing that exists can only have one (or few) values.
+
+However, consider the code below:
+```python
+c = Constant('c')
+Pc = Proposition('P', args=[c])
+exists_c_Qc = Exists(c, Proposition('Q', args=[c]))
+```
+We are implicitly saying that the `c` in `Pc` is the same as the `c` in `exists_c_Qc`. But this
+might not be our intention. At least with
+```python
+c = Variable('c')
+Pc = Proposition('P', args=[c])
+Qc = Proposition('Q', args=[c])
+```
+we can clearly see that `c` is the same object in both `Pc` and `Qc`.
+
+11:21pm: will modify `and_`, `or_`, and add `xor` to remove duplicates. Will change `followed_from` to
+remove the assumption.

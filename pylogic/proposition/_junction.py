@@ -107,6 +107,26 @@ class _Junction(Proposition, Generic[*Ps]):
         )
         return new_p
 
+    def remove_duplicates(self) -> _Junction:
+        """
+        Remove duplicate propositions from the _junction.
+        Returns an equivalent proposition.
+        """
+        added = set()
+        props = []
+        for prop in self.propositions:
+            if prop not in added:
+                props.append(prop)
+                added.add(prop)
+        return self.__class__(
+            *props,
+            is_assumption=self.is_assumption,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
+        )
+
     def __repr__(self) -> str:
         if self._join_symbol == "or":
             join_symbol = r" \/ "

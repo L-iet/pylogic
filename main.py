@@ -191,7 +191,7 @@ c, Pc = a.extract()
 log(c, Pc)
 
 ###############################
-printing = True
+printing = False
 ub = Constant("ub", real=True)
 s = Set("S")
 is_ub = lambda ub, s: ForallInSet(
@@ -213,3 +213,12 @@ has_lub = lambda s: ExistsInSet(
     ),
 )
 log(has_lub(s).describe())
+
+###############################
+printing = True
+
+p = Proposition("P")
+q = Proposition("Q")
+r = Proposition("R")
+a = p.or_(p, p, q, r, p, allow_duplicates=True)
+log(a)

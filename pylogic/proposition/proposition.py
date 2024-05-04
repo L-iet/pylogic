@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.relation.equals import Equals
     from pylogic.proposition.and_ import And
     from pylogic.proposition.or_ import Or
+    from pylogic.proposition.exor import ExOr
     from pylogic.proposition.implies import Implies
     from pylogic.proposition.quantified.exists import Exists
     from pylogic.proposition.quantified.forall import Forall
@@ -296,16 +297,37 @@ class Proposition:
 
         return Implies(self, other, is_assumption, **kwargs)
 
+    @overload
     def and_(
         self,
         *others: *Props,
         is_assumption: bool = False,
+        allow_duplicates: Literal[True] = True,
         **kwargs,
-    ) -> And[Self, *Props]:
+    ) -> And: ...
+
+    @overload
+    def and_(
+        self,
+        *others: *Props,
+        is_assumption: bool = False,
+        allow_duplicates: bool = False,
+        **kwargs,
+    ) -> And[Self, *Props]: ...
+
+    def and_(
+        self,
+        *others: *Props,
+        is_assumption: bool = False,
+        allow_duplicates: bool = False,
+        **kwargs,
+    ) -> And[Self, *Props] | And:
         """
         Combine this proposition with others using a conjunction.
         Continguous `And` objects are combined into one `And` sequence to reduce
         nesting.
+        allow_duplicates: bool
+            If True, we do not remove duplicate propositions.
         """
         from pylogic.proposition.and_ import And
 
@@ -315,40 +337,68 @@ class Proposition:
                 props.extend(p.propositions)
             else:
                 props.append(p)
-        return And(*props, is_assumption=is_assumption, **kwargs)  # type:ignore
+        new_p = And(*props, is_assumption=is_assumption, **kwargs)
+        if not allow_duplicates:
+            return new_p.remove_duplicates()
+        x = self.and_(*others, allow_duplicates=True, **kwargs)
+        return new_p
+
+    @overload
+    def and_reverse(
+        self,
+        *others: *Props,
+        is_assumption: bool = False,
+        allow_duplicates: Literal[True] = True,
+        **kwargs,
+    ) -> And: ...
+
+    @overload
+    def and_reverse(
+        self,
+        *others: *Props,
+        is_assumption: bool = False,
+        allow_duplicates: bool = False,
+        **kwargs,
+    ) -> And[*Props, Self]: ...
 
     def and_reverse(
         self,
         *others: *Props,
         is_assumption: bool = False,
+        allow_duplicates: bool = False,
         **kwargs,
-    ) -> And[*Props, Self]:
+    ) -> And[*Props, Self] | And:
         """
         Combine this proposition with others using a conjunction, with self at
         the end.
         Continguous `And` objects are combined into one `And` sequence to reduce
         nesting.
+        allow_duplicates: bool
+            If True, we do not remove duplicate propositions.
         """
-        from pylogic.proposition.and_ import And
-
-        props = []
-        for p in (*others, self):
-            if isinstance(p, And):
-                props.extend(p.propositions)
-            else:
-                props.append(p)
-        return And(*props, is_assumption=is_assumption, **kwargs)  # type:ignore
+        first = others[0]
+        rest = others[1:]
+        return first.and_(  # type:ignore
+            *rest,
+            self,
+            is_assumption=is_assumption,
+            allow_duplicates=allow_duplicates,
+            **kwargs,
+        )
 
     def or_(
         self,
         *others: *Props,
         is_assumption: bool = False,
+        allow_duplicates: bool = False,
         **kwargs,
-    ) -> Or[Self, *Props]:
+    ) -> Or[Self, *Props] | Or:
         """
         Combine this proposition with others using a disjunnction.
         Continguous `Or` objects are combined into one `Or` sequence to reduce
         nesting.
+        allow_duplicates: bool
+            If True, we do not remove duplicate propositions.
         """
         from pylogic.proposition.or_ import Or
 
@@ -358,28 +408,91 @@ class Proposition:
                 props.extend(p.propositions)
             else:
                 props.append(p)
-        return Or(*props, is_assumption=is_assumption, **kwargs)  # type:ignore
+        new_p = Or(*props, is_assumption=is_assumption, **kwargs)  # type:ignore
+        if not allow_duplicates:
+            return new_p.remove_duplicates()
+        return new_p
 
     def or_reverse(
-        self, *others: *Props, is_assumption: bool = False, **kwargs
-    ) -> Or[*Props, Self]:
+        self,
+        *others: *Props,
+        is_assumption: bool = False,
+        allow_duplicates: bool = False,
+        **kwargs,
+    ) -> Or[*Props, Self] | Or:
         """
         Combine this proposition with others using a disjunction, with self at
         the end.
         Continguous `Or` objects are combined into one `Or` sequence to reduce
         nesting.
+        allow_duplicates: bool
+            If True, we do not remove duplicate propositions.
         """
-        from pylogic.proposition.or_ import Or
+        first = others[0]
+        rest = others[1:]
+        return first.or_(
+            *rest,
+            self,
+            is_assumption=is_assumption,
+            allow_duplicates=allow_duplicates,
+            **kwargs,
+        )
+
+    def xor(
+        self,
+        *others: *Props,
+        is_assumption: bool = False,
+        allow_duplicates: bool = False,
+        **kwargs,
+    ) -> ExOr[Self, *Props] | ExOr:
+        """
+        Combine this proposition with others using an exclusive or.
+        Continguous `ExOr` objects are combined into one `ExOr` sequence to reduce
+        nesting.
+        allow_duplicates: bool
+            If True, we do not remove duplicate propositions.
+        """
+        from pylogic.proposition.exor import ExOr
 
         props = []
-        for p in (*others, self):
-            if isinstance(p, Or):
+        for p in (self, *others):
+            if isinstance(p, ExOr):
                 props.extend(p.propositions)
             else:
                 props.append(p)
-        return Or(*props, is_assumption=is_assumption, **kwargs)  # type:ignore
+        new_p = ExOr(*props, is_assumption=is_assumption, **kwargs)  # type:ignore
+        if not allow_duplicates:
+            return new_p.remove_duplicates()
+        return new_p
 
-    def p_and(self, *others: *Props) -> And[Self, *Props]:
+    def xor_reverse(
+        self,
+        *others: *Props,
+        is_assumption: bool = False,
+        allow_duplicates: bool = False,
+        **kwargs,
+    ) -> ExOr[*Props, Self] | ExOr:
+        """
+        Combine this proposition with others using an exclusive or, with self at
+        the end.
+        Continguous `ExOr` objects are combined into one `ExOr` sequence to reduce
+        nesting.
+        allow_duplicates: bool
+            If True, we do not remove duplicate propositions.
+        """
+        first = others[0]
+        rest = others[1:]
+        return first.xor(  # type:ignore
+            *rest,
+            self,
+            is_assumption=is_assumption,
+            allow_duplicates=allow_duplicates,
+            **kwargs,
+        )
+
+    def p_and(
+        self, *others: *Props, allow_duplicates: bool = False
+    ) -> And[Self, *Props]:
         """Logical tactic.
         Same as and_, but returns a proven proposition when self and all others are proven.
         """
@@ -394,13 +507,16 @@ class Proposition:
         )
         new_p = self.and_(
             *others,
+            allow_duplicates=allow_duplicates,
             _is_proven=True,
             _assumptions=all_assumptions,
             _inference=Inference(self, *others, rule="p_and"),
         )
         return new_p
 
-    def p_and_reverse(self, *others: *Props) -> And[*Props, Self]:
+    def p_and_reverse(
+        self, *others: *Props, allow_duplicates: bool = False
+    ) -> And[*Props, Self]:
         """Logical tactic.
         Same as and_reverse, but returns a proven proposition when self and all others are proven.
         """
@@ -415,6 +531,7 @@ class Proposition:
         )
         new_p = self.and_reverse(
             *others,
+            allow_duplicates=allow_duplicates,
             _is_proven=True,
             _assumptions=all_assumptions,
             _inference=Inference(self, *others, rule="p_and_reverse"),

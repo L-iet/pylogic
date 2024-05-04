@@ -38,6 +38,9 @@ class ExOr(_Junction[*Ps]):
     def __hash__(self) -> int:
         return super().__hash__()
 
+    def remove_duplicates(self) -> ExOr:
+        return super().remove_duplicates()  # type: ignore
+
     def one_proven(self, p: Proposition) -> And[*Props]:
         """
         Logical tactic. Given self is proven, and one proven proposition in self,
