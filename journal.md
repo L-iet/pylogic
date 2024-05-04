@@ -212,3 +212,11 @@ we can clearly see that `c` is the same object in both `Pc` and `Qc`.
 
 11:21pm: will modify `and_`, `or_`, and add `xor` to remove duplicates. Will change `followed_from` to
 remove the assumption.
+
+Saturday May 04, 2024, 1:01am PT
+end session. Sympy keeps rearranging my expressions even with `evaluate=False`.
+I'm considering writing my own classes to hold expressions until I'm ready to evaluate them.
+
+For now, I started writing some axioms of real numbers before running into the sympy issue.
+
+Also need to fix a type issue with the `and_` overrides; issue seen in `main.py`.

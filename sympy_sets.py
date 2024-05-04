@@ -1,6 +1,6 @@
 import sympy as sp
 from pylogic.structures.sets import Set
-from pylogic.theorems.divisible import divisible
+from pylogic.theories.divisible import divisible
 
 # print(dir(sp.S))
 # ['Catalan', 'ComplexInfinity', 'Complexes', 'EmptySequence', 'EmptySet',

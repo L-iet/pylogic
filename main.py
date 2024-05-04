@@ -2,7 +2,11 @@ from pylogic.proposition.and_ import And
 from pylogic.proposition.proposition import Proposition
 from pylogic.proposition.quantified.forall import Forall, ForallInSet
 from pylogic.proposition.quantified.exists import ExistsInSet
-from pylogic.proposition.ordering.greaterthan import GreaterThan
+from pylogic.proposition.ordering.greaterthan import (
+    GreaterThan,
+    is_absolute,
+    is_rational_power,
+)
 from pylogic.proposition.ordering.lessthan import LessThan
 from pylogic.proposition.relation.equals import Equals
 from pylogic.proposition.or_ import Or
@@ -41,11 +45,11 @@ log(py.is_proven)  # True
 eps = Variable("eps", real=True)
 eps_positive = GreaterThan(eps, 0, is_assumption=True)
 
-absolute_x_positive = GreaterThan.is_absolute(sp.Abs(x), xnot0)
-root_eps_positive = GreaterThan.is_rational_power(sp.sqrt(eps), eps_positive)
+absolute_x_positive = is_absolute(sp.Abs(x), xnot0)
+root_eps_positive = is_rational_power(sp.sqrt(eps), eps_positive)
 absx_lt_sqrt_eps = LessThan(sp.Abs(x), sp.sqrt(eps), is_assumption=True)
 xsq_lt_eps_t_absx = absx_lt_sqrt_eps.p_multiply_by_positive(
-    abs(x), GreaterThan.is_absolute(abs(x), xnot0)
+    abs(x), is_absolute(abs(x), xnot0)
 )
 eps_t_absx_lt_eps = absx_lt_sqrt_eps.p_multiply_by_positive(
     sp.sqrt(eps), root_eps_positive
@@ -125,7 +129,7 @@ log(a.de_morgan().de_morgan())
 ###############################
 printing = False
 from pylogic.proposition.relation.contains import IsContainedIn
-from pylogic.theorems.arithmetic import weak_induction
+from pylogic.theories.arithmetic import weak_induction
 
 n = Variable("n", integer=True, positive=True)
 
@@ -215,7 +219,7 @@ has_lub = lambda s: ExistsInSet(
 log(has_lub(s).describe())
 
 ###############################
-printing = True
+printing = False
 
 p = Proposition("P", is_assumption=True)
 pImpq = p.implies(Proposition("Q"), is_assumption=True)
@@ -224,3 +228,11 @@ r = Proposition("R")
 a = p.modus_ponens(pImpq).followed_from(p, pImpq)
 log(a)
 log(p.is_assumption, pImpq.is_assumption)
+
+###############################
+import pylogic.theories.real_analysis as ra
+
+printing = True
+
+log(ra.add_assoc.is_proven)
+log(ra.add_comm)

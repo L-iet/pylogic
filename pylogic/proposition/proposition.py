@@ -88,6 +88,7 @@ class Proposition:
         self,
         name: str,
         is_assumption: bool = False,
+        is_axiom: bool = False,
         description: str = "",
         args: list[Term] | None = None,
         **kwargs,
@@ -97,6 +98,9 @@ class Proposition:
             Name of the proposition.
         is_assumption: bool
             Whether this proposition is an assumption.
+        is_axiom: bool
+            Whether this proposition is an axiom. Axioms are assumptions whose
+            negations are never proven.
         description: str
             A description of what this proposition is.
         args: list[Set | SympyExpression] | None
@@ -116,6 +120,7 @@ class Proposition:
         assert set(name.split("_")) != {""}, "Proposition name cannot be empty"
         self.name: str = name
         self.is_assumption: bool = is_assumption
+        self.is_axiom: bool = is_axiom
         self.args: list[Set | Term] = args or []
         self.arity: int = len(self.args)
         self._is_proven: bool = _is_proven
@@ -158,7 +163,7 @@ class Proposition:
 
     @property
     def is_proven(self) -> bool:
-        return self._is_proven or self.is_assumption
+        return self._is_proven or self.is_assumption or self.is_axiom
 
     def as_text(self, *, _indent=0) -> str:
         """
