@@ -656,11 +656,16 @@ class Proposition:
     def followed_from(self, *assumptions):  # type: ignore
         """
         Logical tactic.
-        Given self is proven, return a new proposition that is an implication of the form
-        And(*assumptions) -> self.
+        Given self is proven, return a new proposition that is an implication of
+        the form And(*assumptions) -> self.
         *assumptions: Proposition
             Propositions that implied this proposition.
-        This function only accepts propositions that were explicitly declared as assumptions.
+        This function only accepts propositions that were explicitly declared as
+        assumptions and used to deduce self.
+
+        **Note** that after this function is called, the assumptions are no longer
+        considered assumptions. You would need to assume them again if you want to
+        use them in another deduction.
         """
         from pylogic.inference import Inference
 
@@ -673,6 +678,7 @@ class Proposition:
         from pylogic.proposition.implies import Implies
 
         if len(assumptions) == 1:
+            assumptions[0].is_assumption = False
             new_p = cast(
                 Implies[Proposition, Self], assumptions[0].copy().implies(self)  # type: ignore
             )
@@ -681,6 +687,9 @@ class Proposition:
         else:
             a_s = []
             for a in assumptions:
+                # this has been used to prove an implication so
+                # we don't want it to be an assumption anymore
+                a.is_assumption = False
                 new_a = a.copy()  # type: ignore
                 new_a.is_assumption = False
                 new_a._is_proven = False

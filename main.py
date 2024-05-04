@@ -217,8 +217,10 @@ log(has_lub(s).describe())
 ###############################
 printing = True
 
-p = Proposition("P")
+p = Proposition("P", is_assumption=True)
+pImpq = p.implies(Proposition("Q"), is_assumption=True)
 q = Proposition("Q")
 r = Proposition("R")
-a = p.or_(p, p, q, r, p, allow_duplicates=True)
+a = p.modus_ponens(pImpq).followed_from(p, pImpq)
 log(a)
+log(p.is_assumption, pImpq.is_assumption)
