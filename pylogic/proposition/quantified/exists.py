@@ -167,12 +167,13 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
             **kwargs,
         )
         self.set_ = set_
+        self._inner_without_set = inner_proposition
 
     def __hash__(self) -> int:
         return super().__hash__()
 
     def __repr__(self) -> str:
-        return f"exists {self.variable} in {self.set_}: {self.inner_proposition.propositions[1]}"
+        return f"exists {self.variable} in {self.set_}: {self._inner_without_set}"
 
     def to_exists(self) -> Exists[And[IsContainedIn, TProposition]]:
         """

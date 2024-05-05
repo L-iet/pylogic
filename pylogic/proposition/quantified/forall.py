@@ -194,12 +194,13 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
             **kwargs,
         )
         self.set_ = set_
+        self._inner_without_set = inner_proposition
 
     def __hash__(self) -> int:
         return super().__hash__()
 
     def __repr__(self) -> str:
-        return f"forall {self.variable} in {self.set_}: {self.inner_proposition.consequent}"
+        return f"forall {self.variable} in {self.set_}: {self._inner_without_set}"
 
     def to_forall(self) -> Forall[Implies[IsContainedIn, TProposition]]:
         """

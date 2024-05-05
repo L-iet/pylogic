@@ -346,7 +346,6 @@ class Proposition:
         new_p = And(*props, is_assumption=is_assumption, **kwargs)
         if not allow_duplicates:
             return new_p.remove_duplicates()
-        x = self.and_(*others, allow_duplicates=True, **kwargs)
         return new_p
 
     @overload

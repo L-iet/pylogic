@@ -230,11 +230,22 @@ log(a)
 log(p.is_assumption, pImpq.is_assumption)
 
 ###############################
-import pylogic.theories.real_analysis as ra
+from pylogic.theories.real_analysis import *
 
 printing = True
 
-log(ra.add_assoc._latex())
-log(ra.add_comm)
+axioms = [
+    add_assoc,
+    add_comm,
+    add_inv,
+    zero_exists,
+    one_exists,
+    mul_assoc,
+    mul_comm,
+    mul_inv,
+    distributive,
+]
+for axiom in axioms:
+    log(axiom.describe())
 
 ###############################

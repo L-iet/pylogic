@@ -116,7 +116,7 @@ class _Junction(Proposition, Generic[*Ps]):
             if prop not in added:
                 props.append(prop)
                 added.add(prop)
-        return self.__class__(
+        new_p = self.__class__(
             *props,
             is_assumption=self.is_assumption,
             description=self.description,
@@ -124,6 +124,7 @@ class _Junction(Proposition, Generic[*Ps]):
             _assumptions=self.from_assumptions,
             _inference=self.deduced_from,
         )
+        return new_p
 
     def __repr__(self) -> str:
         if self._join_symbol == "or":
