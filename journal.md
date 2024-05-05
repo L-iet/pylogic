@@ -220,3 +220,6 @@ I'm considering writing my own classes to hold expressions until I'm ready to ev
 For now, I started writing some axioms of real numbers before running into the sympy issue.
 
 Also need to fix a type issue with the `and_` overrides; issue seen in `main.py`.
+
+# Sunday May 05, 2024, 3:03pm PT
+Began session at least 1hr ago. I added a printing directory with `latex_printer` and `str_printer` to print expressions in order-preserving manner.
