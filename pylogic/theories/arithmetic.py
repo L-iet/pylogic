@@ -8,7 +8,7 @@ from pylogic.proposition.and_ import And
 from pylogic.proposition.relation.equals import Equals
 from pylogic.proposition.ordering.lessorequal import LessOrEqual
 from pylogic.proposition.relation.contains import IsContainedIn
-from pylogic.variable import Variable
+from pylogic.variable import Variable, unbind
 from sympy import Add, Integer
 
 if TYPE_CHECKING:
@@ -26,6 +26,7 @@ add_inv = (
     .thus_there_exists("y", -x)
     .thus_forall(x)
 )
+unbind(x, y)
 
 
 def weak_induction(
@@ -63,6 +64,7 @@ def weak_induction(
     assert (
         p0 == base_case == prem2.replace(n, 0)
     ), f"Base case {base_case} must be the same as P(0)"
+    n.unbind()
     return Forall(
         n,
         IsContainedIn(n, Naturals0).implies(prem2),

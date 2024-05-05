@@ -37,6 +37,9 @@ class _Junction(Proposition, Generic[*Ps]):
         self.is_atomic = False
         self._join_symbol = _join_symbol
         self._supports_resolve = _supports_resolve
+        self.bound_vars: set[Variable] = set()
+        for prop in propositions:
+            self.bound_vars = self.bound_vars.union(prop.bound_vars)  # type: ignore
 
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, self.__class__):

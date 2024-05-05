@@ -12,6 +12,7 @@ from pylogic.structures.sets import Set, Reals
 import sympy as sp
 
 a, b, c = Variable("a", real=True), Variable("b", real=True), Variable("c", real=True)
+x = Variable("x", real=True)
 zero = Variable("0", real=True)
 one = Variable("1", real=True)
 
@@ -47,10 +48,17 @@ add_comm = ForallInSet(
     is_axiom=True,
 )
 
+is_additive_identity = lambda z: ForallInSet(
+    a,
+    Reals,
+    Equals(sp.Add(a, z, evaluate=False), a),
+    description=f"{z} is an additive identity of real numbers",
+)
+
 zero_exists = ExistsInSet(
     zero,
     Reals,
-    ForallInSet(a, Reals, Equals(sp.Add(a, zero, evaluate=False), a)),
+    is_additive_identity(zero),
     description="Zero (additive identity) exists",
     is_axiom=True,
 )
@@ -143,4 +151,9 @@ distributive = ForallInSet(
     ),
     description="Multiplication distributes over addition",
     is_axiom=True,
+)
+
+# theorems
+zero_unique = zero_exists.and_(
+    ForallInSet(b, Reals, is_additive_identity(b).implies(Equals(b, zero)))
 )

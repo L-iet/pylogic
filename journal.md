@@ -223,3 +223,14 @@ Also need to fix a type issue with the `and_` overrides; issue seen in `main.py`
 
 # Sunday May 05, 2024, 3:03pm PT
 Began session at least 1hr ago. I added a printing directory with `latex_printer` and `str_printer` to print expressions in order-preserving manner.
+
+3:53pm: I noticed the followind case:
+```python
+a = Variable('a')
+b = Variable('b')
+p = Forall(a, Forall(b, Forall(a, Proposition('P', args=[a, b]))))
+```
+The `a` in the innermost `Forall` should not be the same as the `a` in the outermost `Forall`.
+
+I added a `.bound` attribute to `Variable` to indicate if it isalready bound
+to a quantified statement.

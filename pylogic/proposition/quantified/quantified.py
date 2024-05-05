@@ -29,6 +29,10 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
     ) -> None:
         if not isinstance(variable, Variable):
             raise TypeError(f"{variable} is not a variable")
+        if variable in inner_proposition.bound_vars:
+            raise ValueError(
+                f"Variable {variable} is already bound in {inner_proposition}"
+            )
         super().__init__(
             f"{_q} {variable}: {inner_proposition.name}",
             is_assumption,
@@ -38,8 +42,10 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
         )
         self.inner_proposition: TProposition = inner_proposition
         self.variable: Variable = variable
+        self.variable.is_bound = True
         self._q = _q
         self.is_atomic = False
+        self.bound_vars = inner_proposition.bound_vars.union({variable})
 
     def __repr__(self) -> str:
         return f"{self._q} {self.variable}: {self.inner_proposition}"

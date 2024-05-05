@@ -6,7 +6,7 @@ from pylogic.proposition.or_ import Or
 from pylogic.proposition.relation.equals import Equals
 from pylogic.proposition.not_ import neg, Not
 from pylogic.proposition.implies import Implies
-from pylogic.variable import Variable
+from pylogic.variable import Variable, unbind
 from pylogic.inference import Inference
 import sympy as sp
 
@@ -22,6 +22,7 @@ order_axiom = Forall(
     ),
     is_assumption=True,
 )
+unbind(x, y)
 
 # equals => not less than
 order_axiom_b = Forall(
@@ -29,6 +30,7 @@ order_axiom_b = Forall(
     Forall(y, Implies(Equals(x, y), Not(LessThan(x, y)))),
     is_assumption=True,
 )
+unbind(x, y)
 
 
 def order_axiom_bf(
@@ -49,6 +51,7 @@ order_axiom_c = Forall(
     Forall(y, Implies(Equals(x, y), Not(GreaterThan(x, y)))),
     is_assumption=True,
 )
+unbind(x, y)
 
 # less than => not equals
 order_axiom_d = Forall(
@@ -56,6 +59,7 @@ order_axiom_d = Forall(
     Forall(y, Implies(LessThan(x, y), Not(Equals(x, y)))),
     is_assumption=True,
 )
+unbind(x, y)
 
 # less than => not greater than
 order_axiom_e = Forall(
@@ -63,6 +67,7 @@ order_axiom_e = Forall(
     Forall(y, Implies(LessThan(x, y), Not(GreaterThan(x, y)))),
     is_assumption=True,
 )
+unbind(x, y)
 
 # greater than => not equals
 order_axiom_f = Forall(
@@ -70,6 +75,7 @@ order_axiom_f = Forall(
     Forall(y, Implies(GreaterThan(x, y), Not(Equals(x, y)))),
     is_assumption=True,
 )
+unbind(x, y)
 
 # greater than => not less than
 order_axiom_g = Forall(
@@ -77,6 +83,7 @@ order_axiom_g = Forall(
     Forall(y, Implies(GreaterThan(x, y), Not(LessThan(x, y)))),
     is_assumption=True,
 )
+unbind(x, y)
 
 absolute_value_nonnegative = Forall(
     x, Or(GreaterThan(sp.Abs(x), 0), Equals(sp.Abs(x), 0)), is_assumption=True

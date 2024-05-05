@@ -43,6 +43,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         name = f"{antecedent.name} -> {consequent.name}"
         super().__init__(name, is_assumption, description=description, **kwargs)
         self.is_atomic = False
+        self.bound_vars = antecedent.bound_vars.union(consequent.bound_vars)
 
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, Implies):

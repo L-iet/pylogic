@@ -68,7 +68,6 @@ lim_x_sq_at_0 = (
 # forall x: forall eps: [eps > 0 -> exists delta: (delta > 0 /\ [Abs(x) < delta -> x**2 < delta**2])] True
 log(lim_x_sq_at_0.is_proven)
 
-
 ###  Proving Theorem 1.2.6 (the converse statement) Understanding Analysis, 2nd Edition
 printing = False
 # if (forall eps>0, |a-b|<eps) then a = b
@@ -120,16 +119,15 @@ q = Forall(
     ),
 )
 log(p.unify(q))
-
 ###############################
 printing = False
 a = Forall(x, And(Px, Qxz))
 log(a.de_morgan().de_morgan())
-
 ###############################
 printing = False
 from pylogic.proposition.relation.contains import IsContainedIn
 from pylogic.theories.arithmetic import weak_induction
+
 
 n = Variable("n", integer=True, positive=True)
 
@@ -182,18 +180,15 @@ printing = False
 Px = Proposition("P", args=[x])
 r = Constant("r", real=True)
 s = Constant("s")
-
 a = ForallInSet(x, Reals, Px, is_assumption=True)
 log(a.in_particular(r))  # good
 # a.in_particular(eps)  # eps is a variable, bad
 # a.in_particular(s)  # s is not real, bad
-
 ###############################
 printing = False
 a = ExistsInSet(x, Reals, Px, is_assumption=True)
 c, Pc = a.extract()
 log(c, Pc)
-
 ###############################
 printing = False
 ub = Constant("ub", real=True)
@@ -217,7 +212,6 @@ has_lub = lambda s: ExistsInSet(
     ),
 )
 log(has_lub(s).describe())
-
 ###############################
 printing = False
 
@@ -228,24 +222,5 @@ r = Proposition("R")
 a = p.modus_ponens(pImpq).followed_from(p, pImpq)
 log(a)
 log(p.is_assumption, pImpq.is_assumption)
-
-###############################
-from pylogic.theories.real_analysis import *
-
-printing = True
-
-axioms = [
-    add_assoc,
-    add_comm,
-    add_inv,
-    zero_exists,
-    one_exists,
-    mul_assoc,
-    mul_comm,
-    mul_inv,
-    distributive,
-]
-for axiom in axioms:
-    log(axiom.describe())
 
 ###############################

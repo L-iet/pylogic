@@ -137,6 +137,9 @@ class Proposition:
             self.deduced_from: Inference | None = None
             self.from_assumptions: set[Proposition] = set()
 
+        self.bound_vars: set[Variable] = set()  # Variables that are bound to
+        # quantifiers in the proposition.
+
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Proposition):
             return self.name == other.name and self.args == other.args

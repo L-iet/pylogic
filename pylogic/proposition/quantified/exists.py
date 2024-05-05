@@ -141,6 +141,7 @@ class Exists(_Quantified[TProposition]):
         from pylogic.inference import Inference
 
         inner_negated = neg(self.inner_proposition.de_morgan())
+        self.variable.unbind()
         return Not(
             Forall(self.variable, inner_negated),
             _is_proven=self.is_proven,
