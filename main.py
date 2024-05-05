@@ -234,5 +234,7 @@ import pylogic.theories.real_analysis as ra
 
 printing = True
 
-log(ra.add_assoc.is_proven)
+log(ra.add_assoc._latex())
 log(ra.add_comm)
+
+###############################

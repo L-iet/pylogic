@@ -14,10 +14,6 @@ if TYPE_CHECKING:
     Term = Symbol | Set | Basic | int | float
     Unification = dict[Variable, Term]
 
-from sympy.printing.latex import LatexPrinter
-
-latex_printer = LatexPrinter()
-
 TProposition = TypeVar("TProposition", bound="Proposition")
 
 
@@ -101,7 +97,7 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
         new_p.deduced_from = None
         return new_p
 
-    def _latex(self, printer=latex_printer) -> str:
+    def _latex(self, printer=None) -> str:
         q_arg = self.variable
         arg_latex = q_arg._latex() if hasattr(q_arg, "_latex") else latex(q_arg)  # type: ignore
         return rf"\{self._q} {arg_latex}: {self.inner_proposition._latex()}"

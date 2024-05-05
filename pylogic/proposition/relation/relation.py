@@ -8,9 +8,6 @@ if TYPE_CHECKING:
     from sympy import Basic
 
     Term = Symbol | Set | Basic | int | float
-from sympy.printing.latex import LatexPrinter
-
-latex_printer = LatexPrinter()
 
 
 class Relation(Proposition):
@@ -39,7 +36,7 @@ class Relation(Proposition):
         """
         return "  " * _indent + repr(self) + "\n"
 
-    def _latex(self, printer=latex_printer) -> str:
+    def _latex(self, printer=None) -> str:
         return super()._latex()
 
     def copy(self) -> Self:

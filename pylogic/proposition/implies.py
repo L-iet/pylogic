@@ -15,9 +15,6 @@ if TYPE_CHECKING:
 
     Term = Symbol | Set | Basic | int | float
     Unification = dict[Variable, Term]
-from sympy.printing.latex import LatexPrinter
-
-latex_printer = LatexPrinter()
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
@@ -61,7 +58,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
     def __repr__(self) -> str:
         return f"[{self.antecedent} -> {self.consequent}]"
 
-    def _latex(self, printer=latex_printer) -> str:
+    def _latex(self, printer=None) -> str:
         return rf"\left({self.antecedent._latex()} \rightarrow {self.consequent._latex()}\right)"
 
     def copy(self) -> Self:

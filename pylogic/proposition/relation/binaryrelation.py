@@ -1,4 +1,5 @@
 from __future__ import annotations
+from pylogic.printing.printing import str_print_order, latex_print_order
 from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.relation.relation import Relation
 from typing import TYPE_CHECKING, Self
@@ -9,10 +10,6 @@ if TYPE_CHECKING:
     from pylogic.symbol import Symbol
 
     Term = Symbol | Set | Basic | int | float
-
-from sympy.printing.latex import LatexPrinter
-
-latex_printer = LatexPrinter()
 
 
 class BinaryRelation(Relation):
@@ -40,13 +37,11 @@ class BinaryRelation(Relation):
         self.right: Term = right
 
     def __repr__(self) -> str:
-        return f"{self.left} {self.infix_symbol} {self.right}"
+        return f"{str_print_order(self.left)} {self.infix_symbol} {str_print_order(self.right)}"
 
-    def _latex(self, printer=latex_printer) -> str:
-        left_ = self.left
-        left_latex = left_._latex() if hasattr(left_, "_latex") else latex(left_)
-        right_ = self.right
-        right_latex = right_._latex() if hasattr(right_, "_latex") else latex(right_)
+    def _latex(self, printer=None) -> str:
+        left_latex = latex_print_order(self.left)
+        right_latex = latex_print_order(self.right)
         return f"{left_latex} {self.infix_symbol_latex} {right_latex}"
 
     def copy(self) -> Self:

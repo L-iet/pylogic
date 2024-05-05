@@ -10,13 +10,9 @@ if TYPE_CHECKING:
     from pylogic.symbol import Symbol
 
     Term = Symbol | Set | Basic | int | float
-from sympy.printing.latex import LatexPrinter
-
 TProposition = TypeVar("TProposition", bound="Proposition")
 
 Side = Literal["left", "right"]
-
-latex_printer = LatexPrinter()
 
 
 class Equals(BinaryRelation):

@@ -13,10 +13,6 @@ if TYPE_CHECKING:
     from sympy import Basic
 
     Term = Symbol | Set | Basic | int | float
-from sympy.printing.latex import LatexPrinter
-
-latex_printer = LatexPrinter()
-
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
 Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})

@@ -2,9 +2,6 @@ from __future__ import annotations
 from pylogic.proposition.proposition import Proposition
 from pylogic.proposition.proposition import get_assumptions
 from typing import TYPE_CHECKING, Literal, TypeVar, Generic, Self, overload, TypedDict
-from sympy.printing.latex import LatexPrinter
-
-latex_printer = LatexPrinter()
 
 if TYPE_CHECKING:
     from pylogic.proposition.implies import Implies
@@ -151,7 +148,7 @@ class Not(Proposition, Generic[TProposition]):
         """
         return super().modus_tollens(other)  # type: ignore
 
-    def _latex(self, printer=latex_printer) -> str:
+    def _latex(self, printer=None) -> str:
         return rf"\neg{{{self.negated._latex()}}}"
 
     def de_morgan(self) -> Proposition:

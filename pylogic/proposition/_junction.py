@@ -1,8 +1,9 @@
 from __future__ import annotations
+from typing import TYPE_CHECKING, Literal, TypedDict, TypeVarTuple, Generic, Self
 from pylogic.inference import Inference
 from pylogic.proposition.proposition import Proposition, get_assumptions
 from pylogic.proposition.not_ import neg
-from typing import TYPE_CHECKING, Literal, TypedDict, TypeVarTuple, Generic, Self
+
 
 if TYPE_CHECKING:
     from pylogic.proposition.and_ import And
@@ -13,9 +14,6 @@ if TYPE_CHECKING:
 
     Term = Symbol | Set | Basic | int | float
     Unification = dict[Variable, Term]
-from sympy.printing.latex import LatexPrinter
-
-latex_printer = LatexPrinter()
 Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 Ps = TypeVarTuple("Ps")
@@ -139,7 +137,7 @@ class _Junction(Proposition, Generic[*Ps]):
         s = join_symbol.join([repr(p) for p in self.propositions])
         return f"({s})"
 
-    def _latex(self, printer=latex_printer) -> str:
+    def _latex(self, printer=None) -> str:
         if self._join_symbol == "or":
             join_symbol = r"\vee "
         elif self._join_symbol == "and":

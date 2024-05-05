@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Self
 
 import sympy as sp
-from sympy.printing.latex import LatexPrinter
+from pylogic.printing.printing import str_print_order, latex_print_order
 
 from typing import (
     TYPE_CHECKING,
@@ -37,7 +37,6 @@ Props = TypeVarTuple("Props")
 
 Side = Literal["left", "right"]
 
-latex_printer = LatexPrinter()
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
 Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
@@ -148,15 +147,17 @@ class Proposition:
 
     def __repr__(self) -> str:
         if self.args:
-            return f"{self.name} {tuple(self.args)}"
+            args_str = tuple(str_print_order(a) for a in self.args)
+            return f"{self.name} ({', '.join(args_str)})"
         else:
             return self.name
 
     def __copy__(self) -> Self:
         return self.copy()
 
-    def _latex(self, printer=latex_printer) -> str:
-        return rf"\text{{{self.name}}} {self.args}"
+    def _latex(self, printer=None) -> str:
+        args_latex = [latex_print_order(a) for a in self.args]
+        return rf"\text{{{self.name}}} \left({', '.join(args_latex)}\right)"
 
     def _repr_latex_(self) -> str:
         return f"$${self._latex()}$$"

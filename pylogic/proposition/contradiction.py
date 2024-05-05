@@ -2,9 +2,6 @@ from __future__ import annotations
 from pylogic.inference import Inference
 from pylogic.proposition.proposition import Proposition
 from typing import TYPE_CHECKING, Literal, TypeVar, Generic, Self, overload, TypedDict
-from sympy.printing.latex import LatexPrinter
-
-latex_printer = LatexPrinter()
 
 if TYPE_CHECKING:
     from pylogic.proposition.implies import Implies

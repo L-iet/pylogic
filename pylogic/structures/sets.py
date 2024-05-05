@@ -1,18 +1,15 @@
 from __future__ import annotations
-from sympy import Set as SympySet
-from sympy.printing.latex import LatexPrinter
-import sympy as sp
-from pylogic.proposition.relation.contains import IsContainedIn
 from typing import Callable, TYPE_CHECKING
+
+from pylogic.proposition.relation.contains import IsContainedIn
+from sympy import Set as SympySet
+import sympy as sp
 
 if TYPE_CHECKING:
     from pylogic.symbol import Symbol
     from pylogic.structures.sets import Set
 
     Term = Symbol | Set | sp.Basic | int | float
-
-
-latex_printer = LatexPrinter()
 
 
 class Set:
@@ -71,8 +68,8 @@ class Set:
     def __hash__(self) -> int:
         return hash((self.name, self.sympy_set, self.containment_function))
 
-    def _latex(self, printer=latex_printer) -> str:
-        return self.name
+    def _latex(self, printer=None) -> str:
+        return rf"\text{{{self.name}}}"
 
     def _repr_latex_(self) -> str:
         return f"$${self._latex()}$$"
