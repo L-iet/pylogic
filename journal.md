@@ -222,9 +222,11 @@ For now, I started writing some axioms of real numbers before running into the s
 Also need to fix a type issue with the `and_` overrides; issue seen in `main.py`.
 
 # Sunday May 05, 2024, 3:03pm PT
-Began session at least 1hr ago. I added a printing directory with `latex_printer` and `str_printer` to print expressions in order-preserving manner.
+Began session at least 1hr ago. Found that the expressions are not being evaluated
+but they are being printed in a different order.
+I added a printing directory with `latex_printer` and `str_printer` to print expressions in order-preserving manner.
 
-3:53pm: I noticed the followind case:
+3:53pm: I noticed the following case:
 ```python
 a = Variable('a')
 b = Variable('b')
@@ -237,3 +239,10 @@ to a quantified statement.
 
 I added a `bound_vars` attribute to `Proposition` to store the bound variables
 in sub-propositions.
+
+6:18pm: Sympy is evaluating expressions after a substitution, unless the
+substituted value is an `UnevaluatedExpr`.
+
+6:38pm: so far, I've been trying to prove that 0 is unique in real numbers, and ran
+into the issue above. I've resorted too writing my own substitution method and
+fixing `replace`. end session.

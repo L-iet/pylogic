@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Self
 
 import sympy as sp
+from sympy.core.expr import UnevaluatedExpr
 from pylogic.printing.printing import str_print_order, latex_print_order
 
 from typing import (

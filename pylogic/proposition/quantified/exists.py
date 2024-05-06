@@ -6,7 +6,7 @@ from pylogic.proposition.quantified.quantified import _Quantified
 from pylogic.variable import Variable
 from pylogic.constant import Constant
 from pylogic.inference import Inference
-from typing import TYPE_CHECKING, TypedDict, TypeVar
+from typing import TYPE_CHECKING, TypedDict, TypeVar, Self
 
 if TYPE_CHECKING:
     from sympy import Basic
@@ -189,3 +189,30 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
             _assumptions=self.from_assumptions,
             _inference=self.deduced_from,
         )
+
+    def replace(
+        self,
+        current_val: Term,
+        new_val: Term,
+        positions: list[list[int]] | None = None,
+    ) -> Self:
+        if current_val == self.variable:
+            raise ValueError("Cannot replace variable (not implemented)")
+        if current_val == self.set_:
+            assert isinstance(new_val, Set), f"{new_val} is not a set"
+            new_p = self.__class__(
+                self.variable,
+                new_val,
+                self._inner_without_set.replace(
+                    current_val, new_val, positions=positions
+                ),
+                _is_proven=False,
+            )
+
+        new_p = self.__class__(
+            self.variable,
+            self.set_,
+            self._inner_without_set.replace(current_val, new_val, positions=positions),
+            _is_proven=False,
+        )
+        return new_p

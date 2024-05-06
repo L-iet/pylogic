@@ -14,6 +14,3 @@ axioms: list[Proposition] = [
     mul_inv,
     distributive,
 ]
-
-for axiom in axioms:
-    print(axiom.describe())

@@ -146,14 +146,8 @@ class Forall(_Quantified[TProposition]):
         # TODO: may need to define or override .replace for Forall to prevent
         # unnecessarily replacing the variable in the inner proposition
         assert self.is_proven, f"{self} is not proven"
-        from pylogic.variable import Variable
-
-        if isinstance(expression_to_substitute, sp.Basic):
-            for s in expression_to_substitute.free_symbols:
-                if isinstance(s, Variable):
-                    raise ValueError(
-                        f"Cannot substitute due to variable {s} in {expression_to_substitute}"
-                    )
+        # I previously checked that expression_to_substitute does
+        # not contain variables, but I think it's not necessary
         new_p = self.inner_proposition.replace(self.variable, expression_to_substitute)
         new_p._is_proven = True
         new_p.from_assumptions = get_assumptions(self).copy()
@@ -202,6 +196,33 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
 
     def __repr__(self) -> str:
         return f"forall {self.variable} in {self.set_}: {self._inner_without_set}"
+
+    def replace(
+        self,
+        current_val: Term,
+        new_val: Term,
+        positions: list[list[int]] | None = None,
+    ) -> Self:
+        if current_val == self.variable:
+            raise ValueError("Cannot replace variable (not implemented)")
+        if current_val == self.set_:
+            assert isinstance(new_val, Set), f"{new_val} is not a set"
+            new_p = self.__class__(
+                self.variable,
+                new_val,
+                self._inner_without_set.replace(
+                    current_val, new_val, positions=positions
+                ),
+                _is_proven=False,
+            )
+
+        new_p = self.__class__(
+            self.variable,
+            self.set_,
+            self._inner_without_set.replace(current_val, new_val, positions=positions),
+            _is_proven=False,
+        )
+        return new_p
 
     def to_forall(self) -> Forall[Implies[IsContainedIn, TProposition]]:
         """
