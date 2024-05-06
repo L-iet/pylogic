@@ -234,3 +234,6 @@ The `a` in the innermost `Forall` should not be the same as the `a` in the outer
 
 I added a `.bound` attribute to `Variable` to indicate if it isalready bound
 to a quantified statement.
+
+I added a `bound_vars` attribute to `Proposition` to store the bound variables
+in sub-propositions.
