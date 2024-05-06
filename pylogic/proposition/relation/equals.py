@@ -2,7 +2,7 @@ from __future__ import annotations
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from pylogic.inference import Inference
 from pylogic.proposition.proposition import Proposition, get_assumptions
-from typing import TYPE_CHECKING, Literal, TypeVar, Self
+from typing import TYPE_CHECKING, Literal, TypeVar, Self, Callable
 from sympy import Basic, Abs, Integer
 
 if TYPE_CHECKING:
@@ -157,4 +157,16 @@ class Equals(BinaryRelation):
             _is_proven=True,
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="zero_abs_is_0"),
+        )
+
+    def apply(self, f: Callable[[Term], Term]) -> Equals:
+        """
+        Apply a function to both sides of the equality.
+        """
+        return Equals(
+            f(self.left),
+            f(self.right),
+            _is_proven=self._is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="apply"),
         )

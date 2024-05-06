@@ -53,6 +53,7 @@ RuleName = Literal[
     "absolute_value_nonnegative_f",
     "resolve",
     "extract",
+    "apply",
 ]
 
 rules: list[RuleName] = [
@@ -106,6 +107,7 @@ rules: list[RuleName] = [
     "absolute_value_nonnegative_f",
     "resolve",
     "extract",
+    "apply",
 ]
 
 T = TypeVar("T", bound="Proposition")
