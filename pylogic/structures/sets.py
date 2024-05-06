@@ -8,8 +8,9 @@ import sympy as sp
 if TYPE_CHECKING:
     from pylogic.symbol import Symbol
     from pylogic.structures.sets import Set
+    from pylogic.expressions.expr import Expr
 
-    Term = Symbol | Set | sp.Basic | int | float
+    Term = Symbol | Set | Expr | int | float
 
 
 class Set:

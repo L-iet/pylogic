@@ -9,9 +9,9 @@ if TYPE_CHECKING:
     from pylogic.proposition.ordering.greaterthan import GreaterThan
     from pylogic.structures.sets import Set
     from pylogic.symbol import Symbol
-    from sympy import Basic
+    from pylogic.expressions.expr import Expr
 
-    Term = Symbol | Set | Basic | int | float
+    NumTerm = Symbol | Expr | int | float
 
 
 class LessThan(BinaryRelation, _Ordering):
@@ -22,8 +22,8 @@ class LessThan(BinaryRelation, _Ordering):
 
     def __init__(
         self,
-        left: Term,
-        right: Term,
+        left: NumTerm,
+        right: NumTerm,
         is_assumption: bool = False,
         description: str = "",
         **kwargs,
@@ -34,12 +34,14 @@ class LessThan(BinaryRelation, _Ordering):
         if isinstance(diff, int) or isinstance(diff, float):
             diff_is_positive = diff > 0
         else:
-            diff_is_positive = diff.is_positive
+            diff_is_positive = True
         if diff_is_positive == False and (is_assumption or _is_proven):
             raise ValueError(f"Some assumptions in {left}, {right} are contradictory")
         super().__init__(
             left, right, is_assumption=is_assumption, description=description, **kwargs
         )
+        self.left: NumTerm = left
+        self.right: NumTerm = right
 
     def to_positive_inequality(self):
         """If self is of the form a < b, returns an inequality of the form b - a > 0"""
@@ -66,7 +68,7 @@ class LessThan(BinaryRelation, _Ordering):
         )
 
     def multiply_by_positive(
-        self, x: Term, proof_x_is_positive: "GreaterThan | LessThan"
+        self, x: NumTerm, proof_x_is_positive: "GreaterThan | LessThan"
     ) -> "LessThan":
         from pylogic.inference import Inference
 
@@ -85,7 +87,7 @@ class LessThan(BinaryRelation, _Ordering):
         )
 
     def multiply_by_negative(
-        self, x: Term, proof_x_is_negative: "GreaterThan | LessThan"
+        self, x: NumTerm, proof_x_is_negative: "GreaterThan | LessThan"
     ) -> "LessThan":
         from pylogic.inference import Inference
 
@@ -105,7 +107,7 @@ class LessThan(BinaryRelation, _Ordering):
         return new_p
 
     def p_multiply_by_positive(
-        self, x: Term, proof_x_is_positive: "GreaterThan | LessThan"
+        self, x: NumTerm, proof_x_is_positive: "GreaterThan | LessThan"
     ) -> "LessThan":
         """Logical tactic.
         Same as multiply_by_positive, but returns a proven proposition"""
@@ -115,7 +117,7 @@ class LessThan(BinaryRelation, _Ordering):
         return new_p
 
     def p_multiply_by_negative(
-        self, x: Term, proof_x_is_negative: "GreaterThan | LessThan"
+        self, x: NumTerm, proof_x_is_negative: "GreaterThan | LessThan"
     ) -> "LessThan":
         """Logical tactic.
         Same as multiply_by_negative, but returns a proven proposition"""

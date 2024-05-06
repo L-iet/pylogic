@@ -61,6 +61,7 @@ def weak_induction(
     assert prem1.element == n, f"First premise {prem1} must be a statement about n"
     pred = induction_step.inner_proposition.consequent
     p0 = pred.replace(n, -1)
+    print(p0, base_case, prem2.replace(n, 0))
     assert (
         p0 == base_case == prem2.replace(n, 0)
     ), f"Base case {base_case} must be the same as P(0)"

@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import Self
 
 import sympy as sp
-from sympy.core.expr import UnevaluatedExpr
 from pylogic.printing.printing import str_print_order, latex_print_order
 
 from typing import (
@@ -29,8 +28,9 @@ if TYPE_CHECKING:
     from pylogic.variable import Variable
     from pylogic.structures.sets import Set
     from pylogic.symbol import Symbol
+    from pylogic.expressions.expr import Expr
 
-    Term = Symbol | Set | sp.Basic | int | float
+    Term = Symbol | Set | Expr | int | float
     Unification = dict[Variable, Term]
 
 
@@ -229,8 +229,8 @@ class Proposition:
                 continue
             if arg == current_val:
                 new_p_args[index] = new_val
-            elif isinstance(arg, sp.Basic):
-                new_p_args[index] = arg.subs(current_val, new_val)
+            elif isinstance(arg, Expr):
+                new_p_args[index] = arg.replace(current_val, new_val)
 
         new_p = self.__class__(
             self.name,

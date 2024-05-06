@@ -1,8 +1,13 @@
 from __future__ import annotations
-from typing import Self
-import sympy as sp
+from typing import Any, Self
+from fractions import Fraction
 
-MatEl = sp.matrices.expressions.matexpr.MatrixElement
+from pylogic.expressions.expr import Expr, Add, Mul, Pow
+
+import sympy as sp
+from sympy.matrices.expressions.matexpr import MatrixElement as MatEl
+
+Numeric = Fraction | int | float
 
 
 class Symbol(sp.Symbol):
@@ -19,8 +24,52 @@ class Symbol(sp.Symbol):
     def __repr__(self):
         return super().__repr__()
 
+    def __add__(self, other: Symbol | Numeric | Expr) -> sp.Add:
+        return Add(self, other).evaluate()
+
+    def __sub__(self, other: Symbol | Numeric | Expr) -> sp.Add:
+        return Add(self, -other).evaluate()
+
+    def __mul__(self, other: Symbol | Numeric | Expr) -> sp.Mul:
+        return Mul(self, other).evaluate()
+
+    def __truediv__(self, other: Symbol | Numeric | Expr) -> sp.Mul:
+        return Mul(self, Pow(other, -1)).evaluate()
+
+    def __neg__(self) -> sp.Mul:
+        return Mul(-1, self).evaluate()
+
+    def __pow__(self, other: Symbol | Numeric | Expr) -> sp.Pow:
+        return Pow(self, other).evaluate()
+
+    def __radd__(self, other: Symbol | Numeric | Expr) -> sp.Add:
+        return Add(other, self).evaluate()
+
+    def __rsub__(self, other: Symbol | Numeric | Expr) -> sp.Add:
+        return Add(other, -self).evaluate()
+
+    def __rmul__(self, other: Symbol | Numeric | Expr) -> sp.Mul:
+        return Mul(other, self).evaluate()
+
+    def __rtruediv__(self, other: Symbol | Numeric | Expr) -> sp.Mul:
+        return Mul(other, Pow(self, -1)).evaluate()
+
+    def __rpow__(self, other: Symbol | Numeric | Expr) -> sp.Pow:
+        return Pow(other, self).evaluate()
+
+    def _latex(self) -> str:
+        return self.name
+
+    def _repr_latex_(self) -> str:
+        return f"$${self._latex()}$$"
+
     def copy(self) -> Self:
         return self.__class__(self.name)
+
+    def replace(self, old, new) -> Any:
+        if self == old:
+            return new
+        return self
 
     @property
     def nodes_edges(self) -> tuple[Self, Self]:

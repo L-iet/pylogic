@@ -3,13 +3,15 @@ from pylogic.printing.printing import str_print_order, latex_print_order
 from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.relation.relation import Relation
 from typing import TYPE_CHECKING, Self
-from sympy import Basic, latex
+
+from pylogic.expressions.expr import Expr
+from pylogic.helpers import replace
 
 if TYPE_CHECKING:
     from pylogic.structures.sets import Set
     from pylogic.symbol import Symbol
 
-    Term = Symbol | Set | Basic | int | float
+    Term = Symbol | Set | Expr | int | float
 
 
 class BinaryRelation(Relation):
@@ -62,18 +64,17 @@ class BinaryRelation(Relation):
         new_val: Term,
         positions: list[list[int]] | None = None,
     ) -> Self:
+        """
+        Replace current_val with new_val in the relation.
+        """
+        from pylogic.structures.sets import Set
+
         new_p = self.copy()
 
         if positions is None or [0] in positions:
-            if isinstance(new_p.left, Basic):
-                new_p.left = new_p.left.subs(current_val, new_val)
-            elif new_p.left == current_val:
-                new_p.left = new_val
+            new_p.left = replace(new_p.left, current_val, new_val)
         if positions is None or [1] in positions:
-            if isinstance(new_p.right, Basic):
-                new_p.right = new_p.right.subs(current_val, new_val)
-            elif new_p.right == current_val:
-                new_p.right = new_val
+            new_p.right = replace(new_p.right, current_val, new_val)
         return self.__class__(
             new_p.left,
             new_p.right,

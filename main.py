@@ -15,11 +15,12 @@ from pylogic.proposition.ordering.theorems import (
     order_axiom_bf,
     absolute_value_nonnegative_f,
 )
-from pylogic.proposition.not_ import Not, neg
+from pylogic.proposition.not_ import Not, neg, are_negs
 from pylogic.constant import Constant
 from pylogic.variable import Variable
 from pylogic.structures.sets import Naturals0, Reals, Set
-import sympy as sp
+from pylogic.expressions.expr import sqrt, sub, add
+from pylogic.expressions.abs import Abs
 
 printing = False
 
@@ -30,7 +31,7 @@ def log(*args, **kwargs):
 
 
 x = Variable("x", real=True)
-xnot0: Not[Equals] = neg(Equals(sp.Abs(x), 0), True)
+xnot0: Not[Equals] = neg(Equals(Abs(x), 0), True)
 
 Px = Proposition("P", args=[x])
 Py = Proposition("P", args=[Constant("y", real=True)])
@@ -45,20 +46,20 @@ log(py.is_proven)  # True
 eps = Variable("eps", real=True)
 eps_positive = GreaterThan(eps, 0, is_assumption=True)
 
-absolute_x_positive = is_absolute(sp.Abs(x), xnot0)
-root_eps_positive = is_rational_power(sp.sqrt(eps), eps_positive)
-absx_lt_sqrt_eps = LessThan(sp.Abs(x), sp.sqrt(eps), is_assumption=True)
+absolute_x_positive = is_absolute(Abs(x), xnot0)
+root_eps_positive = is_rational_power(sqrt(eps), eps_positive)
+absx_lt_sqrt_eps = LessThan(Abs(x), sqrt(eps), is_assumption=True)
 xsq_lt_eps_t_absx = absx_lt_sqrt_eps.p_multiply_by_positive(
-    abs(x), is_absolute(abs(x), xnot0)
+    Abs(x), is_absolute(Abs(x), xnot0)
 )
 eps_t_absx_lt_eps = absx_lt_sqrt_eps.p_multiply_by_positive(
-    sp.sqrt(eps), root_eps_positive
+    sqrt(eps), root_eps_positive
 )
 xsq_lt_eps = xsq_lt_eps_t_absx.transitive(eps_t_absx_lt_eps)
 lim_x_sq_at_0 = (
     xsq_lt_eps.followed_from(absx_lt_sqrt_eps)
     .p_and_reverse(root_eps_positive)
-    .thus_there_exists("delta", sp.sqrt(eps), [[0], [1, 0]])
+    .thus_there_exists("delta", sqrt(eps), [[0], [1, 0]])
     .followed_from(eps_positive)
     .thus_forall(eps)
     .thus_forall(x)
@@ -73,7 +74,7 @@ printing = False
 # if (forall eps>0, |a-b|<eps) then a = b
 a = Constant("a", real=True)
 b = Constant("b", real=True)
-abs_a_minus_b = sp.Abs(a - b)  # type: ignore
+abs_a_minus_b = Abs(a - b)  # type: ignore
 
 # We assume forall eps, eps > 0 => |a-b| < eps
 premise = Forall(
@@ -89,11 +90,10 @@ abs_a_minus_b_is_not_pos: Not[GreaterThan] = (
     .modus_tollens(premise2)
 )
 
+disj = absolute_value_nonnegative_f(a - b)
 # |a-b| = 0
-abs_a_minus_b_is_0: Equals = absolute_value_nonnegative_f(abs_a_minus_b).unit_resolve(
-    abs_a_minus_b_is_not_pos
-)  # type: ignore
-
+abs_a_minus_b_is_0: Equals = disj.unit_resolve(abs_a_minus_b_is_not_pos)  # type: ignore
+print(neg(disj.propositions[0]) in {abs_a_minus_b_is_not_pos})
 # a-b = 0
 res = abs_a_minus_b_is_0.zero_abs_is_0()
 # need a tactic to convert this to a=b
@@ -135,8 +135,8 @@ bc = GreaterThan(1, 0).by_inspection()
 istep = Forall(
     n,
     IsContainedIn(n, Naturals0)
-    .and_(GreaterThan(n + 1, 0))
-    .implies(GreaterThan(n + 2, 0)),
+    .and_(GreaterThan(add(n, 1), 0))
+    .implies(GreaterThan(add(n, 2), 0)),
     is_assumption=True,
 )
 

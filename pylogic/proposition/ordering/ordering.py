@@ -7,9 +7,9 @@ if TYPE_CHECKING:
     from pylogic.symbol import Symbol
     from pylogic.structures.sets import Set
 
-    from sympy import Basic
+    from pylogic.expressions.expr import Expr
 
-    Term = Symbol | Set | Basic | int | float
+    Term = Symbol | Set | Expr | int | float
 
 
 class _Ordering(Protocol):

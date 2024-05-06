@@ -18,8 +18,9 @@ if TYPE_CHECKING:
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.symbol import Symbol
     from pylogic.structures.sets import Set
+    from pylogic.expressions.expr import Expr
 
-    Term = Symbol | Set | sp.Basic | int | float
+    Term = Symbol | Set | Expr | int | float
 
 
 TProposition = TypeVar("TProposition", bound="Proposition")

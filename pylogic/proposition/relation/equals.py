@@ -2,14 +2,16 @@ from __future__ import annotations
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from pylogic.inference import Inference
 from pylogic.proposition.proposition import Proposition, get_assumptions
+from pylogic.expressions.abs import Abs
 from typing import TYPE_CHECKING, Literal, TypeVar, Self, Callable
-from sympy import Basic, Abs, Integer
+from sympy import Basic, Integer
 
 if TYPE_CHECKING:
     from pylogic.structures.sets import Set
     from pylogic.symbol import Symbol
+    from pylogic.expressions.expr import Expr
 
-    Term = Symbol | Set | Basic | int | float
+    Term = Symbol | Set | Expr | int | float
 TProposition = TypeVar("TProposition", bound="Proposition")
 
 Side = Literal["left", "right"]
@@ -152,7 +154,7 @@ class Equals(BinaryRelation):
         assert isinstance(self.left, Abs)
         assert self.right == Integer(0)
         return Equals(
-            self.left.args[0],
+            self.left.args[0],  # type: ignore
             0,
             _is_proven=True,
             _assumptions=get_assumptions(self),

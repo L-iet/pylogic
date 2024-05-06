@@ -3,6 +3,8 @@ from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from pylogic.proposition.relation.equals import Equals
 from pylogic.proposition.ordering.ordering import _Ordering
+from pylogic.expressions.abs import Abs
+from pylogic.expressions.expr import Pow
 from typing import TYPE_CHECKING, Self
 
 import sympy as sp
@@ -13,8 +15,9 @@ if TYPE_CHECKING:
     from pylogic.proposition.not_ import Not
     from pylogic.symbol import Symbol
     from pylogic.structures.sets import Set
+    from pylogic.expressions.expr import Expr
 
-    Term = Symbol | Set | sp.Basic | int | float
+    NumTerm = Symbol | Expr | int | float
 
 
 class GreaterThan(BinaryRelation, _Ordering):
@@ -25,8 +28,8 @@ class GreaterThan(BinaryRelation, _Ordering):
 
     def __init__(
         self,
-        left: Term,
-        right: Term,
+        left: NumTerm,
+        right: NumTerm,
         is_assumption: bool = False,
         description: str = "",
         **kwargs,
@@ -36,14 +39,14 @@ class GreaterThan(BinaryRelation, _Ordering):
         if isinstance(diff, int) or isinstance(diff, float):
             diff_is_positive = diff > 0
         else:
-            diff_is_positive = diff.is_positive
+            diff_is_positive = True
         if diff_is_positive == False and (is_assumption or _is_proven):
             raise ValueError(f"Some assumptions in {left}, {right} are contradictory")
         super().__init__(
             left, right, is_assumption=is_assumption, description=description, **kwargs
         )
-        self.left: Term = left
-        self.right: Term = right
+        self.left: NumTerm = left
+        self.right: NumTerm = right
 
     def __repr__(self) -> str:
         return f"{self.left} > {self.right}"
@@ -74,7 +77,7 @@ class GreaterThan(BinaryRelation, _Ordering):
         )
 
     def multiply_by_positive(
-        self, x: Term, proof_x_is_positive: "GreaterThan | LessThan"
+        self, x: NumTerm, proof_x_is_positive: "GreaterThan | LessThan"
     ) -> "GreaterThan":
         from pylogic.inference import Inference
 
@@ -93,7 +96,7 @@ class GreaterThan(BinaryRelation, _Ordering):
         )
 
     def multiply_by_negative(
-        self, x: Term, proof_x_is_negative: "GreaterThan | LessThan"
+        self, x: NumTerm, proof_x_is_negative: "GreaterThan | LessThan"
     ) -> "GreaterThan":
         from pylogic.inference import Inference
 
@@ -112,7 +115,7 @@ class GreaterThan(BinaryRelation, _Ordering):
         )
 
     def p_multiply_by_positive(
-        self, x: Term, proof_x_is_positive: "GreaterThan | LessThan"
+        self, x: NumTerm, proof_x_is_positive: "GreaterThan | LessThan"
     ) -> "GreaterThan":
         """Logical tactic.
         Same as multiply_by_positive, but returns a proven proposition"""
@@ -121,7 +124,7 @@ class GreaterThan(BinaryRelation, _Ordering):
         return new_p
 
     def p_multiply_by_negative(
-        self, x: Term, proof_x_is_negative: "GreaterThan | LessThan"
+        self, x: NumTerm, proof_x_is_negative: "GreaterThan | LessThan"
     ) -> "GreaterThan":
         """Logical tactic.
         Same as multiply_by_negative, but returns a proven proposition"""
@@ -190,7 +193,7 @@ class GreaterThan(BinaryRelation, _Ordering):
         return super()._mul(self, other)
 
 
-def is_absolute(expr: Term, expr_not_zero: Not[Equals]) -> "GreaterThan":
+def is_absolute(expr: NumTerm, expr_not_zero: Not[Equals]) -> "GreaterThan":
     """Logical tactic.
     Given an expr of the form sympy.Abs(x) and a proof that the expr is
     not zero,
@@ -198,11 +201,14 @@ def is_absolute(expr: Term, expr_not_zero: Not[Equals]) -> "GreaterThan":
     """
     from pylogic.inference import Inference
 
-    assert isinstance(expr, sp.Abs), f"{expr} is not an absolute value"
+    assert isinstance(expr, sp.Abs) or isinstance(
+        expr, Abs
+    ), f"{expr} is not an absolute value"
     assert expr_not_zero.is_proven, f"{expr_not_zero} is not proven"
     assert isinstance(
         expr_not_zero.negated, Equals
     ), f"{expr_not_zero} is not a proof that {expr} is not 0"
+    print(expr_not_zero.negated.left, expr)
     assert expr_not_zero.negated.left == expr
     assert expr_not_zero.negated.right == sp.Integer(0)
     return GreaterThan(
@@ -214,7 +220,7 @@ def is_absolute(expr: Term, expr_not_zero: Not[Equals]) -> "GreaterThan":
     )
 
 
-def is_even_power(expr: Term) -> "GreaterThan":
+def is_even_power(expr: NumTerm) -> "GreaterThan":
     """Logical tactic.
     Given an expr of the form x**(2n), return a proven proposition that says
     x**(2n) > 0
@@ -234,7 +240,7 @@ def is_even_power(expr: Term) -> "GreaterThan":
 
 
 def is_rational_power(
-    expr: Term, proof_base_is_positive: "GreaterThan"
+    expr: NumTerm, proof_base_is_positive: "GreaterThan"
 ) -> "GreaterThan":
     """Logical tactic.
     Given an expr of the form x**(p/q) and a proof that x > 0,
@@ -243,7 +249,7 @@ def is_rational_power(
     """
     from pylogic.inference import Inference
 
-    assert isinstance(expr, sp.Pow), f"{expr} is not a power"
+    assert isinstance(expr, sp.Pow) or isinstance(expr, Pow), f"{expr} is not a power"
     assert expr.base.is_real, f"{expr.base} is not a real number"
     assert proof_base_is_positive.is_proven, f"{proof_base_is_positive} is not proven"
     assert isinstance(

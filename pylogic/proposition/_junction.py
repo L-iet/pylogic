@@ -10,9 +10,9 @@ if TYPE_CHECKING:
     from pylogic.structures.sets import Set
     from pylogic.variable import Variable
     from pylogic.symbol import Symbol
-    from sympy import Basic
+    from pylogic.expressions.expr import Expr
 
-    Term = Symbol | Set | Basic | int | float
+    Term = Symbol | Set | Expr | int | float
     Unification = dict[Variable, Term]
 Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 

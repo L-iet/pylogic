@@ -5,13 +5,14 @@ from abc import ABC, abstractmethod
 from pylogic.proposition.proposition import Proposition
 from pylogic.variable import Variable
 
-from sympy import Basic, latex
+from sympy import latex
 
 if TYPE_CHECKING:
     from pylogic.structures.sets import Set
     from pylogic.symbol import Symbol
+    from pylogic.expressions.expr import Expr
 
-    Term = Symbol | Set | Basic | int | float
+    Term = Symbol | Set | Expr | int | float
     Unification = dict[Variable, Term]
 
 TProposition = TypeVar("TProposition", bound="Proposition")

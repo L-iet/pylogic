@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING, Self
 if TYPE_CHECKING:
     from pylogic.structures.sets import Set
     from pylogic.symbol import Symbol
-    from sympy import Basic
+    from pylogic.expressions.expr import Expr
 
-    Term = Symbol | Set | Basic | int | float
+    Term = Symbol | Set | Expr | int | float
 
 
 class Relation(Proposition):

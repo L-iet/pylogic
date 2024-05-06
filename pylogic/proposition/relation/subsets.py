@@ -10,9 +10,9 @@ if TYPE_CHECKING:
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.implies import Implies
     from pylogic.proposition.quantified.forall import Forall
-    from sympy import Basic
+    from pylogic.expressions.expr import Expr
 
-    Term = Symbol | Set | Basic | int | float
+    Term = Symbol | Set | Expr | int | float
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
 Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})

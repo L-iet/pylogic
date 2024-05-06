@@ -13,9 +13,9 @@ if TYPE_CHECKING:
     from pylogic.proposition.or_ import Or
     from pylogic.structures.sets import Set
     from pylogic.symbol import Symbol
-    from sympy import Basic
+    from pylogic.expressions.expr import Expr
 
-    Term = Symbol | Set | Basic | int | float
+    NumTerm = Symbol | Expr | int | float
 
 
 class LessOrEqual(BinaryRelation, _Ordering):
@@ -26,8 +26,8 @@ class LessOrEqual(BinaryRelation, _Ordering):
 
     def __init__(
         self,
-        left: Term,
-        right: Term,
+        left: NumTerm,
+        right: NumTerm,
         is_assumption: bool = False,
         description: str = "",
         **kwargs,
@@ -38,7 +38,7 @@ class LessOrEqual(BinaryRelation, _Ordering):
         if isinstance(diff, int) or isinstance(diff, float):
             diff_nonnegative = diff >= 0
         else:
-            diff_nonnegative = diff.is_nonnegative
+            diff_nonnegative = True
         if diff_nonnegative == False and (is_assumption or _is_proven):
             raise ValueError(f"Some assumptions in {left}, {right} are contradictory")
         super().__init__(

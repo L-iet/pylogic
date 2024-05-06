@@ -8,9 +8,9 @@ from pylogic.symbol import Symbol
 if TYPE_CHECKING:
     from pylogic.structures.sets import Set
     from pylogic.proposition.relation.contains import IsContainedIn
-    from sympy import Basic
+    from pylogic.expressions.expr import Expr
 
-    Term = Symbol | Set | Basic | int | float
+    Term = Symbol | Set | Expr | int | float
 
 
 def nodes_edges(

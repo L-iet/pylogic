@@ -7,8 +7,12 @@ from pylogic.proposition.relation.equals import Equals
 from pylogic.proposition.not_ import neg, Not
 from pylogic.proposition.implies import Implies
 from pylogic.variable import Variable, unbind
+from pylogic.symbol import Symbol
 from pylogic.inference import Inference
-import sympy as sp
+from pylogic.expressions.expr import Expr
+from pylogic.expressions.abs import Abs
+
+Basic = Symbol | int | float
 
 x = Variable("x", real=True)
 y = Variable("y", real=True)
@@ -33,9 +37,7 @@ order_axiom_b = Forall(
 unbind(x, y)
 
 
-def order_axiom_bf(
-    x: sp.Basic | int | float, y: sp.Basic | int | float
-) -> Implies[Equals, Not[LessThan]]:
+def order_axiom_bf(x: Basic | Expr, y: Basic | Expr) -> Implies[Equals, Not[LessThan]]:
     return Implies(
         Equals(x, y),
         Not(LessThan(x, y)),
@@ -86,17 +88,17 @@ order_axiom_g = Forall(
 unbind(x, y)
 
 absolute_value_nonnegative = Forall(
-    x, Or(GreaterThan(sp.Abs(x), 0), Equals(sp.Abs(x), 0)), is_assumption=True
+    x, Or(GreaterThan(Abs(x), 0), Equals(Abs(x), 0)), is_assumption=True
 )
 
 
-def absolute_value_nonnegative_f(x: sp.Basic | int | float) -> Or[GreaterThan, Equals]:
+def absolute_value_nonnegative_f(x: Basic | Expr) -> Or[GreaterThan, Equals]:
     """
     Logical tactic. If x is a real number, returns a proven proposition of the form Abs(x) > 0 V Abs(x) = 0.
     """
     return Or(
-        GreaterThan(sp.Abs(x), 0),
-        Equals(sp.Abs(x), 0),
+        GreaterThan(Abs(x), 0),
+        Equals(Abs(x), 0),
         _is_proven=True,
         _assumptions=set(),
         _inference=Inference(None, rule="absolute_value_nonnegative_f"),

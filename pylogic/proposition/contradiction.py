@@ -8,10 +8,10 @@ if TYPE_CHECKING:
     from pylogic.variable import Variable
     from pylogic.symbol import Symbol
     from pylogic.structures.sets import Set
-    from sympy import Basic
+    from pylogic.expressions.expr import Expr
     from pylogic.proposition.or_ import Or
 
-    Term = Symbol | Set | Basic | int | float
+    Term = Symbol | Set | Expr | int | float
     Unification = dict[Variable, Term]
 
 TProposition = TypeVar("TProposition", bound="Proposition")
