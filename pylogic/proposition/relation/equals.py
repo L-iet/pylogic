@@ -166,7 +166,7 @@ class Equals(BinaryRelation):
         return Equals(
             f(self.left),
             f(self.right),
-            _is_proven=self._is_proven,
+            _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="apply"),
         )
