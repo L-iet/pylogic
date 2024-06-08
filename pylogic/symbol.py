@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Self
+from typing import Any, Self, cast
 from fractions import Fraction
 
 from pylogic.expressions.expr import Expr, Add, Mul, Pow
@@ -10,9 +10,11 @@ from sympy.matrices.expressions.matexpr import MatrixElement as MatEl
 Numeric = Fraction | int | float
 
 
-class Symbol(sp.Symbol):
+class Symbol:
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__()
+        assert isinstance(args[0], str), "The first argument must be a string"
+        self.name: str = args[0]
+        self.is_real: bool = kwargs.get("real", False)
         self.is_set_: bool = kwargs.get("set_", False)
         self.is_set: bool = self.is_set_
         self.is_graph: bool = not self.is_set and kwargs.get("graph", False)
@@ -20,42 +22,45 @@ class Symbol(sp.Symbol):
         self.is_list_: bool = self.is_pair or kwargs.get("list_", False)
         self.is_list: bool = self.is_list_
         self.is_sequence: bool = self.is_list or kwargs.get("sequence", False)
+        self._init_args = args
+        self._init_kwargs = kwargs
 
     def __repr__(self):
         return super().__repr__()
 
-    def __add__(self, other: Symbol | Numeric | Expr) -> sp.Add:
-        return Add(self, other).evaluate()
+    def __add__(self, other: Symbol | Numeric | Expr) -> Add:
+        return Add(self, other)
 
-    def __sub__(self, other: Symbol | Numeric | Expr) -> sp.Add:
-        return Add(self, -other).evaluate()
+    def __sub__(self, other: Symbol | Numeric | Expr) -> Add:
+        o = cast(Mul | Numeric, -other)
+        return Add(self, o)
 
-    def __mul__(self, other: Symbol | Numeric | Expr) -> sp.Mul:
-        return Mul(self, other).evaluate()
+    def __mul__(self, other: Symbol | Numeric | Expr) -> Mul:
+        return Mul(self, other)
 
-    def __truediv__(self, other: Symbol | Numeric | Expr) -> sp.Mul:
-        return Mul(self, Pow(other, -1)).evaluate()
+    def __truediv__(self, other: Symbol | Numeric | Expr) -> Mul:
+        return Mul(self, Pow(other, -1))
 
-    def __neg__(self) -> sp.Mul:
-        return Mul(-1, self).evaluate()
+    def __neg__(self) -> Mul:
+        return Mul(-1, self)
 
-    def __pow__(self, other: Symbol | Numeric | Expr) -> sp.Pow:
-        return Pow(self, other).evaluate()
+    def __pow__(self, other: Symbol | Numeric | Expr) -> Pow:
+        return Pow(self, other)
 
-    def __radd__(self, other: Symbol | Numeric | Expr) -> sp.Add:
-        return Add(other, self).evaluate()
+    def __radd__(self, other: Symbol | Numeric | Expr) -> Add:
+        return Add(other, self)
 
-    def __rsub__(self, other: Symbol | Numeric | Expr) -> sp.Add:
-        return Add(other, -self).evaluate()
+    def __rsub__(self, other: Symbol | Numeric | Expr) -> Add:
+        return Add(other, -self)
 
-    def __rmul__(self, other: Symbol | Numeric | Expr) -> sp.Mul:
-        return Mul(other, self).evaluate()
+    def __rmul__(self, other: Symbol | Numeric | Expr) -> Mul:
+        return Mul(other, self)
 
-    def __rtruediv__(self, other: Symbol | Numeric | Expr) -> sp.Mul:
-        return Mul(other, Pow(self, -1)).evaluate()
+    def __rtruediv__(self, other: Symbol | Numeric | Expr) -> Mul:
+        return Mul(other, Pow(self, -1))
 
-    def __rpow__(self, other: Symbol | Numeric | Expr) -> sp.Pow:
-        return Pow(other, self).evaluate()
+    def __rpow__(self, other: Symbol | Numeric | Expr) -> Pow:
+        return Pow(other, self)
 
     def _latex(self) -> str:
         return self.name
@@ -70,6 +75,9 @@ class Symbol(sp.Symbol):
         if self == old:
             return new
         return self
+
+    def evaluate(self) -> sp.Basic:
+        return sp.Symbol(*self._init_args, **self._init_kwargs)
 
     @property
     def nodes_edges(self) -> tuple[Self, Self]:
@@ -110,7 +118,7 @@ class Symbol(sp.Symbol):
             return sp.Integer(2)
         raise ValueError(f"{self} is not a list or a set")
 
-    __hash__ = sp.Symbol.__hash__
+    __hash__ = sp.Symbol.__hash__  # type: ignore
 
 
 class Function(sp.Function):
@@ -122,10 +130,10 @@ class MatrixSymbol(sp.MatrixSymbol):
     def __repr__(self):
         return super().__repr__()
 
-    def __add__(self, other) -> "MatAdd":
+    def __add__(self, other) -> MatAdd:
         return MatAdd(self, other)
 
-    def __mul__(self, other) -> "MatMul":
+    def __mul__(self, other) -> MatMul:
         return MatMul(self, other)
 
     def transpose(self):
@@ -177,7 +185,7 @@ class Transpose(sp.Transpose):
     def __repr__(self):
         return super().__repr__()
 
-    def __mul__(self, other) -> "MatMul":
+    def __mul__(self, other) -> MatMul:
         return MatMul(self, other)
 
     def __getitem__(self, key):
