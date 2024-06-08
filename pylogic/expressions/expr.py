@@ -1,8 +1,10 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Self, Any
+from typing import TYPE_CHECKING, Self, Any, TypeVar
 from abc import ABC, abstractmethod
 from fractions import Fraction
 import sympy as sp
+
+T = TypeVar("T")
 
 if TYPE_CHECKING:
     from pylogic.symbol import Symbol

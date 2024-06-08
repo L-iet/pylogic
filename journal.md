@@ -244,5 +244,9 @@ in sub-propositions.
 substituted value is an `UnevaluatedExpr`.
 
 6:38pm: so far, I've been trying to prove that 0 is unique in real numbers, and ran
-into the issue above. I've resorted too writing my own substitution method and
+into the issue above. I've resorted to writing my own substitution method and
 fixing `replace`. end session.
+
+# Saturday June 08, 2024, 3:45pm PT
+Begin session. I decided I will write my custom classes for unevaluated expressions. I want to fix some type
+issues and start adding tests as soon as possible.
