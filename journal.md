@@ -250,3 +250,6 @@ fixing `replace`. end session.
 # Saturday June 08, 2024, 3:45pm PT
 Begin session. I decided I will write my custom classes for unevaluated expressions. I want to fix some type
 issues and start adding tests as soon as possible.
+
+# Tuesday June 11, 2024, 8:07pm PT
+Begin session. 
