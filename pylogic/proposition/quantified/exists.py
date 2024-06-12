@@ -9,14 +9,19 @@ from pylogic.inference import Inference
 from typing import TYPE_CHECKING, TypedDict, TypeVar, Self
 
 if TYPE_CHECKING:
+    from fractions import Fraction
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.quantified.forall import Forall
     from pylogic.proposition.not_ import Not
     from pylogic.proposition.implies import Implies
     from pylogic.symbol import Symbol
     from pylogic.structures.sets import Set
+    from sympy import Basic
 
-    Term = Symbol | Set | Expr | int | float
+    Numeric = Fraction | int | float
+    PBasic = Symbol | Numeric
+    Unevaluated = Symbol | Set | Expr
+    Term = Unevaluated | Numeric | Basic
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")

@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, overload
+from fractions import Fraction
 
 from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.ordering.lessthan import LessThan
@@ -14,8 +15,12 @@ if TYPE_CHECKING:
     from pylogic.structures.sets import Set
     from pylogic.symbol import Symbol
     from pylogic.expressions.expr import Expr
+    from sympy import Basic
 
-    NumTerm = Symbol | Expr | int | float
+    Numeric = Fraction | int | float
+    PBasic = Symbol | Numeric
+    UnevaluatedExpr = Symbol | Expr
+    Term = UnevaluatedExpr | Numeric | Basic
 
 
 class LessOrEqual(BinaryRelation, _Ordering):
@@ -24,10 +29,30 @@ class LessOrEqual(BinaryRelation, _Ordering):
     infix_symbol = "<="
     infix_symbol_latex = r"\leq"
 
+    @overload
     def __init__(
         self,
-        left: NumTerm,
-        right: NumTerm,
+        left: Basic | Numeric,
+        right: Basic | Numeric,
+        is_assumption: bool = False,
+        description: str = "",
+        **kwargs,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self,
+        left: UnevaluatedExpr | Numeric,
+        right: UnevaluatedExpr | Numeric,
+        is_assumption: bool = False,
+        description: str = "",
+        **kwargs,
+    ) -> None: ...
+
+    def __init__(
+        self,
+        left: Term,
+        right: Term,
         is_assumption: bool = False,
         description: str = "",
         **kwargs,

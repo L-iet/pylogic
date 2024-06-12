@@ -8,11 +8,16 @@ from pylogic.variable import Variable
 from sympy import latex
 
 if TYPE_CHECKING:
+    from fractions import Fraction
     from pylogic.structures.sets import Set
     from pylogic.symbol import Symbol
     from pylogic.expressions.expr import Expr
+    from sympy import Basic
 
-    Term = Symbol | Set | Expr | int | float
+    Numeric = Fraction | int | float
+    PBasic = Symbol | Numeric
+    Unevaluated = Symbol | Set | Expr
+    Term = Unevaluated | Numeric | Basic
     Unification = dict[Variable, Term]
 
 TProposition = TypeVar("TProposition", bound="Proposition")

@@ -11,6 +11,7 @@ import sympy as sp
 
 
 if TYPE_CHECKING:
+    from fractions import Fraction
     from pylogic.proposition.relation.equals import Equals
     from pylogic.proposition.not_ import Not
     from pylogic.variable import Variable
@@ -19,8 +20,12 @@ if TYPE_CHECKING:
     from pylogic.symbol import Symbol
     from pylogic.structures.sets import Set
     from pylogic.expressions.expr import Expr
+    from sympy import Basic
 
-    Term = Symbol | Set | Expr | int | float
+    Numeric = Fraction | int | float
+    PBasic = Symbol | Numeric
+    Unevaluated = Symbol | Set | Expr
+    Term = Unevaluated | Numeric | Basic
 
 
 TProposition = TypeVar("TProposition", bound="Proposition")

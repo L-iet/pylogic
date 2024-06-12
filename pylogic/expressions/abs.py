@@ -20,6 +20,8 @@ class Abs(Expr):
         return sp.Abs(evaluate(self.expr))
 
     def _latex(self) -> str:
+        if isinstance(self.expr, (int, float, Fraction)):
+            return rf"\left|{self.expr}\right|"
         return rf"\left|{self.expr._latex()}\right|"
 
     def __str__(self) -> str:

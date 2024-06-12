@@ -253,3 +253,11 @@ issues and start adding tests as soon as possible.
 
 # Tuesday June 11, 2024, 8:07pm PT
 Begin session. 
+
+Fixing some type issues relating to using the new classes.
+
+9:19pm: Working in the `ordering` directory. Using overload to enforce
+that the left and right arguments must be both numeric or unevaluated (custom) objects,
+or both numeric or sympy objects.
+Need to fix lessthan.py, ordering.py and theorems.py as needed.
+End session.

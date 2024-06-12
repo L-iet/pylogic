@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Self
+from fractions import Fraction
 
 import sympy as sp
 from pylogic.printing.printing import str_print_order, latex_print_order
@@ -30,7 +31,10 @@ if TYPE_CHECKING:
     from pylogic.symbol import Symbol
     from pylogic.expressions.expr import Expr
 
-    Term = Symbol | Set | Expr | int | float
+    Numeric = Fraction | int | float
+    PBasic = Symbol | Numeric
+    Unevaluated = Symbol | Set | Expr
+    Term = Unevaluated | Numeric | sp.Basic
     Unification = dict[Variable, Term]
 
 
