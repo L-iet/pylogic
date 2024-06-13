@@ -268,3 +268,6 @@ Begin session.
 6:54pm: end session. I think I've finished with ordering and expressions directories.
 Need to work on relation and quantified.
 I will now work on a new program for better time management and journalling.
+
+# Wednesday June 12, 2024, 6:55pm PT
+Begin session. I want to write a program for easier time management and journalling.
