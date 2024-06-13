@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Self, Any, TypeVar
+from typing import TYPE_CHECKING, Self, Any, TypeVar, overload, Literal
 from abc import ABC, abstractmethod
 from fractions import Fraction
 import sympy as sp
@@ -8,13 +8,14 @@ import sympy as sp
 if TYPE_CHECKING:
     from pylogic.symbol import Symbol
 
-    Basic = Symbol | int | float | Fraction
+    Numeric = Fraction | int | float
+    PBasic = Symbol | Numeric
 
 
 class Expr(ABC):
     is_real = None
 
-    def __init__(self, *args: Basic | Expr):
+    def __init__(self, *args: PBasic | Expr):
         self.args = args
 
     @abstractmethod
@@ -38,37 +39,37 @@ class Expr(ABC):
     def __copy__(self) -> Self:
         return self.copy()
 
-    def __add__(self, other: Expr | Basic) -> Add:
+    def __add__(self, other: Expr | PBasic) -> Add:
         return Add(self, other)
 
-    def __sub__(self, other: Expr | Basic) -> Add:
+    def __sub__(self, other: Expr | PBasic) -> Add:
         return Add(self, -other)  # type: ignore
 
-    def __mul__(self, other: Expr | Basic) -> Mul:
+    def __mul__(self, other: Expr | PBasic) -> Mul:
         return Mul(self, other)
 
-    def __truediv__(self, other: Expr | Basic) -> Mul:
+    def __truediv__(self, other: Expr | PBasic) -> Mul:
         return Mul(self, Pow(other, -1))
 
     def __neg__(self) -> Mul:
         return Mul(-1, self)
 
-    def __pow__(self, other: Expr | Basic) -> Pow:
+    def __pow__(self, other: Expr | PBasic) -> Pow:
         return Pow(self, other)
 
-    def __radd__(self, other: Expr | Basic) -> Add:
+    def __radd__(self, other: Expr | PBasic) -> Add:
         return Add(other, self)
 
-    def __rsub__(self, other: Expr | Basic) -> Add:
+    def __rsub__(self, other: Expr | PBasic) -> Add:
         return Add(other, -self)
 
-    def __rmul__(self, other: Expr | Basic) -> Mul:
+    def __rmul__(self, other: Expr | PBasic) -> Mul:
         return Mul(other, self)
 
-    def __rtruediv__(self, other: Expr | Basic) -> Mul:
+    def __rtruediv__(self, other: Expr | PBasic) -> Mul:
         return Mul(other, Pow(self, -1))
 
-    def __rpow__(self, other: Expr | Basic) -> Pow:
+    def __rpow__(self, other: Expr | PBasic) -> Pow:
         return Pow(other, self)
 
     def __eq__(self, other: Any) -> bool:
@@ -90,8 +91,11 @@ class Expr(ABC):
         return self.evaluate().doit()
 
 
+T = TypeVar("T", bound=Expr | PBasic, covariant=True)
+
+
 class Add(Expr):
-    def __init__(self, *args: Expr | Basic):
+    def __init__(self, *args: Expr | PBasic):
         super().__init__(*args)
         for arg in args:
             if isinstance(arg, (int, float, Fraction)) or arg.is_real:
@@ -113,7 +117,7 @@ class Add(Expr):
 
 
 class Mul(Expr):
-    def __init__(self, *args: Basic | Expr):
+    def __init__(self, *args: PBasic | Expr):
         super().__init__(*args)
         for arg in args:
             if isinstance(arg, (int, float, Fraction)) or arg.is_real:
@@ -147,7 +151,7 @@ class Mul(Expr):
 
 
 class Pow(Expr):
-    def __init__(self, base: Basic | Expr, exp: Basic | Expr):
+    def __init__(self, base: PBasic | Expr, exp: PBasic | Expr):
         self.base = base
         self.exp = exp
         self.is_real = None
@@ -186,14 +190,11 @@ class Pow(Expr):
         return f"{base_str}^{power_str}"
 
 
-T = TypeVar("T", bound=Expr | Basic)
-
-
 def replace(
-    expr: Basic | Expr,
+    expr: PBasic | Expr,
     old: Any,
     new: Any,
-) -> Basic | Expr:
+) -> PBasic | Expr:
     if expr == old:
         return new
     elif isinstance(expr, Expr):
@@ -202,7 +203,7 @@ def replace(
         return expr
 
 
-def evaluate(expr: sp.Basic | Basic | Expr) -> sp.Basic:
+def evaluate(expr: sp.Basic | PBasic | Expr) -> sp.Basic:
     from pylogic.symbol import Symbol
 
     if isinstance(expr, int):
@@ -216,33 +217,49 @@ def evaluate(expr: sp.Basic | Basic | Expr) -> sp.Basic:
     return expr
 
 
-def maybe_evaluate(expr: T, should_evaluate=False) -> sp.Basic | T:
+@overload
+def maybe_evaluate(
+    expr: sp.Basic, should_evaluate: Literal[False] = False
+) -> sp.Basic: ...
+
+
+@overload
+def maybe_evaluate(expr: T, should_evaluate: Literal[False] = False) -> T: ...
+
+
+@overload
+def maybe_evaluate(
+    expr: sp.Basic | T, should_evaluate: bool = False
+) -> sp.Basic | T: ...
+
+
+def maybe_evaluate(expr: sp.Basic | T, should_evaluate: bool = False) -> sp.Basic | T:
     if should_evaluate:
         return evaluate(expr)
     return expr
 
 
-def sqrt(expr: Basic | Expr, evaluate=False) -> sp.Basic | Pow:
+def sqrt(expr: PBasic | Expr, evaluate=False) -> sp.Basic | Pow:
     return maybe_evaluate(Pow(expr, Fraction(1, 2)), evaluate)
 
 
-def mul(*args: Basic | Expr, evaluate=False) -> sp.Basic | Mul:
+def mul(*args: PBasic | Expr, evaluate=False) -> sp.Basic | Mul:
     return maybe_evaluate(Mul(*args), evaluate)
 
 
-def add(*args: Basic | Expr, evaluate=False) -> sp.Basic | Add:
+def add(*args: PBasic | Expr, evaluate=False) -> sp.Basic | Add:
     return maybe_evaluate(Add(*args), evaluate)
 
 
-def sub(a: Basic | Expr, b: Basic | Expr, evaluate=False) -> sp.Basic | Add:
+def sub(a: PBasic | Expr, b: PBasic | Expr, evaluate=False) -> sp.Basic | Add:
     return maybe_evaluate(Add(a, -b), evaluate)
 
 
-def div(a: Basic | Expr, b: Basic | Expr, evaluate=False) -> sp.Basic | Mul:
+def div(a: PBasic | Expr, b: PBasic | Expr, evaluate=False) -> sp.Basic | Mul:
     return maybe_evaluate(Mul(a, Pow(b, -1)), evaluate)
 
 
-def _latex(expr: Basic | Expr) -> str:
+def _latex(expr: PBasic | Expr) -> str:
     if isinstance(expr, Expr):
         return expr._latex()
     return "{" + str(expr) + "}"

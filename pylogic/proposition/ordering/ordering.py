@@ -1,15 +1,19 @@
 from __future__ import annotations
 from typing import Protocol, TYPE_CHECKING, Self
+from fractions import Fraction
 
 if TYPE_CHECKING:
     from pylogic.proposition.ordering.greaterthan import GreaterThan
     from pylogic.proposition.ordering.lessthan import LessThan
     from pylogic.symbol import Symbol
     from pylogic.structures.sets import Set
-
     from pylogic.expressions.expr import Expr
+    from sympy import Basic
 
-    Term = Symbol | Set | Expr | int | float
+    Numeric = Fraction | int | float
+    PBasic = Symbol | Numeric
+    UnevaluatedExpr = Symbol | Expr
+    Term = UnevaluatedExpr | Numeric | Basic
 
 
 class _Ordering(Protocol):
@@ -43,7 +47,9 @@ class _Ordering(Protocol):
         return new_p
 
     @classmethod
-    def _mul(cls, instance: GreaterThan | LessThan, other: int | float) -> Self:
+    def _mul(cls, instance: GreaterThan | LessThan, other: Numeric) -> Self:
+        from pylogic.proposition.ordering.greaterthan import GreaterThan
+        from pylogic.proposition.ordering.lessthan import LessThan
         from pylogic.proposition.proposition import get_assumptions
         from pylogic.inference import Inference
 

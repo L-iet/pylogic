@@ -8,11 +8,12 @@ from pylogic.expressions.expr import Expr, evaluate
 if TYPE_CHECKING:
     from pylogic.symbol import Symbol
 
-    Basic = Symbol | int | float | Fraction
+    Numeric = Fraction | int | float
+    PBasic = Symbol | Numeric
 
 
 class Abs(Expr):
-    def __init__(self, expr: Expr | Basic) -> None:
+    def __init__(self, expr: Expr | PBasic) -> None:
         self.expr = expr
         super().__init__(expr)
 

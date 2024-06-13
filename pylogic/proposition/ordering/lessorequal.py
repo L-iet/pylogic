@@ -49,6 +49,16 @@ class LessOrEqual(BinaryRelation, _Ordering):
         **kwargs,
     ) -> None: ...
 
+    @overload
+    def __init__(
+        self,
+        left: Term,
+        right: Term,
+        is_assumption: bool = False,
+        description: str = "",
+        **kwargs,
+    ) -> None: ...
+
     def __init__(
         self,
         left: Term,

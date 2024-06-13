@@ -264,3 +264,7 @@ End session.
 
 # Wednesday June 12, 2024, 5:31pm PT
 Begin session.
+
+6:54pm: end session. I think I've finished with ordering and expressions directories.
+Need to work on relation and quantified.
+I will now work on a new program for better time management and journalling.

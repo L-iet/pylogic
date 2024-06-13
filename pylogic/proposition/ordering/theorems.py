@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import TYPE_CHECKING, TypeVar, overload
 from pylogic.proposition.quantified.forall import Forall
 from pylogic.proposition.ordering.greaterthan import GreaterThan
 from pylogic.proposition.ordering.lessthan import LessThan
@@ -12,7 +13,16 @@ from pylogic.inference import Inference
 from pylogic.expressions.expr import Expr
 from pylogic.expressions.abs import Abs
 
-Basic = Symbol | int | float
+import sympy as sp
+
+if TYPE_CHECKING:
+    from fractions import Fraction
+
+    Numeric = Fraction | int | float
+    PBasic = Symbol | Numeric
+    UnevaluatedExpr = Symbol | Expr
+    Term = UnevaluatedExpr | Numeric | sp.Basic
+
 
 x = Variable("x", real=True)
 y = Variable("y", real=True)
@@ -37,7 +47,19 @@ order_axiom_b = Forall(
 unbind(x, y)
 
 
-def order_axiom_bf(x: Basic | Expr, y: Basic | Expr) -> Implies[Equals, Not[LessThan]]:
+@overload
+def order_axiom_bf(
+    x: UnevaluatedExpr | Numeric, y: UnevaluatedExpr | Numeric
+) -> Implies[Equals, Not[LessThan]]: ...
+
+
+@overload
+def order_axiom_bf(
+    x: sp.Basic | Numeric, y: sp.Basic | Numeric
+) -> Implies[Equals, Not[LessThan]]: ...
+
+
+def order_axiom_bf(x, y) -> Implies[Equals, Not[LessThan]]:
     return Implies(
         Equals(x, y),
         Not(LessThan(x, y)),
@@ -92,13 +114,14 @@ absolute_value_nonnegative = Forall(
 )
 
 
-def absolute_value_nonnegative_f(x: Basic | Expr) -> Or[GreaterThan, Equals]:
+def absolute_value_nonnegative_f(x: Term) -> Or[GreaterThan, Equals]:
     """
     Logical tactic. If x is a real number, returns a proven proposition of the form Abs(x) > 0 V Abs(x) = 0.
     """
+    abs_x = sp.Abs(x) if isinstance(x, sp.Basic) else Abs(x)
     return Or(
-        GreaterThan(Abs(x), 0),
-        Equals(Abs(x), 0),
+        GreaterThan(abs_x, 0),
+        Equals(abs_x, 0),
         _is_proven=True,
         _assumptions=set(),
         _inference=Inference(None, rule="absolute_value_nonnegative_f"),

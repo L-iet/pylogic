@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, overload, TypeVar
 from fractions import Fraction
 from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
@@ -24,6 +24,8 @@ if TYPE_CHECKING:
     PBasic = Symbol | Numeric
     UnevaluatedExpr = Symbol | Expr
     Term = UnevaluatedExpr | Numeric | Basic
+    T = TypeVar("T", bound=Term)
+    U = TypeVar("U", bound=Term)
 
 
 class GreaterThan(BinaryRelation, _Ordering):
@@ -52,10 +54,20 @@ class GreaterThan(BinaryRelation, _Ordering):
         **kwargs,
     ) -> None: ...
 
+    @overload
     def __init__(
         self,
         left: Term,
         right: Term,
+        is_assumption: bool = False,
+        description: str = "",
+        **kwargs,
+    ) -> None: ...
+
+    def __init__(
+        self,
+        left: T,
+        right: U,
         is_assumption: bool = False,
         description: str = "",
         **kwargs,
@@ -75,8 +87,8 @@ class GreaterThan(BinaryRelation, _Ordering):
         super().__init__(
             left, right, is_assumption=is_assumption, description=description, **kwargs
         )
-        self.left: Term = left
-        self.right: Term = right
+        self.left: T = left
+        self.right: U = right
 
     def __repr__(self) -> str:
         return f"{self.left} > {self.right}"
@@ -104,7 +116,7 @@ class GreaterThan(BinaryRelation, _Ordering):
             _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="to_negative_inequality"),
-        )
+        )  # type: ignore
 
     def multiply_by_positive(
         self, x: Term, proof_x_is_positive: "GreaterThan | LessThan"

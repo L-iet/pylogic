@@ -1,8 +1,9 @@
 from __future__ import annotations
+from fractions import Fraction
+from typing import TYPE_CHECKING, overload
 from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from pylogic.proposition.ordering.ordering import _Ordering
-from typing import TYPE_CHECKING
 from sympy import S as sympy_S
 
 if TYPE_CHECKING:
@@ -10,8 +11,12 @@ if TYPE_CHECKING:
     from pylogic.structures.sets import Set
     from pylogic.symbol import Symbol
     from pylogic.expressions.expr import Expr
+    from sympy import Basic
 
-    NumTerm = Symbol | Expr | int | float
+    Numeric = Fraction | int | float
+    PBasic = Symbol | Numeric
+    UnevaluatedExpr = Symbol | Expr
+    Term = UnevaluatedExpr | Numeric | Basic
 
 
 class LessThan(BinaryRelation, _Ordering):
@@ -20,10 +25,40 @@ class LessThan(BinaryRelation, _Ordering):
     infix_symbol = "<"
     infix_symbol_latex = "<"
 
+    @overload
     def __init__(
         self,
-        left: NumTerm,
-        right: NumTerm,
+        left: Basic | Numeric,
+        right: Basic | Numeric,
+        is_assumption: bool = False,
+        description: str = "",
+        **kwargs,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self,
+        left: UnevaluatedExpr | Numeric,
+        right: UnevaluatedExpr | Numeric,
+        is_assumption: bool = False,
+        description: str = "",
+        **kwargs,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self,
+        left: Term,
+        right: Term,
+        is_assumption: bool = False,
+        description: str = "",
+        **kwargs,
+    ) -> None: ...
+
+    def __init__(
+        self,
+        left: Term,
+        right: Term,
         is_assumption: bool = False,
         description: str = "",
         **kwargs,
@@ -40,8 +75,8 @@ class LessThan(BinaryRelation, _Ordering):
         super().__init__(
             left, right, is_assumption=is_assumption, description=description, **kwargs
         )
-        self.left: NumTerm = left
-        self.right: NumTerm = right
+        self.left: Term = left
+        self.right: Term = right
 
     def to_positive_inequality(self):
         """If self is of the form a < b, returns an inequality of the form b - a > 0"""
@@ -53,7 +88,7 @@ class LessThan(BinaryRelation, _Ordering):
             _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="to_positive_inequality"),
-        )
+        )  # type: ignore
 
     def to_negative_inequality(self):
         """If self is of the form a < b, returns an inequality of the form a - b < 0"""
@@ -65,10 +100,10 @@ class LessThan(BinaryRelation, _Ordering):
             _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="to_negative_inequality"),
-        )
+        )  # type: ignore
 
     def multiply_by_positive(
-        self, x: NumTerm, proof_x_is_positive: "GreaterThan | LessThan"
+        self, x: Term, proof_x_is_positive: "GreaterThan | LessThan"
     ) -> "LessThan":
         from pylogic.inference import Inference
 
@@ -87,7 +122,7 @@ class LessThan(BinaryRelation, _Ordering):
         )
 
     def multiply_by_negative(
-        self, x: NumTerm, proof_x_is_negative: "GreaterThan | LessThan"
+        self, x: Term, proof_x_is_negative: "GreaterThan | LessThan"
     ) -> "LessThan":
         from pylogic.inference import Inference
 
@@ -107,7 +142,7 @@ class LessThan(BinaryRelation, _Ordering):
         return new_p
 
     def p_multiply_by_positive(
-        self, x: NumTerm, proof_x_is_positive: "GreaterThan | LessThan"
+        self, x: Term, proof_x_is_positive: "GreaterThan | LessThan"
     ) -> "LessThan":
         """Logical tactic.
         Same as multiply_by_positive, but returns a proven proposition"""
@@ -117,7 +152,7 @@ class LessThan(BinaryRelation, _Ordering):
         return new_p
 
     def p_multiply_by_negative(
-        self, x: NumTerm, proof_x_is_negative: "GreaterThan | LessThan"
+        self, x: Term, proof_x_is_negative: "GreaterThan | LessThan"
     ) -> "LessThan":
         """Logical tactic.
         Same as multiply_by_negative, but returns a proven proposition"""
@@ -135,7 +170,7 @@ class LessThan(BinaryRelation, _Ordering):
             _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="mul_inverse"),
-        )
+        )  # type: ignore
 
     def to_greater_than(self):
         """If self is of the form a < b, returns an inequality of the form b > a"""
@@ -147,7 +182,7 @@ class LessThan(BinaryRelation, _Ordering):
             _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="to_greater_than"),
-        )
+        )  # type: ignore
 
     def p_to_greater_than(self):
         """Logical tactic. Same as to_greater_than, but returns a proven proposition"""
@@ -169,7 +204,7 @@ class LessThan(BinaryRelation, _Ordering):
                     _is_proven=True,
                     _assumptions=set(),
                     _inference=Inference(self, rule="by_inspection"),
-                )
+                )  # type: ignore
             else:
                 raise ValueError(
                     f"Cannot prove that {self.left} < {self.right} by inspection"
