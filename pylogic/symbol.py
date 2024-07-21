@@ -65,6 +65,20 @@ class Symbol:
     def __rpow__(self, other: Symbol | Numeric | Expr) -> Pow:
         return Pow(other, self)
 
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, Symbol):
+            return (
+                self.name == other.name
+                and self.__class__ == other.__class__
+                and self.is_real == other.is_real
+                and self.is_set_ == other.is_set_
+                and self.is_graph == other.is_graph
+                and self.is_pair == other.is_pair
+                and self.is_list_ == other.is_list_
+                and self.is_sequence == other.is_sequence
+            )
+        return False
+
     def _latex(self) -> str:
         return self.name
 
