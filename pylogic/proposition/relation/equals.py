@@ -2,16 +2,20 @@ from __future__ import annotations
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from pylogic.inference import Inference
 from pylogic.proposition.proposition import Proposition, get_assumptions
+from pylogic.expressions.expr import Expr
 from pylogic.expressions.abs import Abs
 from typing import TYPE_CHECKING, Literal, TypeVar, Self, Callable
 from sympy import Basic, Integer
 
 if TYPE_CHECKING:
+    from fractions import Fraction
     from pylogic.structures.sets import Set
     from pylogic.symbol import Symbol
-    from pylogic.expressions.expr import Expr
 
-    Term = Symbol | Set | Expr | int | float
+    Numeric = Fraction | int | float
+    PBasic = Symbol | Numeric
+    Unevaluated = Symbol | Set | Expr
+    Term = Unevaluated | Numeric | Basic
 TProposition = TypeVar("TProposition", bound="Proposition")
 
 Side = Literal["left", "right"]
@@ -40,9 +44,11 @@ class Equals(BinaryRelation):
         )
         self.left: Term = left
         self.right: Term = right
-        self.left_doit = self.left.doit() if isinstance(self.left, Basic) else self.left
+        self.left_doit = (
+            self.left.doit() if isinstance(self.left, (Basic, Expr)) else self.left
+        )
         self.right_doit = (
-            self.right.doit() if isinstance(self.right, Basic) else self.right
+            self.right.doit() if isinstance(self.right, (Basic, Expr)) else self.right
         )
         self.doit_results: dict[Side, Term] = {
             "left": self.left_doit,
@@ -69,22 +75,16 @@ class Equals(BinaryRelation):
         proven = False
         if self.left == self.right:
             proven = True
-        elif isinstance(self.get(_checking_side), Basic):
+        elif isinstance(self.get(_checking_side), (Basic, Expr)):
             try:
                 if self.get(_checking_side).equals(self.get(other_side)):  # type: ignore
+                    proven = True
+                elif self.get(_checking_side) == self.get(other_side):  # type: ignore
                     proven = True
             except ValueError:  # TODO: Basic.equals sometimes raises ValueError
                 if self.doit_results[_checking_side] == self.doit_results[other_side]:
                     proven = True
 
-        if not proven and not (
-            isinstance(self.get(_checking_side), int)
-            or isinstance(self.get(_checking_side), float)
-        ):
-            if self.doit_results[_checking_side].dummy_eq(
-                self.doit_results[other_side]
-            ):  # TODO: understand more about sympy dummy_eq
-                proven = True
         return proven
 
     def by_simplification(self) -> Self:

@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import Callable, TYPE_CHECKING
 
-from pylogic.proposition.relation.contains import IsContainedIn
 from sympy import Set as SympySet
 import sympy as sp
 
@@ -9,6 +8,7 @@ if TYPE_CHECKING:
     from pylogic.symbol import Symbol
     from pylogic.structures.sets import Set
     from pylogic.expressions.expr import Expr
+    from pylogic.proposition.relation.contains import IsContainedIn
 
     Term = Symbol | Set | Expr | int | float
 
@@ -56,9 +56,14 @@ class Set:
     def contains(
         self, other: Term, is_assumption: bool = False, **kwargs
     ) -> IsContainedIn:
+        from pylogic.proposition.relation.contains import IsContainedIn
+
         """elementhood"""
 
         return IsContainedIn(other, self, is_assumption=is_assumption, **kwargs)
+
+    def evaluate(self) -> sp.Set:
+        return self.sympy_set
 
     def __repr__(self) -> str:
         return self.name

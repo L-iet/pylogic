@@ -2,8 +2,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Self, Any, TypeVar, overload, Literal
 from abc import ABC, abstractmethod
 from fractions import Fraction
-import sympy as sp
+from pylogic.structures.sets import Set
 
+import sympy as sp
 
 if TYPE_CHECKING:
     from pylogic.symbol import Symbol
@@ -86,7 +87,7 @@ class Expr(ABC):
         """
         if isinstance(other, Expr):
             return self.evaluate() == other.evaluate()
-        return False
+        return self.evaluate() == other
 
     def __hash__(self) -> int:
         return hash((self.__class__.__name__, self.args))
@@ -215,7 +216,7 @@ def replace(
         return expr
 
 
-def evaluate(expr: sp.Basic | PBasic | Expr) -> sp.Basic:
+def evaluate(expr: sp.Basic | PBasic | Expr | Set) -> sp.Basic:
     from pylogic.symbol import Symbol
 
     if isinstance(expr, int):
@@ -224,7 +225,7 @@ def evaluate(expr: sp.Basic | PBasic | Expr) -> sp.Basic:
         return sp.Float(expr)
     if isinstance(expr, Fraction):
         return sp.Rational(expr)
-    if isinstance(expr, (Expr, Symbol)):
+    if isinstance(expr, (Expr, Symbol, Set)):
         return expr.evaluate()
     return expr
 

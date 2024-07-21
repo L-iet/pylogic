@@ -8,10 +8,15 @@ from pylogic.expressions.expr import Expr
 from pylogic.helpers import replace
 
 if TYPE_CHECKING:
+    from fractions import Fraction
     from pylogic.structures.sets import Set
     from pylogic.symbol import Symbol
+    import sympy as sp
 
-    Term = Symbol | Set | Expr | int | float
+    Numeric = Fraction | int | float
+    PBasic = Symbol | Numeric
+    Unevaluated = Symbol | Set | Expr
+    Term = Unevaluated | Numeric | sp.Basic
 
 
 class BinaryRelation(Relation):

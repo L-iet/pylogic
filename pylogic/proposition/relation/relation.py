@@ -3,11 +3,17 @@ from pylogic.proposition.proposition import Proposition
 from typing import TYPE_CHECKING, Self
 
 if TYPE_CHECKING:
+    from fractions import Fraction
     from pylogic.structures.sets import Set
     from pylogic.symbol import Symbol
     from pylogic.expressions.expr import Expr
 
-    Term = Symbol | Set | Expr | int | float
+    import sympy as sp
+
+    Numeric = Fraction | int | float
+    PBasic = Symbol | Numeric
+    Unevaluated = Symbol | Set | Expr
+    Term = Unevaluated | Numeric | sp.Basic
 
 
 class Relation(Proposition):

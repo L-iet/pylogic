@@ -9,7 +9,7 @@ from pylogic.proposition.relation.equals import Equals
 from pylogic.proposition.ordering.lessorequal import LessOrEqual
 from pylogic.proposition.relation.contains import IsContainedIn
 from pylogic.variable import Variable, unbind
-from sympy import Add, Integer
+from pylogic.expressions.expr import Add
 
 if TYPE_CHECKING:
     TProposition = TypeVar("TProposition", bound="Proposition")
@@ -18,10 +18,10 @@ if TYPE_CHECKING:
 x = Variable("x", real=True)
 y = Variable("y", real=True)
 # every number has an additive inverse
-x_plus_neg_x = Add(x, -x, evaluate=False)
+x_plus_neg_x = Add(x, -x)
 
 add_inv = (
-    Equals(x_plus_neg_x, Integer(0))
+    Equals(x_plus_neg_x, 0)
     .by_simplification()
     .thus_there_exists("y", -x)
     .thus_forall(x)
@@ -61,7 +61,7 @@ def weak_induction(
     assert prem1.element == n, f"First premise {prem1} must be a statement about n"
     pred = induction_step.inner_proposition.consequent
     p0 = pred.replace(n, -1)
-    print(p0, base_case, prem2.replace(n, 0))
+    # print(p0, base_case, prem2.replace(n, 0))
     assert (
         p0 == base_case == prem2.replace(n, 0)
     ), f"Base case {base_case} must be the same as P(0)"

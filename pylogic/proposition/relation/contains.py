@@ -2,6 +2,7 @@ from __future__ import annotations
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from pylogic.inference import Inference
 from typing import TYPE_CHECKING, TypedDict
+from pylogic.expressions.expr import evaluate
 
 if TYPE_CHECKING:
     from pylogic.symbol import Symbol
@@ -76,7 +77,7 @@ class IsContainedIn(BinaryRelation):
         it contains the element.
         """
         try:
-            if self.left in self.right.sympy_set:
+            if evaluate(self.left) in self.right.sympy_set:
                 return IsContainedIn(
                     copy.copy(self.element),
                     self.set_.copy(),

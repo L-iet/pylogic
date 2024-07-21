@@ -37,7 +37,7 @@ Px = Proposition("P", args=[x])
 Py = Proposition("P", args=[Constant("y", real=True)])
 forallXPx = Forall(x, Px, is_assumption=True)
 
-# print(Py, forallXPx)
+# log(Py, forallXPx)
 py = Py.is_special_case_of(forallXPx)
 log(py.is_proven)  # True
 
@@ -93,7 +93,7 @@ abs_a_minus_b_is_not_pos: Not[GreaterThan] = (
 disj = absolute_value_nonnegative_f(a - b)
 # |a-b| = 0
 abs_a_minus_b_is_0: Equals = disj.unit_resolve(abs_a_minus_b_is_not_pos)  # type: ignore
-print(neg(disj.propositions[0]) in {abs_a_minus_b_is_not_pos})
+log(neg(disj.propositions[0]) in {abs_a_minus_b_is_not_pos})
 # a-b = 0
 res = abs_a_minus_b_is_0.zero_abs_is_0()
 # need a tactic to convert this to a=b
