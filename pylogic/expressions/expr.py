@@ -72,9 +72,20 @@ class Expr(ABC):
     def __rpow__(self, other: Expr | PBasic) -> Pow:
         return Pow(other, self)
 
-    def __eq__(self, other: Any) -> bool:
+    def equals(self, other: Any) -> bool:
+        """
+        Check if two expressions are equal, essentially identical.
+        """
         if isinstance(other, Expr):
             return self.args == other.args
+        return False
+
+    def __eq__(self, other: Any) -> bool:
+        """
+        Check if two expressions evaluate to the same value.
+        """
+        if isinstance(other, Expr):
+            return self.evaluate() == other.evaluate()
         return False
 
     def __hash__(self) -> int:
@@ -87,7 +98,7 @@ class Expr(ABC):
     def copy(self) -> Self:
         return self.__class__(*self.args)
 
-    def doit(self) -> Any:
+    def doit(self) -> sp.Basic:
         return self.evaluate().doit()
 
 

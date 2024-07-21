@@ -248,7 +248,7 @@ def is_absolute(expr: Term, expr_not_zero: Not[Equals]) -> "GreaterThan":
     assert isinstance(
         expr_not_zero.negated, Equals
     ), f"{expr_not_zero} is not a proof that {expr} is not 0"
-    print(expr_not_zero.negated.left, expr)
+    # print(expr_not_zero.negated.left, expr)
     assert expr_not_zero.negated.left == expr
     assert expr_not_zero.negated.right == sp.Integer(0)
     return GreaterThan(

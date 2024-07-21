@@ -26,6 +26,9 @@ class Symbol:
         self._init_kwargs = kwargs
 
     def __repr__(self):
+        return f"{self.__class__.__name__}({self.name})"
+
+    def __str__(self):
         return self.name
 
     def __add__(self, other: Symbol | Numeric | Expr) -> Add:
