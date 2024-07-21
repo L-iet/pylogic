@@ -91,7 +91,8 @@ class Expr(ABC):
         return self.evaluate().doit()
 
 
-T = TypeVar("T", bound=Expr | PBasic, covariant=True)
+if TYPE_CHECKING:
+    T = TypeVar("T", bound=Expr | PBasic, covariant=True)
 
 
 class Add(Expr):

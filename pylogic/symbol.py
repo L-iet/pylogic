@@ -26,7 +26,7 @@ class Symbol:
         self._init_kwargs = kwargs
 
     def __repr__(self):
-        return super().__repr__()
+        return self.name
 
     def __add__(self, other: Symbol | Numeric | Expr) -> Add:
         return Add(self, other)
@@ -118,7 +118,19 @@ class Symbol:
             return sp.Integer(2)
         raise ValueError(f"{self} is not a list or a set")
 
-    __hash__ = sp.Symbol.__hash__  # type: ignore
+    def __hash__(self):
+        return hash(
+            (
+                self.__class__.__name__,
+                self.name,
+                self.is_real,
+                self.is_set_,
+                self.is_graph,
+                self.is_pair,
+                self.is_list_,
+                self.is_sequence,
+            )
+        )
 
 
 class Function(sp.Function):
