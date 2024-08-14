@@ -10,8 +10,6 @@ class Variable(Symbol):
     def unbind(self) -> None:
         self.is_bound = False
 
-    pass
-
 
 def unbind(*variables: Variable) -> None:
     """Unbinds variables. This indicates that they are no longer bound to a
@@ -19,6 +17,11 @@ def unbind(*variables: Variable) -> None:
     """
     for variable in variables:
         variable.unbind()
+
+
+def variables(*names: str, **kwargs) -> list[Variable]:
+    """Creates a list of variables with the given names."""
+    return [Variable(name, **kwargs) for name in names]
 
 
 Var = Variable

@@ -114,7 +114,7 @@ class _Junction(Proposition, Generic[*Ps]):
         )
         return new_p
 
-    def remove_duplicates(self) -> _Junction:
+    def remove_duplicates(self) -> _Junction | Proposition:
         """
         Remove duplicate propositions from the _junction.
         Returns an equivalent proposition.
@@ -125,6 +125,8 @@ class _Junction(Proposition, Generic[*Ps]):
             if prop not in added:
                 props.append(prop)
                 added.add(prop)
+        if len(props) == 1:
+            return props[0]
         new_p = self.__class__(
             *props,
             is_assumption=self.is_assumption,

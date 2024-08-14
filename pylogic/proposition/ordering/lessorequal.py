@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 
 class LessOrEqual(BinaryRelation, _Ordering):
     is_transitive = True
+    is_reflexive = True
     name = "LessThan"
     infix_symbol = "<="
     infix_symbol_latex = r"\leq"

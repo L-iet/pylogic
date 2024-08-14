@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.exor import ExOr
     from pylogic.proposition.implies import Implies
     from pylogic.proposition.quantified.exists import Exists
-    from pylogic.proposition.quantified.forall import Forall
+    from pylogic.proposition.quantified.forall import Forall, ForallInSet
     from pylogic.proposition.not_ import Not
     from pylogic.proposition.contradiction import Contradiction
     from pylogic.variable import Variable
@@ -188,6 +188,19 @@ class Proposition:
         if self.description:
             return "  " * _indent + self.description + "\n"
         return self.as_text(_indent=_indent)
+
+    def set_description(self, description: str) -> Self:
+        """
+        Set the description of the proposition.
+        """
+        self.description = description
+        return self
+    
+    def set_desc(self, description: str) -> Self:
+        """
+        Set the description of the proposition.
+        """
+        return self.set_description(description)
 
     def copy(self) -> Self:
         return self.__class__(
@@ -758,23 +771,30 @@ class Proposition:
         )
         return new_p
 
-    def thus_forall(self, variable: Variable) -> Forall[Self]:
+    def thus_forall(self, variable: Variable) -> Forall[Self] | ForallInSet[Self]:
         """
         Logical tactic.
         Given self is proven, return a new proposition that for all variables, self is true.
         """
         assert self.is_proven, f"{self} is not proven"
-        from pylogic.proposition.quantified.forall import Forall
+        from pylogic.proposition.quantified.forall import Forall, ForallInSet
         from pylogic.inference import Inference
+        from pylogic.structures.sets import Reals
 
-        new_p = Forall(
+        set_ = None
+        if variable.is_real:
+            cls = ForallInSet
+            set_ = Reals
+        else:
+            cls = Forall
+        return cls(
             variable=variable,
+            set_=set_,  # type:ignore
             inner_proposition=self,
             _is_proven=True,
             _inference=Inference(self, rule="thus_forall"),
             _assumptions=get_assumptions(self).copy(),
         )
-        return new_p
 
     def de_morgan(self) -> Self:
         """

@@ -224,3 +224,5 @@ log(a)
 log(p.is_assumption, pImpq.is_assumption)
 
 ###############################
+
+from pylogic.theories.real_analysis import *

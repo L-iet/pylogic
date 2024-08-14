@@ -5,7 +5,7 @@ from pylogic.proposition.or_ import Or
 from pylogic.proposition.exor import ExOr
 from pylogic.proposition.and_ import And
 from pylogic.proposition.not_ import Not, neg
-from pylogic.variable import Variable
+from pylogic.variable import Variable, variables
 from pylogic.constant import Constant
 from pylogic.structures.sets import Set, Reals
 
@@ -13,7 +13,7 @@ from pylogic.expressions.expr import add, mul, sub
 
 import sympy as sp
 
-a, b, c = Variable("a", real=True), Variable("b", real=True), Variable("c", real=True)
+a, b, c, d, f, h = variables("a", "b", "c", "d", "f", "h", real=True)
 x = Variable("x", real=True)
 zero = Constant("0", real=True)
 one = Constant("1", real=True)
@@ -155,13 +155,16 @@ distributive = ForallInSet(
     is_axiom=True,
 )
 
-# theorems
-zero_unique = zero_exists.and_(
-    ForallInSet(b, Reals, is_additive_identity(b).implies(Equals(b, zero)))
-)
-p1 = zero_exists.in_particular(b)
-p2 = add_comm.in_particular(zero).in_particular(b)
-p3 = is_additive_identity(b, is_assumption=True)
-p4 = p3.in_particular(zero)
-# print(add_comm)
-# print(p1, p2, p3, p4, sep="\n")
+# Theorems
+# 0 is unique
+d_eq_d_plus_0 = zero_exists.in_particular(d).p_symmetric()
+d_plus_0_eq_0_plus_d = add_comm.in_particular(d).in_particular(zero)
+forall_a_in_reals_a_plus_d_eq_a = is_additive_identity(d, is_assumption=True)
+zero_plus_d_eq_0 = forall_a_in_reals_a_plus_d_eq_a.in_particular(zero)
+d_eq_0 = d_eq_d_plus_0.transitive(d_plus_0_eq_0_plus_d).transitive(zero_plus_d_eq_0)
+zero_unique = zero_exists.p_and(
+    d_eq_0.followed_from(forall_a_in_reals_a_plus_d_eq_a).thus_forall(d)
+).set_description("The additive identity of real numbers is unique")
+print(zero_unique.from_assumptions, zero_unique.is_proven)
+print(zero_unique._is_proven, zero_unique.is_assumption, zero_unique.is_axiom)
+print(d_eq_0.from_assumptions)

@@ -230,6 +230,18 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
         )
         return new_p
 
+    def copy(self) -> Self:
+        return self.__class__(
+            self.variable,
+            self.set_.copy(),
+            self._inner_without_set.copy(),
+            is_assumption=self.is_assumption,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
+        )
+
     def to_forall(self) -> Forall[Implies[IsContainedIn, TProposition]]:
         """
         Convert self to a regular `forall` statement.

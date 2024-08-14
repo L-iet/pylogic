@@ -21,6 +21,8 @@ if TYPE_CHECKING:
 
 class BinaryRelation(Relation):
     is_transitive: bool = False
+    is_reflexive: bool = False
+    is_symmetric: bool = False
     name: str = "BR"
     infix_symbol: str = "BR"
     infix_symbol_latex: str = "BR"
