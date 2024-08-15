@@ -5,10 +5,15 @@ from pylogic.variable import Variable
 from pylogic.expressions.expr import Expr, replace as _replace
 
 if TYPE_CHECKING:
+    from fractions import Fraction
     from pylogic.symbol import Symbol
     from pylogic.structures.sets import Set
+    from sympy import Basic
 
-    Term = Symbol | Set | Expr | int | float
+    Numeric = Fraction | int | float
+    PBasic = Symbol | Numeric
+    Unevaluated = Symbol | Set | Expr
+    Term = Unevaluated | Numeric | Basic
     Unification = dict[Variable, Term]
 
 

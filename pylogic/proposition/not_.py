@@ -170,7 +170,7 @@ class Not(Proposition, Generic[TProposition]):
                 neg(p.de_morgan()) for p in self.negated.propositions  # type:ignore
             ]
             return Or(
-                *negs,
+                *negs,  # type: ignore
                 _is_proven=self.is_proven,
                 _assumptions=get_assumptions(self).copy(),
                 _inference=Inference(self, rule="de_morgan"),
@@ -180,7 +180,7 @@ class Not(Proposition, Generic[TProposition]):
                 neg(p.de_morgan()) for p in self.negated.propositions  # type:ignore
             ]
             return And(
-                *negs,
+                *negs,  # type: ignore
                 _is_proven=self.is_proven,
                 _assumptions=get_assumptions(self).copy(),
                 _inference=Inference(self, rule="de_morgan"),

@@ -252,22 +252,50 @@ def maybe_evaluate(expr: sp.Basic | T, should_evaluate: bool = False) -> sp.Basi
     return expr
 
 
+@overload
+def sqrt(expr: PBasic | Expr, evaluate: Literal[False] = False) -> Pow: ...
+@overload
+def sqrt(expr: PBasic | Expr, evaluate: Literal[True] = True) -> sp.Basic: ...
 def sqrt(expr: PBasic | Expr, evaluate=False) -> sp.Basic | Pow:
     return maybe_evaluate(Pow(expr, Fraction(1, 2)), evaluate)
 
 
+@overload
+def mul(*args: PBasic | Expr, evaluate: Literal[False] = False) -> Mul: ...
+@overload
+def mul(*args: PBasic | Expr, evaluate: Literal[True] = True) -> sp.Basic: ...
 def mul(*args: PBasic | Expr, evaluate=False) -> sp.Basic | Mul:
     return maybe_evaluate(Mul(*args), evaluate)
 
 
+@overload
+def add(*args: PBasic | Expr, evaluate: Literal[False] = False) -> Add: ...
+@overload
+def add(*args: PBasic | Expr, evaluate: Literal[True] = True) -> sp.Basic: ...
 def add(*args: PBasic | Expr, evaluate=False) -> sp.Basic | Add:
     return maybe_evaluate(Add(*args), evaluate)
 
 
+@overload
+def sub(
+    a: PBasic | Expr, b: PBasic | Expr, evaluate: Literal[False] = False
+) -> Add: ...
+@overload
+def sub(
+    a: PBasic | Expr, b: PBasic | Expr, evaluate: Literal[True] = True
+) -> sp.Basic: ...
 def sub(a: PBasic | Expr, b: PBasic | Expr, evaluate=False) -> sp.Basic | Add:
     return maybe_evaluate(Add(a, -b), evaluate)
 
 
+@overload
+def div(
+    a: PBasic | Expr, b: PBasic | Expr, evaluate: Literal[False] = False
+) -> Mul: ...
+@overload
+def div(
+    a: PBasic | Expr, b: PBasic | Expr, evaluate: Literal[True] = True
+) -> sp.Basic: ...
 def div(a: PBasic | Expr, b: PBasic | Expr, evaluate=False) -> sp.Basic | Mul:
     return maybe_evaluate(Mul(a, Pow(b, -1)), evaluate)
 

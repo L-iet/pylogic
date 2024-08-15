@@ -5,12 +5,16 @@ from sympy import Set as SympySet
 import sympy as sp
 
 if TYPE_CHECKING:
+    from fractions import Fraction
     from pylogic.symbol import Symbol
     from pylogic.structures.sets import Set
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.relation.contains import IsContainedIn
 
-    Term = Symbol | Set | Expr | int | float
+    Numeric = Fraction | int | float
+    PBasic = Symbol | Numeric
+    Unevaluated = Symbol | Set | Expr
+    Term = Unevaluated | Numeric | sp.Basic
 
 
 class Set:

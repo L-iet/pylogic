@@ -128,7 +128,7 @@ class _Junction(Proposition, Generic[*Ps]):
         if len(props) == 1:
             return props[0]
         new_p = self.__class__(
-            *props,
+            *props,  # type: ignore
             is_assumption=self.is_assumption,
             description=self.description,
             _is_proven=self._is_proven,
@@ -218,18 +218,18 @@ Occured when trying to unify `{self}` and `{other}`"
         if len(rem_props) == 1:
             rem_props[0]._is_proven = True
             rem_props[0].from_assumptions = get_assumptions(self).union(p_assumptions)
-            rem_props[0].deduced_from = Inference(self, *props, rule="resolve")
+            rem_props[0].deduced_from = Inference(self, *props, rule="resolve")  # type: ignore
             return rem_props[0]
         if len(rem_props) == 0:
             return Contradiction(
                 _is_proven=True,
-                _inference=Inference(self, *props, rule="resolve"),
+                _inference=Inference(self, *props, rule="resolve"),  # type: ignore
                 _assumptions=get_assumptions(self).union(p_assumptions),
             )
         return self.__class__(
-            *rem_props,
+            *rem_props,  # type: ignore
             _is_proven=True,
-            _inference=Inference(self, *props, rule="resolve"),
+            _inference=Inference(self, *props, rule="resolve"),  # type: ignore
             _assumptions=get_assumptions(self).union(p_assumptions),
         )
 

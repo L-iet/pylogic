@@ -1,3 +1,4 @@
+# pyright: reportInvalidTypeForm=false
 from __future__ import annotations
 from pylogic.inference import Inference
 from pylogic.proposition.proposition import Proposition
@@ -54,7 +55,7 @@ class Contradiction(Proposition):
         from pylogic.proposition.not_ import neg
 
         return Or(
-            *[neg(a) for a in self.from_assumptions],
+            *[neg(a) for a in self.from_assumptions],  # type: ignore
             description="",
             _is_proven=True,
             _assumptions=self.from_assumptions,

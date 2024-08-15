@@ -1,3 +1,4 @@
+# pyright: reportInvalidTypeForm=false
 from __future__ import annotations
 from pylogic.inference import Inference
 from pylogic.proposition.proposition import Proposition
@@ -212,7 +213,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             new_p.from_assumptions = get_assumptions(self).union(in_body_assumptions)
             return new_p
         new_p = Implies(
-            And(*rem_props),
+            And(*rem_props),  # type: ignore
             self.consequent,
             _is_proven=True,
             _assumptions=get_assumptions(self).union(in_body_assumptions),

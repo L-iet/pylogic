@@ -66,7 +66,7 @@ class Or(_Junction[*Ps]):
             neg(p.de_morgan()) for p in self.propositions  # type:ignore
         ]
         return Not(
-            And(*negs),
+            And(*negs),  # type: ignore
             description=self.description,
             _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),

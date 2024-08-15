@@ -165,6 +165,6 @@ d_eq_0 = d_eq_d_plus_0.transitive(d_plus_0_eq_0_plus_d).transitive(zero_plus_d_e
 zero_unique = zero_exists.p_and(
     d_eq_0.followed_from(forall_a_in_reals_a_plus_d_eq_a).thus_forall(d)
 ).set_description("The additive identity of real numbers is unique")
-print(zero_unique.from_assumptions, zero_unique.is_proven)
-print(zero_unique._is_proven, zero_unique.is_assumption, zero_unique.is_axiom)
-print(d_eq_0.from_assumptions)
+print(zero_unique)
+
+print(distributive)

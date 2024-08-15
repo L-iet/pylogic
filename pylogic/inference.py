@@ -1,4 +1,4 @@
-from typing import Literal, TypeVar, TypeVarTuple
+from typing import Literal, TypeVar, TypeVarTuple, Generic
 
 from pylogic.proposition.proposition import Proposition
 
@@ -68,7 +68,7 @@ T = TypeVar("T", bound="Proposition")
 Props = TypeVarTuple("Props")
 
 
-class Inference:
+class Inference(Generic[T, *Props]):
     """
     Represents an inference in a proof.
 

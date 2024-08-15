@@ -195,7 +195,7 @@ class Proposition:
         """
         self.description = description
         return self
-    
+
     def set_desc(self, description: str) -> Self:
         """
         Set the description of the proposition.
@@ -364,7 +364,7 @@ class Proposition:
                 props.extend(p.propositions)
             else:
                 props.append(p)
-        new_p = And(*props, is_assumption=is_assumption, **kwargs)
+        new_p = And(*props, is_assumption=is_assumption, **kwargs)  # type: ignore
         if not allow_duplicates:
             return new_p.remove_duplicates()
         return new_p
@@ -456,7 +456,7 @@ class Proposition:
         """
         first = others[0]
         rest = others[1:]
-        return first.or_(
+        return first.or_(  # type: ignore
             *rest,
             self,
             is_assumption=is_assumption,
@@ -529,7 +529,7 @@ class Proposition:
         for o in others:
             assert o.is_proven, f"{o} is not proven"  # type:ignore
         all_assumptions = get_assumptions(self).union(
-            *[get_assumptions(o) for o in others]
+            *[get_assumptions(o) for o in others]  # type: ignore
         )
         new_p = self.and_(
             *others,
@@ -553,7 +553,7 @@ class Proposition:
         for o in others:
             assert o.is_proven, f"{o} is not proven"  # type:ignore
         all_assumptions = get_assumptions(self).union(
-            *[get_assumptions(o) for o in others]
+            *[get_assumptions(o) for o in others]  # type:ignore
         )
         new_p = self.and_reverse(
             *others,
@@ -722,7 +722,9 @@ class Proposition:
                 a_s.append(new_a)
             new_p = cast(Implies[And[*Props], Self], And(*a_s).implies(self))  # type: ignore
         new_p._is_proven = True
-        new_p.deduced_from = Inference(self, *assumptions, rule="followed_from")
+        new_p.deduced_from = Inference(
+            self, *assumptions, rule="followed_from"  # type:ignore
+        )
         new_p.from_assumptions = set()
         return new_p
 
