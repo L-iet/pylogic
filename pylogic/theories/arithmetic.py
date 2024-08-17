@@ -62,9 +62,9 @@ def weak_induction(
     pred = induction_step.inner_proposition.consequent
     p0 = pred.replace(n, -1)
     # print(p0, base_case, prem2.replace(n, 0))
-    assert (
-        p0 == base_case == prem2.replace(n, 0)
-    ), f"Base case {base_case} must be the same as P(0)"
+    assert p0.eval_same(base_case) and base_case.eval_same(
+        prem2.replace(n, 0)
+    ), f"Base case {base_case} must be the same as P(0) {p0}"
     n.unbind()
     return Forall(
         n,
@@ -134,8 +134,8 @@ def strong_induction(
     ), f"{inner_prem2} must be a LessOrEqual statement"
     pred = prem2.inner_proposition.consequent
     pred_cons = induction_step.inner_proposition.consequent
-    assert (
-        base_case == pred.replace(m, 0) == pred_cons.replace(n, -1)
+    assert pred.replace(m, 0).eval_same(base_case) and base_case.eval_same(
+        pred_cons.replace(n, -1)
     ), "Terms used in the base case and induction step do not match accordingly."
     return Forall(
         n,

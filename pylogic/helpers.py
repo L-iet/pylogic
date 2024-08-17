@@ -2,14 +2,14 @@ from __future__ import annotations
 from typing import Any, TYPE_CHECKING, Literal, Iterable, Callable, TypeVar
 from pylogic.proposition.proposition import Proposition
 from pylogic.variable import Variable
+from pylogic.symbol import Symbol
+from pylogic.structures.sets import Set
 from pylogic.expressions.expr import Expr, replace as _replace
 
 T = TypeVar("T")
 
 if TYPE_CHECKING:
     from fractions import Fraction
-    from pylogic.symbol import Symbol
-    from pylogic.structures.sets import Set
     from sympy import Basic
 
     Numeric = Fraction | int | float
@@ -21,6 +21,17 @@ if TYPE_CHECKING:
 
 def replace(expr, old, new) -> Any:
     return _replace(expr, old, new)
+
+
+def eval_same(x: Any, y: Any) -> bool:
+    """
+    Check if x and y evaluate to the same value.
+    """
+    if isinstance(x, (Symbol, Set, Expr)):
+        return x.eval_same(y)
+    if isinstance(y, (Symbol, Set, Expr)):
+        return eval_same(y, x)
+    return x == y
 
 
 # TODO: Change unification so that we cannot prove

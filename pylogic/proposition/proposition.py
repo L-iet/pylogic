@@ -151,6 +151,14 @@ class Proposition:
             return self.name == other.name and self.args == other.args
         return False
 
+    def eval_same(self, other: Proposition) -> bool:
+        from pylogic.helpers import eval_same
+
+        return self.name == other.name and all(
+            eval_same(self_arg, other_arg)
+            for self_arg, other_arg in zip(self.args, other.args)
+        )
+
     def __hash__(self) -> int:
         return hash((self.name, *self.args))
 

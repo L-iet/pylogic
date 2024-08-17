@@ -1,5 +1,14 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Self, Any, TypeVar, overload, Literal
+from typing import (
+    TYPE_CHECKING,
+    Self,
+    Any,
+    TypeVar,
+    overload,
+    Literal,
+    Generic,
+    Callable,
+)
 from abc import ABC, abstractmethod
 from fractions import Fraction
 from pylogic.structures.sets import Set
@@ -9,6 +18,7 @@ import sympy as sp
 if TYPE_CHECKING:
     from pylogic.symbol import Symbol
     from pylogic.variable import Variable
+    from pylogic.proposition.relation.equals import Equals
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
@@ -20,6 +30,7 @@ class Expr(ABC):
     def __init__(self, *args: PBasic | Expr):
         from pylogic.symbol import Symbol
 
+        assert len(args) > 0, "Must provide at least one argument"
         self.args = args
         self.symbols: set[Symbol] = set()  # symbols present in this expression
         for arg in args:
@@ -82,21 +93,26 @@ class Expr(ABC):
     def __rpow__(self, other: Expr | PBasic) -> Pow:
         return Pow(other, self)
 
-    def equals(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """
-        Check if two expressions are equal, essentially identical.
+        Check if two expressions are structurally equal, essentially identical.
         """
         if isinstance(other, Expr):
-            return self.args == other.args
+            return isinstance(other, self.__class__) and self.args == other.args
         return False
 
-    def __eq__(self, other: Any) -> bool:
+    def eval_same(self, other: Any) -> bool:
         """
         Check if two expressions evaluate to the same value.
         """
         if isinstance(other, Expr):
             return self.evaluate() == other.evaluate()
         return self.evaluate() == other
+
+    def equals(self, other: Term, **kwargs) -> Equals:
+        from pylogic.proposition.relation.equals import Equals
+
+        return Equals(self, other, **kwargs)
 
     def __hash__(self) -> int:
         return hash((self.__class__.__name__, self.args))
@@ -148,6 +164,24 @@ if TYPE_CHECKING:
     Unevaluated = Symbol | Set | Expr
     Term = Unevaluated | Numeric | sp.Basic
     Unification = dict[Variable, Term]
+
+U = TypeVar("U")
+
+
+class CustomExpr(Expr, Generic[U]):
+    def __init__(self, name: str, *args: PBasic | Expr, eval_func: Callable[..., U]):
+        super().__init__(*args)
+        self.name = name
+        self.eval_func = eval_func
+
+    def evaluate(self) -> U:
+        return self.eval_func()
+
+    def _latex(self) -> str:
+        return "{" + " + ".join([_latex(a) for a in self.args]) + "}"
+
+    def __str__(self) -> str:
+        return " + ".join(map(str, self.args))
 
 
 class Add(Expr):

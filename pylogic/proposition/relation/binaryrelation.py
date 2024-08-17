@@ -93,13 +93,14 @@ class BinaryRelation(Relation):
         returns a proven relation of the form a Relation c.
         """
         from pylogic.inference import Inference
+        from pylogic.helpers import eval_same
 
         assert self.__class__.is_transitive, f"{self.__class__} is not transitive"
         assert self.is_proven, f"{self} is not proven"
         assert other.is_proven, f"{other} is not proven"
         assert isinstance(other, self.__class__), f"{other} is not a {self.__class__}"
-        assert (
-            self.right == other.left
+        assert eval_same(
+            self.right, other.left
         ), f"{self} and {other} do not fulfill transitivity"
         new_p = self.__class__(
             self.left,

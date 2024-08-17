@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Self, cast
+from typing import Any, Self, cast, TYPE_CHECKING
 from fractions import Fraction
 
 from pylogic.expressions.expr import Expr, Add, Mul, Pow
@@ -8,6 +8,9 @@ import sympy as sp
 from sympy.matrices.expressions.matexpr import MatrixElement as MatEl
 
 Numeric = Fraction | int | float
+
+if TYPE_CHECKING:
+    from pylogic.proposition.relation.equals import Equals
 
 
 class Symbol:
@@ -66,6 +69,9 @@ class Symbol:
         return Pow(other, self)
 
     def __eq__(self, other: Any) -> bool:
+        """
+        Check if two symbols are structurally equal.
+        """
         if isinstance(other, Symbol):
             return (
                 self.name == other.name
@@ -78,6 +84,19 @@ class Symbol:
                 and self.is_sequence == other.is_sequence
             )
         return False
+
+    def eval_same(self, other: Any) -> bool:
+        """
+        Check if two symbols evaluate to the same value.
+        """
+        if isinstance(other, Symbol):
+            return self.evaluate() == other.evaluate()
+        return self.evaluate() == other
+
+    def equals(self, other: Symbol | Numeric | Expr, **kwargs) -> Equals:
+        from pylogic.proposition.relation.equals import Equals
+
+        return Equals(self, other, **kwargs)
 
     def _latex(self) -> str:
         return self.name

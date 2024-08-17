@@ -16,7 +16,7 @@ from pylogic.helpers import assume
 
 import sympy as sp
 
-a, b, c, d, f, h = variables("a", "b", "c", "d", "f", "h", real=True)
+a, b, c, d, f, h, t = variables("a", "b", "c", "d", "f", "h", "t", real=True)
 x = Variable("x", real=True)
 zero = Constant(0, real=True)
 one = Constant(1, real=True)
@@ -68,7 +68,7 @@ def is_additive_identity(z, is_axiom=False, is_assumption=False):
     )
 
 
-zero_exists = is_additive_identity(zero, True)
+zero_exists = is_additive_identity(zero, is_axiom=True)
 
 add_inv = ForallInSet(
     a,
@@ -116,11 +116,22 @@ mul_comm = ForallInSet(
     is_axiom=True,
 )
 
-one_exists = neg(Equals(one, zero)).and_(
-    ForallInSet(a, Reals, Equals(mul(a, one), a)),
-    description=f"{one} is a multiplicative identity of real numbers",
-    is_axiom=True,
-)
+one_neq_zero = neg(Equals(one, zero), description="1 is not equal to 0", is_axiom=True)
+
+
+def is_multiplicative_identity(t, is_axiom=False, is_assumption=False):
+    return ForallInSet(
+        a,
+        Reals,
+        Equals(mul(a, t), a),
+        description=f"{t} is a multiplicative identity of real numbers",
+        is_axiom=is_axiom,
+        is_assumption=is_assumption,
+    )
+
+
+one_exists = is_multiplicative_identity(one, is_axiom=True)
+
 
 mul_inv = ForallInSet(
     a,
@@ -168,7 +179,6 @@ d_eq_0 = d_eq_d_plus_0.transitive(d_plus_0_eq_0_plus_d).transitive(zero_plus_d_e
 zero_unique = zero_exists.p_and(
     d_eq_0.followed_from(forall_a_in_reals_a_plus_d_eq_a).thus_forall(d)
 ).set_description("The additive identity of real numbers is unique")
-print(zero_unique)
 
 # another style of proof, same proof
 additive_identity = is_additive_identity
@@ -180,4 +190,14 @@ p4 = 0 + d | equals | 0 | by | forall_a_in_reals_a_plus_d_eq_a  # type: ignore
 p5 = d | equals | 0 + d | by(p2, p3, rule="transitive")
 p6 = d | equals | 0 | by(p5, p4, rule="transitive")
 zero_unique2 = zero_exists.p_and(p6.close_all_scopes())
-print(zero_unique2)
+
+# 1 is unique
+d_eq_d_times_1 = one_exists.in_particular(d).symmetric()
+d_times_1_eq_1_times_d = mul_comm.in_particular(d).in_particular(one)
+forall_a_in_reals_a_times_d_eq_a = is_multiplicative_identity(d, is_assumption=True)
+one_times_d_eq_1 = forall_a_in_reals_a_times_d_eq_a.in_particular(one)
+d_eq_1 = d_eq_d_times_1.transitive(d_times_1_eq_1_times_d).transitive(one_times_d_eq_1)
+forall_d_eq_1 = d_eq_1.close_all_scopes()
+one_unique = one_exists.p_and(forall_d_eq_1).set_description(
+    "The multiplicative identity of real numbers is unique"
+)

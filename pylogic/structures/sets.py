@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from pylogic.structures.sets import Set
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.relation.contains import IsContainedIn
+    from pylogic.proposition.relation.equals import Equals
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
@@ -40,17 +41,25 @@ class Set:
             lambda x: False
         )
 
-    def __eq__(self, other: object) -> bool:
+    def eval_same(self, other: object) -> bool:
         if isinstance(other, sp.Set):
             return self.sympy_set == other
         elif not isinstance(other, Set):
             return False
         return self.sympy_set == other.sympy_set
 
-    def equals(self, other: Set) -> bool:
+    def __eq__(self, other: Set) -> bool:
+        """
+        Check if two sets are structurally equal.
+        """
         if not isinstance(other, Set):
             return False
         return self.sympy_set == other.sympy_set
+
+    def equals(self, other: Set, **kwargs) -> Equals:
+        from pylogic.proposition.relation.equals import Equals
+
+        return Equals(self, other, **kwargs)
 
     def dummy_eq(self, other: object) -> bool:
         if not isinstance(other, Set):
