@@ -20,3 +20,5 @@ axioms: list[Proposition] = [
     mul_inv,
     distributive,
 ]
+
+from pylogic.structures.groups import *

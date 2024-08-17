@@ -57,14 +57,16 @@ class SpecialInfix(InfixOnly, Generic[T, U, V, W]):
     W is the return type when called.
     """
 
-    def __init__(self, operate: Callable[[T, U], V]):
+    def __init__(
+        self, operate: Callable[[T, U], V], call: Callable[..., W] | None = None
+    ):
         super().__init__(operate)
+        self.call: Callable[..., W] | None = call
 
     def __ror__(self, other: T) -> PrefixOnly[U, V]:
         return super().__ror__(other)
 
     def __call__(self, *args: Any, **kwds: Any) -> W:
+        if self.call is None:
+            raise NotImplementedError
         return self.call(*args, **kwds)
-
-    def call(self, *args: Any, **kwds: Any) -> W:
-        raise NotImplementedError

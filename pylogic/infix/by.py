@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TypeVar, TYPE_CHECKING, cast
+from typing import Annotated, TypeVar, TYPE_CHECKING, cast
 from pylogic.infix.infix import SpecialInfix
 from pylogic.proposition.proposition import Proposition
 
@@ -47,9 +47,8 @@ class ByProvers:
         raise ValueError(f"{self.starting_premise} does not have a method {self.rule}")
 
 
-class ByInfix(SpecialInfix[P, Proposition, P, ByProvers]):
-    def call(self, *ps: Proposition, rule: str = "") -> ByProvers:
-        return ByProvers(*ps, rule=rule)
+def by_call(*ps: Proposition, rule: str = "") -> ByProvers:
+    return ByProvers(*ps, rule=rule)
 
 
 def by_forall(p: P, prover: Forall[Proposition] | ForallInSet[Proposition]) -> P:
@@ -84,8 +83,7 @@ def by_forall(p: P, prover: Forall[Proposition] | ForallInSet[Proposition]) -> P
     return new_p
 
 
-@ByInfix[Proposition]
-def by(p: P, prover: Proposition) -> P:
+def _by(p: P, prover: Proposition) -> P:
     """
     Logical tactic. We try to prove p using prover.
     """
@@ -95,3 +93,9 @@ def by(p: P, prover: Proposition) -> P:
     if isinstance(prover, Forall):
         return by_forall(p, prover)
     return p
+
+
+by: Annotated[
+    SpecialInfix[Proposition, Proposition, Proposition, ByProvers],
+    "Logical tactic. We try to prove the left argument using the right (prover)",
+] = SpecialInfix(_by, by_call)

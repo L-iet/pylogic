@@ -169,19 +169,66 @@ U = TypeVar("U")
 
 
 class CustomExpr(Expr, Generic[U]):
-    def __init__(self, name: str, *args: PBasic | Expr, eval_func: Callable[..., U]):
+    """
+    U is the return type after evaluating the expression.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        *args: PBasic | Expr,
+        eval_func: Callable[..., U] | None = None,
+        latex_func: Callable[..., str] | None = None,
+    ):
         super().__init__(*args)
         self.name = name
         self.eval_func = eval_func
+        self.latex_func = latex_func
+
+    def __repr__(self) -> str:
+        return f"CustomExpr{self.name.capitalize()}({', '.join(map(repr, self.args))})"
 
     def evaluate(self) -> U:
-        return self.eval_func()
+        """
+        Calls the evaluation function with the arguments.
+        May not return a sympy object, depending on eval_func.
+        """
+        if self.eval_func is None:
+            raise NotImplementedError(f"Cannot evaluate {self.name}")
+        return self.eval_func(*self.args)
 
     def _latex(self) -> str:
-        return "{" + " + ".join([_latex(a) for a in self.args]) + "}"
+        if self.latex_func is None:
+            return repr(self)
+        return self.latex_func(*self.args)
 
     def __str__(self) -> str:
-        return " + ".join(map(str, self.args))
+        return f"{self.name}({', '.join(map(str, self.args))})"
+
+
+class BinaryOperation(CustomExpr[U]):
+    def __init__(
+        self,
+        name: str,
+        symbol: str,
+        left: PBasic | Expr,
+        right: PBasic | Expr,
+        eval_func: Callable[[U, U], U] | None = None,
+        latex_func: Callable[[str, str], str] | None = None,
+    ):
+        super().__init__(name, left, right, eval_func=eval_func, latex_func=latex_func)
+        self.symbol = symbol
+        self.left = left
+        self.right = right
+
+    def __repr__(self) -> str:
+        return f"BinOp{self.name.capitalize()}({self.left}, {self.right})"
+
+    def _latex(self) -> str:
+        return f"{_latex(self.left)} {self.symbol} {_latex(self.right)}"
+
+    def __str__(self) -> str:
+        return f"{self.left} {self.symbol} {self.right}"
 
 
 class Add(Expr):

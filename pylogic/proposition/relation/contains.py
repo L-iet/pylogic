@@ -82,7 +82,10 @@ class IsContainedIn(BinaryRelation):
         it contains the element.
         """
         try:
-            if evaluate(self.left) in self.right.sympy_set:
+            if (
+                self.left in self.right.elements
+                or evaluate(self.left) in self.right.sympy_set
+            ):
                 return IsContainedIn(
                     copy.copy(self.element),
                     self.set_.copy(),

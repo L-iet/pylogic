@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable, TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING, Iterable
 
 from sympy import Set as SympySet
 import sympy as sp
@@ -23,6 +23,7 @@ class Set:
         self,
         name: str | None = None,
         sympy_set: SympySet | None = None,
+        elements: Iterable[Term] | None = None,
         containment_function: Callable[[Term], bool] | None = None,
     ):
         if name:
@@ -37,8 +38,9 @@ class Set:
         assert " " not in name, "Set name cannot contain spaces"
         self.name = name or str(sympy_set)
         self.sympy_set = sympy_set
+        self.elements = elements or []
         self.containment_function: Callable[[Term], bool] = containment_function or (
-            lambda x: False
+            lambda x: x in self.elements
         )
 
     def eval_same(self, other: object) -> bool:
@@ -94,7 +96,7 @@ class Set:
         return f"$${self._latex()}$$"
 
     def copy(self) -> Set:
-        return Set(self.name, self.sympy_set, self.containment_function)
+        return Set(self.name, self.sympy_set, self.elements, self.containment_function)
 
 
 Integers = Set(sympy_set=sp.Integers)
@@ -109,3 +111,5 @@ Graphs = Set(name="Graphs", containment_function=lambda x: x.is_graph)  # type: 
 Sequences = Set(name="Sequences", containment_function=lambda x: x.is_sequence)  # type: ignore
 # Lists = Set(name="Lists", containment_function=lambda x: x.is_list) # type: ignore
 # Pairs = Set(name="Pairs", containment_function=lambda x: x.is_pair) # type: ignore
+
+x = sp.Symbol("x")
