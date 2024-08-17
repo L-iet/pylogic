@@ -61,7 +61,7 @@ rules: set[str] = {
     "resolve",
     "extract",
     "apply",
-    "p_symmetric",
+    "symmetric",
 }
 
 T = TypeVar("T", bound="Proposition")

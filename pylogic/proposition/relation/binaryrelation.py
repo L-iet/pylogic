@@ -109,3 +109,19 @@ class BinaryRelation(Relation):
             _inference=Inference(self, other, rule="transitive"),
         )
         return new_p
+
+    def symmetric(self) -> Self:
+        """
+        Logical tactic. If self is proven, return a proof of self.right Relation self.left.
+        """
+        from pylogic.inference import Inference
+
+        assert self.__class__.is_symmetric, f"{self.__class__} is not symmetric"
+        assert self.is_proven, f"{self} is not proven"
+        return self.__class__(
+            self.right,
+            self.left,
+            _is_proven=True,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="symmetric"),
+        )

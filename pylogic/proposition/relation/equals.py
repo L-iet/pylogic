@@ -147,19 +147,6 @@ class Equals(BinaryRelation):
         new_prop.deduced_from = Inference(self, other_prop, rule="p_substitute_into")
         return new_prop
 
-    def p_symmetric(self) -> Equals:
-        """
-        Logical tactic. If self is proven, return a proof of self.right = self.left.
-        """
-        assert self.is_proven, f"{self} is not proven"
-        return Equals(
-            self.right,
-            self.left,
-            _is_proven=True,
-            _assumptions=get_assumptions(self),
-            _inference=Inference(self, rule="p_symmetric"),
-        )
-
     def zero_abs_is_0(self) -> Equals:
         """
         Logical tactic. If self is of the form Abs(x) = 0,

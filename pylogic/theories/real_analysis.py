@@ -160,7 +160,7 @@ distributive = ForallInSet(
 
 # Theorems
 # 0 is unique
-d_eq_d_plus_0 = zero_exists.in_particular(d).p_symmetric()
+d_eq_d_plus_0 = zero_exists.in_particular(d).symmetric()
 d_plus_0_eq_0_plus_d = add_comm.in_particular(d).in_particular(zero)
 forall_a_in_reals_a_plus_d_eq_a = is_additive_identity(d, is_assumption=True)
 zero_plus_d_eq_0 = forall_a_in_reals_a_plus_d_eq_a.in_particular(zero)
@@ -173,7 +173,7 @@ print(zero_unique)
 # another style of proof, same proof
 additive_identity = is_additive_identity
 p1 = d + 0 | equals | d | by | zero_exists
-p2 = d | equals | d + 0 | by(p1, rule="p_symmetric")
+p2 = d | equals | d + 0 | by(p1, rule="symmetric")
 p3 = d + 0 | equals | 0 + d | by | add_comm
 forall_a_in_reals_a_plus_d_eq_a = assume(d | is_ | additive_identity)
 p4 = 0 + d | equals | 0 | by | forall_a_in_reals_a_plus_d_eq_a  # type: ignore
