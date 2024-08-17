@@ -1,5 +1,11 @@
+from typing import cast
 from pylogic.theories.real_analysis import *
 from pylogic.proposition.proposition import Proposition
+
+from pylogic.infix.by import by
+from pylogic.infix.is_ import equals, is_
+
+from pylogic.helpers import assume
 
 printing = True
 

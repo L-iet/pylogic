@@ -8,6 +8,7 @@ import sympy as sp
 
 if TYPE_CHECKING:
     from pylogic.symbol import Symbol
+    from pylogic.variable import Variable
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
@@ -17,7 +18,15 @@ class Expr(ABC):
     is_real = None
 
     def __init__(self, *args: PBasic | Expr):
+        from pylogic.symbol import Symbol
+
         self.args = args
+        self.symbols: set[Symbol] = set()  # symbols present in this expression
+        for arg in args:
+            if isinstance(arg, Symbol):
+                self.symbols.add(arg)
+            elif isinstance(arg, Expr):
+                self.symbols.update(arg.symbols)
 
     @abstractmethod
     def evaluate(self) -> sp.Basic:
@@ -102,9 +111,43 @@ class Expr(ABC):
     def doit(self) -> sp.Basic:
         return self.evaluate().doit()
 
+    def unify(self, other: Self) -> Unification | Literal[True] | None:
+        """
+        Algorithm to unify two expressions.
+        If unification succeeds, a dictionary of values to instantiate variables
+        to is returned.
+        The dictionary never instantiates a variable `y` to variable `y`.
+        It may instantiate a variable `y` to variable `x` or a variable
+        `y` to a symbol or value `y`.
+        If no instantiations need to be made (eg propositions are equal),
+        return True.
+        Otherwise (unification fails), return None.
+        """
+        if self.__class__ != other.__class__ or len(self.args) != len(other.args):
+            return None
+        from pylogic.helpers import unify as term_unify
+
+        d: Unification = {}
+        for s_arg, o_arg in zip(self.args, other.args):
+            res = term_unify(s_arg, o_arg)
+            if isinstance(res, dict):
+                for k in res:
+                    if k in d and d[k] != res[k]:
+                        return None
+                    d[k] = res[k]
+            elif res is None:
+                return None
+        if len(d) == 0:
+            return True
+        else:
+            return d
+
 
 if TYPE_CHECKING:
     T = TypeVar("T", bound=Expr | PBasic, covariant=True)
+    Unevaluated = Symbol | Set | Expr
+    Term = Unevaluated | Numeric | sp.Basic
+    Unification = dict[Variable, Term]
 
 
 class Add(Expr):

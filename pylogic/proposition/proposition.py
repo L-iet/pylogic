@@ -67,12 +67,14 @@ class Proposition:
         Name of the proposition. Typically the first part of the __repr__.
     is_assumption: bool
         Whether this proposition is an assumption.
-    args: list[Term] | None
-        The arguments of the proposition. If None, we assume the proposition has no arguments.
+    args: list[Term|Set]
+        The arguments of the proposition.
     arity: int
         The number of arguments of the proposition.
     is_proven: bool
         Whether the proposition is proven.
+    from_assumptions: set[Proposition]
+        The assumptions that were used to deduce this proposition. Excludes self.
     """
 
     tactics: list[Tactic] = [
@@ -107,9 +109,8 @@ class Proposition:
             negations are never proven.
         description: str
             A description of what this proposition is.
-        args: list[Set | SympyExpression] | None
+        args: list[Set | Term] | None
             The arguments of the proposition. If None, we assume the proposition has no arguments.
-
         """
         from pylogic.inference import Inference
 
@@ -798,6 +799,30 @@ class Proposition:
             _assumptions=get_assumptions(self).copy(),
         )
 
+    def close_all_scopes(self) -> Proposition:
+        """
+        Logical tactic.
+        Close all scopes in the proposition.
+        If assumptions (A) were used to deduce this proposition (self), they are
+        removed and we get a proof of A -> self.
+        If variables exist in the proposition, they are universally quantified.
+        Universal quantifiers scopes are closed last so they are outermost.
+        """
+        from pylogic.expressions.expr import Expr
+        from pylogic.variable import Variable
+
+        new_p = self.followed_from(*self.from_assumptions)
+        all_vars = set()
+        for arg in self.args:
+            if isinstance(arg, Expr):
+                expr_symbols = arg.symbols
+                all_vars.update(expr_symbols)
+            elif isinstance(arg, Variable):
+                all_vars.add(arg)
+        for v in all_vars:
+            new_p = new_p.thus_forall(v)
+        return new_p
+
     def de_morgan(self) -> Self:
         """
         Apply De Morgan's law to self to return an equivalent proposition.
@@ -835,7 +860,7 @@ class Proposition:
         return True.
         Otherwise (unification fails), return None.
 
-        This does not try to unify terms or expressions, only Propositions.
+        Will also unify pylogic.Expr (unevaluated expressions).
         """
         if not isinstance(other, Proposition):
             raise TypeError(f"{other} is not a proposition")
@@ -850,7 +875,6 @@ class Proposition:
         for s_arg, o_arg in zip(self.args, other.args):
             res = term_unify(s_arg, o_arg)
             if isinstance(res, dict):
-                # technically this loop should only run once
                 for k in res:
                     if k in d and d[k] != res[k]:
                         return None

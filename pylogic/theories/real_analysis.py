@@ -10,13 +10,16 @@ from pylogic.constant import Constant
 from pylogic.structures.sets import Set, Reals
 
 from pylogic.expressions.expr import add, mul, sub
+from pylogic.infix.is_ import is_, equals
+from pylogic.infix.by import by
+from pylogic.helpers import assume
 
 import sympy as sp
 
 a, b, c, d, f, h = variables("a", "b", "c", "d", "f", "h", real=True)
 x = Variable("x", real=True)
-zero = Constant("0", real=True)
-one = Constant("1", real=True)
+zero = Constant(0, real=True)
+one = Constant(1, real=True)
 
 # field axioms
 add_assoc = ForallInSet(
@@ -167,4 +170,14 @@ zero_unique = zero_exists.p_and(
 ).set_description("The additive identity of real numbers is unique")
 print(zero_unique)
 
-print(distributive)
+# another style of proof, same proof
+additive_identity = is_additive_identity
+p1 = d + 0 | equals | d | by | zero_exists
+p2 = d | equals | d + 0 | by(p1, rule="p_symmetric")
+p3 = d + 0 | equals | 0 + d | by | add_comm
+forall_a_in_reals_a_plus_d_eq_a = assume(d | is_ | additive_identity)
+p4 = 0 + d | equals | 0 | by | forall_a_in_reals_a_plus_d_eq_a  # type: ignore
+p5 = d | equals | 0 + d | by(p2, p3, rule="transitive")
+p6 = d | equals | 0 | by(p5, p4, rule="transitive")
+zero_unique2 = zero_exists.p_and(p6.close_all_scopes())
+print(zero_unique2)

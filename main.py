@@ -22,6 +22,9 @@ from pylogic.structures.sets import Naturals0, Reals, Set
 from pylogic.expressions.expr import sqrt, sub, add
 from pylogic.expressions.abs import Abs
 
+from pylogic.infix.is_ import is_, equals
+from pylogic.helpers import assume
+
 printing = False
 
 
@@ -225,4 +228,10 @@ log(p.is_assumption, pImpq.is_assumption)
 
 ###############################
 
-from pylogic.theories.real_analysis import *
+printing = False
+
+a = Variable("a")
+p1 = assume(a + 1 | equals | 1)
+log(p1.is_assumption)  # type: ignore
+
+###############################
