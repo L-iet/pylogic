@@ -7,7 +7,7 @@ import sympy as sp
 if TYPE_CHECKING:
     from fractions import Fraction
     from pylogic.symbol import Symbol
-    from pylogic.structures.sets import Set
+    from pylogic.structures.set_ import Set
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
@@ -38,7 +38,7 @@ class Set:
         assert " " not in name, "Set name cannot contain spaces"
         self.name = name or str(sympy_set)
         self.sympy_set = sympy_set
-        self.elements = elements or []
+        self.elements = elements or set()
         self.containment_function: Callable[[Term], bool] = containment_function or (
             lambda x: x in self.elements
         )

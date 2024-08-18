@@ -1,12 +1,12 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from pylogic.structures.sets import Graphs
+from pylogic.structures.set_ import Graphs
 from pylogic.variable import Variable
 from pylogic.symbol import Symbol
 
 if TYPE_CHECKING:
-    from pylogic.structures.sets import Set
+    from pylogic.structures.set_ import Set
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.expressions.expr import Expr
 

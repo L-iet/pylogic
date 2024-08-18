@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, TypedDict, TypeVar, Self
 if TYPE_CHECKING:
     from pylogic.proposition.proposition import Proposition
     from pylogic.symbol import Symbol
-    from pylogic.structures.sets import Set
+    from pylogic.structures.set_ import Set
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.implies import Implies
     from pylogic.proposition.quantified.forall import Forall

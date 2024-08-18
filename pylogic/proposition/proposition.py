@@ -16,7 +16,7 @@ from typing import (
 )
 
 if TYPE_CHECKING:
-    from pylogic.structures.sets import Set
+    from pylogic.structures.set_ import Set
     from pylogic.proposition.relation.equals import Equals
     from pylogic.proposition.and_ import And
     from pylogic.proposition.or_ import Or
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.not_ import Not
     from pylogic.proposition.contradiction import Contradiction
     from pylogic.variable import Variable
-    from pylogic.structures.sets import Set
+    from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
     from pylogic.expressions.expr import Expr
 
@@ -790,7 +790,7 @@ class Proposition:
         assert self.is_proven, f"{self} is not proven"
         from pylogic.proposition.quantified.forall import Forall, ForallInSet
         from pylogic.inference import Inference
-        from pylogic.structures.sets import Reals
+        from pylogic.structures.set_ import Reals
 
         set_ = None
         if variable.is_real:

@@ -105,7 +105,7 @@ class Symbol:
         return f"$${self._latex()}$$"
 
     def copy(self) -> Self:
-        return self.__class__(self.name)
+        return self.__class__(*self._init_args, **self._init_kwargs)
 
     def replace(self, old, new) -> Any:
         if self == old:

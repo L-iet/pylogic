@@ -3,19 +3,24 @@ from pylogic.proposition.proposition import Proposition, get_assumptions
 from pylogic.proposition.and_ import And
 from pylogic.proposition.relation.contains import IsContainedIn
 from pylogic.proposition.quantified.quantified import _Quantified
+from pylogic.proposition.quantified.forall import Forall
+from pylogic.proposition.implies import Implies
+from pylogic.proposition.relation.equals import Equals
 from pylogic.variable import Variable
 from pylogic.constant import Constant
 from pylogic.inference import Inference
 from typing import TYPE_CHECKING, TypedDict, TypeVar, Self
 
+TProposition = TypeVar("TProposition", bound="Proposition")
+UProposition = TypeVar("UProposition", bound="Proposition")
+B = TypeVar("B", bound="Proposition")
+
 if TYPE_CHECKING:
     from fractions import Fraction
     from pylogic.expressions.expr import Expr
-    from pylogic.proposition.quantified.forall import Forall
     from pylogic.proposition.not_ import Not
-    from pylogic.proposition.implies import Implies
     from pylogic.symbol import Symbol
-    from pylogic.structures.sets import Set
+    from pylogic.structures.set_ import Set
     from sympy import Basic
 
     Numeric = Fraction | int | float
@@ -23,9 +28,7 @@ if TYPE_CHECKING:
     Unevaluated = Symbol | Set | Expr
     Term = Unevaluated | Numeric | Basic
 
-TProposition = TypeVar("TProposition", bound="Proposition")
-UProposition = TypeVar("UProposition", bound="Proposition")
-B = TypeVar("B", bound="Proposition")
+
 Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 
@@ -221,3 +224,84 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
             _is_proven=False,
         )
         return new_p
+
+
+# TODO: Implement replace for ExistsUnique and ExistsUniqueInSet
+# using the right inner_proposition
+class ExistsUnique(Exists[And[TProposition, Forall[Implies[TProposition, Equals]]]]):
+    def __init__(
+        self,
+        variable: Variable,
+        inner_proposition: TProposition,
+        is_assumption: bool = False,
+        description: str = "",
+        **kwargs,
+    ) -> None:
+        from pylogic.proposition.quantified.forall import Forall
+        from pylogic.proposition.relation.equals import Equals
+
+        other_var = Variable(variable.name + "_2")
+        other_prop = inner_proposition.replace(variable, other_var)
+        super().__init__(
+            variable,
+            inner_proposition.and_(
+                Forall(other_var, Implies(other_prop, Equals(other_var, variable)))
+            ),
+            is_assumption=is_assumption,
+            description=description,
+            **kwargs,
+        )
+        self._inner_without_unique = inner_proposition
+
+    def __repr__(self) -> str:
+        return f"exists 1 {self.variable}: {self._inner_without_unique}"
+
+    def replace(
+        self,
+        current_val: Term,
+        new_val: Term,
+        positions: list[list[int]] | None = None,
+    ) -> Self:
+        raise NotImplementedError
+
+
+class ExistsUniqueInSet(
+    ExistsInSet[And[TProposition, Forall[Implies[TProposition, Equals]]]]
+):
+    def __init__(
+        self,
+        variable: Variable,
+        set_: Set,
+        inner_proposition: TProposition,
+        is_assumption: bool = False,
+        description: str = "",
+        **kwargs,
+    ) -> None:
+        from pylogic.proposition.quantified.forall import ForallInSet
+
+        other_var = Variable(variable.name + "_2")
+        other_prop = inner_proposition.replace(variable, other_var)
+        super().__init__(
+            variable,
+            set_,
+            inner_proposition.and_(
+                ForallInSet(
+                    other_var, set_, other_prop.implies(Equals(other_var, variable))
+                )
+            ),
+            is_assumption=is_assumption,
+            description=description,
+            **kwargs,
+        )
+        self._inner_without_set_and_unique = inner_proposition
+
+    def __repr__(self) -> str:
+        return f"exists 1 {self.variable} in {self.set_}: {self._inner_without_set_and_unique}"
+
+    def replace(
+        self,
+        current_val: Term,
+        new_val: Term,
+        positions: list[list[int]] | None = None,
+    ) -> Self:
+        raise NotImplementedError

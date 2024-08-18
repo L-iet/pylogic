@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Self
 
 if TYPE_CHECKING:
     from fractions import Fraction
-    from pylogic.structures.sets import Set
+    from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
     from pylogic.expressions.expr import Expr
 

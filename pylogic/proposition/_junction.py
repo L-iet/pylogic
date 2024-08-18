@@ -7,7 +7,7 @@ from pylogic.proposition.not_ import neg
 
 if TYPE_CHECKING:
     from pylogic.proposition.and_ import And
-    from pylogic.structures.sets import Set
+    from pylogic.structures.set_ import Set
     from pylogic.variable import Variable
     from pylogic.symbol import Symbol
     from pylogic.expressions.expr import Expr

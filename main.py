@@ -18,7 +18,7 @@ from pylogic.proposition.ordering.theorems import (
 from pylogic.proposition.not_ import Not, neg, are_negs
 from pylogic.constant import Constant
 from pylogic.variable import Variable
-from pylogic.structures.sets import Naturals0, Reals, Set
+from pylogic.structures.set_ import Naturals0, Reals, Set
 from pylogic.expressions.expr import sqrt, sub, add
 from pylogic.expressions.abs import Abs
 

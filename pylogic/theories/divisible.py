@@ -11,11 +11,11 @@ y = Variable("y")
 
 if TYPE_CHECKING:
     from pylogic.proposition.relation.contains import IsContainedIn
-from pylogic.structures.sets import Integers
+from pylogic.structures.set_ import Integers
 
 if TYPE_CHECKING:
     from pylogic.symbol import Symbol
-    from pylogic.structures.sets import Set
+    from pylogic.structures.set_ import Set
 
     Term = Symbol | Set | Expr | int | float
 

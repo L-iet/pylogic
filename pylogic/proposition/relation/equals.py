@@ -9,7 +9,7 @@ from sympy import Basic, Integer
 
 if TYPE_CHECKING:
     from fractions import Fraction
-    from pylogic.structures.sets import Set
+    from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
 
     Numeric = Fraction | int | float
@@ -46,16 +46,16 @@ class Equals(BinaryRelation):
         )
         self.left: Term = left
         self.right: Term = right
-        self.left_doit = (
-            self.left.doit() if isinstance(self.left, (Basic, Expr)) else self.left
-        )
-        self.right_doit = (
-            self.right.doit() if isinstance(self.right, (Basic, Expr)) else self.right
-        )
-        self.doit_results: dict[Side, Term] = {
-            "left": self.left_doit,
-            "right": self.right_doit,
-        }
+        # self.left_doit = (
+        #     self.left.doit() if isinstance(self.left, (Basic, Expr)) else self.left
+        # )
+        # self.right_doit = (
+        #     self.right.doit() if isinstance(self.right, (Basic, Expr)) else self.right
+        # )
+        # self.doit_results: dict[Side, Term] = {
+        #     "left": self.left_doit,
+        #     "right": self.right_doit,
+        # }
 
     def get(self, side: Side) -> Term:
         if side == "left":
@@ -63,7 +63,9 @@ class Equals(BinaryRelation):
         else:
             return self.right
 
-    def _check_provable_by_simplification(self, _checking_side: Side) -> bool:
+    def _check_provable_by_simplification(
+        self, _checking_side: Side, _doit_results: dict[Side, Term]
+    ) -> bool:
         """
         To check if we can use sympy methods to simplify and prove this equality.
         Parameters
@@ -84,7 +86,7 @@ class Equals(BinaryRelation):
                 elif self.get(_checking_side) == self.get(other_side):  # type: ignore
                     proven = True
             except ValueError:  # TODO: Basic.equals sometimes raises ValueError
-                if self.doit_results[_checking_side] == self.doit_results[other_side]:
+                if _doit_results[_checking_side] == _doit_results[other_side]:
                     proven = True
 
         return proven
@@ -92,9 +94,20 @@ class Equals(BinaryRelation):
     def by_simplification(self) -> Self:
         """Logical tactic."""
 
-        proven = self._check_provable_by_simplification("left")
+        left_doit = (
+            self.left.doit() if isinstance(self.left, (Basic, Expr)) else self.left
+        )
+        right_doit = (
+            self.right.doit() if isinstance(self.right, (Basic, Expr)) else self.right
+        )
+        doit_results: dict[Side, Term] = {
+            "left": left_doit,
+            "right": right_doit,
+        }
+
+        proven = self._check_provable_by_simplification("left", doit_results)
         if not proven:
-            proven = self._check_provable_by_simplification("right")
+            proven = self._check_provable_by_simplification("right", doit_results)
         if proven:
             new_p = self.copy()
             new_p._is_proven = True

@@ -12,7 +12,7 @@ from pylogic.inference import Inference
 
 if TYPE_CHECKING:
     from pylogic.proposition.or_ import Or
-    from pylogic.structures.sets import Set
+    from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
     from pylogic.expressions.expr import Expr
     from sympy import Basic

@@ -38,7 +38,7 @@ def weak_induction(
     Given base case P(0) and induction step forall n: (n in Naturals0 /\ P(n)) -> P(n+1),
     prove forall n: n in Naturals0 -> P(n).
     """
-    from pylogic.structures.sets import Naturals0
+    from pylogic.structures.set_ import Naturals0
     from pylogic.inference import Inference
 
     assert base_case.is_proven, f"Base case {base_case} must be proven"
@@ -96,7 +96,7 @@ def strong_induction(
         ) -> P(n+1),
     return a proof of forall n: n in Naturals0 -> P(n).
     """
-    from pylogic.structures.sets import Naturals0
+    from pylogic.structures.set_ import Naturals0
     from pylogic.inference import Inference
 
     assert base_case.is_proven, f"Base case {base_case} must be proven"

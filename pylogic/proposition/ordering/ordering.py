@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.ordering.greaterthan import GreaterThan
     from pylogic.proposition.ordering.lessthan import LessThan
     from pylogic.symbol import Symbol
-    from pylogic.structures.sets import Set
+    from pylogic.structures.set_ import Set
     from pylogic.expressions.expr import Expr
     from sympy import Basic
 

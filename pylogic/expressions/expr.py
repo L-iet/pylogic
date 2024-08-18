@@ -11,7 +11,7 @@ from typing import (
 )
 from abc import ABC, abstractmethod
 from fractions import Fraction
-from pylogic.structures.sets import Set
+from pylogic.structures.set_ import Set
 
 import sympy as sp
 
@@ -27,10 +27,15 @@ if TYPE_CHECKING:
 class Expr(ABC):
     is_real = None
 
-    def __init__(self, *args: PBasic | Expr):
+    def __init__(self, *args: PBasic | Expr, **kwargs: Any):
+        assert len(args) > 0, "Must provide at least one argument"
+        self._build_args_and_symbols(*args)
+        self._init_args = args
+        self._init_kwargs = kwargs
+
+    def _build_args_and_symbols(self, *args: PBasic | Expr) -> None:
         from pylogic.symbol import Symbol
 
-        assert len(args) > 0, "Must provide at least one argument"
         self.args = args
         self.symbols: set[Symbol] = set()  # symbols present in this expression
         for arg in args:
@@ -119,10 +124,12 @@ class Expr(ABC):
 
     def replace(self, old: Any, new: Any) -> Self:
         new_args = [replace(arg, old, new) for arg in self.args]
-        return self.__class__(*new_args)
+        new_expr = self.copy()
+        new_expr._build_args_and_symbols(*new_args)
+        return new_expr
 
     def copy(self) -> Self:
-        return self.__class__(*self.args)
+        return self.__class__(*self._init_args, **self._init_kwargs)
 
     def doit(self) -> sp.Basic:
         return self.evaluate().doit()
@@ -184,6 +191,8 @@ class CustomExpr(Expr, Generic[U]):
         self.name = name
         self.eval_func = eval_func
         self.latex_func = latex_func
+        self._init_args = (name, *args)
+        self._init_kwargs = {"eval_func": eval_func, "latex_func": latex_func}
 
     def __repr__(self) -> str:
         return f"CustomExpr{self.name.capitalize()}({', '.join(map(repr, self.args))})"
@@ -193,9 +202,14 @@ class CustomExpr(Expr, Generic[U]):
         Calls the evaluation function with the arguments.
         May not return a sympy object, depending on eval_func.
         """
+        from pylogic.symbol import Symbol
+
         if self.eval_func is None:
             raise NotImplementedError(f"Cannot evaluate {self.name}")
-        return self.eval_func(*self.args)
+        evaluated = self.eval_func(*self.args)
+        if isinstance(evaluated, (Expr, Symbol)):
+            return evaluated.evaluate()
+        return evaluated
 
     def _latex(self) -> str:
         if self.latex_func is None:
@@ -220,6 +234,7 @@ class BinaryExpression(CustomExpr[U]):
         self.symbol = symbol
         self.left = left
         self.right = right
+        self._init_args = (name, symbol, left, right)
 
     def __repr__(self) -> str:
         return f"BinOp{self.name.capitalize()}({self.left}, {self.right})"
@@ -228,7 +243,7 @@ class BinaryExpression(CustomExpr[U]):
         return f"{_latex(self.left)} {self.symbol} {_latex(self.right)}"
 
     def __str__(self) -> str:
-        return f"{self.left} {self.symbol} {self.right}"
+        return f"({str(self.left)} {self.symbol} {str(self.right)})"
 
 
 class Add(Expr):

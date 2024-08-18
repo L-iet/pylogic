@@ -8,7 +8,7 @@ from sympy import S as sympy_S
 
 if TYPE_CHECKING:
     from pylogic.proposition.ordering.greaterthan import GreaterThan
-    from pylogic.structures.sets import Set
+    from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
     from pylogic.expressions.expr import Expr
     from sympy import Basic

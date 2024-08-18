@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Callable, TYPE_CHECKING, Iterable, Generic, TypeVar
-from pylogic.structures.sets import Set
+from pylogic.structures.set_ import Set
 from pylogic.infix.infix import SpecialInfix
 from pylogic.expressions.expr import BinaryExpression
 

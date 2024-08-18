@@ -3,7 +3,7 @@ from typing import Any, TYPE_CHECKING, Literal, Iterable, Callable, TypeVar
 from pylogic.proposition.proposition import Proposition
 from pylogic.variable import Variable
 from pylogic.symbol import Symbol
-from pylogic.structures.sets import Set
+from pylogic.structures.set_ import Set
 from pylogic.expressions.expr import Expr, replace as _replace
 
 T = TypeVar("T")

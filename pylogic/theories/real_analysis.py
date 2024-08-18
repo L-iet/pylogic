@@ -7,7 +7,7 @@ from pylogic.proposition.and_ import And
 from pylogic.proposition.not_ import Not, neg
 from pylogic.variable import Variable, variables
 from pylogic.constant import Constant
-from pylogic.structures.sets import Set, Reals
+from pylogic.structures.set_ import Set, Reals
 
 from pylogic.expressions.expr import add, mul, sub
 from pylogic.infix.is_ import is_, equals

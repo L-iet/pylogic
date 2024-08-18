@@ -9,7 +9,7 @@ from pylogic.helpers import replace
 
 if TYPE_CHECKING:
     from fractions import Fraction
-    from pylogic.structures.sets import Set
+    from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
     import sympy as sp
 
@@ -74,7 +74,7 @@ class BinaryRelation(Relation):
         """
         Replace current_val with new_val in the relation.
         """
-        from pylogic.structures.sets import Set
+        from pylogic.structures.set_ import Set
 
         new_p = self.copy()
 

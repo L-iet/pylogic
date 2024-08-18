@@ -7,7 +7,7 @@ from pylogic.expressions.expr import evaluate
 if TYPE_CHECKING:
     from fractions import Fraction
     from pylogic.symbol import Symbol
-    from pylogic.structures.sets import Set
+    from pylogic.structures.set_ import Set
     from pylogic.expressions.expr import Expr
     import sympy as sp
 

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.quantified.exists import Exists
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.symbol import Symbol
-    from pylogic.structures.sets import Set
+    from pylogic.structures.set_ import Set
     from pylogic.expressions.expr import Expr
     from sympy import Basic
 

@@ -2,10 +2,12 @@ from __future__ import annotations
 from typing import Callable, Iterable, TypeVar
 from fractions import Fraction
 from pylogic.structures.set_ import Set
-from pylogic.structures.magma import Magma
+from pylogic.structures.semigroup import Semigroup
 from pylogic.expressions.expr import Expr
 from pylogic.symbol import Symbol
+from pylogic.constant import Constant
 from pylogic.variable import Variable
+from pylogic.proposition.and_ import And
 from pylogic.proposition.quantified.forall import ForallInSet
 from pylogic.proposition.relation.equals import Equals
 
@@ -20,8 +22,9 @@ Term = Unevaluated | Numeric | Basic
 T = TypeVar("T", bound=Term)
 
 
-class Semigroup(Magma):
-    op_is_associative: ForallInSet[ForallInSet[ForallInSet[Equals]]]
+class Monoid(Semigroup):
+    has_identity: ForallInSet[And[Equals, Equals]]
+    identity_is_given: Equals | None
 
     def __init__(
         self,
@@ -31,28 +34,31 @@ class Semigroup(Magma):
         containment_function: Callable[[T], bool] | None = None,
         operation: Callable[[T, T], T] | None = None,
         operation_symbol: str | None = None,
+        identity: T | None = None,
     ):
+        if elements is not None and identity is not None:
+            assert identity in elements, "Identity must be in the set of elements"
         super().__init__(
             name, sympy_set, elements, containment_function, operation, operation_symbol
         )
+        self.identity = Constant(f"{self.name}_Ident")
+        self._contains = self.containment_function
+        del self.containment_function
+        self.identity_is_given = (
+            Equals(self.identity, identity, is_axiom=True)
+            if identity is not None
+            else None
+        )
         x = Variable("x")
-        y = Variable("y")
-        z = Variable("z")
-        self.op_is_associative = ForallInSet(
+        self.has_identity = ForallInSet(
             x,
             self,
-            ForallInSet(
-                y,
-                self,
-                ForallInSet(
-                    z,
-                    self,
-                    Equals(
-                        (x | self.operation | y) | self.operation | z,
-                        x | self.operation | (y | self.operation | z),
-                    ),
-                ),
+            Equals(x | self.operation | self.identity, x).and_(
+                Equals(self.identity | self.operation | x, x)
             ),
             is_axiom=True,
-            description=f"{self.operation_name} is associative in {self.name}",
+            description=f"{self.identity} is the identity element in {self.name}",
         )
+
+    def containment_function(self, x: Term) -> bool:
+        return x == self.identity or self._contains(x)

@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.implies import Implies
     from pylogic.variable import Variable
     from pylogic.symbol import Symbol
-    from pylogic.structures.sets import Set
+    from pylogic.structures.set_ import Set
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.or_ import Or
     from fractions import Fraction
