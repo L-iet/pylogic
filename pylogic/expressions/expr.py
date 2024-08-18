@@ -206,7 +206,7 @@ class CustomExpr(Expr, Generic[U]):
         return f"{self.name}({', '.join(map(str, self.args))})"
 
 
-class BinaryOperation(CustomExpr[U]):
+class BinaryExpression(CustomExpr[U]):
     def __init__(
         self,
         name: str,
