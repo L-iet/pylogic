@@ -76,6 +76,8 @@ def by_forall(p: P, prover: Forall[Proposition] | ForallInSet[Proposition]) -> P
     unification = layer.unify(p)  # type: ignore
     if unification is None:
         raise ValueError(f"Cannot prove {p} using {prover}")
+    # this function needs testing to ensure we are
+    # not proving fallacies
     new_p = p.copy()
     new_p._is_proven = True
     new_p.deduced_from = Inference(prover, rule="in_particular")
