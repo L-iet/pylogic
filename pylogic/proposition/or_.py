@@ -40,6 +40,19 @@ class Or(_Junction[*Ps]):
     def __hash__(self) -> int:
         return super().__hash__()
 
+    def __getitem__(self, index: int) -> Proposition:
+        return self.propositions[index]  # type: ignore
+
+    def __iter__(self):
+        return iter(self.propositions)
+
+    def de_nest(self) -> Or[*tuple[Proposition, ...]]:
+        """
+        Return a new Or proposition with the same propositions as self,
+        but without nested Or propositions.
+        """
+        return self.propositions[0].or_(*self.propositions[1:])  # type: ignore
+
     def remove_duplicates(self) -> Or:
         return super().remove_duplicates()  # type: ignore
 

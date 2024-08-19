@@ -707,8 +707,9 @@ class Proposition:
         assert self.is_proven, f"{self} is not proven"
         assert len(assumptions) > 0, "Must provide at least one other assumption"
         for a in assumptions:
-            assert a.is_assumption, f"{a} is not an assumption"  # type: ignore
-            assert a in self.from_assumptions, f"{a} was not used to deduce {self}"
+            assert a.is_assumption, f"{a} is not an assumption"
+            if a not in self.from_assumptions:
+                print(f"Warning: {a} was not used to deduce {self}")
         from pylogic.proposition.and_ import And
         from pylogic.proposition.implies import Implies
 

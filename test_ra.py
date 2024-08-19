@@ -22,3 +22,5 @@
 # ]
 
 from pylogic.structures.group import *
+
+G = Group("G")

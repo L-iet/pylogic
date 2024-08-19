@@ -47,6 +47,8 @@ class _Junction(Proposition, Generic[*Ps]):
         for prop in propositions:
             self.bound_vars = self.bound_vars.union(prop.bound_vars)  # type: ignore
 
+        self._idx = 0  # for iteration over propositions
+
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, self.__class__):
             return set(self.propositions) == set(other.propositions)
@@ -54,6 +56,20 @@ class _Junction(Proposition, Generic[*Ps]):
 
     def __hash__(self) -> int:
         return hash((self._join_symbol, *self.propositions))
+
+    def __getitem__(self, index: int):
+        return self.propositions[index]
+
+    def __iter__(self):
+        return iter(self.propositions)
+
+    def __next__(self):
+        try:
+            item = self[self._idx]
+        except IndexError:
+            raise StopIteration()
+        self._idx += 1
+        return item
 
     def copy(self) -> Self:
         return self.__class__(

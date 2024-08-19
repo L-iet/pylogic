@@ -273,7 +273,7 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
         if ante == impl.antecedent:
             new_p = impl.consequent
             new_p._is_proven = True
-            new_p.from_assumptions = get_assumptions(self).copy()
+            new_p.from_assumptions = get_assumptions(self).union(get_assumptions(ante))
             new_p.deduced_from = Inference(self, rule="in_particular")
             return new_p
         else:

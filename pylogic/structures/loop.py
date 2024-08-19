@@ -1,12 +1,13 @@
 from __future__ import annotations
-from typing import Callable, Iterable, TypeVar
+from typing import Callable, Iterable, TypeVar, TYPE_CHECKING
 from fractions import Fraction
 from pylogic.structures.set_ import Set
 from pylogic.structures.quasigroup import Quasigroup
-from pylogic.expressions.expr import Expr
+from pylogic.infix.infix import SpecialInfix
+from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.symbol import Symbol
 from pylogic.constant import Constant
-from pylogic.variable import Variable
+from pylogic.proposition.and_ import And
 from pylogic.proposition.quantified.forall import ForallInSet
 from pylogic.proposition.relation.equals import Equals
 
@@ -20,8 +21,26 @@ Term = Unevaluated | Numeric | Basic
 
 T = TypeVar("T", bound=Term)
 
+if TYPE_CHECKING:
+    from pylogic.proposition.relation.contains import IsContainedIn
+
 
 class Loop(Quasigroup):
+    has_identity: And[IsContainedIn, ForallInSet[And[Equals, Equals]]]
+    identity_is_given: Equals | None
+
+    @classmethod
+    def property_has_identity(
+        cls,
+        set_: Set,
+        operation: SpecialInfix[
+            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
+        ],
+        identity: Term,
+    ) -> And[IsContainedIn, ForallInSet[And[Equals, Equals]]]:
+        from pylogic.structures.monoid import Monoid
+
+        return Monoid.property_has_identity(set_, operation, identity)
 
     def __init__(
         self,
@@ -44,16 +63,10 @@ class Loop(Quasigroup):
             if identity is not None
             else None
         )
-        x = Variable("x")
-        self.has_identity = ForallInSet(
-            x,
-            self,
-            Equals(x | self.operation | self.identity, x).and_(
-                Equals(self.identity | self.operation | x, x)
-            ),
-            is_axiom=True,
-            description=f"{self.identity} is the identity element in {self.name}",
+        self.has_identity = Loop.property_has_identity(
+            self, self.operation, self.identity
         )
+        self.has_identity.is_axiom = True
 
     def containment_function(self, x: Term) -> bool:
         return x == self.identity or self._containment_function(x)

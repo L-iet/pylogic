@@ -3,7 +3,8 @@ from typing import Callable, Iterable, TypeVar
 from fractions import Fraction
 from pylogic.structures.set_ import Set
 from pylogic.structures.magma import Magma
-from pylogic.expressions.expr import Expr
+from pylogic.infix.infix import SpecialInfix
+from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.symbol import Symbol
 from pylogic.variable import Variable
 from pylogic.proposition.and_ import And
@@ -28,6 +29,59 @@ class Quasigroup(Magma):
         ForallInSet[And[ExistsUniqueInSet[Equals], ExistsUniqueInSet[Equals]]]
     ]
 
+    @classmethod
+    def property_latin_square(
+        cls,
+        set_: Set,
+        operation: SpecialInfix[
+            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
+        ],
+    ) -> ForallInSet[
+        ForallInSet[And[ExistsUniqueInSet[Equals], ExistsUniqueInSet[Equals]]]
+    ]:
+        r"""
+        The Latin square property states that, for each a and b in Q,
+        there exist unique elements x and y in Q such that both
+
+        a * x = b
+
+        y * a = b
+
+        Then x = a \ b (left divide) and y = b / a (right divide)
+        """
+        x = Variable("x")
+        a = Variable("a")
+        y = Variable("y")
+        b = Variable("b")
+        a_op_x = a | operation | x
+
+        # the Latin square property states that, for each a and b in Q,
+        # there exist unique elements x and y in Q such that both
+        # a * x = b
+        # y * a = b
+        # Then x = a \ b (left divide) and y = b / a (right divide)
+        return ForallInSet(
+            a,
+            set_,
+            ForallInSet(
+                b,
+                set_,
+                ExistsUniqueInSet(
+                    x,
+                    set_,
+                    Equals(a_op_x, b),
+                ).and_(
+                    ExistsUniqueInSet(
+                        y,
+                        set_,
+                        Equals(y | operation | a, b),
+                    ),
+                ),
+            ),
+            description=f"For each a and b in {set_.name}, there exist unique x \
+and y in {set_.name} such that a {a_op_x.symbol} x = b and y {a_op_x.symbol} a = b",
+        )
+
     def __init__(
         self,
         name: str | None = None,
@@ -40,34 +94,6 @@ class Quasigroup(Magma):
         super().__init__(
             name, sympy_set, elements, containment_function, operation, operation_symbol
         )
-        x = Variable("x")
-        a = Variable("a")
-        y = Variable("y")
-        b = Variable("b")
 
-        # the Latin square property states that, for each a and b in Q,
-        # there exist unique elements x and y in Q such that both
-        # a * x = b
-        # y * a = b
-        # Then x = a \ b (left divide) and y = b / a (right divide)
-        self.latin_square = ForallInSet(
-            a,
-            self,
-            ForallInSet(
-                b,
-                self,
-                ExistsUniqueInSet(
-                    x,
-                    self,
-                    Equals(a | self.operation | x, b),
-                ).and_(
-                    ExistsUniqueInSet(
-                        y,
-                        self,
-                        Equals(y | self.operation | a, b),
-                    ),
-                ),
-            ),
-            is_axiom=True,
-            description=f"For each a and b in {name}, there exist unique x and y in {name} such that a {self.operation_symbol} x = b and y {self.operation_symbol} a = b",
-        )
+        self.latin_square = Quasigroup.property_latin_square(self, self.operation)
+        self.latin_square.is_axiom = True

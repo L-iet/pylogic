@@ -103,7 +103,7 @@ class Exists(_Quantified[TProposition]):
     def __iter__(self):
         return iter(self.extract())
 
-    def extract(self) -> tuple[Constant, TProposition]:
+    def extract(self) -> tuple[Constant[str], TProposition]:
         """Logical tactic.
         If self is proven, return a constant and a proven inner proposition.
         """
@@ -157,6 +157,108 @@ class Exists(_Quantified[TProposition]):
             _inference=Inference(self, rule="de_morgan"),
         )
 
+    def to_exists_in_set(self, **kwargs) -> ExistsInSet[Proposition]:
+        """
+        If self matches the structure,
+
+        exists x: (x in set /\\ P (x))
+
+        convert self to an `ExistsInSet` statement.
+        """
+        inner_prop = self.inner_proposition
+        match inner_prop:
+            case And(propositions=[IsContainedIn(left=self.variable), *props]):
+                return ExistsInSet(
+                    variable=self.variable,
+                    set_=inner_prop.propositions[0].set_,
+                    inner_proposition=And(*props) if len(props) > 1 else props[0],  # type: ignore
+                    is_assumption=self.is_assumption,
+                    description=self.description,
+                    _is_proven=self._is_proven,
+                    _assumptions=self.from_assumptions,
+                    _inference=self.deduced_from,
+                    **kwargs,
+                )
+        raise ValueError(f"Cannot convert {self} to ExistsInSet")
+
+    def to_exists_unique(self, **kwargs) -> ExistsUnique[Proposition]:
+        """
+        If self matches the structure,
+
+        exists x: (P (x) /\\ forall y: [P (y) -> y = x])
+
+        convert self to an `ExistsUnique` statement.
+        """
+        inner_prop = self.inner_proposition
+        match inner_prop:
+            case And(
+                propositions=[
+                    new_inner,
+                    Forall(
+                        variable=y1,
+                        inner_proposition=Implies(
+                            antecedent=implies_antecedent,
+                            consequent=Equals(left=y2, right=self.variable),
+                        ),
+                    ),
+                ]
+            ) if (y1 == y2) and (
+                implies_antecedent == new_inner.replace(self.variable, y1)
+            ):
+                return ExistsUnique(
+                    variable=self.variable,
+                    inner_proposition=new_inner,
+                    is_assumption=self.is_assumption,
+                    description=self.description,
+                    _is_proven=self._is_proven,
+                    _assumptions=self.from_assumptions,
+                    _inference=self.deduced_from,
+                    **kwargs,
+                )
+        raise ValueError(f"Cannot convert {self} to ExistsUnique")
+
+    def to_exists_unique_in_set(self, **kwargs) -> ExistsUniqueInSet[Proposition]:
+        """
+        If self matches the structure,
+
+        exists x: x in set /\\ P (x) /\\ [forall y: (y in set /\\ P (y)) -> y = x])
+
+        convert self to an `ExistsUniqueInSet` statement.
+        """
+        inner_prop = self.inner_proposition
+        match inner_prop:
+            case And(
+                propositions=[
+                    IsContainedIn(left=self.variable, right=set_1),
+                    *Pxs,
+                    Forall(
+                        variable=y1,
+                        inner_proposition=Implies(
+                            antecedent=And(
+                                propositions=[IsContainedIn(left=y2, right=set_2), *Pys]
+                            ),
+                            consequent=Equals(left=y3, right=self.variable),
+                        ),
+                    ),
+                ]
+            ) if (
+                (y1 == y2 == y3)
+                and (set_1 == set_2)
+                and all(Px.replace(self.variable, y1) == Py for Px, Py in zip(Pxs, Pys))
+            ):
+                return ExistsUniqueInSet(
+                    variable=self.variable,
+                    set_=set_1,
+                    inner_proposition=Pxs[0] if len(Pxs) == 1 else And(*Pxs),  # type: ignore
+                    is_assumption=self.is_assumption,
+                    description=self.description,
+                    _is_proven=self._is_proven,
+                    _assumptions=self.from_assumptions,
+                    _inference=self.deduced_from,
+                    **kwargs,
+                )  # type: ignore
+        raise ValueError(f"Cannot convert {self} to ExistsUniqueInSet")
+
 
 class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
     def __init__(
@@ -184,7 +286,7 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
     def __repr__(self) -> str:
         return f"exists {self.variable} in {self.set_}: {self._inner_without_set}"
 
-    def to_exists(self) -> Exists[And[IsContainedIn, TProposition]]:
+    def to_exists(self, **kwargs) -> Exists[And[IsContainedIn, TProposition]]:
         """
         Convert self to a regular `exists` statement.
         """
@@ -196,7 +298,11 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
             _is_proven=self._is_proven,
             _assumptions=self.from_assumptions,
             _inference=self.deduced_from,
+            **kwargs,
         )
+
+    def to_exists_in_set(self, **kwargs) -> Self:
+        return self
 
     def replace(
         self,
@@ -224,6 +330,18 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
             _is_proven=False,
         )
         return new_p
+
+    def copy(self) -> Self:
+        return self.__class__(
+            self.variable,
+            self.set_,
+            self._inner_without_set.copy(),
+            is_assumption=self.is_assumption,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
+        )
 
 
 class ExistsUnique(Exists[And[TProposition, Forall[Implies[TProposition, Equals]]]]):
@@ -271,6 +389,20 @@ class ExistsUnique(Exists[And[TProposition, Forall[Implies[TProposition, Equals]
             _is_proven=False,
         )
         return new_p
+
+    def to_exists_unique(self, **kwargs) -> Self:
+        return self
+
+    def copy(self) -> Self:
+        return self.__class__(
+            self.variable,
+            self._inner_without_unique.copy(),
+            is_assumption=self.is_assumption,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
+        )
 
 
 class ExistsUniqueInSet(
@@ -334,3 +466,18 @@ class ExistsUniqueInSet(
             _is_proven=False,
         )
         return new_p
+
+    def to_exists_unique_in_set(self, **kwargs) -> Self:
+        return self
+
+    def copy(self) -> Self:
+        return self.__class__(
+            self.variable,
+            self.set_,
+            self._inner_without_set_and_unique.copy(),
+            is_assumption=self.is_assumption,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
+        )

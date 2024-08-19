@@ -3,13 +3,15 @@ from typing import Callable, Iterable, TypeVar
 from fractions import Fraction
 from pylogic.structures.set_ import Set
 from pylogic.structures.semigroup import Semigroup
-from pylogic.expressions.expr import Expr
+from pylogic.infix.infix import SpecialInfix
+from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.symbol import Symbol
 from pylogic.constant import Constant
 from pylogic.variable import Variable
 from pylogic.proposition.and_ import And
 from pylogic.proposition.quantified.forall import ForallInSet
 from pylogic.proposition.relation.equals import Equals
+from pylogic.proposition.relation.contains import IsContainedIn
 
 from sympy import Basic
 from sympy import Set as SympySet
@@ -23,8 +25,31 @@ T = TypeVar("T", bound=Term)
 
 
 class Monoid(Semigroup):
-    has_identity: ForallInSet[And[Equals, Equals]]
+    has_identity: And[IsContainedIn, ForallInSet[And[Equals, Equals]]]
     identity_is_given: Equals | None
+
+    @classmethod
+    def property_has_identity(
+        cls,
+        set_: Set,
+        operation: SpecialInfix[
+            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
+        ],
+        identity: Term,
+    ) -> And[IsContainedIn, ForallInSet[And[Equals, Equals]]]:
+        x = Variable("x")
+        return And(
+            IsContainedIn(identity, set_),
+            ForallInSet(
+                x,
+                set_,
+                And(
+                    Equals(x | operation | identity, x),
+                    Equals(identity | operation | x, x),
+                ),
+            ),
+            description=f"{identity} is the identity element in {set_.name}",
+        )
 
     def __init__(
         self,
@@ -47,16 +72,10 @@ class Monoid(Semigroup):
             if identity is not None
             else None
         )
-        x = Variable("x")
-        self.has_identity = ForallInSet(
-            x,
-            self,
-            Equals(x | self.operation | self.identity, x).and_(
-                Equals(self.identity | self.operation | x, x)
-            ),
-            is_axiom=True,
-            description=f"{self.identity} is the identity element in {self.name}",
+        self.has_identity = Monoid.property_has_identity(
+            self, self.operation, self.identity
         )
+        self.has_identity.is_axiom = True
 
     def containment_function(self, x: Term) -> bool:
         return x == self.identity or self._containment_function(x)

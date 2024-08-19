@@ -88,26 +88,48 @@ class BinaryRelation(Relation):
             _is_proven=False,
         )
 
-    def transitive(self, other: Self) -> Self:
-        """Logical Tactic. If self is of the form a Relation b and other is of the form b Relation c,
+    def transitive(self, *others: Self) -> Self:
+        """
+        Logical Tactic. If self is of the form a Relation b and other is of the form b Relation c,
         returns a proven relation of the form a Relation c.
+        Will try to evaluate expressions if self.right and other.left don't have
+        the same structure.
+
+        Raises NotImplementedError if the expression can't be evaluated and it is needed.
         """
         from pylogic.inference import Inference
-        from pylogic.helpers import eval_same
+        from pylogic.helpers import eval_same, find_first
 
         assert self.__class__.is_transitive, f"{self.__class__} is not transitive"
         assert self.is_proven, f"{self} is not proven"
-        assert other.is_proven, f"{other} is not proven"
-        assert isinstance(other, self.__class__), f"{other} is not a {self.__class__}"
-        assert eval_same(
-            self.right, other.left
-        ), f"{self} and {other} do not fulfill transitivity"
+
+        first_not_proven = find_first(lambda x: not x.is_proven, others)
+        assert first_not_proven is None, f"{first_not_proven} is not proven"
+        first_not_same_class = find_first(
+            lambda x: x.__class__ != self.__class__, others
+        )
+        assert (
+            first_not_same_class is None
+        ), f"{first_not_same_class} is not a {self.__class__}"
+
+        all_props = (self,) + others
+        right_lefts = [(x.right, y.left) for x, y in zip(all_props[:-1], all_props[1:])]
+
+        first_non_transitive = find_first(
+            lambda x: not eval_same(x[0], x[1]), right_lefts
+        )
+        assert (
+            first_non_transitive is None
+        ), f"Chain of transitivity broken: {first_non_transitive} are not equal"
+
         new_p = self.__class__(
             self.left,
-            other.right,
+            others[-1].right,
             _is_proven=True,
-            _assumptions=get_assumptions(self).union(get_assumptions(other)),
-            _inference=Inference(self, other, rule="transitive"),
+            _assumptions=get_assumptions(self).union(
+                *[get_assumptions(other) for other in others]
+            ),
+            _inference=Inference(self, *others, rule="transitive"),
         )
         return new_p
 

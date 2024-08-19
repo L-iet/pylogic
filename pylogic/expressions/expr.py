@@ -111,6 +111,8 @@ class Expr(ABC):
         """
         Check if two expressions evaluate to the same value.
         """
+        if self == other:
+            return True
         if isinstance(other, Expr):
             return self.evaluate() == other.evaluate()
         return self.evaluate() == other
@@ -245,6 +247,15 @@ class BinaryExpression(CustomExpr[U]):
     def __repr__(self) -> str:
         return f"BinOp{self.name.capitalize()}({self.left}, {self.right})"
 
+    def replace(self, old: Any, new: Any) -> Self:
+        new_left = replace(self.left, old, new)
+        new_right = replace(self.right, old, new)
+        new_expr = self.copy()
+        new_expr._build_args_and_symbols(new_left, new_right)
+        new_expr.left = new_left
+        new_expr.right = new_right
+        return new_expr
+
     def _latex(self) -> str:
         return f"{_latex(self.left)} {self.symbol} {_latex(self.right)}"
 
@@ -314,6 +325,15 @@ class Pow(Expr):
         self.exp = exp
         self.is_real = None
         super().__init__(base, exp)
+
+    def replace(self, old: Any, new: Any) -> Self:
+        new_base = replace(self.base, old, new)
+        new_exp = replace(self.exp, old, new)
+        new_expr = self.copy()
+        new_expr._build_args_and_symbols(new_base, new_exp)
+        new_expr.base = new_base
+        new_expr.exp = new_exp
+        return new_expr
 
     def evaluate(self) -> sp.Pow:
         return sp.Pow(evaluate(self.base), evaluate(self.exp))

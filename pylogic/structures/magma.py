@@ -23,6 +23,24 @@ T = TypeVar("T", bound=Term)
 class Magma(Set):
     is_closed_under_op: ForallInSet[ForallInSet[IsContainedIn]]
 
+    @classmethod
+    def property_is_closed_under_op(
+        cls,
+        set_: Set,
+        operation: SpecialInfix[
+            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
+        ],
+    ) -> ForallInSet[ForallInSet[IsContainedIn]]:
+        x = Variable("x")
+        y = Variable("y")
+        x_op_y = x | operation | y
+        return ForallInSet(
+            x,
+            set_,
+            ForallInSet(y, set_, IsContainedIn(x_op_y, set_)),
+            description=f"{set_.name} is closed under the operation {x_op_y.symbol}",
+        )
+
     def __init__(
         self,
         name: str | None = None,
@@ -47,15 +65,10 @@ class Magma(Set):
             call=bin_op_func,
         )
         self.op = self.operation
-        x = Variable("x")
-        y = Variable("y")
-        self.is_closed_under_op = ForallInSet(
-            x,
-            self,
-            ForallInSet(y, self, IsContainedIn(x | self.operation | y, self)),
-            is_axiom=True,
-            description=f"{self.name} is closed under the operation {self.operation_symbol}",
+        self.is_closed_under_op = Magma.property_is_closed_under_op(
+            self, self.operation
         )
+        self.is_closed_under_op.is_axiom = True
 
     def containment_function(self, x: Term) -> bool:
         if isinstance(x, BinaryExpression):
