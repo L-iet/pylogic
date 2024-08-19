@@ -2,12 +2,11 @@ from __future__ import annotations
 from typing import Callable, Iterable, TypeVar
 from fractions import Fraction
 from pylogic.structures.set_ import Set
-from pylogic.structures.semigroup import Semigroup
+from pylogic.structures.quasigroup import Quasigroup
 from pylogic.expressions.expr import Expr
 from pylogic.symbol import Symbol
 from pylogic.constant import Constant
 from pylogic.variable import Variable
-from pylogic.proposition.and_ import And
 from pylogic.proposition.quantified.forall import ForallInSet
 from pylogic.proposition.relation.equals import Equals
 
@@ -22,9 +21,7 @@ Term = Unevaluated | Numeric | Basic
 T = TypeVar("T", bound=Term)
 
 
-class Monoid(Semigroup):
-    has_identity: ForallInSet[And[Equals, Equals]]
-    identity_is_given: Equals | None
+class Loop(Quasigroup):
 
     def __init__(
         self,

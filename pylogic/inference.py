@@ -62,6 +62,7 @@ rules: set[str] = {
     "extract",
     "apply",
     "symmetric",
+    "thus_forall_in_set",
 }
 
 T = TypeVar("T", bound="Proposition")

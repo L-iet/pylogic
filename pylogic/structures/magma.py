@@ -47,8 +47,6 @@ class Magma(Set):
             call=bin_op_func,
         )
         self.op = self.operation
-        self._contains = self.containment_function
-        del self.containment_function
         x = Variable("x")
         y = Variable("y")
         self.is_closed_under_op = ForallInSet(
@@ -66,4 +64,4 @@ class Magma(Set):
                 and x.symbol == self.operation_symbol
                 and all(self.containment_function(arg) for arg in x.args)
             )
-        return self._contains(x)
+        return self._containment_function(x)

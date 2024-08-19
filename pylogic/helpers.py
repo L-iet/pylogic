@@ -1,5 +1,14 @@
 from __future__ import annotations
-from typing import Any, TYPE_CHECKING, Literal, Iterable, Callable, TypeVar
+from typing import (
+    Any,
+    TYPE_CHECKING,
+    Literal,
+    Iterable,
+    Callable,
+    TypeVar,
+    overload,
+    TypeVarTuple,
+)
 from pylogic.proposition.proposition import Proposition
 from pylogic.variable import Variable
 from pylogic.symbol import Symbol
@@ -7,6 +16,8 @@ from pylogic.structures.set_ import Set
 from pylogic.expressions.expr import Expr, replace as _replace
 
 T = TypeVar("T")
+P = TypeVar("P", bound=Proposition)
+Ps = TypeVarTuple("Ps")
 
 if TYPE_CHECKING:
     from fractions import Fraction
@@ -77,9 +88,14 @@ def find_first(predicate: Callable[[T], bool], args: Iterable[T]) -> T | None:
     return None
 
 
-def assume(*args: Proposition) -> Proposition | tuple[Proposition, ...]:
-    for arg in args:
-        arg.is_assumption = True
-    if len(args) == 1:
-        return args[0]
-    return args
+@overload
+def assume(arg: P) -> P: ...
+@overload
+def assume(arg: P, *args: *Ps) -> tuple[P, *Ps]: ...
+def assume(arg: P, *args: *Ps) -> P | tuple[P, *Ps]:
+    all_args = (arg, *args)
+    for argmnt in all_args:
+        argmnt.is_assumption = True  # type: ignore
+    if all_args == 1:
+        return arg
+    return all_args

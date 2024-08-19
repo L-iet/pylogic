@@ -39,7 +39,7 @@ class Set:
         self.name = name or str(sympy_set)
         self.sympy_set = sympy_set
         self.elements = elements or set()
-        self.containment_function: Callable[[Term], bool] = containment_function or (
+        self._containment_function: Callable[[Term], bool] = containment_function or (
             lambda x: x in self.elements
         )
 
@@ -79,6 +79,9 @@ class Set:
 
     def evaluate(self) -> sp.Set:
         return self.sympy_set
+
+    def containment_function(self, x: Term) -> bool:
+        return self._containment_function(x)
 
     def __repr__(self) -> str:
         return self.name

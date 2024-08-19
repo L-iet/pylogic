@@ -226,8 +226,6 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
         return new_p
 
 
-# TODO: Implement replace for ExistsUnique and ExistsUniqueInSet
-# using the right inner_proposition
 class ExistsUnique(Exists[And[TProposition, Forall[Implies[TProposition, Equals]]]]):
     def __init__(
         self,
@@ -262,7 +260,17 @@ class ExistsUnique(Exists[And[TProposition, Forall[Implies[TProposition, Equals]
         new_val: Term,
         positions: list[list[int]] | None = None,
     ) -> Self:
-        raise NotImplementedError
+        if current_val == self.variable:
+            raise ValueError("Cannot replace variable (not implemented)")
+
+        new_p = self.__class__(
+            self.variable,
+            self._inner_without_unique.replace(
+                current_val, new_val, positions=positions
+            ),
+            _is_proven=False,
+        )
+        return new_p
 
 
 class ExistsUniqueInSet(
@@ -304,4 +312,25 @@ class ExistsUniqueInSet(
         new_val: Term,
         positions: list[list[int]] | None = None,
     ) -> Self:
-        raise NotImplementedError
+        if current_val == self.variable:
+            raise ValueError("Cannot replace variable (not implemented)")
+        if current_val == self.set_:
+            assert isinstance(new_val, Set), f"{new_val} is not a set"
+            new_p = self.__class__(
+                self.variable,
+                new_val,
+                self._inner_without_set_and_unique.replace(
+                    current_val, new_val, positions=positions
+                ),
+                _is_proven=False,
+            )
+
+        new_p = self.__class__(
+            self.variable,
+            self.set_,
+            self._inner_without_set_and_unique.replace(
+                current_val, new_val, positions=positions
+            ),
+            _is_proven=False,
+        )
+        return new_p

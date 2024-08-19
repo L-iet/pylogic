@@ -21,4 +21,4 @@
 #     distributive,
 # ]
 
-from pylogic.structures.quasigroup import *
+from pylogic.structures.group import *

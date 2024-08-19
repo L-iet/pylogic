@@ -6,6 +6,7 @@ from pylogic.structures.magma import Magma
 from pylogic.expressions.expr import Expr
 from pylogic.symbol import Symbol
 from pylogic.variable import Variable
+from pylogic.proposition.and_ import And
 from pylogic.proposition.quantified.forall import ForallInSet
 from pylogic.proposition.quantified.exists import ExistsUniqueInSet
 from pylogic.proposition.relation.equals import Equals
@@ -23,7 +24,9 @@ T = TypeVar("T", bound=Term)
 
 class Quasigroup(Magma):
     # https://en.wikipedia.org/wiki/Quasigroup
-    have_inverse: ForallInSet
+    latin_square: ForallInSet[
+        ForallInSet[And[ExistsUniqueInSet[Equals], ExistsUniqueInSet[Equals]]]
+    ]
 
     def __init__(
         self,
@@ -68,7 +71,3 @@ class Quasigroup(Magma):
             is_axiom=True,
             description=f"For each a and b in {name}, there exist unique x and y in {name} such that a {self.operation_symbol} x = b and y {self.operation_symbol} a = b",
         )
-
-
-Q = Quasigroup("Q")
-print(Q.latin_square.describe())

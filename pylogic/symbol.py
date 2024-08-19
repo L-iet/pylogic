@@ -11,6 +11,8 @@ Numeric = Fraction | int | float
 
 if TYPE_CHECKING:
     from pylogic.proposition.relation.equals import Equals
+    from pylogic.proposition.relation.contains import IsContainedIn
+    from pylogic.structures.set_ import Set
 
 
 class Symbol:
@@ -114,6 +116,11 @@ class Symbol:
 
     def evaluate(self) -> sp.Basic:
         return sp.Symbol(*self._init_args, **self._init_kwargs)
+
+    def is_in(self, other: Set, **kwargs) -> IsContainedIn:
+        from pylogic.proposition.relation.contains import IsContainedIn
+
+        return IsContainedIn(self, other, **kwargs)
 
     @property
     def nodes_edges(self) -> tuple[Self, Self]:

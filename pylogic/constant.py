@@ -5,9 +5,17 @@ from pylogic.symbol import Symbol
 
 T = TypeVar("T", str, int, float, complex, Fraction)
 
+_constant_values = set()
+
 
 class Constant(Symbol, Generic[T]):
     def __init__(self, value: T, *args, **kwargs) -> None:
+        global _constant_values
+        existing = value in _constant_values
+        if existing:
+            raise ValueError(f"Constant {value} already exists")
+        _constant_values.add(value)
+
         self.value: T = value
         super().__init__(str(value), *args, **kwargs)
 
@@ -18,6 +26,3 @@ class Constant(Symbol, Generic[T]):
 
     def __hash__(self) -> int:
         return super().__hash__()
-
-
-Const = Constant(5)

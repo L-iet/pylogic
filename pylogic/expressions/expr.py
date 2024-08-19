@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from pylogic.symbol import Symbol
     from pylogic.variable import Variable
     from pylogic.proposition.relation.equals import Equals
+    from pylogic.proposition.relation.contains import IsContainedIn
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
@@ -118,6 +119,11 @@ class Expr(ABC):
         from pylogic.proposition.relation.equals import Equals
 
         return Equals(self, other, **kwargs)
+
+    def is_in(self, other: Set, **kwargs) -> IsContainedIn:
+        from pylogic.proposition.relation.contains import IsContainedIn
+
+        return IsContainedIn(self, other, **kwargs)
 
     def __hash__(self) -> int:
         return hash((self.__class__.__name__, self.args))

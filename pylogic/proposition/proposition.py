@@ -782,7 +782,9 @@ class Proposition:
         )
         return new_p
 
-    def thus_forall(self, variable: Variable) -> Forall[Self] | ForallInSet[Self]:
+    def thus_forall(
+        self, variable: Variable, **kwargs
+    ) -> Forall[Self] | ForallInSet[Self]:
         """
         Logical tactic.
         Given self is proven, return a new proposition that for all variables, self is true.
@@ -805,6 +807,28 @@ class Proposition:
             _is_proven=True,
             _inference=Inference(self, rule="thus_forall"),
             _assumptions=get_assumptions(self).copy(),
+            **kwargs,
+        )
+
+    def thus_forall_in_set(
+        self, variable: Variable, set_: Set, **kwargs
+    ) -> ForallInSet[Self]:
+        """
+        Logical tactic.
+        Given self is proven, return a new proposition that for all variables in a set, self is true.
+        """
+        assert self.is_proven, f"{self} is not proven"
+        from pylogic.proposition.quantified.forall import ForallInSet
+        from pylogic.inference import Inference
+
+        return ForallInSet(
+            variable=variable,
+            set_=set_,
+            inner_proposition=self,
+            _is_proven=True,
+            _inference=Inference(self, rule="thus_forall_in_set"),
+            _assumptions=get_assumptions(self).copy(),
+            **kwargs,
         )
 
     def close_all_scopes(self) -> Proposition:
