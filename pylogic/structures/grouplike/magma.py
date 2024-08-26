@@ -48,12 +48,13 @@ class Magma(Set):
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
         operation: Callable[[T, T], T] | None = None,
+        operation_name: str | None = None,
         operation_symbol: str | None = None,
     ):
         # TODO: need to check that the set is closed under the operation
         # make this functionality optional
         super().__init__(name, sympy_set, elements, containment_function)  # type: ignore
-        self.operation_name = f"{self.name}_Op"
+        self.operation_name = operation_name or f"{self.name}_Op"
         self.operation_symbol = operation_symbol or f"{self.name}_Op"
         bin_op_func = lambda x, y: BinaryExpression(
             self.operation_name, self.operation_symbol, x, y, operation

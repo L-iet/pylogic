@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Callable, Iterable, TypeVar
 from fractions import Fraction
 from pylogic.structures.set_ import Set
-from pylogic.structures.semigroup import Semigroup
+from pylogic.structures.grouplike.semigroup import Semigroup
 from pylogic.infix.infix import SpecialInfix
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.symbol import Symbol
@@ -58,13 +58,20 @@ class Monoid(Semigroup):
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
         operation: Callable[[T, T], T] | None = None,
+        operation_name: str | None = None,
         operation_symbol: str | None = None,
         identity: T | None = None,
     ):
         if elements is not None and identity is not None:
             assert identity in elements, "Identity must be in the set of elements"
         super().__init__(
-            name, sympy_set, elements, containment_function, operation, operation_symbol
+            name,
+            sympy_set,
+            elements,
+            containment_function,
+            operation,
+            operation_name,
+            operation_symbol,
         )
         self.identity = Constant(f"{self.name}_Ident")
         self.identity_is_given = (

@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
     from pylogic.expressions.expr import Expr
+    from pylogic.helpers import Side
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
@@ -39,8 +40,6 @@ if TYPE_CHECKING:
 
 
 Props = TypeVarTuple("Props")
-
-Side = Literal["left", "right"]
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
@@ -265,25 +264,25 @@ class Proposition:
         )
         return new_p
 
-    def substitute(self, side: Side, equality: "Equals", **kwargs) -> Self:
+    def substitute(self, side: Side | str, equality: "Equals", **kwargs) -> Self:
         """
         Parameters
         ----------
-        side: str
-            "left" or "right"
+        side: Side
+            Side.LEFT or Side.RIGHT
         equality: Equals
             An equality proposition. We look for the other side of the equality
             in self and replace it with the 'side'.
         """
         return equality.substitute_into(side, self, **kwargs)
 
-    def p_substitute(self, side: Side, equality: Equals) -> Self:
+    def p_substitute(self, side: Side | str, equality: Equals) -> Self:
         """
         Logical tactic.
         Parameters
         ----------
-        side: str
-            "left" or "right"
+        side: Side
+            Side.LEFT or Side.RIGHT
         equality: Equals
             An equality proposition. We look for the other side of the equality
             in self and replace it with the 'side'.

@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Callable, Iterable, TypeVar
 from fractions import Fraction
 from pylogic.structures.set_ import Set
-from pylogic.structures.magma import Magma
+from pylogic.structures.grouplike.magma import Magma
 from pylogic.infix.infix import SpecialInfix
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.symbol import Symbol
@@ -89,10 +89,17 @@ and y in {set_.name} such that a {a_op_x.symbol} x = b and y {a_op_x.symbol} a =
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
         operation: Callable[[T, T], T] | None = None,
+        operation_name: str | None = None,
         operation_symbol: str | None = None,
     ):
         super().__init__(
-            name, sympy_set, elements, containment_function, operation, operation_symbol
+            name,
+            sympy_set,
+            elements,
+            containment_function,
+            operation,
+            operation_name,
+            operation_symbol,
         )
 
         self.latin_square = Quasigroup.property_latin_square(self, self.operation)

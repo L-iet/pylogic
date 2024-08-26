@@ -12,6 +12,11 @@ class InfixOnly(Generic[T, U, V]):
     def __init__(self, operate: Callable[[T, U], V]):
         self.operate: Callable[[T, U], V] = operate
 
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, InfixOnly):
+            return False
+        return self.operate is value.operate
+
     def __ror__(self, other: T) -> PrefixOnly[U, V]:
         return PrefixOnly(partial(self.operate, other))
 
@@ -57,6 +62,8 @@ class SpecialInfix(InfixOnly, Generic[T, U, V, W]):
     W is the return type when called.
     """
 
+    operate: Callable[[T, U], V]
+
     def __init__(
         self, operate: Callable[[T, U], V], call: Callable[..., W] | None = None
     ):
@@ -70,3 +77,8 @@ class SpecialInfix(InfixOnly, Generic[T, U, V, W]):
         if self.call is None:
             raise NotImplementedError
         return self.call(*args, **kwds)
+
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, SpecialInfix):
+            return False
+        return self.operate is value.operate and self.call is value.call

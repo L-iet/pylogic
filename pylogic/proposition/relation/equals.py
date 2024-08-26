@@ -4,6 +4,7 @@ from pylogic.inference import Inference
 from pylogic.proposition.proposition import Proposition, get_assumptions
 from pylogic.expressions.expr import Expr
 from pylogic.expressions.abs import Abs
+from pylogic.helpers import Side
 from typing import TYPE_CHECKING, Literal, TypeVar, Self, Callable
 from sympy import Basic, Integer
 
@@ -17,8 +18,6 @@ if TYPE_CHECKING:
     Unevaluated = Symbol | Set | Expr
     Term = Unevaluated | Numeric | Basic
 TProposition = TypeVar("TProposition", bound="Proposition")
-
-Side = Literal["left", "right"]
 
 
 class Equals(BinaryRelation):
@@ -57,11 +56,13 @@ class Equals(BinaryRelation):
         #     "right": self.right_doit,
         # }
 
-    def get(self, side: Side) -> Term:
-        if side == "left":
+    def get(self, side: Side | str) -> Term:
+        if side in ["left", Side.LEFT]:
             return self.left
-        else:
+        elif side in ["right", Side.RIGHT]:
             return self.right
+        else:
+            raise ValueError(f"Invalid side: {side}")
 
     def _check_provable_by_simplification(
         self, _checking_side: Side, _doit_results: dict[Side, Term]
@@ -75,7 +76,7 @@ class Equals(BinaryRelation):
         tried_doit: bool
             Whether we have tried using doit() on the arguments.
         """
-        other_side: Side = "right" if _checking_side == "left" else "left"
+        other_side: Side = Side.RIGHT if _checking_side == Side.LEFT else Side.LEFT
         proven = False
         if self.left == self.right:
             proven = True
@@ -101,13 +102,13 @@ class Equals(BinaryRelation):
             self.right.doit() if isinstance(self.right, (Basic, Expr)) else self.right
         )
         doit_results: dict[Side, Term] = {
-            "left": left_doit,
-            "right": right_doit,
+            Side.LEFT: left_doit,
+            Side.RIGHT: right_doit,
         }
 
-        proven = self._check_provable_by_simplification("left", doit_results)
+        proven = self._check_provable_by_simplification(Side.LEFT, doit_results)
         if not proven:
-            proven = self._check_provable_by_simplification("right", doit_results)
+            proven = self._check_provable_by_simplification(Side.RIGHT, doit_results)
         if proven:
             new_p = self.copy()
             new_p._is_proven = True
@@ -117,19 +118,25 @@ class Equals(BinaryRelation):
         else:
             raise ValueError(f"{self} cannot be proven by simplification")
 
-    def substitute_into(self, side: Side, other_prop: TProposition) -> TProposition:
+    def substitute_into(
+        self, side: Side | str, other_prop: TProposition
+    ) -> TProposition:
         """
-        If side == "left", will look for self.right in other_prop and replace it with self.left.
+        If side == Side.LEFT, will look for self.right in other_prop and replace it with self.left.
         Parameters
         ----------
-        side: str
-            "left" or "right"
+        side: Side
+            Side to appear in the result.
         other_prop: Proposition
             Proposition to search for the other side in.
         """
-        if side not in ["left", "right"]:
+        if side not in (Side.LEFT, Side.RIGHT, "left", "right"):
             raise ValueError(f"Invalid side: {side}")
-        other_side: Side = "right" if side == "left" else "left"
+        if side == "left":
+            side = Side.LEFT
+        elif side == "right":
+            side = Side.RIGHT
+        other_side: Side = Side.RIGHT if side == Side.LEFT else Side.LEFT
         new_prop: TProposition = other_prop.replace(
             self.get(other_side), self.get(side)
         )
@@ -138,15 +145,17 @@ class Equals(BinaryRelation):
         new_prop.deduced_from = None
         return new_prop
 
-    def p_substitute_into(self, side: Side, other_prop: TProposition) -> TProposition:
+    def p_substitute_into(
+        self, side: Side | str, other_prop: TProposition
+    ) -> TProposition:
         """
         Logical tactic.
-        If side == "left", will look for self.right in other_prop and replace it with self.left.
+        If side == Side.LEFT, will look for self.right in other_prop and replace it with self.left.
         Returns a proven proposition.
         Parameters
         ----------
-        side: str
-            "left" or "right"
+        side: Side
+            Side to appear in the result.
         other_prop: Proposition
             Proposition to search for the other side in.
         """

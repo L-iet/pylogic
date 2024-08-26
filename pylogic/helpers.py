@@ -1,4 +1,6 @@
 from __future__ import annotations
+from decimal import Decimal
+from enum import Enum
 from typing import (
     Any,
     TYPE_CHECKING,
@@ -81,6 +83,10 @@ def type_check(arg: Any, *types: type, context: Any = None) -> Literal[True]:
     raise TypeError(msg)
 
 
+def is_numeric(arg: Any) -> bool:
+    return isinstance(arg, (int, float, Fraction, complex, Decimal))
+
+
 def find_first(predicate: Callable[[T], bool], args: Iterable[T]) -> T | None:
     for arg in args:
         if predicate(arg):
@@ -99,3 +105,14 @@ def assume(arg: P, *args: *Ps) -> P | tuple[P, *Ps]:
     if all_args == 1:
         return arg
     return all_args
+
+
+class Side(Enum):
+    LEFT = 1
+    RIGHT = 2
+
+    def __invert__(self):
+        if self == Side.LEFT:
+            return Side.RIGHT
+        else:
+            return Side.LEFT

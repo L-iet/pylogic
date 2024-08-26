@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Callable, Iterable, TypeVar, cast, TYPE_CHECKING
 from fractions import Fraction
 from pylogic.structures.set_ import Set
-from pylogic.structures.monoid import Monoid
+from pylogic.structures.grouplike.monoid import Monoid
 from pylogic.infix.infix import SpecialInfix
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.symbol import Symbol
@@ -52,7 +52,7 @@ class Group(Monoid):
 
         Then x = a \ b (left divide) and y = b / a (right divide)
         """
-        from pylogic.structures.quasigroup import Quasigroup
+        from pylogic.structures.grouplike.quasigroup import Quasigroup
 
         return Quasigroup.property_latin_square(set_, operation)
 
@@ -91,6 +91,7 @@ class Group(Monoid):
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
         operation: Callable[[T, T], T] | None = None,
+        operation_name: str | None = None,
         operation_symbol: str | None = None,
         identity: T | None = None,
     ):
@@ -100,6 +101,7 @@ class Group(Monoid):
             elements,
             containment_function,
             operation,
+            operation_name,
             operation_symbol,
             identity,
         )
@@ -225,6 +227,7 @@ class AbelianGroup(Group):
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
         operation: Callable[[T, T], T] | None = None,
+        operation_name: str | None = None,
         operation_symbol: str | None = None,
         identity: T | None = None,
     ):
@@ -235,6 +238,7 @@ class AbelianGroup(Group):
             containment_function,
             operation,
             operation_symbol,
+            operation_name,
             identity,
         )
         self.op_is_commutative = AbelianGroup.property_op_is_commutative(

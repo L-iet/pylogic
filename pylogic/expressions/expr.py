@@ -205,6 +205,15 @@ class CustomExpr(Expr, Generic[U]):
     def __repr__(self) -> str:
         return f"CustomExpr{self.name.capitalize()}({', '.join(map(repr, self.args))})"
 
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, CustomExpr):
+            return (
+                self.name == other.name
+                and self.eval_func is other.eval_func
+                and self.args == other.args
+            )
+        return False
+
     def evaluate(self) -> U:
         """
         Calls the evaluation function with the arguments.

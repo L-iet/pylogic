@@ -21,6 +21,5 @@
 #     distributive,
 # ]
 
-from pylogic.structures.group import *
-
-G = Group("G")
+# from pylogic.structures.ringlike.ringoid import *
+from pylogic.constant import *
