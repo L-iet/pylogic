@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Callable, Iterable, TypeVar, TYPE_CHECKING
 from fractions import Fraction
+from pylogic.helpers import is_numeric
 from pylogic.structures.set_ import Set
 from pylogic.structures.grouplike.quasigroup import Quasigroup
 from pylogic.infix.infix import SpecialInfix
@@ -27,7 +28,6 @@ if TYPE_CHECKING:
 
 class Loop(Quasigroup):
     has_identity: And[IsContainedIn, ForallInSet[And[Equals, Equals]]]
-    identity_is_given: Equals | None
 
     @classmethod
     def property_has_identity(
@@ -64,12 +64,12 @@ class Loop(Quasigroup):
             operation_name,
             operation_symbol,
         )
-        self.identity = Constant(f"{self.name}_Ident")
-        self.identity_is_given = (
-            Equals(self.identity, identity, is_axiom=True)
-            if identity is not None
-            else None
-        )
+        if is_numeric(identity):
+            identity = Constant(identity)  # type: ignore
+        self.identity: Symbol | Constant | Set | Expr = identity or Constant(
+            f"{self.operation_name}_Ident"
+        )  # type: ignore
+
         self.has_identity = Loop.property_has_identity(
             self, self.operation, self.identity
         )

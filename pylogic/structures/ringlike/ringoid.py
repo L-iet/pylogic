@@ -96,11 +96,3 @@ class Ringoid(LeftRingoid, RightRingoid):
             self.times_left_dist_over_plus,
             self.times_right_dist_over_plus,
         ).all_proven()
-
-
-x = Variable("x")
-y = Variable("y")
-z = Variable("z")
-R = Ringoid("R", elements={x, y, z}, times_operation=lambda x, y: x * y)
-w = x | R.times | z
-print(R.times_right_dist_over_plus.is_proven)

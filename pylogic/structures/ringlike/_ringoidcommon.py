@@ -1,18 +1,18 @@
 from __future__ import annotations
-from typing import Callable, Iterable, TypeVar, TypeAlias
-from fractions import Fraction
-from pylogic.structures.set_ import Set
-from pylogic.infix.infix import SpecialInfix
-from pylogic.expressions.expr import BinaryExpression, Expr
-from pylogic.symbol import Symbol
-from pylogic.proposition.quantified.forall import ForallInSet
-from pylogic.proposition.relation.contains import IsContainedIn
-from pylogic.proposition.relation.contains import IsContainedIn
 
-from pylogic.structures.grouplike.magma import Magma
+from fractions import Fraction
+from typing import Callable, Iterable, TypeAlias, TypeVar
 
 from sympy import Basic
 from sympy import Set as SympySet
+
+from pylogic.expressions.expr import BinaryExpression, Expr
+from pylogic.infix.infix import SpecialInfix
+from pylogic.proposition.quantified.forall import ForallInSet
+from pylogic.proposition.relation.contains import IsContainedIn
+from pylogic.structures.grouplike.magma import Magma
+from pylogic.structures.set_ import Set
+from pylogic.symbol import Symbol
 
 Numeric = Fraction | int | float
 PBasic = Symbol | Numeric
@@ -64,10 +64,10 @@ class _RingoidCommon(Set):
         times_operation_symbol: str | None = None,
     ):
         super().__init__(name, sympy_set, elements, containment_function)  # type: ignore
-        self.plus_operation_name = f"{self.name}_Plus_Op"
+        self.plus_operation_name = f"{self.name}_+"
         self.plus_operation_symbol = plus_operation_symbol or f"{self.name}_+"
         self.plus_eval_func = plus_operation
-        self.times_operation_name = f"{self.name}_Plus_Op"
+        self.times_operation_name = f"{self.name}_*"
         self.times_operation_symbol = times_operation_symbol or f"{self.name}_*"
         self.times_eval_func = times_operation
 

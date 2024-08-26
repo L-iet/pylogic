@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Generic, TypeVar, Any, cast
 from fractions import Fraction
 from pylogic.symbol import Symbol
+from pylogic.helpers import type_check
 
 T = TypeVar("T", str, int, float, complex, Fraction)
 
@@ -10,8 +11,10 @@ _constant_values = set()
 
 class Constant(Symbol, Generic[T]):
     def __init__(self, value: T, *args, **kwargs) -> None:
-        if isinstance(value, Constant):
-            value = value.value
+        type_check(
+            value, str, int, float, complex, Fraction, context="Constant.__init__"
+        )
+
         global _constant_values
         existing = value in _constant_values
         if existing:

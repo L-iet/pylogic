@@ -1,19 +1,20 @@
 from __future__ import annotations
-from typing import Callable, Iterable, TypeVar, TypeAlias
-from fractions import Fraction
-from pylogic.structures.set_ import Set
-from pylogic.infix.infix import SpecialInfix
-from pylogic.expressions.expr import BinaryExpression, Expr
-from pylogic.symbol import Symbol
-from pylogic.variable import Variable
-from pylogic.proposition.quantified.forall import ForallInSet
-from pylogic.proposition.relation.equals import Equals
-from pylogic.proposition.relation.contains import IsContainedIn
 
-from pylogic.structures.ringlike._ringoidcommon import _RingoidCommon
+from fractions import Fraction
+from typing import Callable, Iterable, TypeAlias, TypeVar
 
 from sympy import Basic
 from sympy import Set as SympySet
+
+from pylogic.expressions.expr import BinaryExpression, Expr
+from pylogic.infix.infix import SpecialInfix
+from pylogic.proposition.quantified.forall import ForallInSet
+from pylogic.proposition.relation.contains import IsContainedIn
+from pylogic.proposition.relation.equals import Equals
+from pylogic.structures.ringlike._ringoidcommon import _RingoidCommon
+from pylogic.structures.set_ import Set
+from pylogic.symbol import Symbol
+from pylogic.variable import Variable
 
 Numeric = Fraction | int | float
 PBasic = Symbol | Numeric

@@ -1,5 +1,6 @@
 from __future__ import annotations
 from decimal import Decimal
+from fractions import Fraction
 from enum import Enum
 from typing import (
     Any,
@@ -22,7 +23,6 @@ P = TypeVar("P", bound=Proposition)
 Ps = TypeVarTuple("Ps")
 
 if TYPE_CHECKING:
-    from fractions import Fraction
     from sympy import Basic
 
     Numeric = Fraction | int | float

@@ -22,4 +22,4 @@
 # ]
 
 # from pylogic.structures.ringlike.ringoid import *
-from pylogic.constant import *
+from pylogic.structures.ringlike.rng import *
