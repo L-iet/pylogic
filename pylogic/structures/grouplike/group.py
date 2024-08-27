@@ -1,22 +1,23 @@
 from __future__ import annotations
-from typing import Callable, Iterable, TypeVar, cast, TYPE_CHECKING
+
 from fractions import Fraction
-from pylogic.structures.set_ import Set
-from pylogic.structures.grouplike.monoid import Monoid
-from pylogic.infix.infix import SpecialInfix
-from pylogic.expressions.expr import BinaryExpression, Expr
-from pylogic.symbol import Symbol
-from pylogic.variable import Variable
-from pylogic.proposition.and_ import And
-from pylogic.proposition.quantified.forall import ForallInSet
-from pylogic.proposition.quantified.exists import ExistsUniqueInSet
-from pylogic.proposition.relation.equals import Equals
-from pylogic.proposition.relation.contains import IsContainedIn
-from pylogic.proposition.quantified.forall import Forall
-from pylogic.proposition.implies import Implies
+from typing import TYPE_CHECKING, Callable, Iterable, TypeVar, cast
 
 from sympy import Basic
 from sympy import Set as SympySet
+
+from pylogic.expressions.expr import BinaryExpression, Expr
+from pylogic.infix.infix import SpecialInfix
+from pylogic.proposition.and_ import And
+from pylogic.proposition.implies import Implies
+from pylogic.proposition.quantified.exists import ExistsUniqueInSet
+from pylogic.proposition.quantified.forall import Forall, ForallInSet
+from pylogic.proposition.relation.contains import IsContainedIn
+from pylogic.proposition.relation.equals import Equals
+from pylogic.structures.grouplike.monoid import Monoid
+from pylogic.structures.set_ import Set
+from pylogic.symbol import Symbol
+from pylogic.variable import Variable
 
 Numeric = Fraction | int | float
 PBasic = Symbol | Numeric
@@ -24,6 +25,7 @@ Unevaluated = Symbol | Set | Expr
 Term = Unevaluated | Numeric | Basic
 
 T = TypeVar("T", bound=Term)
+E = TypeVar("E", bound=Expr)
 
 
 class Group(Monoid):
@@ -36,9 +38,7 @@ class Group(Monoid):
     def property_latin_square(
         cls,
         set_: Set,
-        operation: SpecialInfix[
-            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
-        ],
+        operation: SpecialInfix[Term, Term, Expr, Expr],
     ) -> ForallInSet[
         ForallInSet[And[ExistsUniqueInSet[Equals], ExistsUniqueInSet[Equals]]]
     ]:
@@ -60,9 +60,7 @@ class Group(Monoid):
     def property_have_inverses(
         cls,
         set_: Set,
-        operation: SpecialInfix[
-            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
-        ],
+        operation: SpecialInfix[Term, Term, Expr, Expr],
         identity: Term,
     ) -> ForallInSet[ExistsUniqueInSet[And[Equals, Equals]]]:
         """
@@ -90,7 +88,7 @@ class Group(Monoid):
         sympy_set: SympySet | None = None,
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
-        operation: Callable[[T, T], T] | None = None,
+        operation: Callable[[T, T], E] | None = None,
         operation_name: str | None = None,
         operation_symbol: str | None = None,
         identity: T | None = None,
@@ -202,9 +200,7 @@ class AbelianGroup(Group):
     def property_op_is_commutative(
         cls,
         set_: Set,
-        operation: SpecialInfix[
-            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
-        ],
+        operation: SpecialInfix[Term, Term, Expr, Expr],
     ) -> ForallInSet[ForallInSet[Equals]]:
         x = Variable("x")
         y = Variable("y")
@@ -217,7 +213,7 @@ class AbelianGroup(Group):
                 set_,
                 Equals(x_op_y, y | operation | x),
             ),
-            description=f"{x_op_y.symbol} is commutative in {set_.name}",
+            description=f"{operation.symbol} is commutative in {set_.name}",
         )
 
     def __init__(
@@ -226,7 +222,7 @@ class AbelianGroup(Group):
         sympy_set: SympySet | None = None,
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
-        operation: Callable[[T, T], T] | None = None,
+        operation: Callable[[T, T], E] | None = None,
         operation_name: str | None = None,
         operation_symbol: str | None = None,
         identity: T | None = None,

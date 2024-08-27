@@ -9,13 +9,16 @@ from sympy import Set as SympySet
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.infix.infix import SpecialInfix
 from pylogic.proposition.and_ import And
+from pylogic.proposition.implies import Implies
+from pylogic.proposition.or_ import Or
 from pylogic.proposition.quantified.exists import ExistsUniqueInSet
 from pylogic.proposition.quantified.forall import ForallInSet
 from pylogic.proposition.relation.equals import Equals
-from pylogic.structures.grouplike.group import AbelianGroup, Group
-from pylogic.structures.ringlike.crooked_semiring import CrookedSemirIng
+from pylogic.structures.grouplike.group import Group
+from pylogic.structures.ringlike.ring import RIng
 from pylogic.structures.set_ import Set
 from pylogic.symbol import Symbol
+from pylogic.variable import Variable
 
 Numeric = Fraction | int | float
 PBasic = Symbol | Numeric
@@ -28,30 +31,54 @@ Z = TypeVar("Z", str, int, float, complex, Fraction)
 BinOpFunc: TypeAlias = Callable[[T, T], BinaryExpression[T]]
 
 
-class NearrIng(CrookedSemirIng[Z]):
-    have_add_inverses: ForallInSet[ExistsUniqueInSet[And[Equals, Equals]]]
-    plus_latin_square = ForallInSet[
+class DivisionRIng(RIng[Z]):
+    have_mul_inverses: ForallInSet[ExistsUniqueInSet[And[Equals, Equals]]]
+    times_latin_square: ForallInSet[
         ForallInSet[And[ExistsUniqueInSet[Equals], ExistsUniqueInSet[Equals]]]
     ]
+    zero_product: ForallInSet[ForallInSet[Implies[Equals, Or[Equals, Equals]]]]
 
     @classmethod
-    def property_have_add_inverses(
+    def property_have_mul_inverses(
         cls,
         set_: Set,
-        plus_operation: SpecialInfix[Term, Term, Expr, Expr],
-        zero: Term,
+        times_operation: SpecialInfix[Term, Term, Expr, Expr],
+        one: Term,
     ) -> ForallInSet[ExistsUniqueInSet[And[Equals, Equals]]]:
-        return Group.property_have_inverses(set_, plus_operation, zero)
+        return Group.property_have_inverses(set_, times_operation, one)
 
     @classmethod
-    def property_plus_latin_square(
+    def property_times_latin_square(
         cls,
         set_: Set,
-        plus_operation: SpecialInfix[Term, Term, Expr, Expr],
+        times_operation: SpecialInfix[Term, Term, Expr, Expr],
     ) -> ForallInSet[
         ForallInSet[And[ExistsUniqueInSet[Equals], ExistsUniqueInSet[Equals]]]
     ]:
-        return Group.property_latin_square(set_, plus_operation)
+        return Group.property_latin_square(set_, times_operation)
+
+    @classmethod
+    def property_zero_product(
+        cls,
+        set_: Set,
+        times_operation: SpecialInfix[Term, Term, Expr, Expr],
+        zero: Term,
+    ) -> ForallInSet[ForallInSet[Implies[Equals, Or[Equals, Equals]]]]:
+        a = Variable("a")
+        b = Variable("b")
+        return ForallInSet(
+            a,
+            set_,
+            ForallInSet(
+                b,
+                set_,
+                Implies(
+                    Equals(a | times_operation | b, zero),
+                    Or(Equals(a, zero), Equals(b, zero)),
+                ),
+            ),
+            description="a*b = 0 implies a = 0 or b = 0",
+        )
 
     def __init__(
         self,
@@ -78,15 +105,21 @@ class NearrIng(CrookedSemirIng[Z]):
             times_operation_symbol=times_operation_symbol,
             one=one,
         )
-        self.group_plus = Group(
+        self.group_times = Group(
             name=name,
             sympy_set=sympy_set,
             elements=elements,
             containment_function=containment_function,  # type: ignore
-            operation=plus_operation,  # type: ignore
-            operation_name=self.plus_operation_name,
-            operation_symbol=self.plus_operation_symbol,
-            identity=self.zero,
+            operation=times_operation,  # type: ignore
+            operation_name=self.times_operation_name,
+            operation_symbol=self.times_operation_symbol,
+            identity=one,  # type: ignore
         )
-        self.have_add_inverses = self.group_plus.have_inverses
-        self.plus_latin_square = self.group_plus.latin_square
+        self.have_mul_inverses = self.group_times.have_inverses
+        self.times_latin_square = self.group_times.latin_square
+        self.zero_product = DivisionRIng.property_zero_product(
+            set_=self,
+            times_operation=self.times_operation,
+            zero=self.zero,
+        )
+        self.zero_product.is_axiom = True

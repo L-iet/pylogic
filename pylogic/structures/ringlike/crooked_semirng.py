@@ -27,6 +27,7 @@ Unevaluated = Symbol | Set | Expr
 Term = Unevaluated | Numeric | Basic
 
 T = TypeVar("T", bound=Term)
+E = TypeVar("E", bound=Expr)
 Z = TypeVar("Z", str, int, float, complex, Fraction)
 BinOpFunc: TypeAlias = Callable[[T, T], BinaryExpression[T]]
 
@@ -42,9 +43,7 @@ class CrookedSemirng(Ringoid, Generic[Z]):
     def property_plus_is_associative(
         cls,
         set_: Set,
-        plus_operation: SpecialInfix[
-            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
-        ],
+        plus_operation: SpecialInfix[Term, Term, Expr, Expr],
     ) -> ForallInSet[ForallInSet[ForallInSet[Equals]]]:
         return Semigroup.property_op_is_associative(set_, plus_operation)
 
@@ -52,9 +51,7 @@ class CrookedSemirng(Ringoid, Generic[Z]):
     def property_plus_has_identity(
         cls,
         set_: Set,
-        plus_operation: SpecialInfix[
-            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
-        ],
+        plus_operation: SpecialInfix[Term, Term, Expr, Expr],
         zero: Term,
     ) -> And[IsContainedIn, ForallInSet[And[Equals, Equals]]]:
         return Monoid.property_has_identity(set_, plus_operation, zero)
@@ -63,9 +60,7 @@ class CrookedSemirng(Ringoid, Generic[Z]):
     def property_times_is_associative(
         cls,
         set_: Set,
-        times_operation: SpecialInfix[
-            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
-        ],
+        times_operation: SpecialInfix[Term, Term, Expr, Expr],
     ) -> ForallInSet[ForallInSet[ForallInSet[Equals]]]:
         return Semigroup.property_op_is_associative(set_, times_operation)
 
@@ -73,9 +68,7 @@ class CrookedSemirng(Ringoid, Generic[Z]):
     def property_zero_mul_eq_zero(
         cls,
         set_: Set,
-        times_operation: SpecialInfix[
-            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
-        ],
+        times_operation: SpecialInfix[Term, Term, Expr, Expr],
         zero: Term,
     ) -> ForallInSet[And[Equals, Equals]]:
         x = Variable("x")
@@ -94,10 +87,10 @@ class CrookedSemirng(Ringoid, Generic[Z]):
         sympy_set: SympySet | None = None,
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
-        plus_operation: Callable[[T, T], T] | None = None,
+        plus_operation: Callable[[T, T], E] | None = None,
         plus_operation_symbol: str | None = None,
         zero: Z | Unevaluated | None = None,
-        times_operation: Callable[[T, T], T] | None = None,
+        times_operation: Callable[[T, T], E] | None = None,
         times_operation_symbol: str | None = None,
     ):
         super().__init__(

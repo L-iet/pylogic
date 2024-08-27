@@ -1,21 +1,23 @@
 from __future__ import annotations
-from typing import Callable, Iterable, TypeVar
+
 from fractions import Fraction
-from pylogic.helpers import is_numeric
-from pylogic.structures.set_ import Set
-from pylogic.structures.grouplike.semigroup import Semigroup
-from pylogic.infix.infix import SpecialInfix
-from pylogic.expressions.expr import BinaryExpression, Expr
-from pylogic.symbol import Symbol
-from pylogic.constant import Constant
-from pylogic.variable import Variable
-from pylogic.proposition.and_ import And
-from pylogic.proposition.quantified.forall import ForallInSet
-from pylogic.proposition.relation.equals import Equals
-from pylogic.proposition.relation.contains import IsContainedIn
+from typing import Callable, Iterable, TypeVar
 
 from sympy import Basic
 from sympy import Set as SympySet
+
+from pylogic.constant import Constant
+from pylogic.expressions.expr import BinaryExpression, Expr
+from pylogic.helpers import is_numeric
+from pylogic.infix.infix import SpecialInfix
+from pylogic.proposition.and_ import And
+from pylogic.proposition.quantified.forall import ForallInSet
+from pylogic.proposition.relation.contains import IsContainedIn
+from pylogic.proposition.relation.equals import Equals
+from pylogic.structures.grouplike.semigroup import Semigroup
+from pylogic.structures.set_ import Set
+from pylogic.symbol import Symbol
+from pylogic.variable import Variable
 
 Numeric = Fraction | int | float
 PBasic = Symbol | Numeric
@@ -23,6 +25,7 @@ Unevaluated = Symbol | Set | Expr
 Term = Unevaluated | Numeric | Basic
 
 T = TypeVar("T", bound=Term)
+E = TypeVar("E", bound=Expr)
 
 
 class Monoid(Semigroup):
@@ -32,9 +35,7 @@ class Monoid(Semigroup):
     def property_has_identity(
         cls,
         set_: Set,
-        operation: SpecialInfix[
-            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
-        ],
+        operation: SpecialInfix[Term, Term, Expr, Expr],
         identity: Term,
     ) -> And[IsContainedIn, ForallInSet[And[Equals, Equals]]]:
         x = Variable("x")
@@ -57,7 +58,7 @@ class Monoid(Semigroup):
         sympy_set: SympySet | None = None,
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
-        operation: Callable[[T, T], T] | None = None,
+        operation: Callable[[T, T], E] | None = None,
         operation_name: str | None = None,
         operation_symbol: str | None = None,
         identity: T | None = None,

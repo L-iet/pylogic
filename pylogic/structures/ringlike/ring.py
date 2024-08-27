@@ -23,6 +23,7 @@ Unevaluated = Symbol | Set | Expr
 Term = Unevaluated | Numeric | Basic
 
 T = TypeVar("T", bound=Term)
+E = TypeVar("E", bound=Expr)
 Z = TypeVar("Z", str, int, float, complex, Fraction)
 BinOpFunc: TypeAlias = Callable[[T, T], BinaryExpression[T]]
 
@@ -37,9 +38,7 @@ class RIng(SemirIng[Z]):
     def property_have_add_inverses(
         cls,
         set_: Set,
-        plus_operation: SpecialInfix[
-            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
-        ],
+        plus_operation: SpecialInfix[Term, Term, Expr, Expr],
         zero: Term,
     ) -> ForallInSet[ExistsUniqueInSet[And[Equals, Equals]]]:
         return Group.property_have_inverses(set_, plus_operation, zero)
@@ -48,9 +47,7 @@ class RIng(SemirIng[Z]):
     def property_plus_latin_square(
         cls,
         set_: Set,
-        plus_operation: SpecialInfix[
-            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
-        ],
+        plus_operation: SpecialInfix[Term, Term, Expr, Expr],
     ) -> ForallInSet[
         ForallInSet[And[ExistsUniqueInSet[Equals], ExistsUniqueInSet[Equals]]]
     ]:
@@ -62,10 +59,10 @@ class RIng(SemirIng[Z]):
         sympy_set: SympySet | None = None,
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
-        plus_operation: Callable[[T, T], T] | None = None,
+        plus_operation: Callable[[T, T], E] | None = None,
         plus_operation_symbol: str | None = None,
         zero: Z | Unevaluated | None = None,
-        times_operation: Callable[[T, T], T] | None = None,
+        times_operation: Callable[[T, T], E] | None = None,
         times_operation_symbol: str | None = None,
         one: Z | Unevaluated | None = None,
     ):

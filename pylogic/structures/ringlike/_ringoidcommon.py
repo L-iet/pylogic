@@ -20,6 +20,7 @@ Unevaluated = Symbol | Set | Expr
 Term = Unevaluated | Numeric | Basic
 
 T = TypeVar("T", bound=Term)
+E = TypeVar("E", bound=Expr)
 BinOpFunc: TypeAlias = Callable[[T, T], BinaryExpression[T]]
 
 
@@ -36,9 +37,7 @@ class _RingoidCommon(Set):
     def property_is_closed_under_plus(
         cls,
         set_: Set,
-        plus_operation: SpecialInfix[
-            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
-        ],
+        plus_operation: SpecialInfix[Term, Term, Expr, Expr],
     ) -> ForallInSet[ForallInSet[IsContainedIn]]:
         return Magma.property_is_closed_under_op(set_, plus_operation)
 
@@ -46,9 +45,7 @@ class _RingoidCommon(Set):
     def property_is_closed_under_times(
         cls,
         set_: Set,
-        times_operation: SpecialInfix[
-            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
-        ],
+        times_operation: SpecialInfix[Term, Term, Expr, Expr],
     ) -> ForallInSet[ForallInSet[IsContainedIn]]:
         return Magma.property_is_closed_under_op(set_, times_operation)
 
@@ -58,9 +55,9 @@ class _RingoidCommon(Set):
         sympy_set: SympySet | None = None,
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
-        plus_operation: Callable[[T, T], T] | None = None,
+        plus_operation: Callable[[T, T], E] | None = None,
         plus_operation_symbol: str | None = None,
-        times_operation: Callable[[T, T], T] | None = None,
+        times_operation: Callable[[T, T], E] | None = None,
         times_operation_symbol: str | None = None,
     ):
         super().__init__(name, sympy_set, elements, containment_function)  # type: ignore

@@ -1,6 +1,7 @@
 from __future__ import annotations
-from typing import Callable, Any, Generic, TypeVar
+
 from functools import partial
+from typing import Any, Callable, Generic, TypeVar
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -9,8 +10,9 @@ W = TypeVar("W")
 
 
 class InfixOnly(Generic[T, U, V]):
-    def __init__(self, operate: Callable[[T, U], V]):
+    def __init__(self, operate: Callable[[T, U], V], symbol: str | None = None):
         self.operate: Callable[[T, U], V] = operate
+        self.symbol: str | None = symbol
 
     def __eq__(self, value: object) -> bool:
         if not isinstance(value, InfixOnly):
@@ -24,16 +26,16 @@ class InfixOnly(Generic[T, U, V]):
 class PrefixOnly(InfixOnly, Generic[T, V]):
     operate: Callable[[T], V]
 
-    def __init__(self, operate: Callable[[T], V]):
-        super().__init__(operate)  # type: ignore
+    def __init__(self, operate: Callable[[T], V], symbol: str | None = None):
+        super().__init__(operate, symbol)  # type: ignore
 
     def __or__(self, other: T) -> V:
         return self.operate(other)
 
 
 class Infix(InfixOnly, Generic[T, U, V]):
-    def __init__(self, operate: Callable[[T, U], V]):
-        super().__init__(operate)
+    def __init__(self, operate: Callable[[T, U], V], symbol: str | None = None):
+        super().__init__(operate, symbol)
 
     def __ror__(self, other: T) -> Prefix[U, V]:
         return Prefix(partial(self.operate, other))
@@ -43,8 +45,8 @@ class Infix(InfixOnly, Generic[T, U, V]):
 
 
 class Prefix(PrefixOnly, Generic[T, V]):
-    def __init__(self, operate: Callable[[T], V]):
-        super().__init__(operate)
+    def __init__(self, operate: Callable[[T], V], symbol: str | None = None):
+        super().__init__(operate, symbol)
 
     def __or__(self, other: T) -> V:
         return super().__or__(other)
@@ -65,9 +67,12 @@ class SpecialInfix(InfixOnly, Generic[T, U, V, W]):
     operate: Callable[[T, U], V]
 
     def __init__(
-        self, operate: Callable[[T, U], V], call: Callable[..., W] | None = None
+        self,
+        operate: Callable[[T, U], V],
+        call: Callable[..., W] | None = None,
+        symbol: str | None = None,
     ):
-        super().__init__(operate)
+        super().__init__(operate, symbol)
         self.call: Callable[..., W] | None = call
 
     def __ror__(self, other: T) -> PrefixOnly[U, V]:

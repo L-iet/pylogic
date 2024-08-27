@@ -25,6 +25,7 @@ Unevaluated = Symbol | Set | Expr
 Term = Unevaluated | Numeric | Basic
 
 T = TypeVar("T", bound=Term)
+E = TypeVar("E", bound=Expr)
 Z = TypeVar("Z", str, int, float, complex, Fraction)
 BinOpFunc: TypeAlias = Callable[[T, T], BinaryExpression[T]]
 
@@ -37,9 +38,7 @@ class CrookedSemirIng(CrookedSemirng[Z]):
     def property_times_has_identity(
         cls,
         set_: Set,
-        times_operation: SpecialInfix[
-            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
-        ],
+        times_operation: SpecialInfix[Term, Term, Expr, Expr],
         one: Term,
     ) -> And[IsContainedIn, ForallInSet[And[Equals, Equals]]]:
         return Monoid.property_has_identity(set_, times_operation, one)
@@ -50,10 +49,10 @@ class CrookedSemirIng(CrookedSemirng[Z]):
         sympy_set: SympySet | None = None,
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
-        plus_operation: Callable[[T, T], T] | None = None,
+        plus_operation: Callable[[T, T], E] | None = None,
         plus_operation_symbol: str | None = None,
         zero: Z | Unevaluated | None = None,
-        times_operation: Callable[[T, T], T] | None = None,
+        times_operation: Callable[[T, T], E] | None = None,
         times_operation_symbol: str | None = None,
         one: Z | Unevaluated | None = None,
     ):

@@ -1,22 +1,23 @@
 from __future__ import annotations
-from typing import Callable, Iterable, TypeVar, TypeAlias
-from fractions import Fraction
-from pylogic.structures.set_ import Set
-from pylogic.infix.infix import SpecialInfix
-from pylogic.expressions.expr import BinaryExpression, Expr
-from pylogic.symbol import Symbol
-from pylogic.variable import Variable
-from pylogic.proposition.quantified.forall import ForallInSet
-from pylogic.proposition.relation.contains import IsContainedIn
-from pylogic.proposition.relation.equals import Equals
-from pylogic.proposition.and_ import And
 
-from pylogic.structures.grouplike.magma import Magma
-from pylogic.structures.ringlike.left_ringoid import LeftRingoid
-from pylogic.structures.ringlike.right_ringoid import RightRingoid
+from fractions import Fraction
+from typing import Callable, Iterable, TypeAlias, TypeVar
 
 from sympy import Basic
 from sympy import Set as SympySet
+
+from pylogic.expressions.expr import BinaryExpression, Expr
+from pylogic.infix.infix import SpecialInfix
+from pylogic.proposition.and_ import And
+from pylogic.proposition.quantified.forall import ForallInSet
+from pylogic.proposition.relation.contains import IsContainedIn
+from pylogic.proposition.relation.equals import Equals
+from pylogic.structures.grouplike.magma import Magma
+from pylogic.structures.ringlike.left_ringoid import LeftRingoid
+from pylogic.structures.ringlike.right_ringoid import RightRingoid
+from pylogic.structures.set_ import Set
+from pylogic.symbol import Symbol
+from pylogic.variable import Variable
 
 Numeric = Fraction | int | float
 PBasic = Symbol | Numeric
@@ -24,6 +25,7 @@ Unevaluated = Symbol | Set | Expr
 Term = Unevaluated | Numeric | Basic
 
 T = TypeVar("T", bound=Term)
+E = TypeVar("E", bound=Expr)
 BinOpFunc: TypeAlias = Callable[[T, T], BinaryExpression[T]]
 
 
@@ -44,12 +46,8 @@ class Ringoid(LeftRingoid, RightRingoid):
     def property_times_dist_over_plus(
         cls,
         set_: Set,
-        plus_operation: SpecialInfix[
-            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
-        ],
-        times_operation: SpecialInfix[
-            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
-        ],
+        plus_operation: SpecialInfix[Term, Term, Expr, Expr],
+        times_operation: SpecialInfix[Term, Term, Expr, Expr],
     ) -> And[
         ForallInSet[ForallInSet[ForallInSet[Equals]]],
         ForallInSet[ForallInSet[ForallInSet[Equals]]],
@@ -66,7 +64,7 @@ class Ringoid(LeftRingoid, RightRingoid):
             RightRingoid.property_times_right_dist_over_plus(
                 set_, plus_operation, times_operation
             ),
-            description=f"{x_times_y.symbol} distributes over {x_plus_y.symbol} in {set_.name}",
+            description=f"{times_operation.symbol} distributes over {plus_operation.symbol} in {set_.name}",
         )
 
     def __init__(
@@ -75,9 +73,9 @@ class Ringoid(LeftRingoid, RightRingoid):
         sympy_set: SympySet | None = None,
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
-        plus_operation: Callable[[T, T], T] | None = None,
+        plus_operation: Callable[[T, T], E] | None = None,
         plus_operation_symbol: str | None = None,
-        times_operation: Callable[[T, T], T] | None = None,
+        times_operation: Callable[[T, T], E] | None = None,
         times_operation_symbol: str | None = None,
     ):
         # LeftRingoid.__init__

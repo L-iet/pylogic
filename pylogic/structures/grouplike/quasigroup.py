@@ -1,19 +1,21 @@
 from __future__ import annotations
-from typing import Callable, Iterable, TypeVar
+
 from fractions import Fraction
-from pylogic.structures.set_ import Set
-from pylogic.structures.grouplike.magma import Magma
-from pylogic.infix.infix import SpecialInfix
-from pylogic.expressions.expr import BinaryExpression, Expr
-from pylogic.symbol import Symbol
-from pylogic.variable import Variable
-from pylogic.proposition.and_ import And
-from pylogic.proposition.quantified.forall import ForallInSet
-from pylogic.proposition.quantified.exists import ExistsUniqueInSet
-from pylogic.proposition.relation.equals import Equals
+from typing import Callable, Iterable, TypeVar
 
 from sympy import Basic
 from sympy import Set as SympySet
+
+from pylogic.expressions.expr import BinaryExpression, Expr
+from pylogic.infix.infix import SpecialInfix
+from pylogic.proposition.and_ import And
+from pylogic.proposition.quantified.exists import ExistsUniqueInSet
+from pylogic.proposition.quantified.forall import ForallInSet
+from pylogic.proposition.relation.equals import Equals
+from pylogic.structures.grouplike.magma import Magma
+from pylogic.structures.set_ import Set
+from pylogic.symbol import Symbol
+from pylogic.variable import Variable
 
 Numeric = Fraction | int | float
 PBasic = Symbol | Numeric
@@ -21,6 +23,7 @@ Unevaluated = Symbol | Set | Expr
 Term = Unevaluated | Numeric | Basic
 
 T = TypeVar("T", bound=Term)
+E = TypeVar("E", bound=Expr)
 
 
 class Quasigroup(Magma):
@@ -33,9 +36,7 @@ class Quasigroup(Magma):
     def property_latin_square(
         cls,
         set_: Set,
-        operation: SpecialInfix[
-            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
-        ],
+        operation: SpecialInfix[Term, Term, Expr, Expr],
     ) -> ForallInSet[
         ForallInSet[And[ExistsUniqueInSet[Equals], ExistsUniqueInSet[Equals]]]
     ]:
@@ -79,7 +80,7 @@ class Quasigroup(Magma):
                 ),
             ),
             description=f"For each a and b in {set_.name}, there exist unique x \
-and y in {set_.name} such that a {a_op_x.symbol} x = b and y {a_op_x.symbol} a = b",
+and y in {set_.name} such that a {operation.symbol} x = b and y {operation.symbol} a = b",
         )
 
     def __init__(
@@ -88,7 +89,7 @@ and y in {set_.name} such that a {a_op_x.symbol} x = b and y {a_op_x.symbol} a =
         sympy_set: SympySet | None = None,
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
-        operation: Callable[[T, T], T] | None = None,
+        operation: Callable[[T, T], E] | None = None,
         operation_name: str | None = None,
         operation_symbol: str | None = None,
     ):

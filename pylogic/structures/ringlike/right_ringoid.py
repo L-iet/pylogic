@@ -22,6 +22,7 @@ Unevaluated = Symbol | Set | Expr
 Term = Unevaluated | Numeric | Basic
 
 T = TypeVar("T", bound=Term)
+E = TypeVar("E", bound=Expr)
 BinOpFunc: TypeAlias = Callable[[T, T], BinaryExpression[T]]
 
 
@@ -39,12 +40,8 @@ class RightRingoid(_RingoidCommon):
     def property_times_right_dist_over_plus(
         cls,
         set_: Set,
-        plus_operation: SpecialInfix[
-            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
-        ],
-        times_operation: SpecialInfix[
-            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
-        ],
+        plus_operation: SpecialInfix[Term, Term, Expr, Expr],
+        times_operation: SpecialInfix[Term, Term, Expr, Expr],
     ) -> ForallInSet[ForallInSet[ForallInSet[Equals]]]:
         x = Variable("x")
         y = Variable("y")
@@ -65,7 +62,7 @@ class RightRingoid(_RingoidCommon):
                     Equals(y_plus_z__times_x, (y_times_x | plus_operation | z_times_x)),
                 ),
             ),
-            description=f"{y_times_x.symbol} right-distributes over {y_plus_z.symbol} in {set_.name}",
+            description=f"{times_operation.symbol} right-distributes over {plus_operation.symbol} in {set_.name}",
         )
 
     def __init__(
@@ -74,9 +71,9 @@ class RightRingoid(_RingoidCommon):
         sympy_set: SympySet | None = None,
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
-        plus_operation: Callable[[T, T], T] | None = None,
+        plus_operation: Callable[[T, T], E] | None = None,
         plus_operation_symbol: str | None = None,
-        times_operation: Callable[[T, T], T] | None = None,
+        times_operation: Callable[[T, T], E] | None = None,
         times_operation_symbol: str | None = None,
     ):
         super().__init__(

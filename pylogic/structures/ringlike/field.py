@@ -8,12 +8,10 @@ from sympy import Set as SympySet
 
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.infix.infix import SpecialInfix
-from pylogic.proposition.and_ import And
-from pylogic.proposition.quantified.exists import ExistsUniqueInSet
 from pylogic.proposition.quantified.forall import ForallInSet
 from pylogic.proposition.relation.equals import Equals
-from pylogic.structures.grouplike.group import AbelianGroup, Group
-from pylogic.structures.ringlike.crooked_semiring import CrookedSemirIng
+from pylogic.structures.grouplike.group import AbelianGroup
+from pylogic.structures.ringlike.division_ring import DivisionRIng
 from pylogic.structures.set_ import Set
 from pylogic.symbol import Symbol
 
@@ -28,30 +26,18 @@ Z = TypeVar("Z", str, int, float, complex, Fraction)
 BinOpFunc: TypeAlias = Callable[[T, T], BinaryExpression[T]]
 
 
-class NearrIng(CrookedSemirIng[Z]):
-    have_add_inverses: ForallInSet[ExistsUniqueInSet[And[Equals, Equals]]]
-    plus_latin_square = ForallInSet[
-        ForallInSet[And[ExistsUniqueInSet[Equals], ExistsUniqueInSet[Equals]]]
-    ]
+class Field(DivisionRIng[Z]):
+    times_is_commutative: ForallInSet[ForallInSet[Equals]]
 
     @classmethod
-    def property_have_add_inverses(
+    def property_times_is_commutative(
         cls,
         set_: Set,
-        plus_operation: SpecialInfix[Term, Term, Expr, Expr],
-        zero: Term,
-    ) -> ForallInSet[ExistsUniqueInSet[And[Equals, Equals]]]:
-        return Group.property_have_inverses(set_, plus_operation, zero)
-
-    @classmethod
-    def property_plus_latin_square(
-        cls,
-        set_: Set,
-        plus_operation: SpecialInfix[Term, Term, Expr, Expr],
-    ) -> ForallInSet[
-        ForallInSet[And[ExistsUniqueInSet[Equals], ExistsUniqueInSet[Equals]]]
-    ]:
-        return Group.property_latin_square(set_, plus_operation)
+        times_operation: SpecialInfix[Term, Term, Expr, Expr],
+    ) -> ForallInSet[ForallInSet[Equals]]:
+        return AbelianGroup.property_op_is_commutative(
+            set_=set_, operation=times_operation
+        )
 
     def __init__(
         self,
@@ -78,15 +64,14 @@ class NearrIng(CrookedSemirIng[Z]):
             times_operation_symbol=times_operation_symbol,
             one=one,
         )
-        self.group_plus = Group(
+        self.abelian_group_times = AbelianGroup(
             name=name,
             sympy_set=sympy_set,
             elements=elements,
             containment_function=containment_function,  # type: ignore
-            operation=plus_operation,  # type: ignore
-            operation_name=self.plus_operation_name,
-            operation_symbol=self.plus_operation_symbol,
-            identity=self.zero,
+            operation=times_operation,  # type: ignore
+            operation_name=self.times_operation_name,
+            operation_symbol=self.times_operation_symbol,
+            identity=one,  # type: ignore
         )
-        self.have_add_inverses = self.group_plus.have_inverses
-        self.plus_latin_square = self.group_plus.latin_square
+        self.times_is_commutative = self.abelian_group_times.op_is_commutative

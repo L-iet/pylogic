@@ -1,17 +1,19 @@
 from __future__ import annotations
-from typing import Callable, Iterable, TypeVar
+
 from fractions import Fraction
-from pylogic.structures.set_ import Set
-from pylogic.structures.grouplike.magma import Magma
-from pylogic.infix.infix import SpecialInfix
-from pylogic.expressions.expr import BinaryExpression, Expr
-from pylogic.symbol import Symbol
-from pylogic.variable import Variable
-from pylogic.proposition.quantified.forall import ForallInSet
-from pylogic.proposition.relation.equals import Equals
+from typing import Callable, Iterable, TypeVar
 
 from sympy import Basic
 from sympy import Set as SympySet
+
+from pylogic.expressions.expr import BinaryExpression, Expr
+from pylogic.infix.infix import SpecialInfix
+from pylogic.proposition.quantified.forall import ForallInSet
+from pylogic.proposition.relation.equals import Equals
+from pylogic.structures.grouplike.magma import Magma
+from pylogic.structures.set_ import Set
+from pylogic.symbol import Symbol
+from pylogic.variable import Variable
 
 Numeric = Fraction | int | float
 PBasic = Symbol | Numeric
@@ -19,6 +21,7 @@ Unevaluated = Symbol | Set | Expr
 Term = Unevaluated | Numeric | Basic
 
 T = TypeVar("T", bound=Term)
+E = TypeVar("E", bound=Expr)
 
 
 class Semigroup(Magma):
@@ -28,9 +31,7 @@ class Semigroup(Magma):
     def property_op_is_associative(
         cls,
         set_: Set,
-        operation: SpecialInfix[
-            Term, Term, BinaryExpression[Term], BinaryExpression[Term]
-        ],
+        operation: SpecialInfix[Term, Term, Expr, Expr],
     ) -> ForallInSet[ForallInSet[ForallInSet[Equals]]]:
         x = Variable("x")
         y = Variable("y")
@@ -49,7 +50,7 @@ class Semigroup(Magma):
                     Equals(x_op_y_op_z, x | operation | (y | operation | z)),
                 ),
             ),
-            description=f"{x_op_y.symbol} is associative in {set_.name}",
+            description=f"{operation.symbol} is associative in {set_.name}",
         )
 
     def __init__(
@@ -58,7 +59,7 @@ class Semigroup(Magma):
         sympy_set: SympySet | None = None,
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
-        operation: Callable[[T, T], T] | None = None,
+        operation: Callable[[T, T], E] | None = None,
         operation_name: str | None = None,
         operation_symbol: str | None = None,
     ):
