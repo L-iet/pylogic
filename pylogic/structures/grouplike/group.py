@@ -54,6 +54,8 @@ class Group(Monoid):
         """
         from pylogic.structures.grouplike.quasigroup import Quasigroup
 
+        a = Variable("a")
+        x = Variable("x")
         return Quasigroup.property_latin_square(set_, operation)
 
     @classmethod
@@ -94,14 +96,14 @@ class Group(Monoid):
         identity: T | None = None,
     ):
         super().__init__(
-            name,
-            sympy_set,
-            elements,
-            containment_function,
-            operation,
-            operation_name,
-            operation_symbol,
-            identity,
+            name=name,
+            sympy_set=sympy_set,
+            elements=elements,
+            containment_function=containment_function,
+            operation=operation,
+            operation_name=operation_name,
+            operation_symbol=operation_symbol,
+            identity=identity,
         )
         a = Variable("a")
         self.latin_square = Group.property_latin_square(self, self.operation)
@@ -182,7 +184,7 @@ class Group(Monoid):
             cx, w, cx_op_a_eq_e, w_is_right_inv, cx_in_self, w_in_self
         )
         cx_unique_property = w_eq_cx.followed_from(
-            w_in_self, w_is_right_inv, w_is_left_inv
+            w_in_self, w_is_right_inv, w_is_left_inv, _internal_tactic=True
         ).thus_forall(w)
 
         self.have_inverses = (
@@ -228,14 +230,14 @@ class AbelianGroup(Group):
         identity: T | None = None,
     ):
         super().__init__(
-            name,
-            sympy_set,
-            elements,
-            containment_function,
-            operation,
-            operation_symbol,
-            operation_name,
-            identity,
+            name=name,
+            sympy_set=sympy_set,
+            elements=elements,
+            containment_function=containment_function,
+            operation=operation,
+            operation_name=operation_name,
+            operation_symbol=operation_symbol,
+            identity=identity,
         )
         self.op_is_commutative = AbelianGroup.property_op_is_commutative(
             self, self.operation

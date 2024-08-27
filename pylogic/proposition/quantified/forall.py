@@ -1,26 +1,28 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Self, TypeVar, TypedDict
 
-from pylogic.proposition.proposition import Proposition, get_assumptions
-from pylogic.proposition.quantified.quantified import _Quantified
-from pylogic.proposition.relation.contains import IsContainedIn
-from pylogic.proposition.implies import Implies
-from pylogic.inference import Inference
+from typing import TYPE_CHECKING, Self, TypedDict, TypeVar
 
 import sympy as sp
 
+from pylogic.inference import Inference
+from pylogic.proposition.implies import Implies
+from pylogic.proposition.proposition import Proposition, get_assumptions
+from pylogic.proposition.quantified.quantified import _Quantified
+from pylogic.proposition.relation.contains import IsContainedIn
 
 if TYPE_CHECKING:
     from fractions import Fraction
-    from pylogic.proposition.relation.equals import Equals
+
+    from sympy import Basic
+
+    from pylogic.expressions.expr import Expr
     from pylogic.proposition.not_ import Not
-    from pylogic.variable import Variable
     from pylogic.proposition.quantified.exists import Exists
     from pylogic.proposition.relation.contains import IsContainedIn
-    from pylogic.symbol import Symbol
+    from pylogic.proposition.relation.equals import Equals
     from pylogic.structures.set_ import Set
-    from pylogic.expressions.expr import Expr
-    from sympy import Basic
+    from pylogic.symbol import Symbol
+    from pylogic.variable import Variable
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric

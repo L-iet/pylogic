@@ -70,7 +70,7 @@ class CrookedSemirIng(CrookedSemirng[Z]):
         if is_numeric(one):
             self.one: Constant[Z] = Constant(one)  # type: ignore
         else:
-            self.zero: Unevaluated = one or Constant(f"{self.name}_One")  # type: ignore
+            self.one: Unevaluated = one or Constant(f"{self.name}_One")  # type: ignore
 
         self.monoid_times = Monoid(
             name=name,

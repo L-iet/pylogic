@@ -6,7 +6,8 @@ from typing import Callable, Iterable, TypeAlias, TypeVar
 from sympy import Basic
 from sympy import Set as SympySet
 
-from pylogic.expressions.expr import BinaryExpression, Expr
+from pylogic.constant import Constant
+from pylogic.expressions.expr import Add, BinaryExpression, Expr, Mul
 from pylogic.infix.infix import SpecialInfix
 from pylogic.proposition.quantified.forall import ForallInSet
 from pylogic.proposition.relation.equals import Equals

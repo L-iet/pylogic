@@ -1,36 +1,37 @@
 from __future__ import annotations
-from typing import Self
+
+import warnings
 from fractions import Fraction
-
-import sympy as sp
-from pylogic.printing.printing import str_print_order, latex_print_order
-
 from typing import (
     TYPE_CHECKING,
     Literal,
-    TypeVar,
+    Self,
     TypedDict,
+    TypeVar,
     TypeVarTuple,
-    overload,
     cast,
+    overload,
 )
 
+import sympy as sp
+
+from pylogic.printing.printing import latex_print_order, str_print_order
+
 if TYPE_CHECKING:
-    from pylogic.structures.set_ import Set
-    from pylogic.proposition.relation.equals import Equals
-    from pylogic.proposition.and_ import And
-    from pylogic.proposition.or_ import Or
-    from pylogic.proposition.exor import ExOr
-    from pylogic.proposition.implies import Implies
-    from pylogic.proposition.quantified.exists import Exists
-    from pylogic.proposition.quantified.forall import Forall, ForallInSet
-    from pylogic.proposition.not_ import Not
-    from pylogic.proposition.contradiction import Contradiction
-    from pylogic.variable import Variable
-    from pylogic.structures.set_ import Set
-    from pylogic.symbol import Symbol
     from pylogic.expressions.expr import Expr
     from pylogic.helpers import Side
+    from pylogic.proposition.and_ import And
+    from pylogic.proposition.contradiction import Contradiction
+    from pylogic.proposition.exor import ExOr
+    from pylogic.proposition.implies import Implies
+    from pylogic.proposition.not_ import Not
+    from pylogic.proposition.or_ import Or
+    from pylogic.proposition.quantified.exists import Exists
+    from pylogic.proposition.quantified.forall import Forall, ForallInSet
+    from pylogic.proposition.relation.equals import Equals
+    from pylogic.structures.set_ import Set
+    from pylogic.symbol import Symbol
+    from pylogic.variable import Variable
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
@@ -579,8 +580,8 @@ class Proposition:
             Must be an implication that has been proven whose structure is
             self.name -> OtherProposition
         """
-        from pylogic.proposition.implies import Implies
         from pylogic.inference import Inference
+        from pylogic.proposition.implies import Implies
 
         assert self.is_proven, f"{self} is not proven"
         assert isinstance(other, Implies), f"{other} is not an implication"
@@ -613,8 +614,7 @@ class Proposition:
             OtherProposition -> ~self
         """
         from pylogic.inference import Inference
-        from pylogic.proposition.not_ import neg, are_negs
-        from pylogic.proposition.not_ import Not
+        from pylogic.proposition.not_ import Not, are_negs, neg
 
         assert self.is_proven, f"{self} is not proven"
         assert other.is_proven, f"{other} is not proven"
@@ -636,8 +636,8 @@ class Proposition:
         """
         if not __recursing:
             assert other.is_proven, f"{other} is not proven"
-        from pylogic.proposition.and_ import And
         from pylogic.inference import Inference
+        from pylogic.proposition.and_ import And
 
         for p in other.propositions:
             if p == self:
@@ -661,8 +661,8 @@ class Proposition:
         """
         # TODO: Change unification so that we cannot prove
         # P(x) from forall x: P(1).
-        from pylogic.proposition.quantified.forall import Forall
         from pylogic.inference import Inference
+        from pylogic.proposition.quantified.forall import Forall
 
         assert isinstance(other, Forall), f"{other} is not a forall statement"
         assert other.is_proven, f"{other} is not proven"
@@ -681,13 +681,15 @@ class Proposition:
 
     @overload
     def followed_from(
-        self, assumption: TProposition
+        self, assumption: TProposition, **kwargs
     ) -> Implies[TProposition, Self]: ...
 
     @overload
-    def followed_from(self, *assumptions: *Props) -> Implies[And[*Props], Self]: ...
+    def followed_from(
+        self, *assumptions: *Props, **kwargs
+    ) -> Implies[And[*Props], Self]: ...
 
-    def followed_from(self, *assumptions):  # type: ignore
+    def followed_from(self, *assumptions, **kwargs):  # type: ignore
         """
         Logical tactic.
         Given self is proven, return a new proposition that is an implication of
@@ -702,13 +704,22 @@ class Proposition:
         use them in another deduction.
         """
         from pylogic.inference import Inference
+        from pylogic.warn import PylogicInternalWarning
 
         assert self.is_proven, f"{self} is not proven"
+        _internal_tactic = kwargs.get("_internal_tactic", False)
         assert len(assumptions) > 0, "Must provide at least one other assumption"
         for a in assumptions:
             assert a.is_assumption, f"{a} is not an assumption"
             if a not in self.from_assumptions:
-                print(f"Warning: {a} was not used to deduce {self}")
+                if _internal_tactic:
+                    warning_cls = PylogicInternalWarning
+                else:
+                    warning_cls = UserWarning
+                warnings.warn(
+                    f"Warning: {a} was not used to deduce {self}",
+                    warning_cls,
+                )
         from pylogic.proposition.and_ import And
         from pylogic.proposition.implies import Implies
 
@@ -768,8 +779,8 @@ class Proposition:
             exists q: (forall x: (p1 q -> p2 x) /\ (p3 x) /\ (p4 q)) -> (p5 q)
         """
         assert self.is_proven, f"{self} is not proven"
-        from pylogic.proposition.quantified.exists import Exists
         from pylogic.inference import Inference
+        from pylogic.proposition.quantified.exists import Exists
 
         new_p = Exists.from_proposition(
             existential_var_name=existential_var,
@@ -790,8 +801,8 @@ class Proposition:
         Given self is proven, return a new proposition that for all variables, self is true.
         """
         assert self.is_proven, f"{self} is not proven"
-        from pylogic.proposition.quantified.forall import Forall, ForallInSet
         from pylogic.inference import Inference
+        from pylogic.proposition.quantified.forall import Forall, ForallInSet
         from pylogic.structures.set_ import Reals
 
         set_ = None
@@ -818,8 +829,8 @@ class Proposition:
         Given self is proven, return a new proposition that for all variables in a set, self is true.
         """
         assert self.is_proven, f"{self} is not proven"
-        from pylogic.proposition.quantified.forall import ForallInSet
         from pylogic.inference import Inference
+        from pylogic.proposition.quantified.forall import ForallInSet
 
         return ForallInSet(
             variable=variable,
@@ -868,9 +879,9 @@ class Proposition:
         """
         assert self.is_proven, f"{self} is not proven"
         assert other.is_proven, f"{other} is not proven"
-        from pylogic.proposition.not_ import are_negs
         from pylogic.inference import Inference
         from pylogic.proposition.contradiction import Contradiction
+        from pylogic.proposition.not_ import are_negs
 
         if are_negs(self, other):
             return Contradiction(

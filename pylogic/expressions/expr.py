@@ -1,25 +1,27 @@
 from __future__ import annotations
-from typing import (
-    TYPE_CHECKING,
-    Self,
-    Any,
-    TypeVar,
-    overload,
-    Literal,
-    Generic,
-    Callable,
-)
+
 from abc import ABC, abstractmethod
 from fractions import Fraction
-from pylogic.structures.set_ import Set
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Generic,
+    Literal,
+    Self,
+    TypeVar,
+    overload,
+)
 
 import sympy as sp
 
+from pylogic.structures.set_ import Set
+
 if TYPE_CHECKING:
+    from pylogic.proposition.relation.contains import IsContainedIn
+    from pylogic.proposition.relation.equals import Equals
     from pylogic.symbol import Symbol
     from pylogic.variable import Variable
-    from pylogic.proposition.relation.equals import Equals
-    from pylogic.proposition.relation.contains import IsContainedIn
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
@@ -272,7 +274,7 @@ class BinaryExpression(CustomExpr[U]):
         return f"{_latex(self.left)} {self.symbol} {_latex(self.right)}"
 
     def __str__(self) -> str:
-        return f"({str(self.left)} {self.symbol} {str(self.right)})"
+        return f"({self.left} {self.symbol} {self.right})"
 
 
 class Add(Expr):

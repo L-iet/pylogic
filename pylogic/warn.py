@@ -1,0 +1,2 @@
+class PylogicInternalWarning(Warning):
+    pass

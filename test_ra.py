@@ -20,6 +20,5 @@
 #     mul_inv,
 #     distributive,
 # ]
-
 # from pylogic.structures.ringlike.ringoid import *
-from pylogic.structures.ringlike.rng import *
+from pylogic.structures.ringlike.field import *

@@ -1,12 +1,12 @@
 from __future__ import annotations
-from typing import Generic, TypeVar, Any, cast
+
 from fractions import Fraction
+from typing import Any, Generic, Self, TypeVar, cast
+
+from pylogic.helpers import is_numeric, type_check
 from pylogic.symbol import Symbol
-from pylogic.helpers import type_check
 
 T = TypeVar("T", str, int, float, complex, Fraction)
-
-_constant_values = set()
 
 
 class Constant(Symbol, Generic[T]):
@@ -15,19 +15,25 @@ class Constant(Symbol, Generic[T]):
             value, str, int, float, complex, Fraction, context="Constant.__init__"
         )
 
-        global _constant_values
-        existing = value in _constant_values
-        if existing:
-            raise ValueError(f"Constant {value} already exists")
-        _constant_values.add(value)
-
         self.value: T = cast(T, value)
+
+        # if the constant is created from a proven existential statement
+        # it qwon't be equal to any other constant
+        self._from_existential_instance = kwargs.get(
+            "_from_existential_instance", False
+        )
         super().__init__(str(value), *args, **kwargs)
 
     def __eq__(self, other: Any) -> bool:
+        """
+        Constant(0) == 0
+        """
         if isinstance(other, Constant):
-            return self.value == other.value
+            return (not self._from_existential_instance) and self.value == other.value
         return self.value == other
 
     def __hash__(self) -> int:
         return super().__hash__()
+
+    def copy(self) -> Self:
+        return self

@@ -1,15 +1,19 @@
 from __future__ import annotations
-from pylogic.proposition.relation.binaryrelation import BinaryRelation
-from pylogic.inference import Inference
+
 from typing import TYPE_CHECKING, TypedDict
+
 from pylogic.expressions.expr import evaluate
+from pylogic.inference import Inference
+from pylogic.proposition.relation.binaryrelation import BinaryRelation
 
 if TYPE_CHECKING:
     from fractions import Fraction
-    from pylogic.symbol import Symbol
-    from pylogic.structures.set_ import Set
-    from pylogic.expressions.expr import Expr
+
     import sympy as sp
+
+    from pylogic.expressions.expr import Expr
+    from pylogic.structures.set_ import Set
+    from pylogic.symbol import Symbol
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric

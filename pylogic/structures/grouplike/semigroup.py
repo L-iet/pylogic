@@ -64,13 +64,13 @@ class Semigroup(Magma):
         operation_symbol: str | None = None,
     ):
         super().__init__(
-            name,
-            sympy_set,
-            elements,
-            containment_function,
-            operation,
-            operation_name,
-            operation_symbol,
+            name=name,
+            sympy_set=sympy_set,
+            elements=elements,
+            containment_function=containment_function,
+            operation=operation,
+            operation_name=operation_name,
+            operation_symbol=operation_symbol,
         )
         self.op_is_associative = Semigroup.property_op_is_associative(
             self, self.operation
