@@ -1,69 +1,42 @@
 from __future__ import annotations
+
 from fractions import Fraction
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, Any, TypeVar
+
+from pylogic.constant import Constant
+from pylogic.proposition.ordering.ordering import _Ordering
 from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
-from pylogic.proposition.ordering.ordering import _Ordering
-from sympy import S as sympy_S
 
 if TYPE_CHECKING:
-    from pylogic.proposition.ordering.greaterthan import GreaterThan
-    from pylogic.structures.set_ import Set
-    from pylogic.symbol import Symbol
     from pylogic.expressions.expr import Expr
-    from sympy import Basic
+    from pylogic.proposition.ordering.greaterthan import GreaterThan
+    from pylogic.symbol import Symbol
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     UnevaluatedExpr = Symbol | Expr
-    Term = UnevaluatedExpr | Numeric | Basic
+    Term = UnevaluatedExpr | Numeric
+else:
+    Term = Any
+T = TypeVar("T", bound=Term)
+U = TypeVar("U", bound=Term)
 
 
-class LessThan(BinaryRelation, _Ordering):
+class LessThan(BinaryRelation[T, U], _Ordering[T, U]):
     is_transitive = True
     name = "LessThan"
     infix_symbol = "<"
     infix_symbol_latex = "<"
 
-    @overload
     def __init__(
         self,
-        left: Basic | Numeric,
-        right: Basic | Numeric,
-        is_assumption: bool = False,
-        description: str = "",
-        **kwargs,
-    ) -> None: ...
-
-    @overload
-    def __init__(
-        self,
-        left: UnevaluatedExpr | Numeric,
-        right: UnevaluatedExpr | Numeric,
-        is_assumption: bool = False,
-        description: str = "",
-        **kwargs,
-    ) -> None: ...
-
-    @overload
-    def __init__(
-        self,
-        left: Term,
-        right: Term,
-        is_assumption: bool = False,
-        description: str = "",
-        **kwargs,
-    ) -> None: ...
-
-    def __init__(
-        self,
-        left: Term,
-        right: Term,
+        left: T,
+        right: U,
         is_assumption: bool = False,
         description: str = "",
         **kwargs,
     ) -> None:
-        name = "LessThan"
         _is_proven = kwargs.get("_is_proven", False)
         diff = right - left
         if isinstance(diff, int) or isinstance(diff, float):
@@ -75,8 +48,8 @@ class LessThan(BinaryRelation, _Ordering):
         super().__init__(
             left, right, is_assumption=is_assumption, description=description, **kwargs
         )
-        self.left: Term = left
-        self.right: Term = right
+        self.left: T = left
+        self.right: U = right
 
     def to_positive_inequality(self):
         """If self is of the form a < b, returns an inequality of the form b - a > 0"""
@@ -84,7 +57,7 @@ class LessThan(BinaryRelation, _Ordering):
 
         return GreaterThan(
             self.right - self.left,
-            sympy_S.Zero,
+            Constant(0),
             _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="to_positive_inequality"),
@@ -96,7 +69,7 @@ class LessThan(BinaryRelation, _Ordering):
 
         return LessThan(
             self.left - self.right,
-            sympy_S.Zero,
+            Constant(0),
             _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="to_negative_inequality"),
@@ -194,25 +167,7 @@ class LessThan(BinaryRelation, _Ordering):
         """
         Logical tactic. Determine if the proposition is true by inspection.
         """
-        from pylogic.inference import Inference
-
-        try:
-            if bool(self.left < self.right) is True:
-                return LessThan(
-                    self.left,
-                    self.right,
-                    _is_proven=True,
-                    _assumptions=set(),
-                    _inference=Inference(self, rule="by_inspection"),
-                )  # type: ignore
-            else:
-                raise ValueError(
-                    f"Cannot prove that {self.left} < {self.right} by inspection"
-                )
-        except TypeError:  # sympy raises TypeError if it can't determine the ordering
-            raise ValueError(
-                f"Cannot prove that {self.left} < {self.right} by inspection"
-            )
+        raise NotImplementedError
 
     def __mul__(self, other: int | float) -> LessThan:
         return super()._mul(self, other)

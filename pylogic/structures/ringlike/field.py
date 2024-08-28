@@ -3,11 +3,7 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import Callable, Iterable, TypeAlias, TypeVar
 
-from sympy import Basic
-from sympy import Set as SympySet
-
-from pylogic.constant import Constant
-from pylogic.expressions.expr import Add, BinaryExpression, Expr, Mul
+from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.infix.infix import SpecialInfix
 from pylogic.proposition.quantified.forall import ForallInSet
 from pylogic.proposition.relation.equals import Equals
@@ -19,7 +15,7 @@ from pylogic.symbol import Symbol
 Numeric = Fraction | int | float
 PBasic = Symbol | Numeric
 Unevaluated = Symbol | Set | Expr
-Term = Unevaluated | Numeric | Basic
+Term = Unevaluated | Numeric
 
 T = TypeVar("T", bound=Term)
 E = TypeVar("E", bound=Expr)
@@ -73,7 +69,3 @@ class Field(DivisionRIng[Z]):
             identity=one,  # type: ignore
         )
         self.times_is_commutative = self.abelian_group_times.op_is_commutative
-
-
-R = Field("Reals")
-print(R)

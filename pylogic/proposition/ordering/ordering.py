@@ -1,22 +1,27 @@
 from __future__ import annotations
-from typing import Protocol, TYPE_CHECKING, Self
+
 from fractions import Fraction
+from typing import TYPE_CHECKING, Any, Generic, Protocol, Self, TypeVar
 
 if TYPE_CHECKING:
+    pass
+
+    from pylogic.expressions.expr import Expr
     from pylogic.proposition.ordering.greaterthan import GreaterThan
     from pylogic.proposition.ordering.lessthan import LessThan
     from pylogic.symbol import Symbol
-    from pylogic.structures.set_ import Set
-    from pylogic.expressions.expr import Expr
-    from sympy import Basic
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     UnevaluatedExpr = Symbol | Expr
-    Term = UnevaluatedExpr | Numeric | Basic
+    Term = UnevaluatedExpr | Numeric
+else:
+    Term = Any
+T = TypeVar("T", bound=Term, covariant=True)
+U = TypeVar("U", bound=Term, covariant=True)
 
 
-class _Ordering(Protocol):
+class _Ordering(Protocol, Generic[T, U]):
     @classmethod
     def _multiply_by(
         cls,
@@ -48,10 +53,10 @@ class _Ordering(Protocol):
 
     @classmethod
     def _mul(cls, instance: GreaterThan | LessThan, other: Numeric) -> Self:
+        from pylogic.inference import Inference
         from pylogic.proposition.ordering.greaterthan import GreaterThan
         from pylogic.proposition.ordering.lessthan import LessThan
         from pylogic.proposition.proposition import get_assumptions
-        from pylogic.inference import Inference
 
         if isinstance(other, int) or isinstance(other, float):
             sign = "positive" if other > 0 else "negative"

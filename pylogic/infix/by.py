@@ -1,5 +1,7 @@
 from __future__ import annotations
-from typing import Annotated, TypeVar, TYPE_CHECKING, cast
+
+from typing import TYPE_CHECKING, Annotated, TypeVar, cast
+
 from pylogic.infix.infix import SpecialInfix
 from pylogic.proposition.proposition import Proposition
 
@@ -8,18 +10,16 @@ Q = TypeVar("Q", bound=Proposition)
 
 if TYPE_CHECKING:
     from fractions import Fraction
-    from pylogic.proposition.and_ import And
-    from pylogic.proposition.or_ import Or
-    from pylogic.proposition.quantified.forall import Forall, ForallInSet
-    from pylogic.proposition.relation.equals import Equals
-    from pylogic.symbol import Symbol
+
+
     from pylogic.expressions.expr import Expr
-    from sympy import Basic
+    from pylogic.proposition.quantified.forall import Forall, ForallInSet
+    from pylogic.symbol import Symbol
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     UnevaluatedExpr = Symbol | Expr
-    Term = UnevaluatedExpr | Numeric | Basic
+    Term = UnevaluatedExpr | Numeric
 
 
 class ByProvers:
@@ -55,8 +55,8 @@ def by_forall(p: P, prover: Forall[Proposition] | ForallInSet[Proposition]) -> P
     """
     Logical tactic. We try to prove p using prover, a Forall statement.
     """
-    from pylogic.proposition.proposition import get_assumptions
     from pylogic.inference import Inference
+    from pylogic.proposition.proposition import get_assumptions
     from pylogic.proposition.quantified.forall import Forall, ForallInSet
 
     # We dig till the firt non-Forall proposition

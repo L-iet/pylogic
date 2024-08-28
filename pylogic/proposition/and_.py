@@ -3,7 +3,7 @@ from pylogic.inference import Inference
 from pylogic.proposition._junction import _Junction
 from pylogic.proposition.proposition import Proposition
 from pylogic.proposition.proposition import get_assumptions
-from typing import TypedDict, TypeVarTuple, Self, TYPE_CHECKING, Union, Unpack, cast
+from typing import TypedDict, TypeVarTuple, Self, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from pylogic.proposition.not_ import Not

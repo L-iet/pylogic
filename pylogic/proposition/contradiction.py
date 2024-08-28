@@ -1,23 +1,25 @@
 # pyright: reportInvalidTypeForm=false
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self, TypedDict, TypeVar
+
 from pylogic.inference import Inference
 from pylogic.proposition.proposition import Proposition
-from typing import TYPE_CHECKING, Literal, TypeVar, Generic, Self, overload, TypedDict
 
 if TYPE_CHECKING:
-    from pylogic.proposition.implies import Implies
-    from pylogic.variable import Variable
-    from pylogic.symbol import Symbol
-    from pylogic.structures.set_ import Set
+    from fractions import Fraction
+
+
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.or_ import Or
-    from fractions import Fraction
-    from sympy import Basic
+    from pylogic.structures.set_ import Set
+    from pylogic.symbol import Symbol
+    from pylogic.variable import Variable
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric | Basic
+    Term = Unevaluated | Numeric
     Unification = dict[Variable, Term]
 
 TProposition = TypeVar("TProposition", bound="Proposition")
@@ -51,8 +53,8 @@ class Contradiction(Proposition):
         Logical tactic. Given a contradiction, return the disjunction of the
         negations of the assumptions.
         """
-        from pylogic.proposition.or_ import Or
         from pylogic.proposition.not_ import neg
+        from pylogic.proposition.or_ import Or
 
         return Or(
             *[neg(a) for a in self.from_assumptions],  # type: ignore

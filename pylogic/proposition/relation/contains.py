@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict, TypeVar
 
-from pylogic.expressions.expr import evaluate
+from pylogic.expressions.expr import to_sympy
 from pylogic.inference import Inference
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 
 if TYPE_CHECKING:
     from fractions import Fraction
-
-    import sympy as sp
 
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.proposition import Proposition
@@ -19,13 +17,17 @@ if TYPE_CHECKING:
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric | sp.Basic
+    Term = Unevaluated | Numeric
+else:
+    Set = Any
+    Term = Any
+T = TypeVar("T", bound=Term)
 import copy
 
 Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 
-class IsContainedIn(BinaryRelation):
+class IsContainedIn(BinaryRelation[T, Set]):
     is_transitive = False
     name = "IsContainedIn"
     infix_symbol = "in"
@@ -37,15 +39,14 @@ class IsContainedIn(BinaryRelation):
 
     def __init__(
         self,
-        left: Term,
+        left: T,
         right: Set,
         is_assumption: bool = False,
         description: str = "",
         **kwargs,
     ) -> None:
         self.right: Set = right
-        self.left: Term = left
-        name = "IsContainedIn"
+        self.left: T = left
         super().__init__(
             left,
             right,
@@ -114,7 +115,7 @@ class IsContainedIn(BinaryRelation):
         try:
             if (
                 self.left in self.right.elements
-                or evaluate(self.left) in self.right.sympy_set
+                or to_sympy(self.left) in self.right.sympy_set  # type: ignore
             ):
                 return IsContainedIn(
                     copy.copy(self.element),

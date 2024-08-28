@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Iterable
 
 import sympy as sp
-from sympy import Set as SympySet
 
 if TYPE_CHECKING:
     from fractions import Fraction
@@ -18,7 +17,7 @@ if TYPE_CHECKING:
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric | sp.Basic
+    Term = Unevaluated | Numeric
 
 
 class Set:
@@ -84,7 +83,10 @@ class Set:
 
         return IsContainedIn(other, self, is_assumption=is_assumption, **kwargs)
 
-    def evaluate(self) -> sp.Set:
+    def evaluate(self) -> Set:
+        return self
+
+    def to_sympy(self) -> sp.Set:
         return self.sympy_set
 
     def containment_function(self, x: Term) -> bool:

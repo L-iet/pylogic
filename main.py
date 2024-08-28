@@ -1,29 +1,28 @@
+from pylogic.constant import Constant
+from pylogic.expressions.abs import Abs
+from pylogic.expressions.expr import add, sqrt, sub
+from pylogic.helpers import assume
+from pylogic.infix.is_ import equals, is_
 from pylogic.proposition.and_ import And
-from pylogic.proposition.proposition import Proposition
-from pylogic.proposition.quantified.forall import Forall, ForallInSet
-from pylogic.proposition.quantified.exists import ExistsInSet
+from pylogic.proposition.exor import ExOr
+from pylogic.proposition.not_ import Not, are_negs, neg
+from pylogic.proposition.or_ import Or
 from pylogic.proposition.ordering.greaterthan import (
     GreaterThan,
     is_absolute,
     is_rational_power,
 )
 from pylogic.proposition.ordering.lessthan import LessThan
-from pylogic.proposition.relation.equals import Equals
-from pylogic.proposition.or_ import Or
-from pylogic.proposition.exor import ExOr
 from pylogic.proposition.ordering.theorems import (
-    order_axiom_bf,
     absolute_value_nonnegative_f,
+    order_axiom_bf,
 )
-from pylogic.proposition.not_ import Not, neg, are_negs
-from pylogic.constant import Constant
+from pylogic.proposition.proposition import Proposition
+from pylogic.proposition.quantified.exists import ExistsInSet
+from pylogic.proposition.quantified.forall import Forall, ForallInSet
+from pylogic.proposition.relation.equals import Equals
+from pylogic.structures.set_ import Set
 from pylogic.variable import Variable
-from pylogic.structures.set_ import Naturals0, Reals, Set
-from pylogic.expressions.expr import sqrt, sub, add
-from pylogic.expressions.abs import Abs
-
-from pylogic.infix.is_ import is_, equals
-from pylogic.helpers import assume
 
 printing = False
 
@@ -42,13 +41,13 @@ forallXPx = Forall(x, Px, is_assumption=True)
 
 # log(Py, forallXPx)
 py = Py.is_special_case_of(forallXPx)
-log(py.is_proven)  # True
+# log(py.is_proven)  # True
 
 ### proof that lim_x->0 x^2 = 0
 
 eps = Variable("eps", real=True)
 eps_positive = GreaterThan(eps, 0, is_assumption=True)
-
+log(Abs(x).to_sympy())
 absolute_x_positive = is_absolute(Abs(x), xnot0)
 root_eps_positive = is_rational_power(sqrt(eps), eps_positive)
 absx_lt_sqrt_eps = LessThan(Abs(x), sqrt(eps), is_assumption=True)
@@ -131,19 +130,18 @@ printing = False
 from pylogic.proposition.relation.contains import IsContainedIn
 from pylogic.theories.arithmetic import weak_induction
 
-
 n = Variable("n", integer=True, positive=True)
 
-bc = GreaterThan(1, 0).by_inspection()
-istep = Forall(
-    n,
-    IsContainedIn(n, Naturals0)
-    .and_(GreaterThan(add(n, 1), 0))
-    .implies(GreaterThan(add(n, 2), 0)),
-    is_assumption=True,
-)
+# bc = GreaterThan(1, 0).by_inspection()
+# istep = Forall(
+#     n,
+#     IsContainedIn(n, Naturals0)
+#     .and_(GreaterThan(add(n, 1), 0))
+#     .implies(GreaterThan(add(n, 2), 0)),
+#     is_assumption=True,
+# )
 
-log(weak_induction(bc, istep).as_text())
+# log(weak_induction(bc, istep).as_text())
 
 ###############################
 printing = False
@@ -183,15 +181,15 @@ printing = False
 Px = Proposition("P", args=[x])
 r = Constant("r", real=True)
 s = Constant("s")
-a = ForallInSet(x, Reals, Px, is_assumption=True)
-log(a.in_particular(r))  # good
+# a = ForallInSet(x, Reals, Px, is_assumption=True)
+# log(a.in_particular(r))  # good
 # a.in_particular(eps)  # eps is a variable, bad
 # a.in_particular(s)  # s is not real, bad
 ###############################
 printing = False
-a = ExistsInSet(x, Reals, Px, is_assumption=True)
-c, Pc = a.extract()
-log(c, Pc)
+# a = ExistsInSet(x, Reals, Px, is_assumption=True)
+# c, Pc = a.extract()
+# log(c, Pc)
 ###############################
 printing = False
 ub = Constant("ub", real=True)
@@ -203,18 +201,18 @@ is_ub = lambda ub, s: ForallInSet(
     description=f"{ub} is an upper bound of {s}",
 )
 lub = Variable("lub", real=True)
-has_lub = lambda s: ExistsInSet(
-    lub,
-    Reals,
-    is_ub(lub, s).and_(
-        ForallInSet(
-            z,
-            Reals,
-            is_ub(z, s).implies(LessThan(z, lub).or_(Equals(z, lub))),
-        )
-    ),
-)
-log(has_lub(s).describe())
+# has_lub = lambda s: ExistsInSet(
+#     lub,
+#     Reals,
+#     is_ub(lub, s).and_(
+#         ForallInSet(
+#             z,
+#             Reals,
+#             is_ub(z, s).implies(LessThan(z, lub).or_(Equals(z, lub))),
+#         )
+#     ),
+# )
+# log(has_lub(s).describe())
 ###############################
 printing = False
 
@@ -228,10 +226,10 @@ log(p.is_assumption, pImpq.is_assumption)
 
 ###############################
 
-printing = False
+printing = True
 
 a = Variable("a")
 p1 = assume(a + 1 | equals | 1)
-log(p1.is_assumption)  # type: ignore
+log(p1)  # type: ignore
 
 ###############################

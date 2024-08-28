@@ -1,23 +1,25 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Self, TypeVar, Generic, Literal
-from abc import ABC, abstractmethod
+
+from abc import ABC
+from typing import TYPE_CHECKING, Generic, Literal, Self, TypeVar
+
+from sympy import latex
 
 from pylogic.proposition.proposition import Proposition
 from pylogic.variable import Variable
 
-from sympy import latex
-
 if TYPE_CHECKING:
     from fractions import Fraction
+
+
+    from pylogic.expressions.expr import Expr
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
-    from pylogic.expressions.expr import Expr
-    from sympy import Basic
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric | Basic
+    Term = Unevaluated | Numeric
     Unification = dict[Variable, Term]
 
 TProposition = TypeVar("TProposition", bound="Proposition")

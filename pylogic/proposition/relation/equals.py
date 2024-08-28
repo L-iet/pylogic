@@ -1,26 +1,34 @@
 from __future__ import annotations
-from pylogic.proposition.relation.binaryrelation import BinaryRelation
+
+from typing import TYPE_CHECKING, Any, Callable, Self, TypeVar
+
+from sympy import Basic, Integer
+
+from pylogic.expressions.abs import Abs
+from pylogic.expressions.expr import Expr
+from pylogic.helpers import Side
 from pylogic.inference import Inference
 from pylogic.proposition.proposition import Proposition, get_assumptions
-from pylogic.expressions.expr import Expr
-from pylogic.expressions.abs import Abs
-from pylogic.helpers import Side
-from typing import TYPE_CHECKING, Literal, TypeVar, Self, Callable
-from sympy import Basic, Integer
+from pylogic.proposition.relation.binaryrelation import BinaryRelation
 
 if TYPE_CHECKING:
     from fractions import Fraction
+
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric | Basic
+    Term = Unevaluated | Numeric
+else:
+    Term = Any
+T = TypeVar("T", bound=Term)
+U = TypeVar("U", bound=Term)
 TProposition = TypeVar("TProposition", bound="Proposition")
 
 
-class Equals(BinaryRelation):
+class Equals(BinaryRelation[T, U]):
     is_transitive = True
     is_reflexive = True
     is_symmetric = True
@@ -30,8 +38,8 @@ class Equals(BinaryRelation):
 
     def __init__(
         self,
-        left: Term,
-        right: Term,
+        left: T,
+        right: U,
         is_assumption: bool = False,
         description: str = "",
         **kwargs,
@@ -43,18 +51,8 @@ class Equals(BinaryRelation):
             description=description,
             **kwargs,
         )
-        self.left: Term = left
-        self.right: Term = right
-        # self.left_doit = (
-        #     self.left.doit() if isinstance(self.left, (Basic, Expr)) else self.left
-        # )
-        # self.right_doit = (
-        #     self.right.doit() if isinstance(self.right, (Basic, Expr)) else self.right
-        # )
-        # self.doit_results: dict[Side, Term] = {
-        #     "left": self.left_doit,
-        #     "right": self.right_doit,
-        # }
+        self.left: T = left
+        self.right: U = right
 
     def get(self, side: Side | str) -> Term:
         if side in ["left", Side.LEFT]:
@@ -96,10 +94,12 @@ class Equals(BinaryRelation):
         """Logical tactic."""
 
         left_doit = (
-            self.left.doit() if isinstance(self.left, (Basic, Expr)) else self.left
+            self.left.evaluate() if isinstance(self.left, (Basic, Expr)) else self.left
         )
         right_doit = (
-            self.right.doit() if isinstance(self.right, (Basic, Expr)) else self.right
+            self.right.evaluate()
+            if isinstance(self.right, (Basic, Expr))
+            else self.right
         )
         doit_results: dict[Side, Term] = {
             Side.LEFT: left_doit,
@@ -196,3 +196,6 @@ class Equals(BinaryRelation):
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="apply"),
         )
+
+    def symmetric(self) -> Equals[U, T]:
+        return super().symmetric()  # type: ignore

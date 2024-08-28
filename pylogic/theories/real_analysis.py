@@ -1,20 +1,16 @@
-from pylogic.proposition.quantified.forall import Forall, ForallInSet
-from pylogic.proposition.quantified.exists import Exists, ExistsInSet
+from pylogic.proposition.quantified.forall import ForallInSet
+from pylogic.proposition.quantified.exists import ExistsInSet
 from pylogic.proposition.relation.equals import Equals
-from pylogic.proposition.or_ import Or
-from pylogic.proposition.exor import ExOr
-from pylogic.proposition.and_ import And
-from pylogic.proposition.not_ import Not, neg
+from pylogic.proposition.not_ import neg
 from pylogic.variable import Variable, variables
 from pylogic.constant import Constant
-from pylogic.structures.set_ import Set, Reals
+from pylogic.structures.set_ import Reals
 
-from pylogic.expressions.expr import add, mul, sub
+from pylogic.expressions.expr import add, mul
 from pylogic.infix.is_ import is_, equals
 from pylogic.infix.by import by
 from pylogic.helpers import assume
 
-import sympy as sp
 
 a, b, c, d, f, h, t = variables("a", "b", "c", "d", "f", "h", "t", real=True)
 x = Variable("x", real=True)

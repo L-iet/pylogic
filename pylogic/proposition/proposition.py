@@ -13,7 +13,6 @@ from typing import (
     overload,
 )
 
-import sympy as sp
 
 from pylogic.printing.printing import latex_print_order, str_print_order
 
@@ -36,7 +35,7 @@ if TYPE_CHECKING:
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric | sp.Basic
+    Term = Unevaluated | Numeric
     Unification = dict[Variable, Term]
 
 

@@ -1,15 +1,17 @@
 from __future__ import annotations
-from pylogic.proposition.proposition import Proposition, get_assumptions
-from pylogic.proposition.and_ import And
-from pylogic.proposition.relation.contains import IsContainedIn
-from pylogic.proposition.quantified.quantified import _Quantified
-from pylogic.proposition.quantified.forall import Forall
-from pylogic.proposition.implies import Implies
-from pylogic.proposition.relation.equals import Equals
-from pylogic.variable import Variable
+
+from typing import TYPE_CHECKING, Self, TypedDict, TypeVar
+
 from pylogic.constant import Constant
 from pylogic.inference import Inference
-from typing import TYPE_CHECKING, TypedDict, TypeVar, Self
+from pylogic.proposition.and_ import And
+from pylogic.proposition.implies import Implies
+from pylogic.proposition.proposition import Proposition, get_assumptions
+from pylogic.proposition.quantified.forall import Forall
+from pylogic.proposition.quantified.quantified import _Quantified
+from pylogic.proposition.relation.contains import IsContainedIn
+from pylogic.proposition.relation.equals import Equals
+from pylogic.variable import Variable
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
@@ -17,16 +19,17 @@ B = TypeVar("B", bound="Proposition")
 
 if TYPE_CHECKING:
     from fractions import Fraction
+
+
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.not_ import Not
-    from pylogic.symbol import Symbol
     from pylogic.structures.set_ import Set
-    from sympy import Basic
+    from pylogic.symbol import Symbol
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric | Basic
+    Term = Unevaluated | Numeric
 
 
 Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
@@ -121,8 +124,8 @@ class Exists(_Quantified[TProposition]):
         Logical tactic. If self is exists x: P(x) and given forall x: P(x) -> Q(x)
         and each is proven, conclude exists x: Q(x).
         """
-        from pylogic.proposition.quantified.forall import Forall
         from pylogic.inference import Inference
+        from pylogic.proposition.quantified.forall import Forall
 
         assert self.is_proven, f"{self} is not proven"
         assert isinstance(other, Forall), f"{other} is not a forall statement"
@@ -144,9 +147,9 @@ class Exists(_Quantified[TProposition]):
         """
         Apply De Morgan's law to an existentially quantified sentence.
         """
+        from pylogic.inference import Inference
         from pylogic.proposition.not_ import Not, neg
         from pylogic.proposition.quantified.forall import Forall
-        from pylogic.inference import Inference
 
         inner_negated = neg(self.inner_proposition.de_morgan())
         self.variable.unbind()

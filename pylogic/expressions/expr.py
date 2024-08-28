@@ -21,10 +21,18 @@ if TYPE_CHECKING:
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
     from pylogic.symbol import Symbol
+    from pylogic.sympy_helpers import PylSympySymbol
     from pylogic.variable import Variable
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
+else:
+    Symbol = Any
+    Numeric = Any
+    PBasic = Any
+    Unevaluated = Any
+    Term = Any
+    Variable = Any
 
 
 class Expr(ABC):
@@ -48,7 +56,11 @@ class Expr(ABC):
                 self.symbols.update(arg.symbols)
 
     @abstractmethod
-    def evaluate(self) -> sp.Basic:
+    def evaluate(self) -> Expr:
+        pass
+
+    @abstractmethod
+    def to_sympy(self) -> sp.Basic:
         pass
 
     @abstractmethod
@@ -177,17 +189,16 @@ class Expr(ABC):
 
 
 if TYPE_CHECKING:
-    T = TypeVar("T", bound=Expr | PBasic, covariant=True)
     Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric | sp.Basic
+    Term = Unevaluated | Numeric
     Unification = dict[Variable, Term]
-
-U = TypeVar("U")
+U = TypeVar("U", bound=Term)
 
 
 class CustomExpr(Expr, Generic[U]):
     """
-    U is the return type after evaluating the expression.
+    U is the return type after evaluating the expression,
+    unless it is not fully evaluated.
     """
 
     def __init__(
@@ -219,18 +230,16 @@ class CustomExpr(Expr, Generic[U]):
             )
         return False
 
+    def to_sympy(self) -> sp.Expr:
+        return sp.Expr(*[to_sympy(arg) for arg in self.args])
+
     def evaluate(self) -> U:
         """
         Calls the evaluation function with the arguments.
-        May not return a sympy object, depending on eval_func.
         """
-        from pylogic.symbol import Symbol
-
         if self.eval_func is None:
             raise NotImplementedError(f"Cannot evaluate {self.name}")
         evaluated = self.eval_func(*self.args)
-        if isinstance(evaluated, (Expr, Symbol)):
-            return evaluated.evaluate()
         return evaluated
 
     def _latex(self) -> str:
@@ -289,8 +298,13 @@ class Add(Expr):
         else:
             self.is_real = True
 
-    def evaluate(self) -> sp.Add:
-        return sp.Add(*[evaluate(arg) for arg in self.args])
+    def evaluate(self) -> Add:
+        from pylogic.sympy_helpers import sympy_to_pylogic
+
+        return sympy_to_pylogic(self.to_sympy())
+
+    def to_sympy(self) -> sp.Add:
+        return sp.Add(*[to_sympy(arg) for arg in self.args])
 
     def _latex(self) -> str:
         return "{" + " + ".join([_latex(a) for a in self.args]) + "}"
@@ -311,8 +325,13 @@ class Mul(Expr):
         else:
             self.is_real = True
 
-    def evaluate(self) -> sp.Mul:
-        return sp.Mul(*[evaluate(arg) for arg in self.args])
+    def evaluate(self) -> Mul:
+        from pylogic.sympy_helpers import sympy_to_pylogic
+
+        return sympy_to_pylogic(self.to_sympy())
+
+    def to_sympy(self) -> sp.Mul:
+        return sp.Mul(*[to_sympy(arg) for arg in self.args])
 
     def _latex(self) -> str:
         args = []
@@ -349,8 +368,13 @@ class Pow(Expr):
         new_expr.exp = new_exp
         return new_expr
 
-    def evaluate(self) -> sp.Pow:
-        return sp.Pow(evaluate(self.base), evaluate(self.exp))
+    def evaluate(self) -> Pow:
+        from pylogic.sympy_helpers import sympy_to_pylogic
+
+        return sympy_to_pylogic(self.to_sympy())
+
+    def to_sympy(self) -> sp.Pow:
+        return sp.Pow(to_sympy(self.base), to_sympy(self.exp))
 
     def _latex(self) -> str:
         if (
@@ -395,7 +419,19 @@ def replace(
         return expr
 
 
-def evaluate(expr: sp.Basic | PBasic | Expr | Set) -> sp.Basic:
+@overload
+def to_sympy(expr: int) -> sp.Integer: ...
+@overload
+def to_sympy(expr: float) -> sp.Float: ...
+@overload
+def to_sympy(expr: Fraction) -> sp.Rational: ...
+@overload
+def to_sympy(expr: Expr) -> sp.Basic: ...
+@overload
+def to_sympy(expr: Symbol) -> PylSympySymbol: ...
+@overload
+def to_sympy(expr: Set) -> sp.Set: ...
+def to_sympy(expr: sp.Basic | PBasic | Expr | Set) -> sp.Basic:
     from pylogic.symbol import Symbol
 
     if isinstance(expr, int):
@@ -405,78 +441,48 @@ def evaluate(expr: sp.Basic | PBasic | Expr | Set) -> sp.Basic:
     if isinstance(expr, Fraction):
         return sp.Rational(expr)
     if isinstance(expr, (Expr, Symbol, Set)):
-        return expr.evaluate()
+        return expr.to_sympy()
     return expr
 
 
 @overload
-def maybe_evaluate(
-    expr: sp.Basic, should_evaluate: Literal[False] = False
-) -> sp.Basic: ...
+def sqrt(expr: PBasic | Expr) -> Pow: ...
+@overload
+def sqrt(expr: PBasic | Expr) -> sp.Basic: ...
+def sqrt(expr: PBasic | Expr) -> sp.Basic | Pow:
+    return Pow(expr, Fraction(1, 2))
 
 
 @overload
-def maybe_evaluate(expr: T, should_evaluate: Literal[False] = False) -> T: ...
+def mul(*args: PBasic | Expr) -> Mul: ...
+@overload
+def mul(*args: PBasic | Expr) -> sp.Basic: ...
+def mul(*args: PBasic | Expr) -> sp.Basic | Mul:
+    return Mul(*args)
 
 
 @overload
-def maybe_evaluate(
-    expr: sp.Basic | T, should_evaluate: bool = False
-) -> sp.Basic | T: ...
-
-
-def maybe_evaluate(expr: sp.Basic | T, should_evaluate: bool = False) -> sp.Basic | T:
-    if should_evaluate:
-        return evaluate(expr)
-    return expr
+def add(*args: PBasic | Expr) -> Add: ...
+@overload
+def add(*args: PBasic | Expr) -> sp.Basic: ...
+def add(*args: PBasic | Expr) -> sp.Basic | Add:
+    return Add(*args)
 
 
 @overload
-def sqrt(expr: PBasic | Expr, evaluate: Literal[False] = False) -> Pow: ...
+def sub(a: PBasic | Expr, b: PBasic | Expr) -> Add: ...
 @overload
-def sqrt(expr: PBasic | Expr, evaluate: Literal[True] = True) -> sp.Basic: ...
-def sqrt(expr: PBasic | Expr, evaluate=False) -> sp.Basic | Pow:
-    return maybe_evaluate(Pow(expr, Fraction(1, 2)), evaluate)
+def sub(a: PBasic | Expr, b: PBasic | Expr) -> sp.Basic: ...
+def sub(a: PBasic | Expr, b: PBasic | Expr) -> sp.Basic | Add:
+    return Add(a, -b)
 
 
 @overload
-def mul(*args: PBasic | Expr, evaluate: Literal[False] = False) -> Mul: ...
+def div(a: PBasic | Expr, b: PBasic | Expr) -> Mul: ...
 @overload
-def mul(*args: PBasic | Expr, evaluate: Literal[True] = True) -> sp.Basic: ...
-def mul(*args: PBasic | Expr, evaluate=False) -> sp.Basic | Mul:
-    return maybe_evaluate(Mul(*args), evaluate)
-
-
-@overload
-def add(*args: PBasic | Expr, evaluate: Literal[False] = False) -> Add: ...
-@overload
-def add(*args: PBasic | Expr, evaluate: Literal[True] = True) -> sp.Basic: ...
-def add(*args: PBasic | Expr, evaluate=False) -> sp.Basic | Add:
-    return maybe_evaluate(Add(*args), evaluate)
-
-
-@overload
-def sub(
-    a: PBasic | Expr, b: PBasic | Expr, evaluate: Literal[False] = False
-) -> Add: ...
-@overload
-def sub(
-    a: PBasic | Expr, b: PBasic | Expr, evaluate: Literal[True] = True
-) -> sp.Basic: ...
-def sub(a: PBasic | Expr, b: PBasic | Expr, evaluate=False) -> sp.Basic | Add:
-    return maybe_evaluate(Add(a, -b), evaluate)
-
-
-@overload
-def div(
-    a: PBasic | Expr, b: PBasic | Expr, evaluate: Literal[False] = False
-) -> Mul: ...
-@overload
-def div(
-    a: PBasic | Expr, b: PBasic | Expr, evaluate: Literal[True] = True
-) -> sp.Basic: ...
-def div(a: PBasic | Expr, b: PBasic | Expr, evaluate=False) -> sp.Basic | Mul:
-    return maybe_evaluate(Mul(a, Pow(b, -1)), evaluate)
+def div(a: PBasic | Expr, b: PBasic | Expr) -> sp.Basic: ...
+def div(a: PBasic | Expr, b: PBasic | Expr) -> sp.Basic | Mul:
+    return Mul(a, Pow(b, -1))
 
 
 def _latex(expr: PBasic | Expr) -> str:

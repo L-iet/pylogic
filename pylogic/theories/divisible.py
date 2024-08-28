@@ -1,6 +1,5 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
-from pylogic.proposition.quantified.exists import Exists
 from pylogic.proposition.relation.equals import Equals
 from pylogic.variable import Variable
 from pylogic.proposition.and_ import And

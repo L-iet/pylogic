@@ -1,4 +1,4 @@
-from typing import Literal, TypeVar, TypeVarTuple, Generic
+from typing import TypeVar, TypeVarTuple, Generic
 
 from pylogic.proposition.proposition import Proposition
 

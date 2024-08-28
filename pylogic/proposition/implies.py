@@ -1,25 +1,27 @@
 # pyright: reportInvalidTypeForm=false
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Generic, Literal, Self, TypedDict, TypeVar
+
 from pylogic.inference import Inference
-from pylogic.proposition.proposition import Proposition
-from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.not_ import neg
-from typing import TYPE_CHECKING, Literal, TypeVar, Generic, TypedDict, Self
+from pylogic.proposition.proposition import Proposition, get_assumptions
 
 if TYPE_CHECKING:
-    from pylogic.proposition.or_ import Or
-    from pylogic.proposition.and_ import And
-    from pylogic.structures.set_ import Set
-    from pylogic.variable import Variable
-    from pylogic.symbol import Symbol
-    from pylogic.expressions.expr import Expr
     from fractions import Fraction
-    from sympy import Basic
+
+
+    from pylogic.expressions.expr import Expr
+    from pylogic.proposition.and_ import And
+    from pylogic.proposition.or_ import Or
+    from pylogic.structures.set_ import Set
+    from pylogic.symbol import Symbol
+    from pylogic.variable import Variable
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric | Basic
+    Term = Unevaluated | Numeric
     Unification = dict[Variable, Term]
 
 TProposition = TypeVar("TProposition", bound="Proposition")

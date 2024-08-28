@@ -13,7 +13,6 @@ from pylogic.proposition.relation.contains import IsContainedIn
 if TYPE_CHECKING:
     from fractions import Fraction
 
-    from sympy import Basic
 
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.not_ import Not
@@ -27,7 +26,7 @@ if TYPE_CHECKING:
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric | Basic
+    Term = Unevaluated | Numeric
 
 
 TProposition = TypeVar("TProposition", bound="Proposition")

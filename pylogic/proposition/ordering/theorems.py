@@ -1,19 +1,21 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, TypeVar, overload
-from pylogic.proposition.quantified.forall import Forall
-from pylogic.proposition.ordering.greaterthan import GreaterThan
-from pylogic.proposition.ordering.lessthan import LessThan
-from pylogic.proposition.or_ import Or
-from pylogic.proposition.relation.equals import Equals
-from pylogic.proposition.not_ import neg, Not
-from pylogic.proposition.implies import Implies
-from pylogic.variable import Variable, unbind
-from pylogic.symbol import Symbol
-from pylogic.inference import Inference
-from pylogic.expressions.expr import Expr
-from pylogic.expressions.abs import Abs
+
+from typing import TYPE_CHECKING, overload
 
 import sympy as sp
+
+from pylogic.expressions.abs import Abs
+from pylogic.expressions.expr import Expr
+from pylogic.inference import Inference
+from pylogic.proposition.implies import Implies
+from pylogic.proposition.not_ import Not
+from pylogic.proposition.or_ import Or
+from pylogic.proposition.ordering.greaterthan import GreaterThan
+from pylogic.proposition.ordering.lessthan import LessThan
+from pylogic.proposition.quantified.forall import Forall
+from pylogic.proposition.relation.equals import Equals
+from pylogic.symbol import Symbol
+from pylogic.variable import Variable, unbind
 
 if TYPE_CHECKING:
     from fractions import Fraction
@@ -21,7 +23,7 @@ if TYPE_CHECKING:
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     UnevaluatedExpr = Symbol | Expr
-    Term = UnevaluatedExpr | Numeric | sp.Basic
+    Term = UnevaluatedExpr | Numeric
 
 
 x = Variable("x", real=True)
@@ -118,7 +120,7 @@ def absolute_value_nonnegative_f(x: Term) -> Or[GreaterThan, Equals]:
     """
     Logical tactic. If x is a real number, returns a proven proposition of the form Abs(x) > 0 V Abs(x) = 0.
     """
-    abs_x = sp.Abs(x) if isinstance(x, sp.Basic) else Abs(x)
+    abs_x = Abs(x)
     return Or(
         GreaterThan(abs_x, 0),
         Equals(abs_x, 0),

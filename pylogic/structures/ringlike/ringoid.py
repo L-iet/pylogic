@@ -3,8 +3,6 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import Callable, Iterable, TypeAlias, TypeVar
 
-from sympy import Basic
-from sympy import Set as SympySet
 
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.infix.infix import SpecialInfix
@@ -12,7 +10,6 @@ from pylogic.proposition.and_ import And
 from pylogic.proposition.quantified.forall import ForallInSet
 from pylogic.proposition.relation.contains import IsContainedIn
 from pylogic.proposition.relation.equals import Equals
-from pylogic.structures.grouplike.magma import Magma
 from pylogic.structures.ringlike.left_ringoid import LeftRingoid
 from pylogic.structures.ringlike.right_ringoid import RightRingoid
 from pylogic.structures.set_ import Set
@@ -22,7 +19,7 @@ from pylogic.variable import Variable
 Numeric = Fraction | int | float
 PBasic = Symbol | Numeric
 Unevaluated = Symbol | Set | Expr
-Term = Unevaluated | Numeric | Basic
+Term = Unevaluated | Numeric
 
 T = TypeVar("T", bound=Term)
 E = TypeVar("E", bound=Expr)

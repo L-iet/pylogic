@@ -1,68 +1,39 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, overload, TypeVar
-from fractions import Fraction
-from pylogic.proposition.proposition import get_assumptions
-from pylogic.proposition.relation.binaryrelation import BinaryRelation
-from pylogic.proposition.relation.equals import Equals
-from pylogic.proposition.ordering.ordering import _Ordering
-from pylogic.expressions.abs import Abs
-from pylogic.expressions.expr import Pow
 
+from fractions import Fraction
+from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar
 
 import sympy as sp
 from sympy import S as sympy_S
 
+from pylogic.expressions.abs import Abs
+from pylogic.expressions.expr import Pow
+from pylogic.proposition.ordering.ordering import _Ordering
+from pylogic.proposition.proposition import get_assumptions
+from pylogic.proposition.relation.binaryrelation import BinaryRelation
+from pylogic.proposition.relation.equals import Equals
+
 if TYPE_CHECKING:
-    from pylogic.proposition.ordering.lessthan import LessThan
-    from pylogic.proposition.not_ import Not
-    from pylogic.symbol import Symbol
-    from pylogic.structures.set_ import Set
     from pylogic.expressions.expr import Expr
-    from sympy import Basic
+    from pylogic.proposition.not_ import Not
+    from pylogic.proposition.ordering.lessthan import LessThan
+    from pylogic.symbol import Symbol
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     UnevaluatedExpr = Symbol | Expr
-    Term = UnevaluatedExpr | Numeric | Basic
-    T = TypeVar("T", bound=Term)
-    U = TypeVar("U", bound=Term)
+    Term = UnevaluatedExpr | Numeric
+else:
+    Term = Any
+T = TypeVar("T", bound=Term)
+U = TypeVar("U", bound=Term)
 
 
-class GreaterThan(BinaryRelation, _Ordering):
+class GreaterThan(BinaryRelation, _Ordering, Generic[T, U]):
     is_transitive = True
     name = "GreaterThan"
     infix_symbol = ">"
     infix_symbol_latex = ">"
-
-    @overload
-    def __init__(
-        self,
-        left: Basic | Numeric,
-        right: Basic | Numeric,
-        is_assumption: bool = False,
-        description: str = "",
-        **kwargs,
-    ) -> None: ...
-
-    @overload
-    def __init__(
-        self,
-        left: UnevaluatedExpr | Numeric,
-        right: UnevaluatedExpr | Numeric,
-        is_assumption: bool = False,
-        description: str = "",
-        **kwargs,
-    ) -> None: ...
-
-    @overload
-    def __init__(
-        self,
-        left: Term,
-        right: Term,
-        is_assumption: bool = False,
-        description: str = "",
-        **kwargs,
-    ) -> None: ...
 
     def __init__(
         self,
@@ -107,8 +78,8 @@ class GreaterThan(BinaryRelation, _Ordering):
 
     def to_negative_inequality(self):
         """If self is of the form a > b, returns an inequality of the form b - a < 0"""
-        from pylogic.proposition.ordering.lessthan import LessThan
         from pylogic.inference import Inference
+        from pylogic.proposition.ordering.lessthan import LessThan
 
         return LessThan(
             self.right - self.left,
@@ -187,8 +158,8 @@ class GreaterThan(BinaryRelation, _Ordering):
 
     def to_less_than(self):
         """If self is of the form a > b, returns an inequality of the form b < a"""
-        from pylogic.proposition.ordering.lessthan import LessThan
         from pylogic.inference import Inference
+        from pylogic.proposition.ordering.lessthan import LessThan
 
         return LessThan(
             self.right,
@@ -204,29 +175,12 @@ class GreaterThan(BinaryRelation, _Ordering):
         new_p = self.to_less_than()
         return new_p
 
-    def by_inspection(self) -> GreaterThan:
+    def by_inspection(self) -> Self:
         """
         Logical tactic. Determine if the proposition is true by inspection.
         """
-        from pylogic.inference import Inference
-
-        try:
-            if bool(self.left > self.right) is True:
-                return GreaterThan(
-                    self.left,
-                    self.right,
-                    _is_proven=True,
-                    _assumptions=set(),
-                    _inference=Inference(self, rule="by_inspection"),
-                )  # type: ignore
-            else:
-                raise ValueError(
-                    f"Cannot prove that {self.left} > {self.right} by inspection"
-                )
-        except TypeError:  # sympy raises TypeError if it can't determine the ordering
-            raise ValueError(
-                f"Cannot prove that {self.left} < {self.right} by inspection"
-            )
+        # TODO: Implement this
+        raise NotImplementedError
 
     def __mul__(self, other: Numeric) -> GreaterThan:
         return super()._mul(self, other)

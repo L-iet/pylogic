@@ -1,34 +1,35 @@
 from __future__ import annotations
+
 from decimal import Decimal
-from fractions import Fraction
 from enum import Enum
+from fractions import Fraction
 from typing import (
-    Any,
     TYPE_CHECKING,
-    Literal,
-    Iterable,
+    Any,
     Callable,
+    Iterable,
+    Literal,
     TypeVar,
-    overload,
     TypeVarTuple,
+    overload,
 )
+
+from pylogic.expressions.expr import Expr
+from pylogic.expressions.expr import replace as _replace
 from pylogic.proposition.proposition import Proposition
-from pylogic.variable import Variable
-from pylogic.symbol import Symbol
 from pylogic.structures.set_ import Set
-from pylogic.expressions.expr import Expr, replace as _replace
+from pylogic.symbol import Symbol
+from pylogic.variable import Variable
 
 T = TypeVar("T")
 P = TypeVar("P", bound=Proposition)
 Ps = TypeVarTuple("Ps")
 
 if TYPE_CHECKING:
-    from sympy import Basic
-
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric | Basic
+    Term = Unevaluated | Numeric
     Unification = dict[Variable, Term]
 
 
@@ -102,7 +103,7 @@ def assume(arg: P, *args: *Ps) -> P | tuple[P, *Ps]:
     all_args = (arg, *args)
     for argmnt in all_args:
         argmnt.is_assumption = True  # type: ignore
-    if all_args == 1:
+    if len(all_args) == 1:
         return arg
     return all_args
 

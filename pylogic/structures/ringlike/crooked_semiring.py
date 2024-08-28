@@ -3,8 +3,6 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import Callable, Iterable, TypeAlias, TypeVar
 
-from sympy import Basic
-from sympy import Set as SympySet
 
 from pylogic.constant import Constant
 from pylogic.expressions.expr import BinaryExpression, Expr
@@ -22,7 +20,7 @@ from pylogic.symbol import Symbol
 Numeric = Fraction | int | float
 PBasic = Symbol | Numeric
 Unevaluated = Symbol | Set | Expr
-Term = Unevaluated | Numeric | Basic
+Term = Unevaluated | Numeric
 
 T = TypeVar("T", bound=Term)
 E = TypeVar("E", bound=Expr)

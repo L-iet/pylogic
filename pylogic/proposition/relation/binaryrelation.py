@@ -1,25 +1,30 @@
 from __future__ import annotations
-from pylogic.printing.printing import str_print_order, latex_print_order
-from pylogic.proposition.proposition import get_assumptions
-from pylogic.proposition.relation.relation import Relation
-from typing import TYPE_CHECKING, Self
+
+from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar
 
 from pylogic.expressions.expr import Expr
 from pylogic.helpers import replace
+from pylogic.printing.printing import latex_print_order, str_print_order
+from pylogic.proposition.proposition import get_assumptions
+from pylogic.proposition.relation.relation import Relation
 
 if TYPE_CHECKING:
     from fractions import Fraction
+
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
-    import sympy as sp
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric | sp.Basic
+    Term = Unevaluated | Numeric
+else:
+    Term = Any
+T = TypeVar("T", bound=Term)
+U = TypeVar("U", bound=Term)
 
 
-class BinaryRelation(Relation):
+class BinaryRelation(Relation, Generic[T, U]):
     is_transitive: bool = False
     is_reflexive: bool = False
     is_symmetric: bool = False
@@ -29,8 +34,8 @@ class BinaryRelation(Relation):
 
     def __init__(
         self,
-        left: Term,
-        right: Term,
+        left: T,
+        right: U,
         is_assumption: bool = False,
         description: str = "",
         **kwargs,
@@ -42,8 +47,8 @@ class BinaryRelation(Relation):
             description=description,
             **kwargs,
         )
-        self.left: Term = left
-        self.right: Term = right
+        self.left: T = left
+        self.right: U = right
 
     def __repr__(self) -> str:
         return f"{str_print_order(self.left)} {self.infix_symbol} {str_print_order(self.right)}"
@@ -74,7 +79,6 @@ class BinaryRelation(Relation):
         """
         Replace current_val with new_val in the relation.
         """
-        from pylogic.structures.set_ import Set
 
         new_p = self.copy()
 
@@ -97,8 +101,8 @@ class BinaryRelation(Relation):
 
         Raises NotImplementedError if the expression can't be evaluated and it is needed.
         """
-        from pylogic.inference import Inference
         from pylogic.helpers import eval_same, find_first
+        from pylogic.inference import Inference
 
         assert self.__class__.is_transitive, f"{self.__class__} is not transitive"
         assert self.is_proven, f"{self} is not proven"
@@ -133,7 +137,7 @@ class BinaryRelation(Relation):
         )
         return new_p
 
-    def symmetric(self) -> Self:
+    def symmetric(self) -> BinaryRelation[U, T]:
         """
         Logical tactic. If self is proven, return a proof of self.right Relation self.left.
         """
@@ -142,9 +146,9 @@ class BinaryRelation(Relation):
         assert self.__class__.is_symmetric, f"{self.__class__} is not symmetric"
         assert self.is_proven, f"{self} is not proven"
         return self.__class__(
-            self.right,
-            self.left,
+            self.right,  # type: ignore
+            self.left,  # type: ignore
             _is_proven=True,
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="symmetric"),
-        )
+        )  # type: ignore

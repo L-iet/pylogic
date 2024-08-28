@@ -3,7 +3,6 @@ from typing import TypeVar, Generic, Literal
 
 from pylogic.proposition.proposition import Proposition
 from pylogic.proposition.quantified.forall import Forall
-from pylogic.proposition.quantified.quantified import _Quantified
 from pylogic.proposition.quantified.exists import Exists
 from pylogic.proposition.and_ import And
 from pylogic.proposition.or_ import Or

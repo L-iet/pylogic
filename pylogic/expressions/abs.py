@@ -1,11 +1,14 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+
 from fractions import Fraction
+from typing import TYPE_CHECKING
 
 import sympy as sp
-from pylogic.expressions.expr import Expr, evaluate
+
+from pylogic.expressions.expr import Expr, to_sympy
 
 if TYPE_CHECKING:
+    from pylogic.constant import Constant
     from pylogic.symbol import Symbol
 
     Numeric = Fraction | int | float
@@ -17,8 +20,18 @@ class Abs(Expr):
         self.expr = expr
         super().__init__(expr)
 
-    def evaluate(self) -> sp.Basic:
-        return sp.Abs(evaluate(self.expr))
+    def evaluate(self) -> Abs | Constant:
+        from pylogic.helpers import is_numeric
+        from pylogic.symbol import Symbol
+
+        if is_numeric(self.expr):
+            return Constant(abs(self.expr))  # type: ignore
+        elif isinstance(self.expr, (Expr, Symbol)):
+            return Abs(self.expr.evaluate())
+        return self
+
+    def to_sympy(self) -> sp.Basic:
+        return sp.Abs(to_sympy(self.expr))
 
     def _latex(self) -> str:
         if isinstance(self.expr, (int, float, Fraction)):

@@ -6,7 +6,7 @@ from pylogic.proposition.proposition import get_assumptions
 from typing import TYPE_CHECKING, TypedDict, TypeVarTuple, Self
 
 if TYPE_CHECKING:
-    from pylogic.proposition.and_ import And
+    pass
 
 Ps = TypeVarTuple("Ps")
 Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})

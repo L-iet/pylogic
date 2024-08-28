@@ -1,19 +1,21 @@
 from __future__ import annotations
-from pylogic.proposition.proposition import Proposition
+
 from typing import TYPE_CHECKING, Self
+
+from pylogic.proposition.proposition import Proposition
 
 if TYPE_CHECKING:
     from fractions import Fraction
+
+
+    from pylogic.expressions.expr import Expr
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
-    from pylogic.expressions.expr import Expr
-
-    import sympy as sp
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric | sp.Basic
+    Term = Unevaluated | Numeric
 
 
 class Relation(Proposition):

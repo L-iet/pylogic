@@ -1,23 +1,25 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Literal, TypedDict, TypeVarTuple, Generic, Self
-from pylogic.inference import Inference
-from pylogic.proposition.proposition import Proposition, get_assumptions
-from pylogic.proposition.not_ import neg
 
+from typing import TYPE_CHECKING, Generic, Literal, Self, TypedDict, TypeVarTuple
+
+from pylogic.inference import Inference
+from pylogic.proposition.not_ import neg
+from pylogic.proposition.proposition import Proposition, get_assumptions
 
 if TYPE_CHECKING:
+    from fractions import Fraction
+
+
+    from pylogic.expressions.expr import Expr
     from pylogic.proposition.and_ import And
     from pylogic.structures.set_ import Set
-    from pylogic.variable import Variable
     from pylogic.symbol import Symbol
-    from pylogic.expressions.expr import Expr
-    from fractions import Fraction
-    from sympy import Basic
+    from pylogic.variable import Variable
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric | Basic
+    Term = Unevaluated | Numeric
     Unification = dict[Variable, Term]
 
 Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
@@ -212,8 +214,8 @@ Occured when trying to unify `{self}` and `{other}`"
             raise NotImplementedError(f"{self} does not support resolution")
 
         assert self.is_proven, f"{self} is not proven"
-        from pylogic.proposition.contradiction import Contradiction
         from pylogic.proposition.and_ import And
+        from pylogic.proposition.contradiction import Contradiction
 
         p_is_and = isinstance(p, And)
         props = set(p.propositions if p_is_and else p)

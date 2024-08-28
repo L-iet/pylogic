@@ -1,16 +1,18 @@
 from __future__ import annotations
-from pylogic.proposition.relation.binaryrelation import BinaryRelation
+
+from typing import TYPE_CHECKING, Self, TypedDict, TypeVar
+
 from pylogic.proposition.proposition import get_assumptions
-from typing import TYPE_CHECKING, TypedDict, TypeVar, Self
+from pylogic.proposition.relation.binaryrelation import BinaryRelation
 
 if TYPE_CHECKING:
-    from pylogic.proposition.proposition import Proposition
-    from pylogic.symbol import Symbol
-    from pylogic.structures.set_ import Set
-    from pylogic.proposition.relation.contains import IsContainedIn
-    from pylogic.proposition.implies import Implies
-    from pylogic.proposition.quantified.forall import Forall
     from pylogic.expressions.expr import Expr
+    from pylogic.proposition.implies import Implies
+    from pylogic.proposition.proposition import Proposition
+    from pylogic.proposition.quantified.forall import Forall
+    from pylogic.proposition.relation.contains import IsContainedIn
+    from pylogic.structures.set_ import Set
+    from pylogic.symbol import Symbol
 
     Term = Symbol | Set | Expr | int | float
 TProposition = TypeVar("TProposition", bound="Proposition")
@@ -18,7 +20,7 @@ UProposition = TypeVar("UProposition", bound="Proposition")
 Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 
-class Subset(BinaryRelation):
+class Subset(BinaryRelation[Set, Set]):
     is_transitive = True
     name = "IsSubsetOf"
     infix_symbol = "issubset"
@@ -59,9 +61,9 @@ class Subset(BinaryRelation):
         """
         If self is `A issubset B`, return `forall x: x in A -> x in B`
         """
-        from pylogic.variable import Variable
-        from pylogic.proposition.quantified.forall import Forall
         from pylogic.inference import Inference
+        from pylogic.proposition.quantified.forall import Forall
+        from pylogic.variable import Variable
 
         x = Variable("x")
         left = IsContainedIn(x, self.left)

@@ -1,18 +1,20 @@
 from __future__ import annotations
-from typing import Any, Self, cast, TYPE_CHECKING
-from fractions import Fraction
 
-from pylogic.expressions.expr import Expr, Add, Mul, Pow
+from fractions import Fraction
+from typing import TYPE_CHECKING, Any, Self, cast
 
 import sympy as sp
 from sympy.matrices.expressions.matexpr import MatrixElement as MatEl
 
+from pylogic.expressions.expr import Add, Expr, Mul, Pow
+
 Numeric = Fraction | int | float
 
 if TYPE_CHECKING:
-    from pylogic.proposition.relation.equals import Equals
     from pylogic.proposition.relation.contains import IsContainedIn
+    from pylogic.proposition.relation.equals import Equals
     from pylogic.structures.set_ import Set
+    from pylogic.sympy_helpers import PylSympySymbol
 
 
 class Symbol:
@@ -114,8 +116,19 @@ class Symbol:
             return new
         return self
 
-    def evaluate(self) -> sp.Basic:
-        return sp.Symbol(*self._init_args, **self._init_kwargs)
+    def to_sympy(self) -> PylSympySymbol:
+        from pylogic.sympy_helpers import PylSympySymbol
+
+        return PylSympySymbol(
+            *self._init_args,
+            _pyl_class=self.__class__.__name__,
+            _pyl_init_args=self._init_args,
+            _pyl_init_kwargs=self._init_kwargs,
+            **self._init_kwargs,
+        )
+
+    def evaluate(self) -> Self:
+        return self
 
     def is_in(self, other: Set, **kwargs) -> IsContainedIn:
         from pylogic.proposition.relation.contains import IsContainedIn
@@ -186,10 +199,10 @@ class MatrixSymbol(sp.MatrixSymbol):
         return super().__repr__()
 
     def __add__(self, other) -> MatAdd:
-        return MatAdd(self, other)
+        return MatAdd(self, other)  # type: ignore
 
     def __mul__(self, other) -> MatMul:
-        return MatMul(self, other)
+        return MatMul(self, other)  # type: ignore
 
     def transpose(self):
         return Transpose(self)
@@ -241,7 +254,7 @@ class Transpose(sp.Transpose):
         return super().__repr__()
 
     def __mul__(self, other) -> MatMul:
-        return MatMul(self, other)
+        return MatMul(self, other)  # type: ignore
 
     def __getitem__(self, key):
         return MatrixElement(self, *key)

@@ -1,75 +1,48 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, overload
+
 from fractions import Fraction
+from typing import TYPE_CHECKING, Any, TypeVar
 
-from pylogic.proposition.proposition import get_assumptions
-from pylogic.proposition.ordering.lessthan import LessThan
-from pylogic.proposition.relation.equals import Equals
-from pylogic.proposition.relation.binaryrelation import BinaryRelation
-from pylogic.proposition.ordering.ordering import _Ordering
 from pylogic.inference import Inference
-
+from pylogic.proposition.ordering.lessthan import LessThan
+from pylogic.proposition.ordering.ordering import _Ordering
+from pylogic.proposition.proposition import get_assumptions
+from pylogic.proposition.relation.binaryrelation import BinaryRelation
+from pylogic.proposition.relation.equals import Equals
 
 if TYPE_CHECKING:
-    from pylogic.proposition.or_ import Or
-    from pylogic.structures.set_ import Set
-    from pylogic.symbol import Symbol
+    pass
+
     from pylogic.expressions.expr import Expr
-    from sympy import Basic
+    from pylogic.proposition.or_ import Or
+    from pylogic.symbol import Symbol
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     UnevaluatedExpr = Symbol | Expr
-    Term = UnevaluatedExpr | Numeric | Basic
+    Term = UnevaluatedExpr | Numeric
+else:
+    Term = Any
+T = TypeVar("T", bound=Term)
+U = TypeVar("U", bound=Term)
 
 
-class LessOrEqual(BinaryRelation, _Ordering):
+class LessOrEqual(BinaryRelation, _Ordering[T, U]):
     is_transitive = True
     is_reflexive = True
     name = "LessThan"
     infix_symbol = "<="
     infix_symbol_latex = r"\leq"
 
-    @overload
     def __init__(
         self,
-        left: Basic | Numeric,
-        right: Basic | Numeric,
-        is_assumption: bool = False,
-        description: str = "",
-        **kwargs,
-    ) -> None: ...
-
-    @overload
-    def __init__(
-        self,
-        left: UnevaluatedExpr | Numeric,
-        right: UnevaluatedExpr | Numeric,
-        is_assumption: bool = False,
-        description: str = "",
-        **kwargs,
-    ) -> None: ...
-
-    @overload
-    def __init__(
-        self,
-        left: Term,
-        right: Term,
-        is_assumption: bool = False,
-        description: str = "",
-        **kwargs,
-    ) -> None: ...
-
-    def __init__(
-        self,
-        left: Term,
-        right: Term,
+        left: T,
+        right: U,
         is_assumption: bool = False,
         description: str = "",
         **kwargs,
     ) -> None:
         _is_proven = kwargs.get("_is_proven", False)
-        name = "LessOrEqual"
         diff = right - left
         if isinstance(diff, int) or isinstance(diff, float):
             diff_nonnegative = diff >= 0
