@@ -85,8 +85,7 @@ and y in {set_.name} such that a {operation.symbol} x = b and y {operation.symbo
 
     def __init__(
         self,
-        name: str | None = None,
-        sympy_set: SympySet | None = None,
+        name: str,
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
         operation: Callable[[T, T], E] | None = None,
@@ -94,13 +93,12 @@ and y in {set_.name} such that a {operation.symbol} x = b and y {operation.symbo
         operation_symbol: str | None = None,
     ):
         super().__init__(
-            name,
-            sympy_set,
-            elements,
-            containment_function,
-            operation,
-            operation_name,
-            operation_symbol,
+            name=name,
+            elements=elements,
+            containment_function=containment_function,
+            operation=operation,
+            operation_name=operation_name,
+            operation_symbol=operation_symbol,
         )
 
         self.latin_square = Quasigroup.property_latin_square(self, self.operation)

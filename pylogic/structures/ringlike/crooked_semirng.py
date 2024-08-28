@@ -83,8 +83,7 @@ class CrookedSemirng(Ringoid, Generic[Z]):
 
     def __init__(
         self,
-        name: str | None = None,
-        sympy_set: SympySet | None = None,
+        name: str,
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
         plus_operation: Callable[[T, T], E] | None = None,
@@ -95,7 +94,6 @@ class CrookedSemirng(Ringoid, Generic[Z]):
     ):
         super().__init__(
             name=name,
-            sympy_set=sympy_set,
             elements=elements,
             containment_function=containment_function,
             plus_operation=plus_operation,
@@ -110,7 +108,6 @@ class CrookedSemirng(Ringoid, Generic[Z]):
 
         self.monoid_plus = Monoid(
             name=name,
-            sympy_set=sympy_set,
             elements=elements,
             containment_function=containment_function,  # type: ignore
             operation=plus_operation,  # type: ignore
@@ -120,7 +117,6 @@ class CrookedSemirng(Ringoid, Generic[Z]):
         )
         self.semigroup_times = Semigroup(
             name=name,
-            sympy_set=sympy_set,
             elements=elements,
             containment_function=containment_function,  # type: ignore
             operation=times_operation,  # type: ignore

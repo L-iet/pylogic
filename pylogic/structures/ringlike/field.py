@@ -42,8 +42,7 @@ class Field(DivisionRIng[Z]):
 
     def __init__(
         self,
-        name: str | None = None,
-        sympy_set: SympySet | None = None,
+        name: str,
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
         plus_operation: Callable[[T, T], E] | None = None,
@@ -55,7 +54,6 @@ class Field(DivisionRIng[Z]):
     ):
         super().__init__(
             name=name,
-            sympy_set=sympy_set,
             elements=elements,
             containment_function=containment_function,
             plus_operation=plus_operation,
@@ -67,7 +65,6 @@ class Field(DivisionRIng[Z]):
         )
         self.abelian_group_times = AbelianGroup(
             name=name,
-            sympy_set=sympy_set,
             elements=elements,
             containment_function=containment_function,  # type: ignore
             operation=times_operation,  # type: ignore
@@ -76,3 +73,7 @@ class Field(DivisionRIng[Z]):
             identity=one,  # type: ignore
         )
         self.times_is_commutative = self.abelian_group_times.op_is_commutative
+
+
+R = Field("Reals")
+print(R)

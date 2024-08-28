@@ -55,8 +55,7 @@ class Semigroup(Magma):
 
     def __init__(
         self,
-        name: str | None = None,
-        sympy_set: SympySet | None = None,
+        name: str,
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
         operation: Callable[[T, T], E] | None = None,
@@ -65,7 +64,6 @@ class Semigroup(Magma):
     ):
         super().__init__(
             name=name,
-            sympy_set=sympy_set,
             elements=elements,
             containment_function=containment_function,
             operation=operation,

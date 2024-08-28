@@ -51,8 +51,7 @@ class _RingoidCommon(Set):
 
     def __init__(
         self,
-        name: str | None = None,
-        sympy_set: SympySet | None = None,
+        name: str,
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
         plus_operation: Callable[[T, T], E] | None = None,
@@ -60,7 +59,7 @@ class _RingoidCommon(Set):
         times_operation: Callable[[T, T], E] | None = None,
         times_operation_symbol: str | None = None,
     ):
-        super().__init__(name, sympy_set, elements, containment_function)  # type: ignore
+        super().__init__(name, elements, containment_function)  # type: ignore
         self.plus_operation_name = f"{self.name}_+"
         self.plus_operation_symbol = plus_operation_symbol or f"{self.name}_+"
         self.plus_eval_func = plus_operation
@@ -70,7 +69,6 @@ class _RingoidCommon(Set):
 
         self.magma_plus = Magma(
             name=name,
-            sympy_set=sympy_set,
             elements=elements,
             containment_function=containment_function,
             operation=plus_operation,
@@ -79,7 +77,6 @@ class _RingoidCommon(Set):
         )
         self.magma_times = Magma(
             name=name,
-            sympy_set=sympy_set,
             elements=elements,
             containment_function=containment_function,
             operation=times_operation,

@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     import sympy as sp
 
     from pylogic.expressions.expr import Expr
+    from pylogic.proposition.proposition import Proposition
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
 
@@ -73,6 +74,31 @@ class IsContainedIn(BinaryRelation):
                     _is_proven=True,
                     _assumptions=set(),
                     _inference=Inference(self, rule="by_containment_func"),
+                )
+        except Exception as e:
+            raise ValueError(
+                f"Cannot prove that {self.right} contains {self.left}\nThis was a result of\n{e}"
+            )
+        else:
+            raise ValueError(f"Cannot prove that {self.right} contains {self.left}")
+
+    def by_predicate(self, proven_predicate: Proposition) -> IsContainedIn:
+        """Logical tactic. Use the set's predicate function to prove that it
+        contains the element
+        """
+        if self.right.predicate is None:
+            raise ValueError(f"{self.right} does not have a predicate function")
+        try:
+            if (
+                proven_predicate.is_proven
+                and self.right.predicate(self.left) == proven_predicate
+            ):
+                return IsContainedIn(
+                    copy.copy(self.element),
+                    self.set_.copy(),
+                    _is_proven=True,
+                    _assumptions=set(),
+                    _inference=Inference(self, rule="by_predicate"),
                 )
         except Exception as e:
             raise ValueError(

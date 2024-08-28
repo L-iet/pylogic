@@ -67,8 +67,7 @@ class LeftRingoid(_RingoidCommon):
 
     def __init__(
         self,
-        name: str | None = None,
-        sympy_set: SympySet | None = None,
+        name: str,
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
         plus_operation: Callable[[T, T], E] | None = None,
@@ -80,7 +79,6 @@ class LeftRingoid(_RingoidCommon):
         # RightRingoid due to MRO
         super().__init__(
             name=name,
-            sympy_set=sympy_set,
             elements=elements,
             containment_function=containment_function,
             plus_operation=plus_operation,

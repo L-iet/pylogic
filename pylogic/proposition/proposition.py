@@ -803,12 +803,11 @@ class Proposition:
         assert self.is_proven, f"{self} is not proven"
         from pylogic.inference import Inference
         from pylogic.proposition.quantified.forall import Forall, ForallInSet
-        from pylogic.structures.set_ import Reals
 
         set_ = None
         if variable.is_real:
             cls = ForallInSet
-            set_ = Reals
+            set_ = None
         else:
             cls = Forall
         return cls(

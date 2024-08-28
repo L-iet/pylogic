@@ -45,8 +45,7 @@ class Loop(Quasigroup):
 
     def __init__(
         self,
-        name: str | None = None,
-        sympy_set: SympySet | None = None,
+        name: str,
         elements: Iterable[T] | None = None,
         containment_function: Callable[[T], bool] | None = None,
         operation: Callable[[T, T], E] | None = None,
@@ -57,13 +56,12 @@ class Loop(Quasigroup):
         if elements is not None and identity is not None:
             assert identity in elements, "Identity must be in the set of elements"
         super().__init__(
-            name,
-            sympy_set,
-            elements,
-            containment_function,
-            operation,
-            operation_name,
-            operation_symbol,
+            name=name,
+            elements=elements,
+            containment_function=containment_function,
+            operation=operation,
+            operation_name=operation_name,
+            operation_symbol=operation_symbol,
         )
         if is_numeric(identity):
             identity = Constant(identity)  # type: ignore

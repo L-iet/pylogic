@@ -261,7 +261,7 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
     def in_particular(
         self,
         expression_to_substitute: Term,
-        proof_expr_to_substitute_in_set: IsContainedIn | None = None,
+        proof_expr_to_substitute_in_set: Proposition | None = None,
     ) -> TProposition:
         """Logical tactic. Given self is proven, replace the variable in the inner
         proposition and get a proven proposition.
@@ -270,8 +270,21 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
         impl = super().in_particular(expression_to_substitute)
         if proof_expr_to_substitute_in_set is None:
             ante = IsContainedIn(expression_to_substitute, self.set_).by_inspection()
-        else:
+        elif (
+            self.set_.predicate is not None
+            and proof_expr_to_substitute_in_set
+            == self.set_.predicate(expression_to_substitute)
+        ):
+            ante = IsContainedIn(expression_to_substitute, self.set_).by_predicate(
+                proof_expr_to_substitute_in_set
+            )
+        elif isinstance(proof_expr_to_substitute_in_set, IsContainedIn):
             ante = proof_expr_to_substitute_in_set
+        else:
+            raise ValueError(
+                f"Cannot use {proof_expr_to_substitute_in_set} to prove that \
+{expression_to_substitute} is in {self.set_}"
+            )
         if ante == impl.antecedent:
             new_p = impl.consequent
             new_p._is_proven = True

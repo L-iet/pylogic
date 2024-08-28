@@ -1,16 +1,19 @@
 from __future__ import annotations
-from typing import Callable, TYPE_CHECKING, Iterable
 
-from sympy import Set as SympySet
+from typing import TYPE_CHECKING, Callable, Iterable
+
 import sympy as sp
+from sympy import Set as SympySet
 
 if TYPE_CHECKING:
     from fractions import Fraction
-    from pylogic.symbol import Symbol
-    from pylogic.structures.set_ import Set
+
     from pylogic.expressions.expr import Expr
+    from pylogic.proposition.proposition import Proposition
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
+    from pylogic.structures.set_ import Set
+    from pylogic.symbol import Symbol
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
@@ -19,29 +22,33 @@ if TYPE_CHECKING:
 
 
 class Set:
+    """
+    A set S is a collection of elements.
+    You can prove the proposition `x in S` either using the containment_function,
+    i.e. `S.containment_function(x) == True` using `S.contains(x).by_def()`, or
+    by supplying a proven proposition of `S.predicate(x)`.
+
+    S is the set of all x such that `S.predicate(x)` is a true proposition.
+    That is, `S.predicate(x) -> x in S`.
+    """
+
     def __init__(
         self,
-        name: str | None = None,
-        sympy_set: SympySet | None = None,
+        name: str,
         elements: Iterable[Term] | None = None,
         containment_function: Callable[[Term], bool] | None = None,
+        predicate: Callable[[Term], Proposition] | None = None,
     ):
-        if name:
-            name = name.strip()
-        else:
-            name = ""
-            assert (
-                sympy_set is not None
-            ), "Must provide a sympy Set or a name for a new set"
-        if sympy_set is None:
-            sympy_set = sp.Set(name)
+        name = name.strip()
+        sympy_set = sp.Set(name)
         assert " " not in name, "Set name cannot contain spaces"
         self.name = name or str(sympy_set)
         self.sympy_set = sympy_set
-        self.elements = elements or set()
+        self.elements: set[Term] = set(elements) if elements else set()
         self._containment_function: Callable[[Term], bool] = containment_function or (
             lambda x: x in self.elements
         )
+        self.predicate: Callable[[Term], Proposition] | None = predicate
 
     def eval_same(self, other: object) -> bool:
         if isinstance(other, sp.Set):
@@ -99,15 +106,15 @@ class Set:
         return f"$${self._latex()}$$"
 
     def copy(self) -> Set:
-        return Set(self.name, self.sympy_set, self.elements, self.containment_function)
+        return Set(self.name, self.elements, self.containment_function)
 
 
-Integers = Set(sympy_set=sp.Integers)
-Rationals = Set(sympy_set=sp.Rationals)
-Reals = Set(sympy_set=sp.Reals)
-Naturals = Set(sympy_set=sp.Naturals)
-Naturals0 = Set(sympy_set=sp.Naturals0)
-Graphs = Set(name="Graphs", containment_function=lambda x: x.is_graph)  # type: ignore
+# Integers = Set(sympy_set=sp.Integers)
+# Rationals = Set(sympy_set=sp.Rationals)
+# Reals = Set(sympy_set=sp.Reals)
+# Naturals = Set(sympy_set=sp.Naturals)
+# Naturals0 = Set(sympy_set=sp.Naturals0)
+# Graphs = Set(name="Graphs", containment_function=lambda x: x.is_graph)  # type: ignore
 # Matrices = Set(name="Matrices")
 # Vectors = Set(name="Vectors")
 # Functions = Set(name="Functions")
