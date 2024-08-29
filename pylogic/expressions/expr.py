@@ -38,22 +38,26 @@ else:
 class Expr(ABC):
     is_real = None
 
-    def __init__(self, *args: PBasic | Expr, **kwargs: Any):
+    def __init__(self, *args: PBasic | Set | Expr, **kwargs: Any):
         assert len(args) > 0, "Must provide at least one argument"
         self._build_args_and_symbols(*args)
         self._init_args = args
         self._init_kwargs = kwargs
 
-    def _build_args_and_symbols(self, *args: PBasic | Expr) -> None:
+    def _build_args_and_symbols(self, *args: PBasic | Set | Expr) -> None:
         from pylogic.symbol import Symbol
 
         self.args = args
         self.symbols: set[Symbol] = set()  # symbols present in this expression
+        self.sets: set[Set] = set()  # sets present in this expression
         for arg in args:
             if isinstance(arg, Symbol):
                 self.symbols.add(arg)
+            elif isinstance(arg, Set):
+                self.sets.add(arg)
             elif isinstance(arg, Expr):
                 self.symbols.update(arg.symbols)
+                self.sets.update(arg.sets)
 
     @abstractmethod
     def evaluate(self) -> Expr:
@@ -407,10 +411,10 @@ class Pow(Expr):
 
 
 def replace(
-    expr: PBasic | Expr,
+    expr: PBasic | Set | Expr,
     old: Any,
     new: Any,
-) -> PBasic | Expr:
+) -> PBasic | Set | Expr:
     if expr == old:
         return new
     elif isinstance(expr, Expr):
@@ -431,7 +435,7 @@ def to_sympy(expr: Expr) -> sp.Basic: ...
 def to_sympy(expr: Symbol) -> PylSympySymbol: ...
 @overload
 def to_sympy(expr: Set) -> sp.Set: ...
-def to_sympy(expr: sp.Basic | PBasic | Expr | Set) -> sp.Basic:
+def to_sympy(expr: PBasic | Expr | Set) -> sp.Basic:
     from pylogic.symbol import Symbol
 
     if isinstance(expr, int):
@@ -445,47 +449,27 @@ def to_sympy(expr: sp.Basic | PBasic | Expr | Set) -> sp.Basic:
     return expr
 
 
-@overload
-def sqrt(expr: PBasic | Expr) -> Pow: ...
-@overload
-def sqrt(expr: PBasic | Expr) -> sp.Basic: ...
-def sqrt(expr: PBasic | Expr) -> sp.Basic | Pow:
+def sqrt(expr: PBasic | Expr) -> Pow:
     return Pow(expr, Fraction(1, 2))
 
 
-@overload
-def mul(*args: PBasic | Expr) -> Mul: ...
-@overload
-def mul(*args: PBasic | Expr) -> sp.Basic: ...
-def mul(*args: PBasic | Expr) -> sp.Basic | Mul:
+def mul(*args: PBasic | Expr) -> Mul:
     return Mul(*args)
 
 
-@overload
-def add(*args: PBasic | Expr) -> Add: ...
-@overload
-def add(*args: PBasic | Expr) -> sp.Basic: ...
-def add(*args: PBasic | Expr) -> sp.Basic | Add:
+def add(*args: PBasic | Expr) -> Add:
     return Add(*args)
 
 
-@overload
-def sub(a: PBasic | Expr, b: PBasic | Expr) -> Add: ...
-@overload
-def sub(a: PBasic | Expr, b: PBasic | Expr) -> sp.Basic: ...
-def sub(a: PBasic | Expr, b: PBasic | Expr) -> sp.Basic | Add:
+def sub(a: PBasic | Expr, b: PBasic | Expr) -> Add:
     return Add(a, -b)
 
 
-@overload
-def div(a: PBasic | Expr, b: PBasic | Expr) -> Mul: ...
-@overload
-def div(a: PBasic | Expr, b: PBasic | Expr) -> sp.Basic: ...
-def div(a: PBasic | Expr, b: PBasic | Expr) -> sp.Basic | Mul:
+def div(a: PBasic | Expr, b: PBasic | Expr) -> Mul:
     return Mul(a, Pow(b, -1))
 
 
-def _latex(expr: PBasic | Expr) -> str:
+def _latex(expr: PBasic | Set | Expr) -> str:
     if isinstance(expr, Expr):
         return expr._latex()
     return "{" + str(expr) + "}"

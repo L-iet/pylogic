@@ -11,7 +11,6 @@ from pylogic.variable import Variable
 if TYPE_CHECKING:
     from fractions import Fraction
 
-
     from pylogic.expressions.expr import Expr
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
@@ -123,3 +122,11 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
 Occured when trying to unify `{self}` and `{other}`"
             )
         return self.inner_proposition.unify(other.inner_proposition)
+
+    def has_as_subproposition(self, other: Proposition) -> bool:
+        """
+        Check if other is a subproposition of self.
+        """
+        if self == other:
+            return True
+        return self.inner_proposition.has_as_subproposition(other)

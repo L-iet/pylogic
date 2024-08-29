@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Any, Self, TypedDict, TypeVar
 
 from pylogic.expressions.expr import to_sympy
 from pylogic.inference import Inference
@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.proposition import Proposition
+    from pylogic.structures.collection import Class
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
 
@@ -18,16 +19,19 @@ if TYPE_CHECKING:
     PBasic = Symbol | Numeric
     Unevaluated = Symbol | Set | Expr
     Term = Unevaluated | Numeric
+    U = TypeVar("U", bound=Set | Class)
 else:
     Set = Any
     Term = Any
+    U = Any
 T = TypeVar("T", bound=Term)
+
 import copy
 
 Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 
-class IsContainedIn(BinaryRelation[T, Set]):
+class IsContainedIn(BinaryRelation[T, U]):
     is_transitive = False
     name = "IsContainedIn"
     infix_symbol = "in"
@@ -40,12 +44,12 @@ class IsContainedIn(BinaryRelation[T, Set]):
     def __init__(
         self,
         left: T,
-        right: Set,
+        right: U,
         is_assumption: bool = False,
         description: str = "",
         **kwargs,
     ) -> None:
-        self.right: Set = right
+        self.right: U = right
         self.left: T = left
         super().__init__(
             left,
@@ -56,14 +60,14 @@ class IsContainedIn(BinaryRelation[T, Set]):
         )
 
     @property
-    def set_(self) -> Set:
+    def set_(self) -> U:
         return self.right
 
     @property
-    def element(self) -> Term:
+    def element(self) -> T:
         return self.left
 
-    def by_containment_func(self) -> IsContainedIn:
+    def by_containment_func(self) -> Self:
         """Logical tactic. Use the set's containment function to prove that it
         contains the element
         """
@@ -75,7 +79,7 @@ class IsContainedIn(BinaryRelation[T, Set]):
                     _is_proven=True,
                     _assumptions=set(),
                     _inference=Inference(self, rule="by_containment_func"),
-                )
+                )  # type: ignore
         except Exception as e:
             raise ValueError(
                 f"Cannot prove that {self.right} contains {self.left}\nThis was a result of\n{e}"
@@ -83,12 +87,10 @@ class IsContainedIn(BinaryRelation[T, Set]):
         else:
             raise ValueError(f"Cannot prove that {self.right} contains {self.left}")
 
-    def by_predicate(self, proven_predicate: Proposition) -> IsContainedIn:
+    def by_predicate(self, proven_predicate: Proposition) -> Self:
         """Logical tactic. Use the set's predicate function to prove that it
         contains the element
         """
-        if self.right.predicate is None:
-            raise ValueError(f"{self.right} does not have a predicate function")
         try:
             if (
                 proven_predicate.is_proven
@@ -100,7 +102,7 @@ class IsContainedIn(BinaryRelation[T, Set]):
                     _is_proven=True,
                     _assumptions=set(),
                     _inference=Inference(self, rule="by_predicate"),
-                )
+                )  # type: ignore
         except Exception as e:
             raise ValueError(
                 f"Cannot prove that {self.right} contains {self.left}\nThis was a result of\n{e}"
@@ -108,14 +110,14 @@ class IsContainedIn(BinaryRelation[T, Set]):
         else:
             raise ValueError(f"Cannot prove that {self.right} contains {self.left}")
 
-    def by_def(self) -> IsContainedIn:
+    def by_sympy_def(self) -> Self:
         """Logical tactic. Use sympy's definition of the set to prove that
         it contains the element.
         """
         try:
-            if (
-                self.left in self.right.elements
-                or to_sympy(self.left) in self.right.sympy_set  # type: ignore
+            if self.left in self.right.elements or (
+                hasattr(self.right, "sympy_set")  # in case self.right is a Class{n}
+                and to_sympy(self.left) in self.right.sympy_set  # type: ignore
             ):
                 return IsContainedIn(
                     copy.copy(self.element),
@@ -124,18 +126,26 @@ class IsContainedIn(BinaryRelation[T, Set]):
                     _is_proven=True,
                     _assumptions=set(),
                     _inference=Inference(self, rule="by_def"),
-                )
+                )  # type: ignore
         except (TypeError, NotImplementedError) as e:
             raise ValueError(
                 f"Cannot prove that {self.right} contains {self.left}\nThis was a result of\n{e}"
             )
         raise ValueError(f"Cannot prove that {self.right} contains {self.left}")
 
-    def by_inspection(self) -> IsContainedIn:
+    def by_inspection(self) -> Self:
         """Logical tactic. Use the set's containment function and sympy set to
         prove that it contains the element.
         """
         try:
             return self.by_containment_func()
         except ValueError:
-            return self.by_def()
+            return self.by_sympy_def()
+
+    def thus_predicate(self) -> Proposition:
+        """Logical tactic. Given that the set contains the element, return
+        the predicate that the element satisfies.
+        """
+        assert self.is_proven, f"{self} is not proven"
+
+        return self.right.predicate(self.left)

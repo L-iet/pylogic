@@ -7,7 +7,6 @@ from pylogic.proposition.proposition import Proposition, get_assumptions
 if TYPE_CHECKING:
     from fractions import Fraction
 
-
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.implies import Implies
     from pylogic.structures.set_ import Set
@@ -204,3 +203,11 @@ class Not(Proposition, Generic[TProposition]):
 Occured when trying to unify `{self}` and `{other}`"
             )
         return self.negated.unify(other.negated)
+
+    def has_as_subproposition(self, other: Proposition) -> bool:
+        """
+        Check if other is a subproposition of self.
+        """
+        if self == other:
+            return True
+        return self.negated.has_as_subproposition(other)

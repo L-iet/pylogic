@@ -21,4 +21,5 @@
 #     distributive,
 # ]
 # from pylogic.structures.ringlike.ringoid import *
-from pylogic.structures.ringlike.field import *
+from pylogic.structures.class_ import *
+from pylogic.structures.set_ import *

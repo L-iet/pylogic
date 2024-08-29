@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Generic, Literal, Self, TypedDict, TypeVarTuple
 
+from pylogic.helpers import find_first
 from pylogic.inference import Inference
 from pylogic.proposition.not_ import neg
 from pylogic.proposition.proposition import Proposition, get_assumptions
 
 if TYPE_CHECKING:
     from fractions import Fraction
-
 
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.and_ import And
@@ -258,3 +258,14 @@ Occured when trying to unify `{self}` and `{other}`"
         of the remaining propositions in self.
         """
         return self.resolve([p])
+
+    def has_as_subproposition(self, other: Proposition) -> bool:
+        """
+        Check if other is a subproposition of self.
+        """
+        if self == other:
+            return True
+        first_other_occurs_in = find_first(
+            lambda p: p.has_as_subproposition(other), self.propositions  # type: ignore
+        )
+        return first_other_occurs_in is not None

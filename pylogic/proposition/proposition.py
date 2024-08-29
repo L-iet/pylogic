@@ -13,7 +13,6 @@ from typing import (
     overload,
 )
 
-
 from pylogic.printing.printing import latex_print_order, str_print_order
 
 if TYPE_CHECKING:
@@ -888,6 +887,12 @@ class Proposition:
                 _assumptions=get_assumptions(self).union(get_assumptions(other)),
             )
         raise ValueError(f"{self} and {other} are not negations")
+
+    def has_as_subproposition(self, other: Proposition) -> bool:
+        """
+        Check if other is a subproposition of self.
+        """
+        return self == other
 
     def unify(self, other: Proposition) -> Unification | Literal[True] | None:
         """
