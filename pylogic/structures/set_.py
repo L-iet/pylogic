@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     Unevaluated = Symbol | Set | Expr
     Term = Unevaluated | Numeric
     T = TypeVar("T", bound=Term)
+    C = TypeVar("C", bound="Set")
 
 
 class Set(metaclass=Collection):
@@ -45,6 +46,10 @@ class Set(metaclass=Collection):
 
     level = 0  # level of the set in the hierarchy of Classes
 
+    @overload
+    def __new__(cls) -> Set: ...
+    @overload
+    def __new__(cls: type[C], name: str, *args, **kwargs) -> C: ...
     def __new__(cls, *args, **kwargs):
         if len(args) == 0 and len(kwargs) == 0:
             global EmptySet

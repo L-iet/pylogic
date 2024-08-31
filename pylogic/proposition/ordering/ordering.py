@@ -17,11 +17,9 @@ if TYPE_CHECKING:
     Term = UnevaluatedExpr | Numeric
 else:
     Term = Any
-T = TypeVar("T", bound=Term, covariant=True)
-U = TypeVar("U", bound=Term, covariant=True)
 
 
-class _Ordering(Protocol, Generic[T, U]):
+class _Ordering(Protocol):
     @classmethod
     def _multiply_by(
         cls,

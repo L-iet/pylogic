@@ -25,9 +25,14 @@ U = TypeVar("U", bound=Term)
 
 
 class BinaryRelation(Relation, Generic[T, U]):
-    is_transitive: bool = False
-    is_reflexive: bool = False
-    is_symmetric: bool = False
+    is_transitive: bool = False  # forall a, b, c in S, a R b and b R c => a R c
+    is_reflexive: bool = False  # forall a in S, a R a
+    is_irreflexive: bool = False  # forall a in S, not a R a
+    is_symmetric: bool = False  # forall a, b in S, a R b => b R a
+    is_antisymmetric: bool = False  # forall a, b in S, a R b and b R a => a = b
+    is_asymmetric: bool = False  # forall a, b in S, a R b => not b R a
+    is_connected: bool = False  # forall a, b in S, a != b => a R b or b R a
+    is_strongly_connected: bool = False  # forall a, b in S, a R b or b R a
     name: str = "BR"
     infix_symbol: str = "BR"
     infix_symbol_latex: str = "BR"

@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from pylogic.constant import Constant
 from pylogic.proposition.ordering.ordering import _Ordering
+from pylogic.proposition.ordering.total import StrictTotalOrder
 from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 
@@ -23,33 +24,10 @@ T = TypeVar("T", bound=Term)
 U = TypeVar("U", bound=Term)
 
 
-class LessThan(BinaryRelation[T, U], _Ordering[T, U]):
-    is_transitive = True
+class LessThan(StrictTotalOrder[T, U], _Ordering):
     name = "LessThan"
     infix_symbol = "<"
     infix_symbol_latex = "<"
-
-    def __init__(
-        self,
-        left: T,
-        right: U,
-        is_assumption: bool = False,
-        description: str = "",
-        **kwargs,
-    ) -> None:
-        _is_proven = kwargs.get("_is_proven", False)
-        diff = right - left
-        if isinstance(diff, int) or isinstance(diff, float):
-            diff_is_positive = diff > 0
-        else:
-            diff_is_positive = True
-        if diff_is_positive == False and (is_assumption or _is_proven):
-            raise ValueError(f"Some assumptions in {left}, {right} are contradictory")
-        super().__init__(
-            left, right, is_assumption=is_assumption, description=description, **kwargs
-        )
-        self.left: T = left
-        self.right: U = right
 
     def to_positive_inequality(self):
         """If self is of the form a < b, returns an inequality of the form b - a > 0"""

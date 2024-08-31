@@ -6,9 +6,11 @@ from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar
 import sympy as sp
 from sympy import S as sympy_S
 
+from pylogic.constant import Constant
 from pylogic.expressions.abs import Abs
 from pylogic.expressions.expr import Pow
 from pylogic.proposition.ordering.ordering import _Ordering
+from pylogic.proposition.ordering.total import StrictTotalOrder
 from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from pylogic.proposition.relation.equals import Equals
@@ -29,37 +31,10 @@ T = TypeVar("T", bound=Term)
 U = TypeVar("U", bound=Term)
 
 
-class GreaterThan(BinaryRelation, _Ordering, Generic[T, U]):
-    is_transitive = True
+class GreaterThan(StrictTotalOrder[T, U], _Ordering):
     name = "GreaterThan"
     infix_symbol = ">"
     infix_symbol_latex = ">"
-
-    def __init__(
-        self,
-        left: T,
-        right: U,
-        is_assumption: bool = False,
-        description: str = "",
-        **kwargs,
-    ) -> None:
-        """
-        Left and right must be the same type, or at least one of them
-        numeric.
-        """
-        _is_proven = kwargs.get("_is_proven", False)
-        diff = left - right
-        if isinstance(diff, int) or isinstance(diff, float):
-            diff_is_positive = diff > 0
-        else:
-            diff_is_positive = True
-        if diff_is_positive == False and (is_assumption or _is_proven):
-            raise ValueError(f"Some assumptions in {left}, {right} are contradictory")
-        super().__init__(
-            left, right, is_assumption=is_assumption, description=description, **kwargs
-        )
-        self.left: T = left
-        self.right: U = right
 
     def __repr__(self) -> str:
         return f"{self.left} > {self.right}"
@@ -70,11 +45,11 @@ class GreaterThan(BinaryRelation, _Ordering, Generic[T, U]):
 
         return GreaterThan(
             self.left - self.right,
-            sympy_S.Zero,
+            Constant(0),
             _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="to_positive_inequality"),
-        )  # type: ignore
+        )
 
     def to_negative_inequality(self):
         """If self is of the form a > b, returns an inequality of the form b - a < 0"""
@@ -87,7 +62,7 @@ class GreaterThan(BinaryRelation, _Ordering, Generic[T, U]):
             _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="to_negative_inequality"),
-        )  # type: ignore
+        )
 
     def multiply_by_positive(
         self, x: Term, proof_x_is_positive: "GreaterThan | LessThan"
@@ -154,7 +129,7 @@ class GreaterThan(BinaryRelation, _Ordering, Generic[T, U]):
             _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="mul_inverse"),
-        )  # type: ignore
+        )
 
     def to_less_than(self):
         """If self is of the form a > b, returns an inequality of the form b < a"""
