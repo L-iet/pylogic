@@ -3,7 +3,6 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import Callable, Iterable, TypeAlias, TypeVar
 
-
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.infix.infix import SpecialInfix
 from pylogic.proposition.and_ import And
@@ -84,8 +83,18 @@ class Ringoid(LeftRingoid, RightRingoid):
             times_operation=times_operation,
             times_operation_symbol=times_operation_symbol,
         )
-
+        print(self.times_left_dist_over_plus, "h1")
+        print(self.times_right_dist_over_plus, "h2")
         self.times_dist_over_plus = And(
             self.times_left_dist_over_plus,
             self.times_right_dist_over_plus,
         ).all_proven()
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+        }

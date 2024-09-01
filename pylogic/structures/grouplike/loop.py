@@ -3,7 +3,6 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import TYPE_CHECKING, Callable, Iterable, TypeVar
 
-
 from pylogic.constant import Constant
 from pylogic.expressions.expr import Expr
 from pylogic.helpers import is_numeric
@@ -71,6 +70,16 @@ class Loop(Quasigroup):
             self, self.operation, self.identity
         )
         self.has_identity.is_axiom = True
+
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "operation": operation,
+            "operation_name": operation_name,
+            "operation_symbol": operation_symbol,
+            "identity": identity,
+        }
 
     def containment_function(self, x: Term) -> bool:
         return x == self.identity or self._containment_function(x)

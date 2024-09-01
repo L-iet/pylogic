@@ -35,9 +35,10 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         {"name": "hypothetical_syllogism", "arguments": ["Implies"]},
         {"name": "impl_elim", "arguments": []},
         {"name": "definite_clause_resolve", "arguments": ["Proposition"]},
+        {"name": "unit_definite_clause_resolve", "arguments": ["Proposition"]},
+        {"name": "contrapositive", "arguments": []},
     ]
 
-    # TODO: Implement __eq__ for IsContainedIn, Relation, Equals etc
     def __init__(
         self,
         antecedent: TProposition,
@@ -129,6 +130,19 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             _is_proven=False,
         )
         return new_p
+
+    def contrapositive(self) -> Implies[Proposition, Proposition]:
+        r"""Logical tactic. Given self (`A -> B`) is proven, return the corresponding
+        contrapositive (`~B -> ~A`)
+        """
+        assert self.is_proven, f"{self} is not proven"
+        return Implies(
+            neg(self.consequent),
+            neg(self.antecedent),
+            _is_proven=True,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="contrapositive"),
+        )
 
     def hypothetical_syllogism(
         self, other: Implies[UProposition, VProposition]

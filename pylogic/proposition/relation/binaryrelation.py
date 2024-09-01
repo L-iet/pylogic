@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     PBasic = Symbol | Numeric
     Unevaluated = Symbol | Set | Expr
     Term = Unevaluated | Numeric
+    C = TypeVar("C", bound="BinaryRelation")
 else:
     Term = Any
 T = TypeVar("T", bound=Term)
@@ -157,3 +158,19 @@ class BinaryRelation(Relation, Generic[T, U]):
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="symmetric"),
         )  # type: ignore
+
+    @classmethod
+    def reflexive(cls: type[C], term: T) -> C:
+        """
+        Logical tactic. Given a term, return a reflexive relation of the form term R term.
+        """
+        from pylogic.inference import Inference
+
+        assert cls.is_reflexive, f"{cls} is not reflexive"
+        return cls(
+            term,
+            term,
+            _is_proven=True,
+            _assumptions=set(),
+            _inference=Inference(None, rule="reflexive"),
+        )

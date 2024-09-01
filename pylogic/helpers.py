@@ -17,7 +17,6 @@ from typing import (
 from pylogic.expressions.expr import Expr
 from pylogic.expressions.expr import replace as _replace
 from pylogic.proposition.proposition import Proposition
-from pylogic.structures.set_ import Set
 from pylogic.symbol import Symbol
 from pylogic.variable import Variable
 
@@ -26,6 +25,8 @@ P = TypeVar("P", bound=Proposition)
 Ps = TypeVarTuple("Ps")
 
 if TYPE_CHECKING:
+    from pylogic.structures.set_ import Set
+
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     Unevaluated = Symbol | Set | Expr
@@ -41,6 +42,8 @@ def eval_same(x: Any, y: Any) -> bool:
     """
     Check if x and y evaluate to the same value.
     """
+    from pylogic.structures.set_ import Set
+
     if isinstance(x, (Symbol, Set, Expr)):
         return x.eval_same(y)
     if isinstance(y, (Symbol, Set, Expr)):

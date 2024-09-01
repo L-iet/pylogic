@@ -69,3 +69,14 @@ class Field(DivisionRIng[Z]):
             identity=one,  # type: ignore
         )
         self.times_is_commutative = self.abelian_group_times.op_is_commutative
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "zero": zero,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+            "one": one,
+        }

@@ -3,7 +3,6 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import Callable, Iterable, TypeAlias, TypeVar
 
-
 from pylogic.constant import Constant
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.helpers import is_numeric
@@ -78,3 +77,14 @@ class SemirIng(Semirng[Z]):
             identity=self.one,
         )
         self.times_has_identity = self.monoid_times.has_identity
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "zero": zero,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+            "one": one,
+        }

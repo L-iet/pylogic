@@ -189,6 +189,16 @@ class Group(Monoid):
             .thus_forall_in_set(a, self)
         )  # type: ignore
 
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "operation": operation,
+            "operation_name": operation_name,
+            "operation_symbol": operation_symbol,
+            "identity": identity,
+        }
+
 
 class AbelianGroup(Group):
     op_is_commutative: ForallInSet[ForallInSet[Equals]]

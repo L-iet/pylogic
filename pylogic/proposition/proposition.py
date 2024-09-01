@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.and_ import And
     from pylogic.proposition.contradiction import Contradiction
     from pylogic.proposition.exor import ExOr
+    from pylogic.proposition.iff import Iff
     from pylogic.proposition.implies import Implies
     from pylogic.proposition.not_ import Not
     from pylogic.proposition.or_ import Or
@@ -330,6 +331,16 @@ class Proposition:
             return self.and_(other.antecedent).implies(other.consequent)
 
         return Implies(self, other, is_assumption, **kwargs)
+
+    def iff(
+        self, other: TProposition, is_assumption: bool = False, **kwargs
+    ) -> Iff[Self, TProposition]:
+        r"""
+        Create a biconditional between this proposition and another.
+        """
+        from pylogic.proposition.iff import Iff
+
+        return Iff(self, other, is_assumption=is_assumption, **kwargs)
 
     @overload
     def and_(

@@ -3,7 +3,6 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import Callable, Iterable, TypeAlias, TypeVar
 
-
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.infix.infix import SpecialInfix
 from pylogic.proposition.quantified.forall import ForallInSet
@@ -89,6 +88,16 @@ class _RingoidCommon(Set):
 
         self.plus = self.plus_operation
         self.times = self.times_operation
+
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+        }
 
     def containment_function(self, x: Term) -> bool:
         if isinstance(x, BinaryExpression):

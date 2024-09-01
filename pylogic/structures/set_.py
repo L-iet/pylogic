@@ -81,6 +81,14 @@ class Set(metaclass=Collection):
             self.is_real = False
         elif any(x is not None for x in (elements, containment_function, predicate)):
             raise ValueError("Must provide a name for the set.")
+        self._init_args = ()
+        self._init_kwargs = {
+            "name": name,
+            "elements": elements,
+            "containment_function": containment_function,
+            "predicate": predicate,
+            "illegal_occur_check": illegal_occur_check,
+        }
 
     def illegal_occur_check(
         self,
@@ -147,12 +155,16 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
         if isinstance(predicate_of_self, IsContainedIn):
             if isinstance(predicate_of_self.left, (Set, Symbol)):
                 occurs_in_left = predicate_of_self.left == self
+                print(occurs_in_left, 1)
             else:  # Expr
                 occurs_in_left = self in predicate_of_self.left.sets
+                print(occurs_in_left, 2, predicate_of_self.left.sets)
             if isinstance(predicate_of_self.right, (Set, Symbol)):
                 occurs_in_right = predicate_of_self.right == self
+                print(occurs_in_right, 3)
             else:  # Expr
                 occurs_in_right = self in predicate_of_self.right.sets
+                print(occurs_in_right, 4, predicate_of_self.right.sets)
             return occurs_in_left and occurs_in_right
         elif isinstance(predicate_of_self, Implies):
             return self.illegal_occur_check_pred(
@@ -221,7 +233,6 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
         return self.sympy_set
 
     def containment_function(self, x: Term) -> bool:
-        print(self._containment_function(x))
         return self._containment_function(x)
 
     def __repr__(self) -> str:
@@ -243,20 +254,20 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
         return f"$${self._latex()}$$"
 
     def copy(self) -> Self:
-        # TODO: subclasses of Set will need their own copy, or make this
-        # method work well with subclasses
-        return Set(self.name, self.elements, self.containment_function, self.predicate)  # type: ignore
+        return self.__class__(*self._init_args, **self._init_kwargs)
 
 
 EmptySet = Set(
     "EmptySet",
     containment_function=lambda x: False,
     predicate=lambda x: Contradiction(),
+    illegal_occur_check=False,
 )
 
 UniversalSet = Set(
     "UniversalSet",
     containment_function=lambda x: not x.__class__.__name__.startswith("Collection"),
+    illegal_occur_check=False,
 )
 
 # Integers = Set(sympy_set=sp.Integers)

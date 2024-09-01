@@ -15,11 +15,10 @@ from typing import (
 
 import sympy as sp
 
-from pylogic.structures.set_ import Set
-
 if TYPE_CHECKING:
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
+    from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
     from pylogic.sympy_helpers import PylSympySymbol
     from pylogic.variable import Variable
@@ -45,6 +44,7 @@ class Expr(ABC):
         self._init_kwargs = kwargs
 
     def _build_args_and_symbols(self, *args: PBasic | Set | Expr) -> None:
+        from pylogic.structures.set_ import Set
         from pylogic.symbol import Symbol
 
         self.args = args
@@ -287,6 +287,7 @@ class BinaryExpression(CustomExpr[U]):
         return f"{_latex(self.left)} {self.symbol} {_latex(self.right)}"
 
     def __str__(self) -> str:
+        print(type(self.left), type(self.right), "gobble")
         return f"({self.left} {self.symbol} {self.right})"
 
 
@@ -436,6 +437,7 @@ def to_sympy(expr: Symbol) -> PylSympySymbol: ...
 @overload
 def to_sympy(expr: Set) -> sp.Set: ...
 def to_sympy(expr: PBasic | Expr | Set) -> sp.Basic:
+    from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
 
     if isinstance(expr, int):

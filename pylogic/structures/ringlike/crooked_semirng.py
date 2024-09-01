@@ -3,7 +3,6 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import Callable, Generic, Iterable, TypeAlias, TypeVar
 
-
 from pylogic.constant import Constant
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.helpers import is_numeric
@@ -128,3 +127,13 @@ class CrookedSemirng(Ringoid, Generic[Z]):
             self, self.times_operation, self.zero
         )
         self.zero_mul_eq_zero.is_axiom = True
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "zero": zero,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+        }

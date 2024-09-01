@@ -3,7 +3,6 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import Callable, Iterable, TypeVar
 
-
 from pylogic.expressions.expr import Expr
 from pylogic.infix.infix import SpecialInfix
 from pylogic.proposition.and_ import And
@@ -101,3 +100,11 @@ and y in {set_.name} such that a {operation.symbol} x = b and y {operation.symbo
 
         self.latin_square = Quasigroup.property_latin_square(self, self.operation)
         self.latin_square.is_axiom = True
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "operation": operation,
+            "operation_name": operation_name,
+            "operation_symbol": operation_symbol,
+        }

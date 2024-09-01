@@ -1,4 +1,4 @@
-from typing import TypeVar, TypeVarTuple, Generic
+from typing import Generic, TypeVar, TypeVarTuple
 
 from pylogic.proposition.proposition import Proposition
 
@@ -63,6 +63,13 @@ rules: set[str] = {
     "apply",
     "symmetric",
     "thus_forall_in_set",
+    "forward_implication",
+    "reverse_implication",
+    "contrapositive",
+    "converse",
+    "inverse",
+    "to_conjunction",
+    "reflexive",
 }
 
 T = TypeVar("T", bound="Proposition")
@@ -74,7 +81,7 @@ class Inference(Generic[T, *Props]):
     Represents an inference in a proof.
 
     Raises:
-        InvalidRuleError: [description] if the rule is not in the set of valid rules
+        InvalidRuleError: if the rule is not in the set of valid rules
     """
 
     def __init__(

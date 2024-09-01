@@ -74,6 +74,14 @@ class Magma(Set):
             self, self.operation
         )
         self.is_closed_under_op.is_axiom = True
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "operation": operation,
+            "operation_name": operation_name,
+            "operation_symbol": operation_symbol,
+        }
 
     def containment_function(self, x: Term) -> bool:
         if isinstance(x, BinaryExpression):
