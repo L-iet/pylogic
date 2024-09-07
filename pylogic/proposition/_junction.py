@@ -73,6 +73,16 @@ class _Junction(Proposition, Generic[*Ps]):
         self._idx += 1
         return item
 
+    def copy(self) -> Self:
+        return self.__class__(
+            *self.propositions,  # type: ignore
+            is_assumption=self.is_assumption,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
+        )
+
     def deepcopy(self) -> Self:
         return self.__class__(
             *[p.deepcopy() for p in self.propositions],  # type: ignore
@@ -231,13 +241,14 @@ Occured when trying to unify `{self}` and `{other}`"
                 p_assumptions = p_assumptions.union(get_assumptions(prop))
 
         rem_props = [
-            self_prop.deepcopy() for self_prop in self_props if neg(self_prop) not in props  # type: ignore
+            self_prop for self_prop in self_props if neg(self_prop) not in props  # type: ignore
         ]
         if len(rem_props) == 1:
-            rem_props[0]._is_proven = True
-            rem_props[0].from_assumptions = get_assumptions(self).union(p_assumptions)
-            rem_props[0].deduced_from = Inference(self, *props, rule="resolve")  # type: ignore
-            return rem_props[0]
+            rem_prop = rem_props[0].copy()  # type: ignore
+            rem_prop._is_proven = True
+            rem_prop.from_assumptions = get_assumptions(self).union(p_assumptions)
+            rem_prop.deduced_from = Inference(self, *props, rule="resolve")  # type: ignore
+            return rem_prop
         if len(rem_props) == 0:
             return Contradiction(
                 _is_proven=True,

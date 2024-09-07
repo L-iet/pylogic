@@ -169,7 +169,7 @@ class Proposition:
             return self.name
 
     def __copy__(self) -> Self:
-        return self.deepcopy()
+        return self.copy()
 
     def _latex(self, printer=None) -> str:
         args_latex = [latex_print_order(a) for a in self.args]
@@ -210,12 +210,31 @@ class Proposition:
         """
         return self.set_description(description)
 
-    def deepcopy(self) -> Self:
+    def copy(self) -> Self:
+        """
+        Create a shallow copy of the proposition.
+        """
         return self.__class__(
             self.name,
             is_assumption=self.is_assumption,
             description=self.description,
-            args=self.args.copy(),  # TODO: check if we need deepcopy
+            args=self.args,
+            _is_proven=self._is_proven,
+            _inference=self.deduced_from,
+            _assumptions=self.from_assumptions,
+        )
+
+    def deepcopy(self) -> Self:
+        """
+        Create a deep copy of the proposition.
+        """
+        from pylogic.helpers import is_numeric
+
+        return self.__class__(
+            self.name,
+            is_assumption=self.is_assumption,
+            description=self.description,
+            args=[a.deepcopy() if not is_numeric(a) else a for a in self.args],  # type: ignore
             _is_proven=self._is_proven,
             _inference=self.deduced_from,
             _assumptions=self.from_assumptions,
@@ -596,7 +615,7 @@ class Proposition:
         assert isinstance(other, Implies), f"{other} is not an implication"
         assert other.is_proven, f"{other} is not proven"
         assert other.antecedent == self, f"{other} does not imply {self}"
-        new_p = other.consequent.deepcopy()
+        new_p = other.consequent.copy()
         new_p._is_proven = True
         new_p.deduced_from = Inference(self, other, rule="modus_ponens")
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(other))
@@ -630,7 +649,13 @@ class Proposition:
         assert are_negs(
             other.consequent, self
         ), f"{other.consequent} is not the negation of {self}"
-        new_p = cast(TProposition | Not[TProposition], neg(other.antecedent.deepcopy()))
+        # I'm using copy here because neg(Not(p)) returns p,
+        # and we should avoid proving p in a different place.
+        if isinstance(other.antecedent, Not):
+            n_other_ante = other.antecedent.negated.copy()
+        else:
+            n_other_ante = Not(other.antecedent)
+        new_p = cast(TProposition | Not[TProposition], n_other_ante)
         new_p._is_proven = True
         new_p.deduced_from = Inference(self, other, rule="modus_tollens")
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(other))
@@ -650,7 +675,7 @@ class Proposition:
 
         for p in other.propositions:
             if p == self:
-                new_p = self.deepcopy()
+                new_p = self.copy()
                 new_p._is_proven = True
                 new_p.deduced_from = Inference(self, other, rule="is_one_of")
                 new_p.from_assumptions = get_assumptions(other).copy()
@@ -681,7 +706,7 @@ class Proposition:
             and len(unif) == 1
             and list(unif.keys())[0] == other.variable
         ) or unif is True:
-            new_p = self.deepcopy()
+            new_p = self.copy()
             new_p._is_proven = True
             new_p.deduced_from = Inference(self, other, rule="is_special_case_of")
             new_p.from_assumptions = get_assumptions(other).copy()
@@ -726,7 +751,7 @@ class Proposition:
                 else:
                     warning_cls = UserWarning
                 warnings.warn(
-                    f"Warning: {a} was not used to deduce {self}",
+                    f"{a} was not used to deduce {self}",
                     warning_cls,
                 )
         from pylogic.proposition.and_ import And
@@ -734,22 +759,17 @@ class Proposition:
 
         if len(assumptions) == 1:
             assumptions[0].is_assumption = False
+            assumptions[0]._is_proven = False
             new_p = cast(
-                Implies[Proposition, Self], assumptions[0].deepcopy().implies(self)  # type: ignore
+                Implies[Proposition, Self], assumptions[0].implies(self)  # type: ignore
             )
-            new_p.antecedent.is_assumption = False
-            new_p.antecedent._is_proven = False
         else:
-            a_s = []
             for a in assumptions:
                 # this has been used to prove an implication so
                 # we don't want it to be an assumption anymore
                 a.is_assumption = False
-                new_a = a.deepcopy()  # type: ignore
-                new_a.is_assumption = False
-                new_a._is_proven = False
-                a_s.append(new_a)
-            new_p = cast(Implies[And[*Props], Self], And(*a_s).implies(self))  # type: ignore
+                a._is_proven = False
+            new_p = cast(Implies[And[*Props], Self], And(*assumptions).implies(self))  # type: ignore
         new_p._is_proven = True
         new_p.deduced_from = Inference(
             self, *assumptions, rule="followed_from"  # type:ignore
@@ -878,7 +898,7 @@ class Proposition:
         """
         Apply De Morgan's law to self to return an equivalent proposition.
         """
-        return self.deepcopy()
+        return self
 
     def contradicts(self, other: Proposition) -> Contradiction:
         """

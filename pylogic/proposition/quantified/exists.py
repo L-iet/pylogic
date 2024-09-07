@@ -131,7 +131,7 @@ class Exists(_Quantified[TProposition]):
         assert other.is_proven, f"{other} is not proven"
         assert self.inner_proposition == other.inner_proposition.antecedent
 
-        other_cons = other.inner_proposition.consequent.deepcopy()
+        other_cons = other.inner_proposition.consequent
         new_p = Exists(
             variable=other.variable,
             inner_proposition=other_cons,  # type: ignore
@@ -333,10 +333,22 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
         )
         return new_p
 
-    def deepcopy(self) -> Self:
+    def copy(self) -> Self:
         return self.__class__(
             self.variable,
             self.set_,
+            self._inner_without_set,
+            is_assumption=self.is_assumption,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
+        )
+
+    def deepcopy(self) -> Self:
+        return self.__class__(
+            self.variable.deepcopy(),
+            self.set_.deepcopy(),
             self._inner_without_set.deepcopy(),
             is_assumption=self.is_assumption,
             description=self.description,
@@ -395,9 +407,20 @@ class ExistsUnique(Exists[And[TProposition, Forall[Implies[TProposition, Equals]
     def to_exists_unique(self, **kwargs) -> Self:
         return self
 
-    def deepcopy(self) -> Self:
+    def copy(self) -> Self:
         return self.__class__(
             self.variable,
+            self._inner_without_unique,
+            is_assumption=self.is_assumption,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
+        )
+
+    def deepcopy(self) -> Self:
+        return self.__class__(
+            self.variable.deepcopy(),
             self._inner_without_unique.deepcopy(),
             is_assumption=self.is_assumption,
             description=self.description,
@@ -472,10 +495,22 @@ class ExistsUniqueInSet(
     def to_exists_unique_in_set(self, **kwargs) -> Self:
         return self
 
-    def deepcopy(self) -> Self:
+    def copy(self) -> Self:
         return self.__class__(
             self.variable,
             self.set_,
+            self._inner_without_set_and_unique,
+            is_assumption=self.is_assumption,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
+        )
+
+    def deepcopy(self) -> Self:
+        return self.__class__(
+            self.variable.deepcopy(),
+            self.set_.deepcopy(),
             self._inner_without_set_and_unique.deepcopy(),
             is_assumption=self.is_assumption,
             description=self.description,

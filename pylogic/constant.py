@@ -72,3 +72,6 @@ class Constant(Symbol, Generic[T]):
 
     def deepcopy(self) -> Self:
         return self
+
+    def copy(self) -> Self:
+        return self

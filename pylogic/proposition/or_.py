@@ -64,7 +64,7 @@ class Or(_Junction[*Ps]):
         """
         assert p.is_proven, f"{p} is not proven"
         assert p in self.propositions, f"{p} is not present in {self}"
-        new_p = self.deepcopy()
+        new_p = self.copy()
         new_p._is_proven = True
         new_p.deduced_from = Inference(self, p, rule="one_proven")
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(p))

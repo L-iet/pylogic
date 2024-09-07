@@ -38,7 +38,7 @@ class Contradiction(Proposition):
         if "_is_proven" in kwargs:
             assert (
                 len(kwargs.get("_assumptions", [])) > 1
-            ), "A contradiction must have multiple assumptions"
+            ), "A proven contradiction must have multiple assumptions"
         super().__init__(
             "contradiction",
             description="contradiction",
@@ -50,6 +50,9 @@ class Contradiction(Proposition):
         return isinstance(other, Contradiction)
 
     def deepcopy(self) -> Self:
+        return self.__class__()
+
+    def copy(self) -> Self:
         return self.__class__()
 
     def thus_assumptions_cannot_all_hold(self) -> Or[Proposition, ...]:

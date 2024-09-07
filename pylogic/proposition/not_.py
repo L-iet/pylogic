@@ -41,6 +41,8 @@ def neg(
 ) -> Not[TProposition] | TProposition:
     """
     Given a proposition, return its negation.
+    Law of excluded middle is assumed, so
+    neg(Not(p)) is p.
     """
     if isinstance(p, Not):
         return p.negated
@@ -84,6 +86,16 @@ class Not(Proposition, Generic[TProposition]):
 
     def __hash__(self) -> int:
         return hash(("not", self.negated))
+
+    def copy(self) -> Self:
+        return self.__class__(
+            self.negated,
+            is_assumption=self.is_assumption,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
+        )
 
     def deepcopy(self) -> Self:
         return self.__class__(
@@ -187,7 +199,7 @@ class Not(Proposition, Generic[TProposition]):
                 _inference=Inference(self, rule="de_morgan"),
             )
         elif self.negated.is_atomic:
-            return self.deepcopy()
+            return self
 
         return neg(
             self.negated.de_morgan(),
