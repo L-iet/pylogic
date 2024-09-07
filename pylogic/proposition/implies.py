@@ -71,10 +71,10 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
     def _latex(self, printer=None) -> str:
         return rf"\left({self.antecedent._latex()} \rightarrow {self.consequent._latex()}\right)"
 
-    def copy(self) -> Self:
+    def deepcopy(self) -> Self:
         return self.__class__(
-            self.antecedent.copy(),
-            self.consequent.copy(),
+            self.antecedent.deepcopy(),
+            self.consequent.deepcopy(),
             is_assumption=self.is_assumption,
             description=self.description,
             _is_proven=self._is_proven,
@@ -210,7 +210,9 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             self.antecedent, And
         ), f"The antecedent of {self} is not a conjunction"
         rem_props = [
-            prop.copy() for prop in self.antecedent.propositions if prop not in props
+            prop.deepcopy()
+            for prop in self.antecedent.propositions
+            if prop not in props
         ]
         if len(rem_props) == 1:
             return Implies(
@@ -221,7 +223,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
                 _inference=Inference(self, in_body, rule="definite_clause_resolve"),
             )
         if len(rem_props) == 0:
-            new_p = self.consequent.copy()
+            new_p = self.consequent.deepcopy()
             new_p._is_proven = True
             new_p.deduced_from = Inference(
                 self, in_body, rule="definite_clause_resolve"

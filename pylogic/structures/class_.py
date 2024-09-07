@@ -84,7 +84,7 @@ def predicate(self, x: Any) -> Proposition:
     return self._predicate(x)
 
 
-def copy(self):
+def deepcopy(self):
     return self.__class__(
         name=self.name,
         elements=self.elements,
@@ -242,7 +242,7 @@ def class_(n: int) -> Collection[Class[int]]:
             "equals": equals,
             "containment_function": containment_function,
             "predicate": predicate,
-            "copy": copy,
+            "deepcopy": deepcopy,
             "illegal_occur_check": illegal_occur_check,
             "illegal_occur_check_pred": illegal_occur_check_pred,
         },

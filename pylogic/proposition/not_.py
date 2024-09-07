@@ -85,9 +85,9 @@ class Not(Proposition, Generic[TProposition]):
     def __hash__(self) -> int:
         return hash(("not", self.negated))
 
-    def copy(self) -> Self:
+    def deepcopy(self) -> Self:
         return self.__class__(
-            self.negated.copy(),
+            self.negated.deepcopy(),
             is_assumption=self.is_assumption,
             description=self.description,
             _is_proven=self._is_proven,
@@ -187,7 +187,7 @@ class Not(Proposition, Generic[TProposition]):
                 _inference=Inference(self, rule="de_morgan"),
             )
         elif self.negated.is_atomic:
-            return self.copy()
+            return self.deepcopy()
 
         return neg(
             self.negated.de_morgan(),

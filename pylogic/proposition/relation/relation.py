@@ -7,7 +7,6 @@ from pylogic.proposition.proposition import Proposition
 if TYPE_CHECKING:
     from fractions import Fraction
 
-
     from pylogic.expressions.expr import Expr
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
@@ -47,10 +46,10 @@ class Relation(Proposition):
     def _latex(self, printer=None) -> str:
         return super()._latex()
 
-    def copy(self) -> Self:
+    def deepcopy(self) -> Self:
         return self.__class__(
             self.name,
-            args=self.args.copy(),
+            args=self.args.deepcopy(),
             is_assumption=self.is_assumption,
             description=self.description,
             _is_proven=self._is_proven,

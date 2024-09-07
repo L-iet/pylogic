@@ -108,7 +108,7 @@ class Symbol:
     def _repr_latex_(self) -> str:
         return f"$${self._latex()}$$"
 
-    def copy(self) -> Self:
+    def deepcopy(self) -> Self:
         return self.__class__(*self._init_args, **self._init_kwargs)
 
     def replace(self, old, new) -> Any:

@@ -70,5 +70,5 @@ class Constant(Symbol, Generic[T]):
             return sp.sympify(self.value)
         return super().to_sympy()
 
-    def copy(self) -> Self:
+    def deepcopy(self) -> Self:
         return self

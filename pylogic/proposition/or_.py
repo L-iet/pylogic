@@ -1,9 +1,10 @@
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self, TypedDict, TypeVarTuple
+
 from pylogic.inference import Inference
 from pylogic.proposition._junction import _Junction
-from pylogic.proposition.proposition import Proposition
-from pylogic.proposition.proposition import get_assumptions
-from typing import TYPE_CHECKING, TypedDict, TypeVarTuple, Self
+from pylogic.proposition.proposition import Proposition, get_assumptions
 
 if TYPE_CHECKING:
     pass
@@ -63,7 +64,7 @@ class Or(_Junction[*Ps]):
         """
         assert p.is_proven, f"{p} is not proven"
         assert p in self.propositions, f"{p} is not present in {self}"
-        new_p = self.copy()
+        new_p = self.deepcopy()
         new_p._is_proven = True
         new_p.deduced_from = Inference(self, p, rule="one_proven")
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(p))
@@ -72,8 +73,8 @@ class Or(_Junction[*Ps]):
     def de_morgan(self) -> Proposition:
         """Apply De Morgan's law to the disjunction to get an
         equivalent proposition."""
-        from pylogic.proposition.not_ import neg, Not
         from pylogic.proposition.and_ import And
+        from pylogic.proposition.not_ import Not, neg
 
         negs: list[Proposition] = [
             neg(p.de_morgan()) for p in self.propositions  # type:ignore

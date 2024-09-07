@@ -75,7 +75,7 @@ class IsContainedIn(BinaryRelation[T, U]):
             if self.right.containment_function(self.left):
                 return IsContainedIn(
                     copy.copy(self.element),
-                    self.set_.copy(),
+                    self.set_.deepcopy(),
                     _is_proven=True,
                     _assumptions=set(),
                     _inference=Inference(self, rule="by_containment_func"),
@@ -98,7 +98,7 @@ class IsContainedIn(BinaryRelation[T, U]):
             ):
                 return IsContainedIn(
                     copy.copy(self.element),
-                    self.set_.copy(),
+                    self.set_.deepcopy(),
                     _is_proven=True,
                     _assumptions=set(),
                     _inference=Inference(self, rule="by_predicate"),
@@ -121,7 +121,7 @@ class IsContainedIn(BinaryRelation[T, U]):
             ):
                 return IsContainedIn(
                     copy.copy(self.element),
-                    self.set_.copy(),
+                    self.set_.deepcopy(),
                     is_assumption=self.is_assumption,
                     _is_proven=True,
                     _assumptions=set(),

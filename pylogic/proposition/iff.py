@@ -73,10 +73,10 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
             rf"\left({self.left._latex()} \leftrightarrow {self.right._latex()}\right)"
         )
 
-    def copy(self) -> Self:
+    def deepcopy(self) -> Self:
         return self.__class__(
-            self.left.copy(),
-            self.right.copy(),
+            self.left.deepcopy(),
+            self.right.deepcopy(),
             is_assumption=self.is_assumption,
             description=self.description,
             _is_proven=self._is_proven,

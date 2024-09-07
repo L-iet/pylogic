@@ -1,9 +1,10 @@
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self, TypedDict, TypeVarTuple
+
 from pylogic.inference import Inference
 from pylogic.proposition._junction import _Junction
-from pylogic.proposition.proposition import Proposition
-from pylogic.proposition.proposition import get_assumptions
-from typing import TypedDict, TypeVarTuple, Self, TYPE_CHECKING
+from pylogic.proposition.proposition import Proposition, get_assumptions
 
 if TYPE_CHECKING:
     from pylogic.proposition.not_ import Not
@@ -49,7 +50,7 @@ class And(_Junction[*Ps]):
             new_p = self.propositions[index]
             # have to bypass pylance to get Union[*Ps] to work
             if not TYPE_CHECKING:
-                new_p = new_p.copy()
+                new_p = new_p.deepcopy()
             new_p._is_proven = True  # type: ignore
             new_p.deduced_from = Inference(new_p, self, rule="is_one_of")  # type: ignore
             new_p.from_assumptions = get_assumptions(self)  # type: ignore
@@ -64,7 +65,7 @@ class And(_Junction[*Ps]):
         Will prove all propositions if self is proven.
         """
         if self.is_proven:
-            new_props: tuple[*Ps] = [p.copy() for p in self.propositions]  # type: ignore
+            new_props: tuple[*Ps] = [p.deepcopy() for p in self.propositions]  # type: ignore
             for p in new_props:
                 p._is_proven = True  # type: ignore
                 p.deduced_from = Inference(p, self, rule="is_one_of")  # type: ignore
@@ -88,7 +89,7 @@ class And(_Junction[*Ps]):
         for p in self.propositions:
             if not p.is_proven:  # type: ignore
                 raise ValueError(f"{p} is not proven")
-        new_p = self.copy()
+        new_p = self.deepcopy()
         new_p._is_proven = True
         new_p.deduced_from = Inference(self, rule="all_proven")
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(p))  # type: ignore
@@ -97,7 +98,7 @@ class And(_Junction[*Ps]):
     def de_morgan(self) -> Not[Or[*Props]]:
         """Apply De Morgan's law to the conjunction to get an
         equivalent proposition."""
-        from pylogic.proposition.not_ import neg, Not
+        from pylogic.proposition.not_ import Not, neg
         from pylogic.proposition.or_ import Or
 
         negs: list[Proposition] = [

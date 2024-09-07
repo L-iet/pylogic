@@ -169,7 +169,7 @@ class Proposition:
             return self.name
 
     def __copy__(self) -> Self:
-        return self.copy()
+        return self.deepcopy()
 
     def _latex(self, printer=None) -> str:
         args_latex = [latex_print_order(a) for a in self.args]
@@ -210,7 +210,7 @@ class Proposition:
         """
         return self.set_description(description)
 
-    def copy(self) -> Self:
+    def deepcopy(self) -> Self:
         return self.__class__(
             self.name,
             is_assumption=self.is_assumption,
@@ -596,7 +596,7 @@ class Proposition:
         assert isinstance(other, Implies), f"{other} is not an implication"
         assert other.is_proven, f"{other} is not proven"
         assert other.antecedent == self, f"{other} does not imply {self}"
-        new_p = other.consequent.copy()
+        new_p = other.consequent.deepcopy()
         new_p._is_proven = True
         new_p.deduced_from = Inference(self, other, rule="modus_ponens")
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(other))
@@ -630,7 +630,7 @@ class Proposition:
         assert are_negs(
             other.consequent, self
         ), f"{other.consequent} is not the negation of {self}"
-        new_p = cast(TProposition | Not[TProposition], neg(other.antecedent.copy()))
+        new_p = cast(TProposition | Not[TProposition], neg(other.antecedent.deepcopy()))
         new_p._is_proven = True
         new_p.deduced_from = Inference(self, other, rule="modus_tollens")
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(other))
@@ -650,7 +650,7 @@ class Proposition:
 
         for p in other.propositions:
             if p == self:
-                new_p = self.copy()
+                new_p = self.deepcopy()
                 new_p._is_proven = True
                 new_p.deduced_from = Inference(self, other, rule="is_one_of")
                 new_p.from_assumptions = get_assumptions(other).copy()
@@ -681,7 +681,7 @@ class Proposition:
             and len(unif) == 1
             and list(unif.keys())[0] == other.variable
         ) or unif is True:
-            new_p = self.copy()
+            new_p = self.deepcopy()
             new_p._is_proven = True
             new_p.deduced_from = Inference(self, other, rule="is_special_case_of")
             new_p.from_assumptions = get_assumptions(other).copy()
@@ -735,7 +735,7 @@ class Proposition:
         if len(assumptions) == 1:
             assumptions[0].is_assumption = False
             new_p = cast(
-                Implies[Proposition, Self], assumptions[0].copy().implies(self)  # type: ignore
+                Implies[Proposition, Self], assumptions[0].deepcopy().implies(self)  # type: ignore
             )
             new_p.antecedent.is_assumption = False
             new_p.antecedent._is_proven = False
@@ -745,7 +745,7 @@ class Proposition:
                 # this has been used to prove an implication so
                 # we don't want it to be an assumption anymore
                 a.is_assumption = False
-                new_a = a.copy()  # type: ignore
+                new_a = a.deepcopy()  # type: ignore
                 new_a.is_assumption = False
                 new_a._is_proven = False
                 a_s.append(new_a)
@@ -878,7 +878,7 @@ class Proposition:
         """
         Apply De Morgan's law to self to return an equivalent proposition.
         """
-        return self.copy()
+        return self.deepcopy()
 
     def contradicts(self, other: Proposition) -> Contradiction:
         """

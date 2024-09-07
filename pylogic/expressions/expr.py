@@ -82,7 +82,7 @@ class Expr(ABC):
         return f"{self.__class__.__name__}({', '.join(map(repr, self.args))})"
 
     def __copy__(self) -> Self:
-        return self.copy()
+        return self.deepcopy()
 
     def __add__(self, other: Expr | PBasic) -> Add:
         return Add(self, other)
@@ -150,11 +150,11 @@ class Expr(ABC):
 
     def replace(self, old: Any, new: Any) -> Self:
         new_args = [replace(arg, old, new) for arg in self.args]
-        new_expr = self.copy()
+        new_expr = self.deepcopy()
         new_expr._build_args_and_symbols(*new_args)
         return new_expr
 
-    def copy(self) -> Self:
+    def deepcopy(self) -> Self:
         return self.__class__(*self._init_args, **self._init_kwargs)
 
     def doit(self) -> sp.Basic:
@@ -277,7 +277,7 @@ class BinaryExpression(CustomExpr[U]):
     def replace(self, old: Any, new: Any) -> Self:
         new_left = replace(self.left, old, new)
         new_right = replace(self.right, old, new)
-        new_expr = self.copy()
+        new_expr = self.deepcopy()
         new_expr._build_args_and_symbols(new_left, new_right)
         new_expr.left = new_left
         new_expr.right = new_right
@@ -367,7 +367,7 @@ class Pow(Expr):
     def replace(self, old: Any, new: Any) -> Self:
         new_base = replace(self.base, old, new)
         new_exp = replace(self.exp, old, new)
-        new_expr = self.copy()
+        new_expr = self.deepcopy()
         new_expr._build_args_and_symbols(new_base, new_exp)
         new_expr.base = new_base
         new_expr.exp = new_exp

@@ -242,7 +242,7 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
         return self.name
 
     def __copy__(self) -> "Set":
-        return self.copy()
+        return self.deepcopy()
 
     def __hash__(self) -> int:
         return hash(("Set", self.name, self.containment_function))
@@ -253,7 +253,7 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
     def _repr_latex_(self) -> str:
         return f"$${self._latex()}$$"
 
-    def copy(self) -> Self:
+    def deepcopy(self) -> Self:
         return self.__class__(*self._init_args, **self._init_kwargs)
 
 

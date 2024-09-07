@@ -64,7 +64,7 @@ class BinaryRelation(Relation, Generic[T, U]):
         right_latex = latex_print_order(self.right)
         return f"{left_latex} {self.infix_symbol_latex} {right_latex}"
 
-    def copy(self) -> Self:
+    def deepcopy(self) -> Self:
         # copy.copy and deepcopy are evaluating unevaluated expressions
         return self.__class__(
             self.left,
@@ -86,7 +86,7 @@ class BinaryRelation(Relation, Generic[T, U]):
         Replace current_val with new_val in the relation.
         """
 
-        new_p = self.copy()
+        new_p = self.deepcopy()
 
         if positions is None or [0] in positions:
             new_p.left = replace(new_p.left, current_val, new_val)

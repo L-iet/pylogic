@@ -73,9 +73,9 @@ class _Junction(Proposition, Generic[*Ps]):
         self._idx += 1
         return item
 
-    def copy(self) -> Self:
+    def deepcopy(self) -> Self:
         return self.__class__(
-            *[p.copy() for p in self.propositions],  # type: ignore
+            *[p.deepcopy() for p in self.propositions],  # type: ignore
             is_assumption=self.is_assumption,
             description=self.description,
             _is_proven=self._is_proven,
@@ -231,7 +231,7 @@ Occured when trying to unify `{self}` and `{other}`"
                 p_assumptions = p_assumptions.union(get_assumptions(prop))
 
         rem_props = [
-            self_prop.copy() for self_prop in self_props if neg(self_prop) not in props  # type: ignore
+            self_prop.deepcopy() for self_prop in self_props if neg(self_prop) not in props  # type: ignore
         ]
         if len(rem_props) == 1:
             rem_props[0]._is_proven = True

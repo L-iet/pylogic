@@ -20,7 +20,6 @@ B = TypeVar("B", bound="Proposition")
 if TYPE_CHECKING:
     from fractions import Fraction
 
-
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.not_ import Not
     from pylogic.structures.set_ import Set
@@ -132,7 +131,7 @@ class Exists(_Quantified[TProposition]):
         assert other.is_proven, f"{other} is not proven"
         assert self.inner_proposition == other.inner_proposition.antecedent
 
-        other_cons = other.inner_proposition.consequent.copy()
+        other_cons = other.inner_proposition.consequent.deepcopy()
         new_p = Exists(
             variable=other.variable,
             inner_proposition=other_cons,  # type: ignore
@@ -334,11 +333,11 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
         )
         return new_p
 
-    def copy(self) -> Self:
+    def deepcopy(self) -> Self:
         return self.__class__(
             self.variable,
             self.set_,
-            self._inner_without_set.copy(),
+            self._inner_without_set.deepcopy(),
             is_assumption=self.is_assumption,
             description=self.description,
             _is_proven=self._is_proven,
@@ -396,10 +395,10 @@ class ExistsUnique(Exists[And[TProposition, Forall[Implies[TProposition, Equals]
     def to_exists_unique(self, **kwargs) -> Self:
         return self
 
-    def copy(self) -> Self:
+    def deepcopy(self) -> Self:
         return self.__class__(
             self.variable,
-            self._inner_without_unique.copy(),
+            self._inner_without_unique.deepcopy(),
             is_assumption=self.is_assumption,
             description=self.description,
             _is_proven=self._is_proven,
@@ -473,11 +472,11 @@ class ExistsUniqueInSet(
     def to_exists_unique_in_set(self, **kwargs) -> Self:
         return self
 
-    def copy(self) -> Self:
+    def deepcopy(self) -> Self:
         return self.__class__(
             self.variable,
             self.set_,
-            self._inner_without_set_and_unique.copy(),
+            self._inner_without_set_and_unique.deepcopy(),
             is_assumption=self.is_assumption,
             description=self.description,
             _is_proven=self._is_proven,

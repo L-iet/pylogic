@@ -13,7 +13,6 @@ from pylogic.proposition.relation.contains import IsContainedIn
 if TYPE_CHECKING:
     from fractions import Fraction
 
-
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.not_ import Not
     from pylogic.proposition.quantified.exists import Exists
@@ -120,9 +119,9 @@ class Forall(_Quantified[TProposition]):
         assert other.is_proven, f"{other} is not proven"
         assert self.inner_proposition == other.inner_proposition.antecedent
 
-        other_cons = other.inner_proposition.consequent.copy()
+        other_cons = other.inner_proposition.consequent.deepcopy()
         new_p: Forall[B] | Exists[B] = quant_class(
-            variable=other.variable.copy(),
+            variable=other.variable.deepcopy(),
             inner_proposition=other_cons,  # type: ignore
             is_assumption=False,
             _is_proven=True,
@@ -231,11 +230,12 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
         )
         return new_p
 
-    def copy(self) -> Self:
+    def deepcopy(self) -> Self:
+        print(self.set_.predicate, "forall")
         return self.__class__(
             self.variable,
-            self.set_.copy(),
-            self._inner_without_set.copy(),
+            self.set_.deepcopy(),
+            self._inner_without_set.deepcopy(),
             is_assumption=self.is_assumption,
             description=self.description,
             _is_proven=self._is_proven,

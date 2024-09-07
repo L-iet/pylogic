@@ -49,7 +49,7 @@ class Contradiction(Proposition):
     def __eq__(self, other: Contradiction) -> bool:
         return isinstance(other, Contradiction)
 
-    def copy(self) -> Self:
+    def deepcopy(self) -> Self:
         return self.__class__()
 
     def thus_assumptions_cannot_all_hold(self) -> Or[Proposition, ...]:

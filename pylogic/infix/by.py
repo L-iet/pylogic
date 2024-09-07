@@ -11,7 +11,6 @@ Q = TypeVar("Q", bound=Proposition)
 if TYPE_CHECKING:
     from fractions import Fraction
 
-
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.quantified.forall import Forall, ForallInSet
     from pylogic.symbol import Symbol
@@ -78,7 +77,7 @@ def by_forall(p: P, prover: Forall[Proposition] | ForallInSet[Proposition]) -> P
         raise ValueError(f"Cannot prove {p} using {prover}")
     # this function needs testing to ensure we are
     # not proving fallacies
-    new_p = p.copy()
+    new_p = p.deepcopy()
     new_p._is_proven = True
     new_p.deduced_from = Inference(prover, rule="in_particular")
     new_p.from_assumptions = get_assumptions(prover)
