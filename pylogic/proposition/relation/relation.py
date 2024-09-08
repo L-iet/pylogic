@@ -46,10 +46,23 @@ class Relation(Proposition):
     def _latex(self, printer=None) -> str:
         return super()._latex()
 
-    def deepcopy(self) -> Self:
+    def copy(self) -> Self:
         return self.__class__(
             self.name,
-            args=self.args.deepcopy(),
+            args=self.args,
+            is_assumption=self.is_assumption,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
+        )
+
+    def deepcopy(self) -> Self:
+        from pylogic.helpers import deepcopy
+
+        return self.__class__(
+            self.name,
+            args=[deepcopy(arg) for arg in self.args],
             is_assumption=self.is_assumption,
             description=self.description,
             _is_proven=self._is_proven,

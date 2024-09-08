@@ -84,10 +84,21 @@ def predicate(self, x: Any) -> Proposition:
     return self._predicate(x)
 
 
-def deepcopy(self):
+def copy(self):
     return self.__class__(
         name=self.name,
         elements=self.elements,
+        containment_function=self._containment_function,
+        predicate=self.predicate,
+    )
+
+
+def deepcopy(self):
+    from pylogic.helpers import deepcopy
+
+    return self.__class__(
+        name=self.name,
+        elements=[deepcopy(e) for e in self.elements],
         containment_function=self._containment_function,
         predicate=self.predicate,
     )
@@ -242,6 +253,7 @@ def class_(n: int) -> Collection[Class[int]]:
             "equals": equals,
             "containment_function": containment_function,
             "predicate": predicate,
+            "copy": copy,
             "deepcopy": deepcopy,
             "illegal_occur_check": illegal_occur_check,
             "illegal_occur_check_pred": illegal_occur_check_pred,

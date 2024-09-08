@@ -36,6 +36,23 @@ class GreaterThan(StrictTotalOrder[T, U], _Ordering):
     infix_symbol = ">"
     infix_symbol_latex = ">"
 
+    def __init__(
+        self,
+        left: T,
+        right: U,
+        is_assumption: bool = False,
+        description: str = "",
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            left,
+            right,
+            name="GreaterThan",
+            is_assumption=is_assumption,
+            description=description,
+            **kwargs,
+        )
+
     def __repr__(self) -> str:
         return f"{self.left} > {self.right}"
 

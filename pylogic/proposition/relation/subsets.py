@@ -46,6 +46,17 @@ class Subset(BinaryRelation[Set, Set]):
             **kwargs,
         )
 
+    def copy(self) -> Self:
+        return self.__class__(
+            self.left,
+            self.right,
+            is_assumption=self.is_assumption,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
+        )
+
     def deepcopy(self) -> Self:
         return self.__class__(
             self.left.deepcopy(),

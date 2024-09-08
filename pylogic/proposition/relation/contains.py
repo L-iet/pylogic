@@ -26,8 +26,6 @@ else:
     U = Any
 T = TypeVar("T", bound=Term)
 
-import copy
-
 Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 
@@ -74,8 +72,8 @@ class IsContainedIn(BinaryRelation[T, U]):
         try:
             if self.right.containment_function(self.left):
                 return IsContainedIn(
-                    copy.copy(self.element),
-                    self.set_.deepcopy(),
+                    self.element,
+                    self.set_,
                     _is_proven=True,
                     _assumptions=set(),
                     _inference=Inference(self, rule="by_containment_func"),
@@ -97,8 +95,8 @@ class IsContainedIn(BinaryRelation[T, U]):
                 and self.right.predicate(self.left) == proven_predicate
             ):
                 return IsContainedIn(
-                    copy.copy(self.element),
-                    self.set_.deepcopy(),
+                    self.element,
+                    self.set_,
                     _is_proven=True,
                     _assumptions=set(),
                     _inference=Inference(self, rule="by_predicate"),
@@ -120,8 +118,8 @@ class IsContainedIn(BinaryRelation[T, U]):
                 and to_sympy(self.left) in self.right.sympy_set  # type: ignore
             ):
                 return IsContainedIn(
-                    copy.copy(self.element),
-                    self.set_.deepcopy(),
+                    self.element,
+                    self.set_,
                     is_assumption=self.is_assumption,
                     _is_proven=True,
                     _assumptions=set(),

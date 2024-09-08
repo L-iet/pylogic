@@ -290,7 +290,6 @@ class BinaryExpression(CustomExpr[U]):
         return f"{_latex(self.left)} {self.symbol} {_latex(self.right)}"
 
     def __str__(self) -> str:
-        print(type(self.left), type(self.right), "gobble")
         return f"({self.left} {self.symbol} {self.right})"
 
 
@@ -419,6 +418,9 @@ def replace(
     old: Any,
     new: Any,
 ) -> PBasic | Set | Expr:
+    """
+    For replacing subexpressions in an expression.
+    """
     if expr == old:
         return new
     elif isinstance(expr, Expr):

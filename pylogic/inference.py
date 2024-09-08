@@ -70,6 +70,7 @@ rules: set[str] = {
     "inverse",
     "to_conjunction",
     "reflexive",
+    "by_predicate",
 }
 
 T = TypeVar("T", bound="Proposition")

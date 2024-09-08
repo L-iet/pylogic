@@ -38,6 +38,32 @@ def replace(expr, old, new) -> Any:
     return _replace(expr, old, new)
 
 
+def deepcopy(obj: T) -> T:
+    """
+    Creates a deep copy of the object if object is not numeric.
+
+    Raises
+    ------
+    AttributeError "obj has no attribute deepcopy" if obj is neither numeric nor a pylogic object.
+    """
+    if is_numeric(obj):
+        return obj
+    return obj.deepcopy()  # type: ignore
+
+
+def copy(obj: T) -> T:
+    """
+    Creates a shallow copy of the object if object is not numeric.
+
+    Raises
+    ------
+    AttributeError "obj has no attribute copy" if obj is neither numeric nor a pylogic object.
+    """
+    if is_numeric(obj):
+        return obj
+    return obj.copy()  # type: ignore
+
+
 def eval_same(x: Any, y: Any) -> bool:
     """
     Check if x and y evaluate to the same value.

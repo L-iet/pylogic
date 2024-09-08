@@ -606,7 +606,7 @@ class Proposition:
         Logical tactic.
         other: Implies
             Must be an implication that has been proven whose structure is
-            self.name -> OtherProposition
+            self -> OtherProposition
         """
         from pylogic.inference import Inference
         from pylogic.proposition.implies import Implies
@@ -614,7 +614,7 @@ class Proposition:
         assert self.is_proven, f"{self} is not proven"
         assert isinstance(other, Implies), f"{other} is not an implication"
         assert other.is_proven, f"{other} is not proven"
-        assert other.antecedent == self, f"{other} does not imply {self}"
+        assert other.antecedent == self, f"{other.antecedent} is not the same as {self}"
         new_p = other.consequent.copy()
         new_p._is_proven = True
         new_p.deduced_from = Inference(self, other, rule="modus_ponens")

@@ -82,17 +82,29 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
             + self.inner_proposition.describe(_indent=_indent + 1)
         )
 
-    def deepcopy(self) -> Self:
+    def copy(self) -> Self:
         assert self.__class__ != _Quantified
         return self.__class__(
-            self.variable,  # type: ignore
-            self.inner_proposition.deepcopy(),  # type: ignore
-            is_assumption=self.is_assumption,  # type: ignore
+            variable=self.variable,
+            inner_proposition=self.inner_proposition,
+            is_assumption=self.is_assumption,
             description=self.description,
             _is_proven=self._is_proven,
             _assumptions=self.from_assumptions,
             _inference=self.deduced_from,
-        )
+        )  # type: ignore
+
+    def deepcopy(self) -> Self:
+        assert self.__class__ != _Quantified
+        return self.__class__(
+            variable=self.variable.deepcopy(),
+            inner_proposition=self.inner_proposition.deepcopy(),
+            is_assumption=self.is_assumption,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
+        )  # type: ignore
 
     def replace(
         self,
@@ -101,7 +113,7 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
         positions: list[list[int]] | None = None,
     ) -> Self:
         # assert not isinstance(new_val, Var), f"{new_val} is a Var"
-        new_p: Self = self.deepcopy()
+        new_p: Self = self.copy()
         new_p.inner_proposition = new_p.inner_proposition.replace(
             current_val, new_val, positions
         )

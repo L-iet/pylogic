@@ -30,6 +30,23 @@ class GreaterOrEqual(TotalOrder[T, U], _Ordering):
     infix_symbol = ">="
     infix_symbol_latex = r"\geq"
 
+    def __init__(
+        self,
+        left: T,
+        right: U,
+        is_assumption: bool = False,
+        description: str = "",
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            left,
+            right,
+            name="GreaterOrEqual",
+            is_assumption=is_assumption,
+            description=description,
+            **kwargs,
+        )
+
     def to_disjunction(self) -> Or[GreaterThan, Equals]:
         """If self is of the form `a >= b`, returns a proposition of the form `a > b or a = b`"""
         return GreaterThan(self.left, self.right).or_(

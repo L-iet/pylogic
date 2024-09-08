@@ -4,25 +4,20 @@ from fractions import Fraction
 from typing import TYPE_CHECKING, Any, Callable, Iterable, TypeAlias, TypeVar
 
 from pylogic.expressions.expr import BinaryExpression, Expr
-from pylogic.infix.infix import SpecialInfix
+from pylogic.proposition.and_ import And
+from pylogic.proposition.iff import Iff
+from pylogic.proposition.implies import Implies
 from pylogic.proposition.not_ import Not, neg
-from pylogic.proposition.ordering.total import StrictTotalOrder
+from pylogic.proposition.or_ import Or
+from pylogic.proposition.ordering.total import StrictTotalOrder, TotalOrder
 from pylogic.proposition.quantified.forall import ForallInSet
 from pylogic.proposition.relation.equals import Equals
-from pylogic.structures.grouplike.group import AbelianGroup
-from pylogic.structures.ringlike.division_ring import DivisionRIng
 from pylogic.structures.ringlike.field import Field
 from pylogic.structures.set_ import Set
 from pylogic.symbol import Symbol
 from pylogic.variable import Variable
 
 if TYPE_CHECKING:
-    from pylogic.proposition.and_ import And
-    from pylogic.proposition.iff import Iff
-    from pylogic.proposition.implies import Implies
-    from pylogic.proposition.or_ import Or
-    from pylogic.proposition.ordering.total import TotalOrder
-
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     Unevaluated = Symbol | Set | Expr
@@ -159,14 +154,11 @@ class OrderedField(Field[Z]):
                 ForallInSet(
                     c,
                     set_,
-                    Implies(
-                        And(a_le_b, b_le_c),
-                        a_le_c,
-                    ),
+                    And(a_le_b, b_le_c).implies(a_le_c),
                 ),
             ),
             description=f"total order is transitive in {set_}",
-        )
+        )  # type: ignore
 
     @classmethod
     def property_order_is_antisymmetric(
@@ -362,10 +354,13 @@ class OrderedField(Field[Z]):
 
         # Strict order properties are theorems if we have defined total order properties
         a = Variable("a")
-        step_1 = self.strict_order_definition.in_particular(a).in_particular(a)
+        a_in_self = a.is_in(self, is_assumption=True)
+        step_1 = self.strict_order_definition.in_particular(a, a_in_self).in_particular(
+            a, a_in_self
+        )
         step_2 = step_1.contrapositive()
         a_nlt_a_or_a_eq_a = (
-            neg(self.strict_total_order(a, a))
+            neg(self.total_order(a, a))
             .or_(Equals(a, a))
             .one_proven(Equals.reflexive(a))
         )
@@ -384,39 +379,37 @@ class OrderedField(Field[Z]):
         from pylogic.proposition.ordering.lessorequal import LessOrEqual
         from pylogic.proposition.ordering.lessthan import LessThan
 
-        if total_order is not None and strict_total_order is not None:
-            raise ValueError(
-                "Please define exactly one of total_order or strict_total_order"
-            )
+        x, y = Variable("x"), Variable("y")
         if strict_total_order is None:
             if total_order is None:
-                self.strict_total_order = lambda x, y: StrictTotalOrder(x, y)
-                self.total_order = lambda x, y: self.strict_total_order(x, y).or_(  # type: ignore
-                    Equals(x, y)
+                self.strict_total_order = lambda x, y: StrictTotalOrder(
+                    x, y, name=f"{self.name}_<"
                 )
+                self.total_order = lambda x, y: TotalOrder(x, y, name=f"{self.name}_<=")
+            elif isinstance(total_order(x, y), LessOrEqual):
+                self.total_order = total_order
+                self.strict_total_order = lambda x, y: LessThan(x, y)
+            elif isinstance(total_order(x, y), GreaterOrEqual):
+                self.total_order = total_order
+                self.strict_total_order = lambda x, y: GreaterThan(x, y)
             else:
                 self.total_order = total_order
-                x, y = Variable("x"), Variable("y")
-                if isinstance(total_order(x, y), LessOrEqual):
-                    self.strict_total_order = lambda x, y: LessThan(x, y)
-                elif isinstance(total_order(x, y), GreaterOrEqual):
-                    self.strict_total_order = lambda x, y: GreaterThan(x, y)
-                else:
-                    self.strict_total_order = lambda x, y: self.total_order(x, y).and_(  # type: ignore
-                        neg(Equals(x, y))
-                    )
-        else:  # Total order is None and strict_total_order is not None
-            self.strict_total_order = strict_total_order
-            x, y = Variable("x"), Variable("y")
-            if isinstance(strict_total_order(x, y), LessThan):
-                self.total_order = lambda x, y: LessOrEqual(x, y)
-            elif isinstance(strict_total_order(x, y), GreaterThan):
-                self.total_order = lambda x, y: GreaterOrEqual(x, y)
-            else:
-                self.total_order = lambda x, y: self.strict_total_order(x, y).or_(  # type: ignore
-                    Equals(x, y)
+                self.strict_total_order = lambda x, y: StrictTotalOrder(
+                    x, y, name=f"{self.name}_<"
                 )
+        else:  # strict_total_order is not None
+            self.strict_total_order = strict_total_order
+            if total_order is None and isinstance(strict_total_order(x, y), LessThan):
+                self.total_order = lambda x, y: LessOrEqual(x, y)
+            elif total_order is None and isinstance(
+                strict_total_order(x, y), GreaterThan
+            ):
+                self.total_order = lambda x, y: GreaterOrEqual(x, y)
+            elif total_order is None:
+                self.total_order = lambda x, y: TotalOrder(x, y, name=f"{self.name}_<=")
+            else:
+                self.total_order = total_order
 
 
 F = OrderedField("F")
-print(F.strict_order_is_irreflexive)
+# print(F.strict_order_is_irreflexive)

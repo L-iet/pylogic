@@ -1,15 +1,16 @@
 from __future__ import annotations
-from typing import TypeVar, TYPE_CHECKING
 
+from typing import TYPE_CHECKING, TypeVar
+
+from pylogic.expressions.expr import Add
+from pylogic.proposition.and_ import And
+from pylogic.proposition.implies import Implies
+from pylogic.proposition.ordering.lessorequal import LessOrEqual
 from pylogic.proposition.proposition import Proposition, get_assumptions
 from pylogic.proposition.quantified.forall import Forall
-from pylogic.proposition.implies import Implies
-from pylogic.proposition.and_ import And
-from pylogic.proposition.relation.equals import Equals
-from pylogic.proposition.ordering.lessorequal import LessOrEqual
 from pylogic.proposition.relation.contains import IsContainedIn
+from pylogic.proposition.relation.equals import Equals
 from pylogic.variable import Variable, unbind
-from pylogic.expressions.expr import Add
 
 if TYPE_CHECKING:
     TProposition = TypeVar("TProposition", bound="Proposition")
@@ -38,8 +39,8 @@ def weak_induction(
     Given base case P(0) and induction step forall n: (n in Naturals0 /\ P(n)) -> P(n+1),
     prove forall n: n in Naturals0 -> P(n).
     """
-    from pylogic.structures.set_ import Naturals0
     from pylogic.inference import Inference
+    from pylogic.structures.set_ import Naturals0
 
     assert base_case.is_proven, f"Base case {base_case} must be proven"
     assert induction_step.is_proven, f"Induction step {induction_step} must be proven"
@@ -61,7 +62,6 @@ def weak_induction(
     assert prem1.element == n, f"First premise {prem1} must be a statement about n"
     pred = induction_step.inner_proposition.consequent
     p0 = pred.replace(n, -1)
-    # print(p0, base_case, prem2.replace(n, 0))
     assert p0.eval_same(base_case) and base_case.eval_same(
         prem2.replace(n, 0)
     ), f"Base case {base_case} must be the same as P(0) {p0}"
@@ -96,8 +96,8 @@ def strong_induction(
         ) -> P(n+1),
     return a proof of forall n: n in Naturals0 -> P(n).
     """
-    from pylogic.structures.set_ import Naturals0
     from pylogic.inference import Inference
+    from pylogic.structures.set_ import Naturals0
 
     assert base_case.is_proven, f"Base case {base_case} must be proven"
     assert induction_step.is_proven, f"Induction step {induction_step} must be proven"

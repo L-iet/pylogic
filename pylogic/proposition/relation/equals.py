@@ -110,7 +110,7 @@ class Equals(BinaryRelation[T, U]):
         if not proven:
             proven = self._check_provable_by_simplification(Side.RIGHT, doit_results)
         if proven:
-            new_p = self.deepcopy()
+            new_p = self.copy()
             new_p._is_proven = True
             new_p.from_assumptions = set()
             new_p.deduced_from = Inference(self, rule="by_simplification")

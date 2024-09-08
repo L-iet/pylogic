@@ -42,12 +42,13 @@ class BinaryRelation(Relation, Generic[T, U]):
         self,
         left: T,
         right: U,
+        name: str = "BR",
         is_assumption: bool = False,
         description: str = "",
         **kwargs,
     ) -> None:
         super().__init__(
-            self.name,
+            name,
             args=[left, right],
             is_assumption=is_assumption,
             description=description,
@@ -64,11 +65,25 @@ class BinaryRelation(Relation, Generic[T, U]):
         right_latex = latex_print_order(self.right)
         return f"{left_latex} {self.infix_symbol_latex} {right_latex}"
 
-    def deepcopy(self) -> Self:
-        # copy.copy and deepcopy are evaluating unevaluated expressions
+    def copy(self) -> Self:
         return self.__class__(
             self.left,
             self.right,
+            name=self.name,
+            description=self.description,
+            is_assumption=self.is_assumption,
+            _is_proven=self._is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
+        )
+
+    def deepcopy(self) -> Self:
+        from pylogic.helpers import deepcopy
+
+        return self.__class__(
+            deepcopy(self.left),
+            deepcopy(self.right),
+            name=self.name,
             description=self.description,
             is_assumption=self.is_assumption,
             _is_proven=self._is_proven,
@@ -85,16 +100,20 @@ class BinaryRelation(Relation, Generic[T, U]):
         """
         Replace current_val with new_val in the relation.
         """
-
-        new_p = self.deepcopy()
+        # don't use copy/deepcopy here; can result in recursion error
+        # when used with propositions containing set structures as their `property`s
+        # reference the sets themselves
+        new_left = old_left = self.left
+        new_right = old_right = self.right
 
         if positions is None or [0] in positions:
-            new_p.left = replace(new_p.left, current_val, new_val)
+            new_left = replace(old_left, current_val, new_val)
         if positions is None or [1] in positions:
-            new_p.right = replace(new_p.right, current_val, new_val)
+            new_right = replace(old_right, current_val, new_val)
         return self.__class__(
-            new_p.left,
-            new_p.right,
+            new_left,
+            new_right,
+            name=self.name,
             _is_proven=False,
         )
 

@@ -155,16 +155,12 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
         if isinstance(predicate_of_self, IsContainedIn):
             if isinstance(predicate_of_self.left, (Set, Symbol)):
                 occurs_in_left = predicate_of_self.left == self
-                print(occurs_in_left, 1)
             else:  # Expr
                 occurs_in_left = self in predicate_of_self.left.sets
-                print(occurs_in_left, 2, predicate_of_self.left.sets)
             if isinstance(predicate_of_self.right, (Set, Symbol)):
                 occurs_in_right = predicate_of_self.right == self
-                print(occurs_in_right, 3)
             else:  # Expr
                 occurs_in_right = self in predicate_of_self.right.sets
-                print(occurs_in_right, 4, predicate_of_self.right.sets)
             return occurs_in_left and occurs_in_right
         elif isinstance(predicate_of_self, Implies):
             return self.illegal_occur_check_pred(
@@ -242,7 +238,7 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
         return self.name
 
     def __copy__(self) -> "Set":
-        return self.deepcopy()
+        return self.copy()
 
     def __hash__(self) -> int:
         return hash(("Set", self.name, self.containment_function))
@@ -252,6 +248,9 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
 
     def _repr_latex_(self) -> str:
         return f"$${self._latex()}$$"
+
+    def copy(self) -> Self:
+        return self.__class__(*self._init_args, **self._init_kwargs)
 
     def deepcopy(self) -> Self:
         return self.__class__(*self._init_args, **self._init_kwargs)

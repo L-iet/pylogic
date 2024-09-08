@@ -29,6 +29,23 @@ class LessThan(StrictTotalOrder[T, U], _Ordering):
     infix_symbol = "<"
     infix_symbol_latex = "<"
 
+    def __init__(
+        self,
+        left: T,
+        right: U,
+        is_assumption: bool = False,
+        description: str = "",
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            left,
+            right,
+            name="LessThan",
+            is_assumption=is_assumption,
+            description=description,
+            **kwargs,
+        )
+
     def to_positive_inequality(self):
         """If self is of the form a < b, returns an inequality of the form b - a > 0"""
         from pylogic.inference import Inference

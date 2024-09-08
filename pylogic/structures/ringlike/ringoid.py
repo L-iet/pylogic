@@ -83,8 +83,6 @@ class Ringoid(LeftRingoid, RightRingoid):
             times_operation=times_operation,
             times_operation_symbol=times_operation_symbol,
         )
-        print(self.times_left_dist_over_plus, "h1")
-        print(self.times_right_dist_over_plus, "h2")
         self.times_dist_over_plus = And(
             self.times_left_dist_over_plus,
             self.times_right_dist_over_plus,
