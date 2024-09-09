@@ -219,7 +219,7 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
         """
         if self == other:
             return True
-        first_other_occurs_in = find_first(
+        _, first_other_occurs_in = find_first(
             lambda p: p.has_as_subproposition(other), [self.left, self.right]
         )
         return first_other_occurs_in is not None

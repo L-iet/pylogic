@@ -204,6 +204,12 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         assert self.is_proven, f"{self} is not proven"
         from pylogic.proposition.and_ import And
 
+        if not isinstance(self.antecedent, And):
+            assert isinstance(
+                in_body, list
+            ), f"{in_body} should be a list since the antecedent is not an And"
+            return in_body[0].modus_ponens(self)  # type: ignore
+
         in_body_is_and = isinstance(in_body, And)
         props = set(in_body.propositions if in_body_is_and else in_body)
 
@@ -217,9 +223,6 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
                 assert prop.is_proven, f"{prop} is not proven"
                 in_body_assumptions = in_body_assumptions.union(get_assumptions(prop))
 
-        assert isinstance(
-            self.antecedent, And
-        ), f"The antecedent of {self} is not a conjunction"
         rem_props = [prop for prop in self.antecedent.propositions if prop not in props]
         if len(rem_props) == 1:
             return Implies(
@@ -258,6 +261,38 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         """
         return self.definite_clause_resolve([in_body])
 
+    def first_unit_definite_clause_resolve(
+        self, first_in_body: Proposition
+    ) -> Self | Implies[Proposition, UProposition] | UProposition:
+        r"""
+        Logical tactic. Given self `(A /\ B /\ C...) -> D` is proven, given A is proven,
+        return a proof of the new definite clause `(B /\ C /\ ...) -> D`
+        or D if the antecedent is left empty.
+        Slightly faster than `unit_definite_clause_resolve`.
+        """
+        from pylogic.proposition.and_ import And
+
+        assert self.is_proven, f"{self} is not proven"
+        if not isinstance(self.antecedent, And):
+            return first_in_body.modus_ponens(self)  # type: ignore
+
+        assert first_in_body.is_proven, f"{first_in_body} is not proven"
+        first_ante = self.antecedent.propositions[0]
+        len_ante = len(self.antecedent.propositions)
+        assert (
+            first_in_body == first_ante
+        ), f"{first_in_body} is not the first proposition {first_ante}"
+        new_p = Implies(
+            self.antecedent.propositions[1] if len_ante == 2 else And(*self.antecedent.propositions[1:]),  # type: ignore
+            self.consequent,
+            _is_proven=True,
+            _assumptions=get_assumptions(self).union(get_assumptions(first_in_body)),
+            _inference=Inference(
+                self, first_in_body, rule="first_unit_definite_clause_resolve"
+            ),
+        )
+        return new_p  # type:ignore
+
     def unify(self, other: Self) -> Unification | Literal[True] | None:
         if not isinstance(other, Implies):
             raise TypeError(
@@ -292,7 +327,7 @@ Occured when trying to unify `{self}` and `{other}`"
         """
         if self == other:
             return True
-        first_other_occurs_in = find_first(
+        _, first_other_occurs_in = find_first(
             lambda p: p.has_as_subproposition(other), [self.antecedent, self.consequent]
         )
         return first_other_occurs_in is not None

@@ -189,7 +189,7 @@ def illegal_occur_check_pred(self, predicate_of_self: Proposition) -> bool:
             find_first(
                 lambda p: self.illegal_occur_check_pred(p),
                 predicate_of_self.propositions,
-            )
+            )[1]
             is not None
         )
     elif isinstance(predicate_of_self, _Quantified):

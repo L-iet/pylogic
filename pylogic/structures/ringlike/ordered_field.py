@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fractions import Fraction
-from typing import TYPE_CHECKING, Any, Callable, Iterable, TypeAlias, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Iterable, TypeAlias, TypeVar, cast
 
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.proposition.and_ import And
@@ -28,9 +28,7 @@ if TYPE_CHECKING:
     Z = TypeVar("Z", str, int, float, complex, Fraction)
     BinOpFunc: TypeAlias = Callable[[T, T], BinaryExpression[T]]
     TotalOrderOp: TypeAlias = Callable[..., TotalOrder]
-    TotalOrder_: TypeAlias = TotalOrder | Or[StrictTotalOrder, Equals]
-    StrictTotalOrder_: TypeAlias = StrictTotalOrder | And[TotalOrder, Not[Equals]]
-    StrictTotalOrderOp: TypeAlias = Callable[..., StrictTotalOrder_]
+    StrictTotalOrderOp: TypeAlias = Callable[..., StrictTotalOrder]
 else:
     Term = Any
     T = Any
@@ -38,39 +36,37 @@ else:
     Z = Any
     BinOpFunc = Any
     TotalOrderOp = Any
-    TotalOrder_ = Any
     StrictTotalOrderOp = Any
-    StrictTotalOrder_ = Any
 
 
 class OrderedField(Field[Z]):
     strict_order_definition: ForallInSet[
-        ForallInSet[Iff[StrictTotalOrder_, And[TotalOrder_, Not[Equals]]]]
+        ForallInSet[Iff[StrictTotalOrder, And[TotalOrder, Not[Equals]]]]
     ]
     order_definition: ForallInSet[
-        ForallInSet[Iff[TotalOrder_, Or[StrictTotalOrder_, Equals]]]
+        ForallInSet[Iff[TotalOrder, Or[StrictTotalOrder, Equals]]]
     ]
-    order_is_reflexive: ForallInSet[TotalOrder_]
+    order_is_reflexive: ForallInSet[TotalOrder]
     order_is_transitive: ForallInSet[
-        ForallInSet[ForallInSet[Implies[And[TotalOrder_, TotalOrder_], TotalOrder_]]]
+        ForallInSet[ForallInSet[Implies[And[TotalOrder, TotalOrder], TotalOrder]]]
     ]
     order_is_antisymmetric: ForallInSet[
-        ForallInSet[Implies[And[TotalOrder_, TotalOrder_], Equals]]
+        ForallInSet[Implies[And[TotalOrder, TotalOrder], Equals]]
     ]
-    order_is_strongly_connected: ForallInSet[ForallInSet[Or[TotalOrder_, TotalOrder_]]]
-    strict_order_is_irreflexive: ForallInSet[Not[StrictTotalOrder_]]
+    order_is_strongly_connected: ForallInSet[ForallInSet[Or[TotalOrder, TotalOrder]]]
+    strict_order_is_irreflexive: ForallInSet[Not[StrictTotalOrder]]
     strict_order_is_asymmetric: ForallInSet[
-        ForallInSet[Implies[StrictTotalOrder_, Not[StrictTotalOrder_]]]
+        ForallInSet[Implies[StrictTotalOrder, Not[StrictTotalOrder]]]
     ]
     strict_order_is_transitive: ForallInSet[
         ForallInSet[
             ForallInSet[
-                Implies[And[StrictTotalOrder_, StrictTotalOrder_], StrictTotalOrder_]
+                Implies[And[StrictTotalOrder, StrictTotalOrder], StrictTotalOrder]
             ]
         ]
     ]
     strict_order_is_connected: ForallInSet[
-        ForallInSet[Implies[Not[Equals], Or[StrictTotalOrder_, StrictTotalOrder_]]]
+        ForallInSet[Implies[Not[Equals], Or[StrictTotalOrder, StrictTotalOrder]]]
     ]
     strict_total_order: StrictTotalOrderOp
     total_order: TotalOrderOp
@@ -81,7 +77,7 @@ class OrderedField(Field[Z]):
         set_: Set,
         total_order: TotalOrderOp,
         strict_total_order: StrictTotalOrderOp,
-    ) -> ForallInSet[ForallInSet[Iff[TotalOrder_, Or[StrictTotalOrder_, Equals]]]]:
+    ) -> ForallInSet[ForallInSet[Iff[TotalOrder, Or[StrictTotalOrder, Equals]]]]:
         x, y = Variable("x"), Variable("y")
         return ForallInSet(
             x,
@@ -103,9 +99,7 @@ class OrderedField(Field[Z]):
         set_: Set,
         total_order: TotalOrderOp,
         strict_total_order: StrictTotalOrderOp,
-    ) -> ForallInSet[
-        ForallInSet[Iff[StrictTotalOrder_, And[TotalOrder_, Not[Equals]]]]
-    ]:
+    ) -> ForallInSet[ForallInSet[Iff[StrictTotalOrder, And[TotalOrder, Not[Equals]]]]]:
         x, y = Variable("x"), Variable("y")
         return ForallInSet(
             x,
@@ -124,7 +118,7 @@ class OrderedField(Field[Z]):
     @classmethod
     def property_order_is_reflexive(
         cls, set_: Set, total_order: TotalOrderOp
-    ) -> ForallInSet[TotalOrder_]:
+    ) -> ForallInSet[TotalOrder]:
         a = Variable("a")
         return ForallInSet(
             a,
@@ -137,7 +131,7 @@ class OrderedField(Field[Z]):
     def property_order_is_transitive(
         cls, set_: Set, total_order: TotalOrderOp
     ) -> ForallInSet[
-        ForallInSet[ForallInSet[Implies[And[TotalOrder_, TotalOrder_], TotalOrder_]]]
+        ForallInSet[ForallInSet[Implies[And[TotalOrder, TotalOrder], TotalOrder]]]
     ]:
         a = Variable("a")
         b = Variable("b")
@@ -163,7 +157,7 @@ class OrderedField(Field[Z]):
     @classmethod
     def property_order_is_antisymmetric(
         cls, set_: Set, total_order: TotalOrderOp
-    ) -> ForallInSet[ForallInSet[Implies[And[TotalOrder_, TotalOrder_], Equals]]]:
+    ) -> ForallInSet[ForallInSet[Implies[And[TotalOrder, TotalOrder], Equals]]]:
         a = Variable("a")
         b = Variable("b")
         a_le_b = total_order(a, b)
@@ -185,7 +179,7 @@ class OrderedField(Field[Z]):
     @classmethod
     def property_order_is_strongly_connected(
         cls, set_: Set, total_order: TotalOrderOp
-    ) -> ForallInSet[ForallInSet[Or[TotalOrder_, TotalOrder_]]]:
+    ) -> ForallInSet[ForallInSet[Or[TotalOrder, TotalOrder]]]:
         a = Variable("a")
         b = Variable("b")
         a_le_b = total_order(a, b)
@@ -207,7 +201,7 @@ class OrderedField(Field[Z]):
     @classmethod
     def property_strict_order_is_irreflexive(
         cls, set_: Set, strict_total_order: StrictTotalOrderOp
-    ) -> ForallInSet[Not[StrictTotalOrder_]]:
+    ) -> ForallInSet[Not[StrictTotalOrder]]:
         a = Variable("a")
         return ForallInSet(
             a,
@@ -219,7 +213,7 @@ class OrderedField(Field[Z]):
     @classmethod
     def property_strict_order_is_asymmetric(
         cls, set_: Set, strict_total_order: StrictTotalOrderOp
-    ) -> ForallInSet[ForallInSet[Implies[StrictTotalOrder_, Not[StrictTotalOrder_]]]]:
+    ) -> ForallInSet[ForallInSet[Implies[StrictTotalOrder, Not[StrictTotalOrder]]]]:
         a = Variable("a")
         b = Variable("b")
         a_lt_b = strict_total_order(a, b)
@@ -244,7 +238,7 @@ class OrderedField(Field[Z]):
     ) -> ForallInSet[
         ForallInSet[
             ForallInSet[
-                Implies[And[StrictTotalOrder_, StrictTotalOrder_], StrictTotalOrder_]
+                Implies[And[StrictTotalOrder, StrictTotalOrder], StrictTotalOrder]
             ]
         ]
     ]:
@@ -276,7 +270,7 @@ class OrderedField(Field[Z]):
     def property_strict_order_is_connected(
         cls, set_: Set, strict_total_order: StrictTotalOrderOp
     ) -> ForallInSet[
-        ForallInSet[Implies[Not[Equals], Or[StrictTotalOrder_, StrictTotalOrder_]]]
+        ForallInSet[Implies[Not[Equals], Or[StrictTotalOrder, StrictTotalOrder]]]
     ]:
         a = Variable("a")
         b = Variable("b")
@@ -352,9 +346,12 @@ class OrderedField(Field[Z]):
         )
         self.strict_order_definition.is_axiom = True
 
-        # Strict order properties are theorems if we have defined total order properties
-        a = Variable("a")
+        a, b, c = Variable("a"), Variable("b"), Variable("c")
         a_in_self = a.is_in(self, is_assumption=True)
+        b_in_self = b.is_in(self, is_assumption=True)
+        c_in_self = c.is_in(self, is_assumption=True)
+        # Strict order properties are theorems if we have defined total order properties
+        # 1. Strict order is irreflexive
         step_1 = self.strict_order_definition.in_particular(a, a_in_self).in_particular(
             a, a_in_self
         )
@@ -366,8 +363,37 @@ class OrderedField(Field[Z]):
         )
         a_nlt_a_or_a_eq_a = a_nlt_a_or_a_eq_a.de_morgan()
         self.strict_order_is_irreflexive = a_nlt_a_or_a_eq_a.modus_ponens(
-            step_2.forward_implication()
+            step_2.forward_implication()  # type: ignore
         ).thus_forall_in_set(a, self)
+
+        # 2. Strict order is asymmetric
+        a_lt_b = self.strict_total_order(a, b, is_assumption=True)
+        step_1 = (
+            self.strict_order_definition.in_particular(a, a_in_self)
+            .in_particular(b, b_in_self)
+            .forward_implication()
+        )
+        a_leq_b, a_neq_b = a_lt_b.modus_ponens(step_1).extract()
+        step_2 = (
+            self.order_is_antisymmetric.in_particular(a, a_in_self)
+            .in_particular(b, b_in_self)
+            .contrapositive()
+        )
+        step_3: Or = a_neq_b.modus_ponens(step_2).de_morgan()  # type: ignore
+        b_nleq_a = step_3.unit_resolve(a_leq_b)  # type: ignore
+        step_4 = (
+            self.order_definition.in_particular(b, b_in_self)
+            .in_particular(a, a_in_self)
+            .inverse()
+            .forward_implication()
+        )
+        b_nlt_a, _ = b_nleq_a.modus_ponens(step_4).de_morgan().extract()  # type: ignore
+        b_nlt_a = cast(Not[StrictTotalOrder], b_nlt_a)
+        self.strict_order_is_asymmetric = (
+            b_nlt_a.followed_from(a_lt_b)
+            .thus_forall_in_set(b, self)
+            .thus_forall_in_set(a, self)
+        )
 
     def _build_total_and_strict_orders(
         self,
@@ -379,37 +405,43 @@ class OrderedField(Field[Z]):
         from pylogic.proposition.ordering.lessorequal import LessOrEqual
         from pylogic.proposition.ordering.lessthan import LessThan
 
+        class _CustomStrictTotalOrder(StrictTotalOrder):
+            def __init__(inst, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                inst.name = f"{self.name}_<"
+
+        class _CustomTotalOrder(TotalOrder):
+            def __init__(inst, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                inst.name = f"{self.name}_<="
+
         x, y = Variable("x"), Variable("y")
         if strict_total_order is None:
             if total_order is None:
-                self.strict_total_order = lambda x, y: StrictTotalOrder(
-                    x, y, name=f"{self.name}_<"
-                )
-                self.total_order = lambda x, y: TotalOrder(x, y, name=f"{self.name}_<=")
+                self.strict_total_order = _CustomStrictTotalOrder
+                self.total_order = _CustomTotalOrder
             elif isinstance(total_order(x, y), LessOrEqual):
                 self.total_order = total_order
-                self.strict_total_order = lambda x, y: LessThan(x, y)
+                self.strict_total_order = LessThan
             elif isinstance(total_order(x, y), GreaterOrEqual):
                 self.total_order = total_order
-                self.strict_total_order = lambda x, y: GreaterThan(x, y)
+                self.strict_total_order = GreaterThan
             else:
                 self.total_order = total_order
-                self.strict_total_order = lambda x, y: StrictTotalOrder(
-                    x, y, name=f"{self.name}_<"
-                )
+                self.strict_total_order = _CustomStrictTotalOrder
         else:  # strict_total_order is not None
             self.strict_total_order = strict_total_order
             if total_order is None and isinstance(strict_total_order(x, y), LessThan):
-                self.total_order = lambda x, y: LessOrEqual(x, y)
+                self.total_order = LessOrEqual
             elif total_order is None and isinstance(
                 strict_total_order(x, y), GreaterThan
             ):
-                self.total_order = lambda x, y: GreaterOrEqual(x, y)
+                self.total_order = GreaterOrEqual
             elif total_order is None:
-                self.total_order = lambda x, y: TotalOrder(x, y, name=f"{self.name}_<=")
+                self.total_order = _CustomTotalOrder
             else:
                 self.total_order = total_order
 
 
 F = OrderedField("F")
-# print(F.strict_order_is_irreflexive)
+print(F.strict_order_is_irreflexive)

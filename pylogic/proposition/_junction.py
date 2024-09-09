@@ -276,7 +276,7 @@ Occured when trying to unify `{self}` and `{other}`"
         """
         if self == other:
             return True
-        first_other_occurs_in = find_first(
+        _, first_other_occurs_in = find_first(
             lambda p: p.has_as_subproposition(other), self.propositions  # type: ignore
         )
         return first_other_occurs_in is not None

@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.implies import Implies
+    from pylogic.proposition.relation.binaryrelation import BinaryRelation
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
     from pylogic.variable import Variable
@@ -18,6 +19,9 @@ if TYPE_CHECKING:
     Unevaluated = Symbol | Set | Expr
     Term = Unevaluated | Numeric
     Unification = dict[Variable, Term]
+    T = TypeVar("T", bound=BinaryRelation)
+else:
+    T = TypeVar("T")
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
@@ -28,14 +32,10 @@ Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 def neg(
     p: Not[TProposition], is_assumption: bool = False, **kwargs
 ) -> TProposition: ...
-
-
 @overload
 def neg(
     p: TProposition, is_assumption: bool = False, **kwargs
 ) -> Not[TProposition]: ...
-
-
 def neg(
     p: Not[TProposition] | TProposition, is_assumption: bool = False, **kwargs
 ) -> Not[TProposition] | TProposition:
@@ -43,6 +43,7 @@ def neg(
     Given a proposition, return its negation.
     Law of excluded middle is assumed, so
     neg(Not(p)) is p.
+    Keyword arguments are not used in the case of neg(Not(p)): the result is p.
     """
     if isinstance(p, Not):
         return p.negated
@@ -223,3 +224,18 @@ Occured when trying to unify `{self}` and `{other}`"
         if self == other:
             return True
         return self.negated.has_as_subproposition(other)
+
+    def symmetric(self: Not[T]) -> Not[BinaryRelation]:
+        """
+        Logical tactic. If self is ~(a R b), return a proof of ~(b R a).
+        """
+        from pylogic.inference import Inference
+
+        cls = self.negated.__class__
+        assert cls.is_symmetric, f"{cls} is not symmetric"
+        return Not(
+            self.negated.symmetric(),
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="symmetric"),
+        )

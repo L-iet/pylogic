@@ -64,6 +64,32 @@ def copy(obj: T) -> T:
     return obj.copy()  # type: ignore
 
 
+def try_except(
+    func: Callable[..., T],
+    exc_to_ignore: tuple[Exception, ...] = (),
+    exc_to_raise: Exception | None = None,
+    cleanup: Callable[[], None] | None = None,
+    *args: Any,
+    **kwargs: Any,
+) -> T | None:
+    """
+    Try to run a function and return the result if successful.
+    If any of exc_to_ignore is encountered, raise exc_to_raise
+    (if exc_to_raise not None) or return None (if None).
+    If exc_to_ignore is empty, it raises all exceptions.
+    """
+    if cleanup is None:
+        cleanup = lambda: None
+    try:
+        return func(*args, **kwargs)
+    except exc_to_ignore:  # type: ignore
+        if exc_to_raise is not None:
+            raise exc_to_raise
+        return None
+    finally:
+        cleanup()
+
+
 def eval_same(x: Any, y: Any) -> bool:
     """
     Check if x and y evaluate to the same value.
@@ -117,11 +143,20 @@ def is_numeric(arg: Any) -> bool:
     return isinstance(arg, (int, float, Fraction, complex, Decimal))
 
 
-def find_first(predicate: Callable[[T], bool], args: Iterable[T]) -> T | None:
-    for arg in args:
-        if predicate(arg):
-            return arg
-    return None
+@overload
+def find_first(predicate: Callable[[T], bool], args: Iterable[T]) -> tuple[int, T]: ...
+@overload
+def find_first(
+    predicate: Callable[[T], bool], args: Iterable[T]
+) -> tuple[None, None]: ...
+def find_first(
+    predicate: Callable[[T], bool], args: Iterable[T]
+) -> tuple[int, T] | tuple[None, None]:
+    """
+    Find the first element in args that satisfies the predicate.
+    """
+    new_pred = lambda x: predicate(x[1])
+    return next(filter(new_pred, enumerate(args)), (None, None))
 
 
 @overload

@@ -295,11 +295,5 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
                 f"Cannot use {proof_expr_to_substitute_in_set} to prove that \
 {expression_to_substitute} is in {self.set_}"
             )
-        if ante == impl.antecedent:
-            new_p = impl.consequent
-            new_p._is_proven = True
-            new_p.from_assumptions = get_assumptions(self).union(get_assumptions(ante))
-            new_p.deduced_from = Inference(self, rule="in_particular")
-            return new_p
-        else:
-            raise ValueError("Inconsistent substitution occured.")
+        new_p = impl.first_unit_definite_clause_resolve(ante)
+        return new_p  # type: ignore

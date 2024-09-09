@@ -347,7 +347,9 @@ class Proposition:
         from pylogic.proposition.implies import Implies
 
         if isinstance(other, Implies):
-            return self.and_(other.antecedent).implies(other.consequent)
+            return self.and_(other.antecedent).implies(
+                other.consequent, is_assumption=is_assumption, **kwargs
+            )
 
         return Implies(self, other, is_assumption, **kwargs)
 
@@ -881,6 +883,9 @@ class Proposition:
         """
         from pylogic.expressions.expr import Expr
         from pylogic.variable import Variable
+
+        # TODO: Fix this. Propoition needs to have .symbols, .sets, .functions just like Expr
+        # in order for this to work correctly.
 
         new_p = self.followed_from(*self.from_assumptions)
         all_vars = set()

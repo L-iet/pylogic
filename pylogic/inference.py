@@ -71,6 +71,8 @@ rules: set[str] = {
     "to_conjunction",
     "reflexive",
     "by_predicate",
+    "one_proven_rem_false",
+    "first_unit_definite_clause_resolve",
 }
 
 T = TypeVar("T", bound="Proposition")

@@ -35,7 +35,7 @@ class ByProvers:
     def __ror__(self, p: P) -> P:
         from pylogic.helpers import find_first
 
-        first_not_proven = find_first(
+        _, first_not_proven = find_first(
             lambda prover: isinstance(prover, Proposition)
             and prover.is_proven == False,
             self.provers + (self.starting_premise,),

@@ -132,9 +132,9 @@ class BinaryRelation(Relation, Generic[T, U]):
         assert self.__class__.is_transitive, f"{self.__class__} is not transitive"
         assert self.is_proven, f"{self} is not proven"
 
-        first_not_proven = find_first(lambda x: not x.is_proven, others)
+        _, first_not_proven = find_first(lambda x: not x.is_proven, others)
         assert first_not_proven is None, f"{first_not_proven} is not proven"
-        first_not_same_class = find_first(
+        _, first_not_same_class = find_first(
             lambda x: x.__class__ != self.__class__, others
         )
         assert (
@@ -144,7 +144,7 @@ class BinaryRelation(Relation, Generic[T, U]):
         all_props = (self,) + others
         right_lefts = [(x.right, y.left) for x, y in zip(all_props[:-1], all_props[1:])]
 
-        first_non_transitive = find_first(
+        _, first_non_transitive = find_first(
             lambda x: not eval_same(x[0], x[1]), right_lefts
         )
         assert (
@@ -169,11 +169,10 @@ class BinaryRelation(Relation, Generic[T, U]):
         from pylogic.inference import Inference
 
         assert self.__class__.is_symmetric, f"{self.__class__} is not symmetric"
-        assert self.is_proven, f"{self} is not proven"
         return self.__class__(
             self.right,  # type: ignore
             self.left,  # type: ignore
-            _is_proven=True,
+            _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="symmetric"),
         )  # type: ignore

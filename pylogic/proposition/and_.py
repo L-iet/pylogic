@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Self, TypedDict, TypeVarTuple
+from typing import TYPE_CHECKING, Self, TypedDict, TypeVarTuple, Union
 
 from pylogic.inference import Inference
 from pylogic.proposition._junction import _Junction
 from pylogic.proposition.proposition import Proposition, get_assumptions
 
 if TYPE_CHECKING:
+    from pylogic.proposition.exor import ExOr
+    from pylogic.proposition.implies import Implies
     from pylogic.proposition.not_ import Not
     from pylogic.proposition.or_ import Or
 
@@ -109,4 +111,58 @@ class And(_Junction[*Ps]):
             _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="de_morgan"),
+        )
+
+    def to_exor(self) -> ExOr[Proposition, ...]:  # type: ignore
+        r"""
+        Logical tactic. If self is of the form
+        `And(Or(A, B, C,...), A -> [~B /\ ~C /\...], B -> [~A /\ ~C /\...], C -> [~A /\ ~B /\...], ...)`,
+
+        return `ExOr(A, B, C, ...)`.
+
+        This can be slow if there are many propositions in the Or.
+
+        Raises:
+            AssertionError: If wrong structure of propositions is given.
+            AttributeError: If second to last propositions are not implications
+                with conjunctions as consequents.
+        """
+        from pylogic.helpers import find_first
+        from pylogic.proposition.exor import ExOr
+        from pylogic.proposition.not_ import neg
+
+        assert isinstance(self.propositions[0], Or), "First proposition must be an Or"
+        set_of_props: set[Proposition] = set(self.propositions[0].propositions)
+        num_props = len(set_of_props)
+        impls: tuple[Implies[Proposition, Proposition]] = self.propositions[1:]  # type: ignore
+        antecedents = set(p.antecedent for p in impls)  # can raise AttributeError here
+        assert (
+            set_of_props == antecedents
+        ), "Propositions in Or and implication antecedents not match"
+
+        def get_props(p: Proposition) -> set[Proposition]:
+            if num_props == 2:  # p is a negation
+                return {neg(p)}
+            # p is an And of negations
+            assert isinstance(p, And), "p is not an And"
+            return {neg(x) for x in p.propositions}
+
+        def check_cons(impl: Implies[Proposition, Proposition]) -> bool:
+            # check if there is mismatch in the consequent
+            antecedent = impl.antecedent
+            consequent = impl.consequent
+            props = get_props(consequent)
+            return props.union({antecedent}) != set_of_props
+
+        ind, first_mismatch = find_first(check_cons, impls)
+        assert (
+            first_mismatch is None
+        ), f"Consequent mismatch at index {ind+1} of propositions"
+        return ExOr(
+            *set_of_props,  # type: ignore
+            description=self.description,
+            is_assumption=self.is_assumption,
+            _is_proven=self.is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=Inference(self, rule="to_exor"),
         )
