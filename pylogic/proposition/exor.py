@@ -19,6 +19,8 @@ class ExOr(_Junction[*Ps]):
     tactics: list[Tactic] = [
         {"name": "one_proven", "arguments": ["Proposition"]},
     ]
+    _supports_resolve = True
+    _supports_by_cases = True
 
     def __init__(
         self,
@@ -32,7 +34,6 @@ class ExOr(_Junction[*Ps]):
             *propositions,
             is_assumption=is_assumption,
             description=description,
-            _supports_resolve=True,
             **kwargs,
         )
 

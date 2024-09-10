@@ -73,6 +73,10 @@ rules: set[str] = {
     "by_predicate",
     "one_proven_rem_false",
     "first_unit_definite_clause_resolve",
+    "left_distribute",
+    "right_distribute",
+    "de_nest",
+    "by_cases",
 }
 
 T = TypeVar("T", bound="Proposition")

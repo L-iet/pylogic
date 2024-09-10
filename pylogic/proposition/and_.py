@@ -23,6 +23,7 @@ class And(_Junction[*Ps]):
         {"name": "all_proven", "arguments": []},
         {"name": "de_morgan", "arguments": []},
     ]
+    _distributes_over_ = {"Or", "ExOr"}
 
     def __init__(
         self,
@@ -36,7 +37,6 @@ class And(_Junction[*Ps]):
             *propositions,
             is_assumption=is_assumption,
             description=description,
-            _supports_resolve=False,
             **kwargs,
         )
 
@@ -74,13 +74,6 @@ class And(_Junction[*Ps]):
                 p.from_assumptions = get_assumptions(self)  # type: ignore
             return new_props
         return self.propositions
-
-    def de_nest(self) -> And[*tuple[Proposition, ...]]:
-        """
-        Return a new And proposition with the same propositions as self,
-        but without nested And propositions.
-        """
-        return self.propositions[0].and_(*self.propositions[1:])  # type: ignore
 
     def remove_duplicates(self) -> And:
         return super().remove_duplicates()  # type: ignore

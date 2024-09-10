@@ -1,16 +1,14 @@
-from pylogic.proposition.quantified.forall import ForallInSet
-from pylogic.proposition.quantified.exists import ExistsInSet
-from pylogic.proposition.relation.equals import Equals
-from pylogic.proposition.not_ import neg
-from pylogic.variable import Variable, variables
 from pylogic.constant import Constant
-from pylogic.structures.set_ import Reals
-
 from pylogic.expressions.expr import add, mul
-from pylogic.infix.is_ import is_, equals
-from pylogic.infix.by import by
 from pylogic.helpers import assume
-
+from pylogic.infix.by import by
+from pylogic.infix.is_ import equals, is_
+from pylogic.proposition.not_ import neg
+from pylogic.proposition.quantified.exists import ExistsInSet
+from pylogic.proposition.quantified.forall import ForallInSet
+from pylogic.proposition.relation.equals import Equals
+from pylogic.structures.set_ import Reals
+from pylogic.variable import Variable, variables
 
 a, b, c, d, f, h, t = variables("a", "b", "c", "d", "f", "h", "t", real=True)
 x = Variable("x", real=True)

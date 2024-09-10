@@ -400,7 +400,7 @@ class Proposition:
         props = []
         for p in (self, *others):
             if isinstance(p, And):
-                props.extend(p.propositions)
+                props.extend(p.de_nest().propositions)
             else:
                 props.append(p)
         new_p = And(*props, is_assumption=is_assumption, **kwargs)  # type: ignore
@@ -470,7 +470,7 @@ class Proposition:
         props = []
         for p in (self, *others):
             if isinstance(p, Or):
-                props.extend(p.propositions)
+                props.extend(p.de_nest().propositions)
             else:
                 props.append(p)
         new_p = Or(*props, is_assumption=is_assumption, **kwargs)  # type:ignore
@@ -522,7 +522,7 @@ class Proposition:
         props = []
         for p in (self, *others):
             if isinstance(p, ExOr):
-                props.extend(p.propositions)
+                props.extend(p.de_nest().propositions)
             else:
                 props.append(p)
         new_p = ExOr(*props, is_assumption=is_assumption, **kwargs)  # type:ignore
@@ -776,7 +776,7 @@ class Proposition:
         new_p.deduced_from = Inference(
             self, *assumptions, rule="followed_from"  # type:ignore
         )
-        new_p.from_assumptions = set()
+        new_p.from_assumptions = self.from_assumptions - set(assumptions)
         return new_p
 
     def thus_there_exists(

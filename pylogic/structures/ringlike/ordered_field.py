@@ -373,6 +373,7 @@ class OrderedField(Field[Z]):
             .in_particular(b, b_in_self)
             .forward_implication()
         )
+
         a_leq_b, a_neq_b = a_lt_b.modus_ponens(step_1).extract()
         step_2 = (
             self.order_is_antisymmetric.in_particular(a, a_in_self)
@@ -394,6 +395,49 @@ class OrderedField(Field[Z]):
             .thus_forall_in_set(b, self)
             .thus_forall_in_set(a, self)
         )
+
+        # 3. Strict order is transitive
+        # techically this is a theorem,
+        # but we are just defining it to be true here.
+        a_lt_b = self.strict_total_order(a, b, is_assumption=True)
+        b_lt_c = self.strict_total_order(b, c, is_assumption=True)
+        a_lt_c = a_lt_b.transitive(b_lt_c)
+        self.strict_order_is_transitive = (
+            a_lt_c.followed_from(a_lt_b, b_lt_c)
+            .thus_forall_in_set(c, self)
+            .thus_forall_in_set(b, self)
+            .thus_forall_in_set(a, self)
+        )
+
+        # 4. Strict order is connected
+        a_neq_b = neg(Equals(a, b), is_assumption=True)
+        a_leq_b_or_b_leq_a = self.order_is_strongly_connected.in_particular(
+            a, a_in_self
+        ).in_particular(b, b_in_self)
+        a_lt_b_def = (
+            self.strict_order_definition.in_particular(a, a_in_self)
+            .in_particular(b, b_in_self)
+            .reverse_implication()
+        )
+        # to be used in the cases
+        a_leq_b = self.total_order(a, b, is_assumption=True)
+        b_leq_a = self.total_order(b, a, is_assumption=True)
+        b_lt_a_def = (
+            self.strict_order_definition.in_particular(b, b_in_self)
+            .in_particular(a, a_in_self)
+            .reverse_implication()
+        )
+        a_lt_b_or_b_lt_a = a_leq_b_or_b_leq_a.by_cases(
+            a_leq_b.p_and(a_neq_b).modus_ponens(a_lt_b_def).followed_from(a_leq_b),  # type: ignore
+            b_leq_a.p_and(a_neq_b.symmetric())
+            .modus_ponens(b_lt_a_def)  # type: ignore
+            .followed_from(b_leq_a),  # type: ignore
+        )
+        self.strict_order_is_connected = (
+            a_lt_b_or_b_lt_a.followed_from(a_neq_b)
+            .thus_forall_in_set(b, self)
+            .thus_forall_in_set(a, self)
+        )  # type: ignore
 
     def _build_total_and_strict_orders(
         self,
@@ -444,4 +488,3 @@ class OrderedField(Field[Z]):
 
 
 F = OrderedField("F")
-print(F.strict_order_is_irreflexive)

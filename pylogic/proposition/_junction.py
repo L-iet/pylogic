@@ -1,6 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, Literal, Self, TypedDict, TypeVarTuple
+from abc import ABC, abstractmethod
+from typing import (
+    TYPE_CHECKING,
+    Generic,
+    Literal,
+    Self,
+    TypedDict,
+    TypeVar,
+    TypeVarTuple,
+)
 
 from pylogic.helpers import find_first
 from pylogic.inference import Inference
@@ -12,6 +21,7 @@ if TYPE_CHECKING:
 
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.and_ import And
+    from pylogic.proposition.implies import Implies
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
     from pylogic.variable import Variable
@@ -24,18 +34,23 @@ if TYPE_CHECKING:
 
 Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
+T = TypeVar("T", bound="_Junction")
+
 Ps = TypeVarTuple("Ps")
 Props = tuple[Proposition, ...]
 
 
-class _Junction(Proposition, Generic[*Ps]):
+class _Junction(Proposition, Generic[*Ps], ABC):
+    _distributes_over_: set[str] = set()
+    _supports_resolve: bool = False
+    _supports_by_cases: bool = False
+
     def __init__(
         self,
         _join_symbol: str,
         *propositions: *Ps,
         is_assumption: bool = False,
         description: str = "",
-        _supports_resolve: bool = False,
         **kwargs,
     ) -> None:
         assert len(propositions) > 1, "Must have at least two propositions"
@@ -44,7 +59,6 @@ class _Junction(Proposition, Generic[*Ps]):
         super().__init__(name, is_assumption, description=description, **kwargs)
         self.is_atomic = False
         self._join_symbol = _join_symbol
-        self._supports_resolve = _supports_resolve
         self.bound_vars: set[Variable] = set()
         for prop in propositions:
             self.bound_vars = self.bound_vars.union(prop.bound_vars)  # type: ignore
@@ -72,6 +86,12 @@ class _Junction(Proposition, Generic[*Ps]):
             raise StopIteration()
         self._idx += 1
         return item
+
+    def _distributes_over(self, other: str) -> bool:
+        """
+        return True if self distributes over other, else False
+        """
+        return other in self._distributes_over_
 
     def copy(self) -> Self:
         return self.__class__(
@@ -262,6 +282,32 @@ Occured when trying to unify `{self}` and `{other}`"
             _assumptions=get_assumptions(self).union(p_assumptions),
         )
 
+    def by_cases(self, *implications: Implies[Proposition, Proposition]) -> Proposition:
+        r"""
+        Logical tactic.
+        If self is of the form `A \/ B \/ C...`, and there are implications
+        `A -> D`, `B -> E`, `C -> F...`, return `D \/ E \/ F...`.
+        """
+        assert self._supports_by_cases, f"{self} does not support by_cases"
+        assert self.is_proven, f"{self} is not proven"
+        antes = [imp.antecedent for imp in implications]
+        assert len(antes) == len(
+            self.propositions
+        ), "Not all cases or too many cases (Number of implications must match)"
+        assert set(antes) == set(
+            self.propositions
+        ), "Implications (cases) must match propositions in disjunction"
+        new_p = self.__class__(
+            *[imp.consequent for imp in implications],  # type: ignore
+            _is_proven=True,
+            _assumptions=get_assumptions(self).union(
+                *[get_assumptions(imp) for imp in implications]
+            ),
+            _inference=Inference(self, *implications, rule="by_cases"),
+        ).remove_duplicates()
+        print(new_p.from_assumptions)
+        return new_p
+
     def unit_resolve(self, p: Proposition) -> Proposition | Self:
         """
         Logical tactic. Given self is proven, and p is proven, where p is
@@ -280,3 +326,77 @@ Occured when trying to unify `{self}` and `{other}`"
             lambda p: p.has_as_subproposition(other), self.propositions  # type: ignore
         )
         return first_other_occurs_in is not None
+
+    def de_nest(self) -> _Junction[*tuple[Proposition, ...]]:
+        """
+        Return a new _Junction proposition with the same propositions as self,
+        but without nested propositions of the same type.
+        """
+        props = []
+        for p in self.propositions:
+            if isinstance(p, self.__class__):
+                props.extend(p.de_nest().propositions)
+            else:
+                props.append(p)
+        return self.__class__(
+            *props,  # type: ignore
+            description=self.description,
+            _is_proven=self.is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=Inference(self, rule="de_nest"),
+        )
+
+    def left_distribute(self) -> Proposition:
+        r"""
+        Logical tactic. Return an equivalent proposition
+        that is the result of left distribution.
+        For example, if self is `A \/ (B /\ C)`, return `(A \/ B) /\ (A \/ C)`.
+        """
+        assert len(self.propositions) == 2, f"{self} must have two propositions"
+        other_junc: Proposition = self.propositions[1]  # type: ignore
+        other_cls_name = other_junc.__class__.__name__
+        assert self._distributes_over(
+            other_cls_name
+        ), f"{self.__class__.__name__} does not distribute over {other_cls_name}"
+        new_props = [self.__class__(self.propositions[0], p) for p in other_junc.propositions]  # type: ignore
+        new_p = other_junc.__class__(
+            *new_props,  # type: ignore
+            description=self.description,
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="left_distribute"),
+        )
+        return new_p
+
+    def right_distribute(self) -> Proposition:
+        r"""
+        Logical tactic. Return an equivalent proposition
+        that is the result of right distribution.
+        For example, if self is `(A /\ B) \/ C`, return `(A \/ C) /\ (B \/ C)`.
+        """
+        assert len(self.propositions) == 2, f"{self} must have two propositions"
+        other_junc: Proposition = self.propositions[0]  # type: ignore
+        other_cls_name = other_junc.__class__.__name__
+        assert self._distributes_over(
+            other_cls_name
+        ), f"{self.__class__.__name__} does not distribute over {other_cls_name}"
+        new_props = [self.__class__(p, self.propositions[1]) for p in other_junc.propositions]  # type: ignore
+        new_p = other_junc.__class__(
+            *new_props,  # type: ignore
+            description=self.description,
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="right_distribute"),
+        )
+        return new_p
+
+    def distribute(self) -> Proposition:
+        """
+        Logical tactic. Return an equivalent proposition
+        that is the result of distribution.
+        Defaults to left distribution unless not possible.
+        """
+        try:
+            return self.left_distribute()
+        except AssertionError:
+            return self.right_distribute()
