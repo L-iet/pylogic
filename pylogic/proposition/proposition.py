@@ -4,6 +4,7 @@ import warnings
 from fractions import Fraction
 from typing import (
     TYPE_CHECKING,
+    Callable,
     Literal,
     Self,
     TypedDict,
@@ -13,7 +14,7 @@ from typing import (
     overload,
 )
 
-from pylogic.printing.printing import latex_print_order, str_print_order
+from pylogic.printing.printing import str_print_order
 
 if TYPE_CHECKING:
     from pylogic.expressions.expr import Expr
@@ -27,7 +28,9 @@ if TYPE_CHECKING:
     from pylogic.proposition.or_ import Or
     from pylogic.proposition.quantified.exists import Exists
     from pylogic.proposition.quantified.forall import Forall, ForallInSet
+    from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
+    from pylogic.structures.class_ import Class
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
     from pylogic.variable import Variable
@@ -150,6 +153,22 @@ class Proposition:
             return self.name == other.name and self.args == other.args
         return False
 
+    def _set_is_proven(self, value: bool) -> None:
+        self._is_proven = value
+
+    def _set_is_assumption(self, value: bool) -> None:
+        self.is_assumption = value
+
+    def _set_is_axiom(self, value: bool) -> None:
+        self.is_axiom = value
+
+    def assume(self) -> Self:
+        """
+        Mark the proposition as an assumption.
+        """
+        self._set_is_assumption(True)
+        return self
+
     def eval_same(self, other: Proposition) -> bool:
         from pylogic.helpers import eval_same
 
@@ -172,7 +191,9 @@ class Proposition:
         return self.copy()
 
     def _latex(self, printer=None) -> str:
-        args_latex = [latex_print_order(a) for a in self.args]
+        from pylogic.helpers import latex
+
+        args_latex = [latex(a) for a in self.args]
         return rf"\text{{{self.name}}} \left({', '.join(args_latex)}\right)"
 
     def _repr_latex_(self) -> str:
@@ -245,6 +266,7 @@ class Proposition:
         current_val: Term,
         new_val: Term,
         positions: list[list[int]] | None = None,
+        equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
         r"""
         Parameters
@@ -264,17 +286,23 @@ class Proposition:
             the positions array for forall goes directly into the inner proposition.
             Same for exists.
             In the example above, the first list [0,0,0] refers to the x in p1 x, not (p1 x -> p2 x).
+
+        equal_check: Callable[[Term, Term], bool] | None
+            A function that takes two arguments and returns True if they compare equal.
         """
+        equal_check = equal_check or (lambda x, y: x == y)
         new_p_args = self.args.copy()
         index = -1
         for arg in new_p_args:
             index += 1
             if (positions is not None) and not [index] in positions:
                 continue
-            if arg == current_val:
+            if equal_check(current_val, arg):
                 new_p_args[index] = new_val
             elif isinstance(arg, Expr):
-                new_p_args[index] = arg.replace(current_val, new_val)
+                new_p_args[index] = arg.replace(
+                    current_val, new_val, equal_check=equal_check
+                )
 
         new_p = self.__class__(
             self.name,
@@ -618,7 +646,7 @@ class Proposition:
         assert other.is_proven, f"{other} is not proven"
         assert other.antecedent == self, f"{other.antecedent} is not the same as {self}"
         new_p = other.consequent.copy()
-        new_p._is_proven = True
+        new_p._set_is_proven(True)
         new_p.deduced_from = Inference(self, other, rule="modus_ponens")
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(other))
         return new_p
@@ -658,7 +686,7 @@ class Proposition:
         else:
             n_other_ante = Not(other.antecedent)
         new_p = cast(TProposition | Not[TProposition], n_other_ante)
-        new_p._is_proven = True
+        new_p._set_is_proven(True)
         new_p.deduced_from = Inference(self, other, rule="modus_tollens")
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(other))
         return new_p
@@ -678,7 +706,7 @@ class Proposition:
         for p in other.propositions:
             if p == self:
                 new_p = self.copy()
-                new_p._is_proven = True
+                new_p._set_is_proven(True)
                 new_p.deduced_from = Inference(self, other, rule="is_one_of")
                 new_p.from_assumptions = get_assumptions(other).copy()
                 return new_p
@@ -709,7 +737,7 @@ class Proposition:
             and list(unif.keys())[0] == other.variable
         ) or unif is True:
             new_p = self.copy()
-            new_p._is_proven = True
+            new_p._set_is_proven(True)
             new_p.deduced_from = Inference(self, other, rule="is_special_case_of")
             new_p.from_assumptions = get_assumptions(other).copy()
             return new_p
@@ -760,8 +788,8 @@ class Proposition:
         from pylogic.proposition.implies import Implies
 
         if len(assumptions) == 1:
-            assumptions[0].is_assumption = False
-            assumptions[0]._is_proven = False
+            assumptions[0]._set_is_assumption(False)
+            assumptions[0]._set_is_proven(False)
             new_p = cast(
                 Implies[Proposition, Self], assumptions[0].implies(self)  # type: ignore
             )
@@ -769,10 +797,10 @@ class Proposition:
             for a in assumptions:
                 # this has been used to prove an implication so
                 # we don't want it to be an assumption anymore
-                a.is_assumption = False
-                a._is_proven = False
+                a._set_is_assumption(False)
+                a._set_is_proven(False)
             new_p = cast(Implies[And[*Props], Self], And(*assumptions).implies(self))  # type: ignore
-        new_p._is_proven = True
+        new_p._set_is_proven(True)
         new_p.deduced_from = Inference(
             self, *assumptions, rule="followed_from"  # type:ignore
         )
@@ -783,6 +811,7 @@ class Proposition:
         self,
         existential_var: str,
         expression_to_replace: Term,
+        latex_name: str | None = None,
         positions: list[list[int]] | None = None,
     ) -> Exists[Self]:
         r"""
@@ -798,6 +827,8 @@ class Proposition:
             A new variable that is introduced into our new existential proposition.
         expression_to_replace: Set | SympyExpression
             An expression that is replaced by the new variable.
+        latex_name: str | None
+            The latex representation of the existential variable.
         positions: list[list[int]]
             This is a list containing the positions of the expression_to_replace in self.
             If None, we will search for all occurences of the expression_to_replace in self.
@@ -816,6 +847,7 @@ class Proposition:
         new_p = Exists.from_proposition(
             existential_var_name=existential_var,
             expression_to_replace=expression_to_replace,
+            latex_name=latex_name,
             inner_proposition=self,
             positions=positions,
             _is_proven=True,
@@ -824,8 +856,22 @@ class Proposition:
         )
         return new_p
 
+    @overload
     def thus_forall(
-        self, variable: Variable, **kwargs
+        self,
+        variable_or_containment: IsContainedIn[Term, Set | Class],
+        **kwargs,
+    ) -> ForallInSet[Self]: ...
+    @overload
+    def thus_forall(
+        self,
+        variable_or_containment: Variable,
+        **kwargs,
+    ) -> Forall[Self]: ...
+    def thus_forall(
+        self,
+        variable_or_containment: Variable | IsContainedIn[Term, Set | Class],
+        **kwargs,
     ) -> Forall[Self] | ForallInSet[Self]:
         """
         Logical tactic.
@@ -834,12 +880,18 @@ class Proposition:
         assert self.is_proven, f"{self} is not proven"
         from pylogic.inference import Inference
         from pylogic.proposition.quantified.forall import Forall, ForallInSet
+        from pylogic.proposition.relation.contains import IsContainedIn
+        from pylogic.variable import Variable
 
-        set_ = None
-        if variable.is_real:
+        if isinstance(variable_or_containment, IsContainedIn):
+            variable = variable_or_containment.left
+            assert isinstance(variable, Variable), f"{variable} is not a variable"
+            set_ = variable_or_containment.set_
             cls = ForallInSet
-            set_ = None
+            variable_or_containment._set_is_assumption(False)
         else:
+            variable = variable_or_containment
+            set_ = None
             cls = Forall
         return cls(
             variable=variable,
@@ -847,27 +899,6 @@ class Proposition:
             inner_proposition=self,
             _is_proven=True,
             _inference=Inference(self, rule="thus_forall"),
-            _assumptions=get_assumptions(self).copy(),
-            **kwargs,
-        )
-
-    def thus_forall_in_set(
-        self, variable: Variable, set_: Set, **kwargs
-    ) -> ForallInSet[Self]:
-        """
-        Logical tactic.
-        Given self is proven, return a new proposition that for all variables in a set, self is true.
-        """
-        assert self.is_proven, f"{self} is not proven"
-        from pylogic.inference import Inference
-        from pylogic.proposition.quantified.forall import ForallInSet
-
-        return ForallInSet(
-            variable=variable,
-            set_=set_,
-            inner_proposition=self,
-            _is_proven=True,
-            _inference=Inference(self, rule="thus_forall_in_set"),
             _assumptions=get_assumptions(self).copy(),
             **kwargs,
         )

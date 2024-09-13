@@ -99,7 +99,7 @@ and y in {set_.name} such that a {operation.symbol} x = b and y {operation.symbo
         )
 
         self.latin_square = Quasigroup.property_latin_square(self, self.operation)
-        self.latin_square.is_axiom = True
+        self.latin_square._set_is_axiom(True)
         self._init_args = (name,)
         self._init_kwargs = {
             "elements": elements,

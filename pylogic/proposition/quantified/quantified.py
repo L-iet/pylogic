@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import TYPE_CHECKING, Generic, Literal, Self, TypeVar
+from typing import TYPE_CHECKING, Callable, Generic, Literal, Self, TypeVar
 
 from sympy import latex
 
@@ -111,20 +111,21 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
         current_val: Term,
         new_val: Term,
         positions: list[list[int]] | None = None,
+        equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
         # assert not isinstance(new_val, Var), f"{new_val} is a Var"
         new_p: Self = self.copy()
         new_p.inner_proposition = new_p.inner_proposition.replace(
-            current_val, new_val, positions
+            current_val, new_val, positions=positions, equal_check=equal_check
         )
-        new_p._is_proven = False
+        new_p._set_is_proven(False)
         new_p.from_assumptions = set()
         new_p.deduced_from = None
         return new_p
 
     def _latex(self, printer=None) -> str:
         q_arg = self.variable
-        arg_latex = q_arg._latex() if hasattr(q_arg, "_latex") else latex(q_arg)  # type: ignore
+        arg_latex = q_arg._latex()
         return rf"\{self._q} {arg_latex}: {self.inner_proposition._latex()}"
 
     def unify(self, other: Self) -> Unification | Literal[True] | None:

@@ -78,7 +78,7 @@ class Monoid(Semigroup):
         self.has_identity = Monoid.property_has_identity(
             self, self.operation, self.identity
         )
-        self.has_identity.is_axiom = True
+        self.has_identity._set_is_axiom(True)
         self._init_args = (name,)
         self._init_kwargs = {
             "elements": elements,
@@ -90,4 +90,4 @@ class Monoid(Semigroup):
         }
 
     def containment_function(self, x: Term) -> bool:
-        return x == self.identity or self._containment_function(x)
+        return x == self.identity or super().containment_function(x)

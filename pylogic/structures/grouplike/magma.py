@@ -73,7 +73,7 @@ class Magma(Set):
         self.is_closed_under_op = Magma.property_is_closed_under_op(
             self, self.operation
         )
-        self.is_closed_under_op.is_axiom = True
+        self.is_closed_under_op._set_is_axiom(True)
         self._init_args = (name,)
         self._init_kwargs = {
             "elements": elements,
@@ -90,4 +90,4 @@ class Magma(Set):
                 and x.symbol == self.operation_symbol
                 and all(self.containment_function(arg) for arg in x.args)
             )
-        return self._containment_function(x)
+        return super().containment_function(x)

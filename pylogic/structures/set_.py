@@ -71,8 +71,8 @@ class Set(metaclass=Collection):
             self.name = name or str(sympy_set)
             self.sympy_set = sympy_set
             self.elements: set[Term] = set(elements) if elements else set()
-            self._containment_function: Callable[[Term], bool] = (
-                containment_function or (lambda x: x in self.elements)
+            self._containment_function: Callable[[Term], bool] | None = (
+                containment_function
             )
             if illegal_occur_check:
                 self.illegal_occur_check(containment_function, predicate)
@@ -194,7 +194,7 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
         """
         if not isinstance(other, Set):
             return False
-        return self.sympy_set == other.sympy_set
+        return self.name == other.name
 
     def equals(self, other: Term, **kwargs) -> Equals:
         from pylogic.proposition.relation.equals import Equals
@@ -229,7 +229,11 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
         return self.sympy_set
 
     def containment_function(self, x: Term) -> bool:
-        return self._containment_function(x)
+        if x in self.elements:
+            return True
+        elif self._containment_function:
+            return self._containment_function(x)
+        return False
 
     def __repr__(self) -> str:
         return f"Set_{self.name}"

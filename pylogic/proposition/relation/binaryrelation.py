@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Generic, Self, TypeVar
 
 from pylogic.expressions.expr import Expr
 from pylogic.helpers import replace
@@ -61,8 +61,10 @@ class BinaryRelation(Relation, Generic[T, U]):
         return f"{str_print_order(self.left)} {self.infix_symbol} {str_print_order(self.right)}"
 
     def _latex(self, printer=None) -> str:
-        left_latex = latex_print_order(self.left)
-        right_latex = latex_print_order(self.right)
+        from pylogic.helpers import latex
+
+        left_latex = latex(self.left)
+        right_latex = latex(self.right)
         return f"{left_latex} {self.infix_symbol_latex} {right_latex}"
 
     def copy(self) -> Self:
@@ -96,6 +98,7 @@ class BinaryRelation(Relation, Generic[T, U]):
         current_val: Term,
         new_val: Term,
         positions: list[list[int]] | None = None,
+        equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
         """
         Replace current_val with new_val in the relation.
@@ -107,9 +110,11 @@ class BinaryRelation(Relation, Generic[T, U]):
         new_right = old_right = self.right
 
         if positions is None or [0] in positions:
-            new_left = replace(old_left, current_val, new_val)
+            new_left = replace(old_left, current_val, new_val, equal_check=equal_check)
         if positions is None or [1] in positions:
-            new_right = replace(old_right, current_val, new_val)
+            new_right = replace(
+                old_right, current_val, new_val, equal_check=equal_check
+            )
         return self.__class__(
             new_left,
             new_right,

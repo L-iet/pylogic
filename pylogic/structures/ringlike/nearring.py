@@ -82,8 +82,12 @@ class NearrIng(CrookedSemirIng[Z]):
             operation_symbol=self.plus_operation_symbol,
             identity=self.zero,
         )
-        self.have_add_inverses = self.group_plus.have_inverses
-        self.plus_latin_square = self.group_plus.latin_square
+        self.have_add_inverses = self._replace_instance_set(
+            self.group_plus, "have_inverses"
+        )
+        self.plus_latin_square = self._replace_instance_set(
+            self.group_plus, "latin_square"
+        )
         self._init_args = (name,)
         self._init_kwargs = {
             "elements": elements,

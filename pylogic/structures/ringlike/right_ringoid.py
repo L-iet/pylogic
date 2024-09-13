@@ -3,7 +3,6 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import Callable, Iterable, TypeAlias, TypeVar
 
-
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.infix.infix import SpecialInfix
 from pylogic.proposition.quantified.forall import ForallInSet
@@ -88,4 +87,4 @@ class RightRingoid(_RingoidCommon):
                 self, self.plus, self.times
             )
         )
-        self.times_right_dist_over_plus.is_axiom = True
+        self.times_right_dist_over_plus._set_is_axiom(True)

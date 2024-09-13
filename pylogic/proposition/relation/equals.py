@@ -111,7 +111,7 @@ class Equals(BinaryRelation[T, U]):
             proven = self._check_provable_by_simplification(Side.RIGHT, doit_results)
         if proven:
             new_p = self.copy()
-            new_p._is_proven = True
+            new_p._set_is_proven(True)
             new_p.from_assumptions = set()
             new_p.deduced_from = Inference(self, rule="by_simplification")
             return new_p
@@ -140,7 +140,7 @@ class Equals(BinaryRelation[T, U]):
         new_prop: TProposition = other_prop.replace(
             self.get(other_side), self.get(side)
         )
-        new_prop._is_proven = False
+        new_prop._set_is_proven(False)
         new_prop.from_assumptions = set()
         new_prop.deduced_from = None
         return new_prop
@@ -162,7 +162,7 @@ class Equals(BinaryRelation[T, U]):
         assert self.is_proven, f"{self} is not proven"
         assert other_prop.is_proven, f"{other_prop} is not proven"
         new_prop: TProposition = self.substitute_into(side, other_prop)
-        new_prop._is_proven = True
+        new_prop._set_is_proven(True)
         new_prop.from_assumptions = get_assumptions(self).union(
             get_assumptions(other_prop)
         )

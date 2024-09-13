@@ -60,7 +60,7 @@ class CommutativeRIng(RIng[Z]):
         self.times_is_commutative = CommutativeRIng.property_times_is_commutative(
             self, self.times_operation
         )
-        self.times_is_commutative.is_axiom = True
+        self.times_is_commutative._set_is_axiom(True)
         self._init_args = (name,)
         self._init_kwargs = {
             "elements": elements,

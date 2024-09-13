@@ -36,6 +36,7 @@ class GreaterOrEqual(TotalOrder[T, U], _Ordering):
         right: U,
         is_assumption: bool = False,
         description: str = "",
+        name=None,
         **kwargs,
     ) -> None:
         super().__init__(

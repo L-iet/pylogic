@@ -61,7 +61,7 @@ xsq_lt_eps = xsq_lt_eps_t_absx.transitive(eps_t_absx_lt_eps)
 lim_x_sq_at_0 = (
     xsq_lt_eps.followed_from(absx_lt_sqrt_eps)
     .p_and_reverse(root_eps_positive)
-    .thus_there_exists("delta", sqrt(eps), [[0], [1, 0]])
+    .thus_there_exists("delta", sqrt(eps), positions=[[0], [1, 0]])
     .followed_from(eps_positive)
     .thus_forall(eps)
     .thus_forall(x)
@@ -156,6 +156,20 @@ log(Q.modus_ponens(QImpP).contradicts(np).thus_assumptions_cannot_all_hold())
 
 ###############################
 printing = False
+
+
+P = Proposition("P")
+log(P.is_proven)  # False
+
+Q = Proposition("Q", is_assumption=True)
+QImpP = Q.implies(P, is_assumption=True)
+
+log(Q.modus_ponens(QImpP))  # P
+log(Q.modus_ponens(QImpP).is_proven)  # True
+
+
+###############################
+printing = False
 P = Proposition("P")
 Q = Proposition("Q")
 R = Proposition("R")
@@ -185,6 +199,21 @@ s = Constant("s")
 # log(a.in_particular(r))  # good
 # a.in_particular(eps)  # eps is a variable, bad
 # a.in_particular(s)  # s is not real, bad
+
+###############################
+printing = True
+
+x = Variable("x")
+S = Set("S")
+Px = Proposition("P", args=[x])
+forall_x_in_S_Px = ForallInSet(x, S, Px, is_assumption=True)
+r = Constant("r")
+assume(r.is_in(S))
+Pr = forall_x_in_S_Px(r)
+
+log(Pr)  # P(r)
+log(Pr.is_proven)  # True
+
 ###############################
 printing = False
 # a = ExistsInSet(x, Reals, Px, is_assumption=True)

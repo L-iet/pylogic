@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fractions import Fraction
-from typing import TYPE_CHECKING, Any, Self, cast
+from typing import TYPE_CHECKING, Any, Callable, Self, cast
 
 import sympy as sp
 from sympy.matrices.expressions.matexpr import MatrixElement as MatEl
@@ -31,6 +31,9 @@ class Symbol:
         self.is_sequence: bool = self.is_list or kwargs.get("sequence", False)
         self._init_args = args
         self._init_kwargs = kwargs
+        self.latex_name = (
+            kwargs.get("latex_name") or self.name
+        )  # using or here because latex_name=None is valid
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.name})"
@@ -103,7 +106,7 @@ class Symbol:
         return Equals(self, other, **kwargs)
 
     def _latex(self) -> str:
-        return self.name
+        return self.latex_name
 
     def _repr_latex_(self) -> str:
         return f"$${self._latex()}$$"
@@ -114,8 +117,14 @@ class Symbol:
     def deepcopy(self) -> Self:
         return self.copy()
 
-    def replace(self, old, new) -> Any:
-        if self == old:
+    def replace(self, old, new, equal_check: Callable | None = None) -> Any:
+        """
+        Replace occurences of `old` with `new` in the object.
+        If `equal_check` is provided, it should be a function that takes two
+        arguments and returns True if they are equal.
+        """
+        equal_check = equal_check or (lambda x, y: x == y)
+        if equal_check(old, self):
             return new
         return self
 

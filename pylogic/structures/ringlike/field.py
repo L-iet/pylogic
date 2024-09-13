@@ -68,7 +68,9 @@ class Field(DivisionRIng[Z]):
             operation_symbol=self.times_operation_symbol,
             identity=one,  # type: ignore
         )
-        self.times_is_commutative = self.abelian_group_times.op_is_commutative
+        self.times_is_commutative = self._replace_instance_set(
+            self.abelian_group_times, "op_is_commutative"
+        )
         self._init_args = (name,)
         self._init_kwargs = {
             "elements": elements,

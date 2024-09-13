@@ -53,7 +53,7 @@ class And(_Junction[*Ps]):
             # have to bypass pylance to get Union[*Ps] to work
             if not TYPE_CHECKING:
                 new_p = new_p.copy()
-            new_p._is_proven = True  # type: ignore
+            new_p._set_is_proven(True)  # type: ignore
             new_p.deduced_from = Inference(new_p, self, rule="is_one_of")  # type: ignore
             new_p.from_assumptions = get_assumptions(self)  # type: ignore
             return new_p
@@ -69,7 +69,7 @@ class And(_Junction[*Ps]):
         if self.is_proven:
             new_props: tuple[*Ps] = [p.copy() for p in self.propositions]  # type: ignore
             for p in new_props:
-                p._is_proven = True  # type: ignore
+                p._set_is_proven(True)  # type: ignore
                 p.deduced_from = Inference(p, self, rule="is_one_of")  # type: ignore
                 p.from_assumptions = get_assumptions(self)  # type: ignore
             return new_props
@@ -85,7 +85,7 @@ class And(_Junction[*Ps]):
             if not p.is_proven:  # type: ignore
                 raise ValueError(f"{p} is not proven")
         new_p = self.copy()
-        new_p._is_proven = True
+        new_p._set_is_proven(True)
         new_p.deduced_from = Inference(self, rule="all_proven")
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(p))  # type: ignore
         return new_p

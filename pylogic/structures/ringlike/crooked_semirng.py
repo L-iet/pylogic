@@ -120,13 +120,19 @@ class CrookedSemirng(Ringoid, Generic[Z]):
             operation_name=self.times_operation_name,
             operation_symbol=self.times_operation_symbol,
         )
-        self.plus_is_associative = self.monoid_plus.op_is_associative
-        self.plus_has_identity = self.monoid_plus.has_identity
-        self.times_is_associative = self.semigroup_times.op_is_associative
+        self.plus_is_associative = self._replace_instance_set(
+            self.monoid_plus, "op_is_associative"
+        )
+        self.plus_has_identity = self._replace_instance_set(
+            self.monoid_plus, "has_identity"
+        )
+        self.times_is_associative = self._replace_instance_set(
+            self.semigroup_times, "op_is_associative"
+        )
         self.zero_mul_eq_zero = CrookedSemirng.property_zero_mul_eq_zero(
             self, self.times_operation, self.zero
         )
-        self.zero_mul_eq_zero.is_axiom = True
+        self.zero_mul_eq_zero._set_is_axiom(True)
         self._init_args = (name,)
         self._init_kwargs = {
             "elements": elements,

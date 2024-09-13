@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
+    Callable,
     Generic,
     Literal,
     Self,
@@ -142,6 +143,7 @@ class _Junction(Proposition, Generic[*Ps], ABC):
         current_val: Term,
         new_val: Term,
         positions: list[list[int]] | None = None,
+        equal_check: Callable | None = None,
     ) -> Self:
         if positions is not None:
             prop_positions_lists = [
@@ -155,7 +157,7 @@ class _Junction(Proposition, Generic[*Ps], ABC):
             prop_positions_lists = [None] * len(self.propositions)
         new_p = self.__class__(
             *[
-                p.replace(current_val, new_val, prop_positions)  # type: ignore
+                p.replace(current_val, new_val, prop_positions, equal_check=equal_check)  # type: ignore
                 for p, prop_positions in zip(self.propositions, prop_positions_lists)
             ],
             _is_proven=False,
@@ -265,7 +267,7 @@ Occured when trying to unify `{self}` and `{other}`"
         ]
         if len(rem_props) == 1:
             rem_prop = rem_props[0].copy()  # type: ignore
-            rem_prop._is_proven = True
+            rem_prop._set_is_proven(True)
             rem_prop.from_assumptions = get_assumptions(self).union(p_assumptions)
             rem_prop.deduced_from = Inference(self, *props, rule="resolve")  # type: ignore
             return rem_prop
@@ -305,7 +307,6 @@ Occured when trying to unify `{self}` and `{other}`"
             ),
             _inference=Inference(self, *implications, rule="by_cases"),
         ).remove_duplicates()
-        print(new_p.from_assumptions)
         return new_p
 
     def unit_resolve(self, p: Proposition) -> Proposition | Self:

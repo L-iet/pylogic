@@ -102,7 +102,7 @@ class Group(Monoid):
         )
         a = Variable("a")
         self.latin_square = Group.property_latin_square(self, self.operation)
-        self.latin_square.is_axiom = True
+        self.latin_square._set_is_axiom(True)
 
         # From the Latin square property, we can deduce that every element in
         # the group has a left inverse and a right inverse
@@ -184,9 +184,9 @@ class Group(Monoid):
 
         self.have_inverses = (
             cx_inv_property.p_and(cx_unique_property)
-            .thus_there_exists("a_inv", cx)
+            .thus_there_exists("a_inv", cx, latex_name="a_{inv}")
             .to_exists_unique_in_set()
-            .thus_forall_in_set(a, self)
+            .thus_forall(a_in_self)
         )  # type: ignore
 
         self._init_args = (name,)
@@ -245,4 +245,4 @@ class AbelianGroup(Group):
         self.op_is_commutative = AbelianGroup.property_op_is_commutative(
             self, self.operation
         )
-        self.op_is_commutative.is_axiom = True
+        self.op_is_commutative._set_is_axiom(True)

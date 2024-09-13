@@ -1,7 +1,7 @@
 # pyright: reportInvalidTypeForm=false
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, Literal, Self, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Callable, Generic, Literal, Self, TypedDict, TypeVar
 
 from pylogic.helpers import find_first
 from pylogic.inference import Inference
@@ -126,6 +126,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         current_val: Term,
         new_val: Term,
         positions: list[list[int]] | None = None,
+        equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> "Implies":
         if positions is not None:
             ante_positions = [p[1:] for p in positions if p[0] == 0]
@@ -136,8 +137,12 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             ante_positions = None
             cons_positions = None
         new_p = self.__class__(
-            self.antecedent.replace(current_val, new_val, ante_positions),
-            self.consequent.replace(current_val, new_val, cons_positions),
+            self.antecedent.replace(
+                current_val, new_val, ante_positions, equal_check=equal_check
+            ),
+            self.consequent.replace(
+                current_val, new_val, cons_positions, equal_check=equal_check
+            ),
             _is_proven=False,
         )
         return new_p
@@ -234,7 +239,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             )
         if len(rem_props) == 0:
             new_p = self.consequent.copy()
-            new_p._is_proven = True
+            new_p._set_is_proven(True)
             new_p.deduced_from = Inference(
                 self, in_body, rule="definite_clause_resolve"
             )

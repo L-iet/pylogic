@@ -1,6 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, Literal, Self, TypedDict, TypeVar, overload
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    Generic,
+    Literal,
+    Self,
+    TypedDict,
+    TypeVar,
+    overload,
+)
 
 from pylogic.proposition.proposition import Proposition, get_assumptions
 
@@ -135,9 +144,12 @@ class Not(Proposition, Generic[TProposition]):
         current_val: Term,
         new_val: Term,
         positions: list[list[int]] | None = None,
+        equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
         new_p = self.__class__(
-            self.negated.replace(current_val, new_val, positions=positions)
+            self.negated.replace(
+                current_val, new_val, positions=positions, equal_check=equal_check
+            )
         )
         return new_p
 

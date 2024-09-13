@@ -58,7 +58,7 @@ class Semirng(CrookedSemirng[Z]):
         self.plus_is_commutative = Semirng.property_plus_is_commutative(
             self, self.plus_operation
         )
-        self.plus_is_commutative.is_axiom = True
+        self.plus_is_commutative._set_is_axiom(True)
         self._init_args = (name,)
         self._init_kwargs = {
             "elements": elements,

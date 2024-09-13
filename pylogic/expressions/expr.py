@@ -148,8 +148,15 @@ class Expr(ABC):
     def __hash__(self) -> int:
         return hash((self.__class__.__name__, self.args))
 
-    def replace(self, old: Any, new: Any) -> Self:
-        new_args = [replace(arg, old, new) for arg in self.args]
+    def replace(self, old: Any, new: Any, equal_check: Callable | None = None) -> Self:
+        """
+        For replacing subexpressions in an expression.
+        `equal_check` is a function that checks if two
+        objects are equal in order to replace.
+        """
+        new_args = [
+            replace(arg, old, new, equal_check=equal_check) for arg in self.args
+        ]
         new_expr = self.copy()
         new_expr._build_args_and_symbols(*new_args)
         return new_expr
@@ -277,9 +284,9 @@ class BinaryExpression(CustomExpr[U]):
     def __repr__(self) -> str:
         return f"BinOp{self.name.capitalize()}({self.left}, {self.right})"
 
-    def replace(self, old: Any, new: Any) -> Self:
-        new_left = replace(self.left, old, new)
-        new_right = replace(self.right, old, new)
+    def replace(self, old: Any, new: Any, equal_check: Callable | None = None) -> Self:
+        new_left = replace(self.left, old, new, equal_check=equal_check)
+        new_right = replace(self.right, old, new, equal_check=equal_check)
         new_expr = self.copy()
         new_expr._build_args_and_symbols(new_left, new_right)
         new_expr.left = new_left
@@ -287,7 +294,9 @@ class BinaryExpression(CustomExpr[U]):
         return new_expr
 
     def _latex(self) -> str:
-        return f"{_latex(self.left)} {self.symbol} {_latex(self.right)}"
+        from pylogic.helpers import latex
+
+        return rf"\left({latex(self.left)} {self.symbol} {latex(self.right)}\right)"
 
     def __str__(self) -> str:
         return f"({self.left} {self.symbol} {self.right})"
@@ -314,7 +323,9 @@ class Add(Expr):
         return sp.Add(*[to_sympy(arg) for arg in self.args])
 
     def _latex(self) -> str:
-        return "{" + " + ".join([_latex(a) for a in self.args]) + "}"
+        from pylogic.helpers import latex
+
+        return r"{\left(" + " + ".join([latex(a) for a in self.args]) + r"\right)}"
 
     def __str__(self) -> str:
         return " + ".join(map(str, self.args))
@@ -341,10 +352,12 @@ class Mul(Expr):
         return sp.Mul(*[to_sympy(arg) for arg in self.args])
 
     def _latex(self) -> str:
+        from pylogic.helpers import latex
+
         args = []
         for arg in self.args:
             if isinstance(arg, Add):
-                args.append(rf"\left({_latex(arg)}\right)")
+                args.append(rf"\left({latex(arg)}\right)")
             else:
                 args.append(str(arg))
         return "{" + r" \cdot ".join(args) + "}"
@@ -366,9 +379,9 @@ class Pow(Expr):
         self.is_real = None
         super().__init__(base, exp)
 
-    def replace(self, old: Any, new: Any) -> Self:
-        new_base = replace(self.base, old, new)
-        new_exp = replace(self.exp, old, new)
+    def replace(self, old: Any, new: Any, equal_check: Callable | None = None) -> Self:
+        new_base = replace(self.base, old, new, equal_check=equal_check)
+        new_exp = replace(self.exp, old, new, equal_check=equal_check)
         new_expr = self.copy()
         new_expr._build_args_and_symbols(new_base, new_exp)
         new_expr.base = new_base
@@ -384,15 +397,17 @@ class Pow(Expr):
         return sp.Pow(to_sympy(self.base), to_sympy(self.exp))
 
     def _latex(self) -> str:
+        from pylogic.helpers import latex
+
         if (
             isinstance(self.base, Symbol)
             or isinstance(self.base, int)
             or isinstance(self.base, float)
         ):
-            base_latex = _latex(self.base)
+            base_latex = latex(self.base)
         else:
-            base_latex = rf"\left({_latex(self.base)}\right)"
-        exp_latex = _latex(self.exp)
+            base_latex = rf"\left({latex(self.base)}\right)"
+        exp_latex = latex(self.exp)
         return "{" + f"{base_latex}^{{{exp_latex}}}" + "}"
 
     def __str__(self) -> str:
@@ -417,14 +432,18 @@ def replace(
     expr: PBasic | Set | Expr,
     old: Any,
     new: Any,
+    equal_check: Callable | None = None,
 ) -> PBasic | Set | Expr:
     """
     For replacing subexpressions in an expression.
+    `equal_check` is a function that checks if two
+    objects are equal in order to replace.
     """
-    if expr == old:
+    equal_check = equal_check or (lambda x, y: x == y)
+    if equal_check(old, expr):
         return new
     elif isinstance(expr, Expr):
-        return expr.replace(old, new)
+        return expr.replace(old, new, equal_check=equal_check)
     else:
         return expr
 
@@ -474,9 +493,3 @@ def sub(a: PBasic | Expr, b: PBasic | Expr) -> Add:
 
 def div(a: PBasic | Expr, b: PBasic | Expr) -> Mul:
     return Mul(a, Pow(b, -1))
-
-
-def _latex(expr: PBasic | Set | Expr) -> str:
-    if isinstance(expr, Expr):
-        return expr._latex()
-    return "{" + str(expr) + "}"

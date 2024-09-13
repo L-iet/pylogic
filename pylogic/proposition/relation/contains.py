@@ -56,6 +56,12 @@ class IsContainedIn(BinaryRelation[T, U]):
             description=description,
             **kwargs,
         )
+        if (
+            kwargs.get("_is_proven")
+            or kwargs.get("is_assumption")
+            or kwargs.get("is_axiom")
+        ):
+            self.right.elements.add(self.left)
 
     @property
     def set_(self) -> U:
@@ -64,6 +70,30 @@ class IsContainedIn(BinaryRelation[T, U]):
     @property
     def element(self) -> T:
         return self.left
+
+    def _set_is_proven(self, value: bool) -> None:
+        if value:
+            self.right.elements.add(self.left)
+        elif not (self.is_axiom or self.is_assumption):
+            self.right.elements.discard(self.left)
+        super()._set_is_proven(value)
+
+    def _set_is_assumption(self, value: bool) -> None:
+        # TODO: fix this. I'm still getting some dummy variables in
+        # set's elements although we called followed_from with this prop
+        if value:
+            self.right.elements.add(self.left)
+        else:
+            if not (self._is_proven or self.is_axiom):
+                self.right.elements.discard(self.left)
+        super()._set_is_assumption(value)
+
+    def _set_is_axiom(self, value: bool) -> None:
+        if value:
+            self.right.elements.add(self.left)
+        elif not (self._is_proven or self.is_assumption):
+            self.right.elements.discard(self.left)
+        super()._set_is_axiom(value)
 
     def by_containment_func(self) -> Self:
         """Logical tactic. Use the set's containment function to prove that it

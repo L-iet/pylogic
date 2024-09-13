@@ -34,8 +34,8 @@ if TYPE_CHECKING:
     Unification = dict[Variable, Term]
 
 
-def replace(expr, old, new) -> Any:
-    return _replace(expr, old, new)
+def replace(expr, old, new, equal_check: Callable | None = None) -> Any:
+    return _replace(expr, old, new, equal_check=equal_check)
 
 
 def deepcopy(obj: T) -> T:
@@ -166,10 +166,22 @@ def assume(arg: P, *args: *Ps) -> tuple[P, *Ps]: ...
 def assume(arg: P, *args: *Ps) -> P | tuple[P, *Ps]:
     all_args = (arg, *args)
     for argmnt in all_args:
-        argmnt.is_assumption = True  # type: ignore
+        argmnt._set_is_assumption(True)  # type: ignore
     if len(all_args) == 1:
         return arg
     return all_args
+
+
+def latex(arg: Any) -> str:
+    # TODO: Add support for Function
+    from pylogic.expressions.expr import Expr
+    from pylogic.proposition.proposition import Proposition
+    from pylogic.structures.set_ import Set
+    from pylogic.symbol import Symbol
+
+    if isinstance(arg, (Expr, Symbol, Set, Proposition)):
+        return arg._latex()
+    return f"{{{str(arg)}}}"
 
 
 class Side(Enum):

@@ -38,7 +38,7 @@ def class_n_init(
     assert " " not in name, "Set name cannot contain spaces"
     self.name = name
     self.elements = set(elements) if elements else set()
-    self._containment_function = containment_function or (lambda x: x in self.elements)
+    self._containment_function = containment_function
     if illegal_occur_check:
         self.illegal_occur_check(containment_function, predicate)
     self._predicate = predicate
@@ -73,7 +73,11 @@ def containment_function(self, x: Any) -> bool:
 
     if isinstance(x, Set) or x.__class__.__name__.startswith("Collection"):
         return self.level == x.level + 1 and self._containment_function(x)
-    return self._containment_function(x)
+    if x in self.elements:
+        return True
+    elif self._containment_function:
+        return self._containment_function(x)
+    return False
 
 
 def predicate(self, x: Any) -> Proposition:

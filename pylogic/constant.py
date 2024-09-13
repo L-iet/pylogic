@@ -32,7 +32,7 @@ class Constant(Symbol, Generic[T]):
         self.value: T = cast(T, value)
 
         # if the constant is created from a proven existential statement
-        # it qwon't be equal to any other constant
+        # it won't be equal to any other constant
         self._from_existential_instance = kwargs.get(
             "_from_existential_instance", False
         )

@@ -20,4 +20,4 @@
 #     mul_inv,
 #     distributive,
 # ]
-from pylogic.structures.ringlike.ordered_field import *
+from pylogic.theories.real_analysis import *

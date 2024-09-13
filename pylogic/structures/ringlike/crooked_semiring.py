@@ -76,7 +76,9 @@ class CrookedSemirIng(CrookedSemirng[Z]):
             operation_symbol=self.times_operation_symbol,
             identity=self.one,
         )
-        self.times_has_identity = self.monoid_times.has_identity
+        self.times_has_identity = self._replace_instance_set(
+            self.monoid_times, "has_identity"
+        )
         self._init_args = (name,)
         self._init_kwargs = {
             "elements": elements,

@@ -109,14 +109,18 @@ class DivisionRIng(RIng[Z]):
             operation_symbol=self.times_operation_symbol,
             identity=one,  # type: ignore
         )
-        self.have_mul_inverses = self.group_times.have_inverses
-        self.times_latin_square = self.group_times.latin_square
+        self.have_mul_inverses = self._replace_instance_set(
+            self.group_times, "have_inverses"
+        )
+        self.times_latin_square = self._replace_instance_set(
+            self.group_times, "latin_square"
+        )
         self.zero_product = DivisionRIng.property_zero_product(
             set_=self,
             times_operation=self.times_operation,
             zero=self.zero,
         )
-        self.zero_product.is_axiom = True
+        self.zero_product._set_is_axiom(True)
         self._init_args = (name,)
         self._init_kwargs = {
             "elements": elements,

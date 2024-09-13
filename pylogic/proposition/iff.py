@@ -1,7 +1,7 @@
 # pyright: reportInvalidTypeForm=false
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, Literal, Self, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Callable, Generic, Literal, Self, TypedDict, TypeVar
 
 from pylogic.helpers import find_first
 from pylogic.inference import Inference
@@ -124,6 +124,7 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
         current_val: Term,
         new_val: Term,
         positions: list[list[int]] | None = None,
+        equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
         if positions is not None:
             ante_positions = [p[1:] for p in positions if p[0] == 0]
@@ -134,8 +135,12 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
             ante_positions = None
             cons_positions = None
         new_p = self.__class__(
-            self.left.replace(current_val, new_val, ante_positions),
-            self.right.replace(current_val, new_val, cons_positions),
+            self.left.replace(
+                current_val, new_val, ante_positions, equal_check=equal_check
+            ),
+            self.right.replace(
+                current_val, new_val, cons_positions, equal_check=equal_check
+            ),
             _is_proven=False,
         )
         return new_p

@@ -323,28 +323,28 @@ class OrderedField(Field[Z]):
         self.order_is_reflexive = OrderedField.property_order_is_reflexive(
             self, self.total_order
         )
-        self.order_is_reflexive.is_axiom = True
+        self.order_is_reflexive._set_is_axiom(True)
         self.order_is_transitive = OrderedField.property_order_is_transitive(
             self, self.total_order
         )
-        self.order_is_transitive.is_axiom = True
+        self.order_is_transitive._set_is_axiom(True)
         self.order_is_antisymmetric = OrderedField.property_order_is_antisymmetric(
             self, self.total_order
         )
-        self.order_is_antisymmetric.is_axiom = True
+        self.order_is_antisymmetric._set_is_axiom(True)
         self.order_is_strongly_connected = (
             OrderedField.property_order_is_strongly_connected(self, self.total_order)
         )
-        self.order_is_strongly_connected.is_axiom = True
+        self.order_is_strongly_connected._set_is_axiom(True)
 
         self.order_definition = OrderedField.property_order_definition(
             self, self.total_order, self.strict_total_order
         )
-        self.order_definition.is_axiom = True
+        self.order_definition._set_is_axiom(True)
         self.strict_order_definition = OrderedField.property_strict_order_definition(
             self, self.total_order, self.strict_total_order
         )
-        self.strict_order_definition.is_axiom = True
+        self.strict_order_definition._set_is_axiom(True)
 
         a, b, c = Variable("a"), Variable("b"), Variable("c")
         a_in_self = a.is_in(self, is_assumption=True)
@@ -364,9 +364,11 @@ class OrderedField(Field[Z]):
         a_nlt_a_or_a_eq_a = a_nlt_a_or_a_eq_a.de_morgan()
         self.strict_order_is_irreflexive = a_nlt_a_or_a_eq_a.modus_ponens(
             step_2.forward_implication()  # type: ignore
-        ).thus_forall_in_set(a, self)
+        ).thus_forall(a_in_self)
 
         # 2. Strict order is asymmetric
+        a_in_self.assume()
+        b_in_self.assume()
         a_lt_b = self.strict_total_order(a, b, is_assumption=True)
         step_1 = (
             self.strict_order_definition.in_particular(a, a_in_self)
@@ -391,25 +393,28 @@ class OrderedField(Field[Z]):
         b_nlt_a, _ = b_nleq_a.modus_ponens(step_4).de_morgan().extract()  # type: ignore
         b_nlt_a = cast(Not[StrictTotalOrder], b_nlt_a)
         self.strict_order_is_asymmetric = (
-            b_nlt_a.followed_from(a_lt_b)
-            .thus_forall_in_set(b, self)
-            .thus_forall_in_set(a, self)
+            b_nlt_a.followed_from(a_lt_b).thus_forall(b_in_self).thus_forall(a_in_self)
         )
 
         # 3. Strict order is transitive
         # techically this is a theorem,
         # but we are just defining it to be true here.
+        a_in_self.assume()
+        b_in_self.assume()
+        c_in_self.assume()
         a_lt_b = self.strict_total_order(a, b, is_assumption=True)
         b_lt_c = self.strict_total_order(b, c, is_assumption=True)
         a_lt_c = a_lt_b.transitive(b_lt_c)
         self.strict_order_is_transitive = (
             a_lt_c.followed_from(a_lt_b, b_lt_c)
-            .thus_forall_in_set(c, self)
-            .thus_forall_in_set(b, self)
-            .thus_forall_in_set(a, self)
+            .thus_forall(c_in_self)
+            .thus_forall(b_in_self)
+            .thus_forall(a_in_self)
         )
 
         # 4. Strict order is connected
+        a_in_self.assume()
+        b_in_self.assume()
         a_neq_b = neg(Equals(a, b), is_assumption=True)
         a_leq_b_or_b_leq_a = self.order_is_strongly_connected.in_particular(
             a, a_in_self
@@ -435,8 +440,8 @@ class OrderedField(Field[Z]):
         )
         self.strict_order_is_connected = (
             a_lt_b_or_b_lt_a.followed_from(a_neq_b)
-            .thus_forall_in_set(b, self)
-            .thus_forall_in_set(a, self)
+            .thus_forall(b_in_self)
+            .thus_forall(a_in_self)
         )  # type: ignore
 
     def _build_total_and_strict_orders(

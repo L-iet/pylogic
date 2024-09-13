@@ -70,7 +70,7 @@ class Semigroup(Magma):
         self.op_is_associative = Semigroup.property_op_is_associative(
             self, self.operation
         )
-        self.op_is_associative.is_axiom = True
+        self.op_is_associative._set_is_axiom(True)
         self._init_args = (name,)
         self._init_kwargs = {
             "elements": elements,

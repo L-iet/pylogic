@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Self, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Self, TypedDict, TypeVar
 
 import sympy as sp
 
@@ -95,7 +95,7 @@ class Forall(_Quantified[TProposition]):
                 index == left_indices[i] == right_indices[i]
             ), f"Indices mismatch: {index}, {left_indices[i]}, {right_indices[i]}"
         new_p = Equals(left_mat, right_mat)
-        new_p._is_proven = True
+        new_p._set_is_proven(True)
         return new_p
 
     def quantified_modus_ponens(
@@ -135,12 +135,15 @@ class Forall(_Quantified[TProposition]):
         current_val: Term,
         new_val: Term,
         positions: list[list[int]] | None = None,
+        equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
         if current_val == self.variable:
             raise ValueError("Cannot replace variable (not implemented)")
         new_p = self.__class__(
             self.variable,
-            self.inner_proposition.replace(current_val, new_val, positions=positions),
+            self.inner_proposition.replace(
+                current_val, new_val, positions=positions, equal_check=equal_check
+            ),
             _is_proven=False,
         )
         return new_p
@@ -155,7 +158,7 @@ class Forall(_Quantified[TProposition]):
         # I previously checked that expression_to_substitute does
         # not contain variables, but I think it's not necessary
         new_p = self.inner_proposition.replace(self.variable, expression_to_substitute)
-        new_p._is_proven = True
+        new_p._set_is_proven(True)
         new_p.from_assumptions = get_assumptions(self).copy()
         new_p.deduced_from = Inference(self, rule="in_particular")
         return new_p
@@ -203,12 +206,23 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
     def __repr__(self) -> str:
         return f"forall {self.variable} in {self.set_}: {self._inner_without_set}"
 
+    def __call__(self, *terms: Term) -> Any:
+        prop = self
+        i = 0
+        while isinstance(prop, Forall) and i < len(terms):
+            prop = prop.in_particular(terms[i])
+            i += 1
+        return prop
+
     def replace(
         self,
         current_val: Term,
         new_val: Term,
         positions: list[list[int]] | None = None,
+        equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
+        from pylogic.structures.set_ import Set
+
         if current_val == self.variable:
             raise ValueError("Cannot replace variable (not implemented)")
         if current_val == self.set_:
@@ -217,10 +231,11 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
                 self.variable,
                 new_val,
                 self._inner_without_set.replace(
-                    current_val, new_val, positions=positions
+                    current_val, new_val, positions=positions, equal_check=equal_check
                 ),
                 _is_proven=False,
             )
+            return new_p
 
         new_p = self.__class__(
             self.variable,
@@ -297,3 +312,7 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
             )
         new_p = impl.first_unit_definite_clause_resolve(ante)
         return new_p  # type: ignore
+
+    def _latex(self, printer=None) -> str:
+        var_latex = self.variable._latex()
+        return rf"\forall {var_latex} \in {self.set_._latex()}: {self._inner_without_set._latex()}"

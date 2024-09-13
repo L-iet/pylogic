@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fractions import Fraction
-from typing import Callable, Iterable, TypeAlias, TypeVar
+from typing import Any, Callable, Iterable, TypeAlias, TypeVar
 
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.infix.infix import SpecialInfix
@@ -83,8 +83,12 @@ class _RingoidCommon(Set):
         self.plus_operation = self.magma_plus.operation
         self.times_operation = self.magma_times.operation
 
-        self.is_closed_under_plus = self.magma_plus.is_closed_under_op
-        self.is_closed_under_times = self.magma_times.is_closed_under_op
+        self.is_closed_under_plus = self._replace_instance_set(
+            self.magma_plus, "is_closed_under_op"
+        )
+        self.is_closed_under_times = self._replace_instance_set(
+            self.magma_times, "is_closed_under_op"
+        )
 
         self.plus = self.plus_operation
         self.times = self.times_operation
@@ -99,6 +103,18 @@ class _RingoidCommon(Set):
             "times_operation_symbol": times_operation_symbol,
         }
 
+    def _replace_instance_set(self, _instance_set: Set, _property: str) -> Any:
+        orig_prop = getattr(_instance_set, _property)
+        ret_val = orig_prop.replace(
+            _instance_set, self, equal_check=lambda x, y: x is y
+        )
+        ret_val._set_is_axiom(orig_prop.is_axiom)
+        ret_val._set_is_proven(orig_prop._is_proven)
+        ret_val._set_is_assumption(orig_prop.is_assumption)
+        ret_val.from_assumptions = orig_prop.from_assumptions
+        ret_val.deduced_from = orig_prop.deduced_from
+        return ret_val
+
     def containment_function(self, x: Term) -> bool:
         if isinstance(x, BinaryExpression):
             return (
@@ -111,4 +127,4 @@ class _RingoidCommon(Set):
                     and x.eval_func is self.times_eval_func
                 )
             ) and all(self.containment_function(arg) for arg in x.args)
-        return self._containment_function(x)
+        return super().containment_function(x)
