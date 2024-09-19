@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.relation.equals import Equals
     from pylogic.structures.set_ import Set
     from pylogic.sympy_helpers import PylSympySymbol
+    from pylogic.variable import Variable
 
 
 class Symbol:
@@ -31,15 +32,22 @@ class Symbol:
         self.is_sequence: bool = self.is_list or kwargs.get("sequence", False)
         self._init_args = args
         self._init_kwargs = kwargs
+        self._from_existential_instance = kwargs.get(
+            "_from_existential_instance", False
+        )
         self.latex_name = (
             kwargs.get("latex_name") or self.name
         )  # using or here because latex_name=None is valid
+        self.depends_on: tuple[Symbol, ...] = kwargs.get("depends_on", ())
+        self.independent_dependencies = self.get_independent_dependencies()
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.name})"
+        return f"{self.__class__.__name__}({self.name}, deps={self.depends_on})"
 
     def __str__(self):
-        return self.name
+        if len(self.independent_dependencies) > 0:
+            return f"{self.name}({', '.join(str(d) for d in self.independent_dependencies)})"
+        return f"{self.name}"
 
     def __add__(self, other: Symbol | Numeric | Expr) -> Add:
         return Add(self, other)
@@ -79,8 +87,10 @@ class Symbol:
         """
         Check if two symbols are structurally equal.
         """
+        if self is other:
+            return True
         if isinstance(other, Symbol):
-            return (
+            return (not self._from_existential_instance) and (
                 self.name == other.name
                 and self.__class__ == other.__class__
                 and self.is_real == other.is_real
@@ -99,6 +109,15 @@ class Symbol:
         if isinstance(other, Symbol):
             return self.evaluate() == other.evaluate()
         return self.evaluate() == other
+
+    def get_independent_dependencies(self) -> tuple[Variable, ...]:
+        indeps = []
+        for dep in self.depends_on:
+            if len(dep.depends_on) == 0:
+                indeps.append(dep)
+            else:
+                indeps.extend(dep.get_independent_dependencies())
+        return tuple(indeps)
 
     def equals(self, other: Symbol | Numeric | Expr, **kwargs) -> Equals:
         from pylogic.proposition.relation.equals import Equals

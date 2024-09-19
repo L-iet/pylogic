@@ -17,6 +17,7 @@ from typing import (
 from pylogic.printing.printing import str_print_order
 
 if TYPE_CHECKING:
+    from pylogic.constant import Constant
     from pylogic.expressions.expr import Expr
     from pylogic.helpers import Side
     from pylogic.proposition.and_ import And
@@ -114,6 +115,7 @@ class Proposition:
         args: list[Set | Term] | None
             The arguments of the proposition. If None, we assume the proposition has no arguments.
         """
+        from pylogic.helpers import get_class_ns, get_consts, get_sets, get_vars
         from pylogic.inference import Inference
 
         _is_proven: bool = cast(bool, kwargs.get("_is_proven", False))
@@ -147,6 +149,31 @@ class Proposition:
 
         self.bound_vars: set[Variable] = set()  # Variables that are bound to
         # quantifiers in the proposition.
+
+        self.variables: set[Variable] = set()
+        for a in self.args:
+            self.variables.update(get_vars(a))
+        self.constants: set[Constant] = set()
+        for a in self.args:
+            self.constants.update(get_consts(a))
+        self.sets: set[Set] = set()
+        for a in self.args:
+            self.sets.update(get_sets(a))
+        self.class_ns: set[Class] = set()
+        for a in self.args:
+            self.class_ns.update(get_class_ns(a))
+
+    @property
+    def symbols(self) -> set[Symbol]:
+        return self.variables.union(self.constants)  # type: ignore
+
+    @property
+    def atoms(self) -> set[Symbol | Set]:
+        """
+        All the atomic symbols and sets in the proposition.
+        """
+        # TODO: Maybe include Function
+        return self.symbols.union(self.sets).union(self.class_ns)
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Proposition):
@@ -290,6 +317,8 @@ class Proposition:
         equal_check: Callable[[Term, Term], bool] | None
             A function that takes two arguments and returns True if they compare equal.
         """
+        from pylogic.expressions.expr import Expr
+
         equal_check = equal_check or (lambda x, y: x == y)
         new_p_args = self.args.copy()
         index = -1
@@ -841,8 +870,21 @@ class Proposition:
             exists q: (forall x: (p1 q -> p2 x) /\ (p3 x) /\ (p4 q)) -> (p5 q)
         """
         assert self.is_proven, f"{self} is not proven"
+        from pylogic.helpers import find_first
         from pylogic.inference import Inference
         from pylogic.proposition.quantified.exists import Exists
+        from pylogic.variable import Variable
+
+        if isinstance(expression_to_replace, Variable):
+            first_not_in_atoms_or_bound = find_first(
+                lambda x: (x not in self.atoms) or (x.is_bound),
+                expression_to_replace.independent_dependencies,
+            )
+            if first_not_in_atoms_or_bound[1] is not None:
+                raise ValueError(
+                    f"{first_not_in_atoms_or_bound[1]} is not in the atoms of {self}, or is bound already, \
+and is a dependency of {expression_to_replace}"
+                )
 
         new_p = Exists.from_proposition(
             existential_var_name=existential_var,
@@ -876,6 +918,8 @@ class Proposition:
         """
         Logical tactic.
         Given self is proven, return a new proposition that for all variables, self is true.
+        This inference rule binds the variable, so you cannot reuse the variable
+        unless you unbind it.
         """
         assert self.is_proven, f"{self} is not proven"
         from pylogic.inference import Inference
@@ -893,6 +937,8 @@ class Proposition:
             variable = variable_or_containment
             set_ = None
             cls = Forall
+        assert variable.is_bound is False, f"{variable} is already bound"
+        assert len(variable.depends_on) == 0, f"{variable} depends on something"
         return cls(
             variable=variable,
             set_=set_,  # type:ignore

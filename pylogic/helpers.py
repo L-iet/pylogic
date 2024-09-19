@@ -25,6 +25,8 @@ P = TypeVar("P", bound=Proposition)
 Ps = TypeVarTuple("Ps")
 
 if TYPE_CHECKING:
+    from pylogic.constant import Constant
+    from pylogic.structures.class_ import Class
     from pylogic.structures.set_ import Set
 
     Numeric = Fraction | int | float
@@ -36,6 +38,59 @@ if TYPE_CHECKING:
 
 def replace(expr, old, new, equal_check: Callable | None = None) -> Any:
     return _replace(expr, old, new, equal_check=equal_check)
+
+
+def get_vars(expr: Any) -> set[Variable]:
+    """
+    Get all variables in expr.
+    """
+    if isinstance(expr, Variable):
+        return {expr}
+    if hasattr(expr, "variables"):
+        return expr.variables
+    return set()
+
+
+def get_consts(expr: Any) -> set[Constant]:
+    from pylogic.constant import Constant
+
+    """
+    Get all constants in expr.
+    """
+    if isinstance(expr, Constant):
+        return {expr}
+    if is_numeric(expr):
+        return {Constant(expr)}
+    if hasattr(expr, "constants"):
+        return expr.constants
+    return set()
+
+
+def get_sets(expr: Any) -> set[Set]:
+    """
+    Get all sets in expr.
+    """
+    from pylogic.structures.set_ import Set
+
+    if isinstance(expr, Set):
+        return {expr}
+    if hasattr(expr, "sets"):
+        return expr.sets
+    return set()
+
+
+def get_class_ns(expr: Any) -> set[Class]:
+    """
+    Get all class namespaces in expr.
+    """
+    if (
+        expr.__class__.__name__.startswith("Collection")
+        and expr.__class__.__name__[10].isdigit()
+    ):
+        return {expr}
+    if hasattr(expr, "class_ns"):
+        return expr.class_ns
+    return set()
 
 
 def deepcopy(obj: T) -> T:

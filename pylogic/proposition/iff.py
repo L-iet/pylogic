@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.and_ import And
     from pylogic.proposition.not_ import Not
     from pylogic.proposition.or_ import Or
+    from pylogic.structures.class_ import Class
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
     from pylogic.variable import Variable
@@ -56,6 +57,10 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
         super().__init__(name, is_assumption, description=description, **kwargs)
         self.is_atomic = False
         self.bound_vars = left.bound_vars.union(right.bound_vars)
+        self.variables = left.variables.union(right.variables)
+        self.constants = left.constants.union(right.constants)
+        self.sets = left.sets.union(right.sets)
+        self.class_ns: set[Class] = left.class_ns.union(right.class_ns)
 
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, Iff):

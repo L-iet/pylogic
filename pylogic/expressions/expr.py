@@ -18,6 +18,7 @@ import sympy as sp
 if TYPE_CHECKING:
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
+    from pylogic.structures.class_ import Class
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
     from pylogic.sympy_helpers import PylSympySymbol
@@ -44,20 +45,38 @@ class Expr(ABC):
         self._init_kwargs = kwargs
 
     def _build_args_and_symbols(self, *args: PBasic | Set | Expr) -> None:
+        from pylogic.constant import Constant
         from pylogic.structures.set_ import Set
-        from pylogic.symbol import Symbol
+        from pylogic.variable import Variable
 
         self.args = args
-        self.symbols: set[Symbol] = set()  # symbols present in this expression
+        self.variables: set[Variable] = set()  # variables present in this expression
+        self.constants: set[Constant] = set()
         self.sets: set[Set] = set()  # sets present in this expression
+        self.class_ns: set[Class] = set()
         for arg in args:
-            if isinstance(arg, Symbol):
-                self.symbols.add(arg)
+            if isinstance(arg, Variable):
+                self.variables.add(arg)
+            elif isinstance(arg, Constant):
+                self.constants.add(arg)
             elif isinstance(arg, Set):
                 self.sets.add(arg)
             elif isinstance(arg, Expr):
                 self.symbols.update(arg.symbols)
                 self.sets.update(arg.sets)
+            else:
+                cls = arg.__class__.__name__
+                if cls.startswith("Collection") and cls[10].isdigit():
+                    self.class_ns.add(arg)  # type: ignore
+
+    @property
+    def symbols(self) -> set[Symbol]:
+        return self.variables.union(self.constants)  # type: ignore
+
+    @property
+    def atoms(self) -> set[Class | Set | Symbol]:
+        # TODO: add function
+        return self.symbols.union(self.sets).union(self.class_ns)
 
     @abstractmethod
     def evaluate(self) -> Expr:

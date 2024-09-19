@@ -29,7 +29,31 @@ class Relation(Proposition):
         super().__init__(
             name, is_assumption, description=description, args=args, **kwargs
         )
+        from pylogic.constant import Constant
+        from pylogic.expressions.expr import Expr
+        from pylogic.structures.set_ import Set
+        from pylogic.variable import Variable
+
         self.is_atomic = True
+        self.variables = set()
+        self.constants = set()
+        self.sets = set()
+        self.class_ns = set()
+        for arg in self.args:
+            if isinstance(arg, Variable):
+                self.variables.add(arg)
+            elif isinstance(arg, Set):
+                self.sets.add(arg)
+            elif isinstance(arg, Constant):
+                self.constants.add(arg)
+            elif isinstance(arg, Expr):
+                self.variables.update(arg.variables)
+                self.constants.update(arg.constants)
+                self.sets.update(arg.sets)
+            else:
+                cls = arg.__class__.__name__
+                if cls.startswith("Collection") and cls[10].isdigit():
+                    self.class_ns.add(arg)  # type: ignore
 
     def __repr__(self) -> str:
         return super().__repr__()

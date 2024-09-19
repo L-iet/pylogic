@@ -108,13 +108,27 @@ class Exists(_Quantified[TProposition]):
     def __iter__(self):
         return iter(self.extract())
 
-    def extract(self) -> tuple[Constant[str], TProposition]:
+    def extract(self) -> tuple[Symbol, TProposition]:
         """Logical tactic.
         If self is proven, return a constant and a proven inner proposition.
         """
         assert self.is_proven, f"{self} is not proven"
-        subscript = r"\_".join(self.variable.name.split("_"))
-        c = Constant(f"c_{self.variable.name}", latex_name=f"c_{{{subscript}}}")
+        other_free_vars = tuple(
+            {
+                v
+                for v in self.inner_proposition.variables
+                if (not v.is_bound) and (v != self.variable)
+            }
+        )
+        if not other_free_vars:
+            cls = Constant
+        else:
+            cls = Variable
+        c = cls(
+            self.variable.name,
+            depends_on=other_free_vars,
+            _from_existential_instance=True,
+        )
         proven_inner = self.inner_proposition.replace(self.variable, c)
         proven_inner._set_is_proven(True)
         proven_inner.from_assumptions = get_assumptions(self).copy()

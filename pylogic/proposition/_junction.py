@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.and_ import And
     from pylogic.proposition.implies import Implies
+    from pylogic.structures.class_ import Class
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
     from pylogic.variable import Variable
@@ -61,8 +62,16 @@ class _Junction(Proposition, Generic[*Ps], ABC):
         self.is_atomic = False
         self._join_symbol = _join_symbol
         self.bound_vars: set[Variable] = set()
+        self.variables: set[Variable] = set()
+        self.constants: set[Symbol] = set()
+        self.sets: set[Set] = set()
+        self.class_ns: set[Class] = set()
         for prop in propositions:
             self.bound_vars = self.bound_vars.union(prop.bound_vars)  # type: ignore
+            self.variables = self.variables.union(prop.variables)  # type: ignore
+            self.constants = self.constants.union(prop.constants)  # type: ignore
+            self.sets = self.sets.union(prop.sets)  # type: ignore
+            self.class_ns = self.class_ns.union(prop.class_ns)  # type: ignore
 
         self._idx = 0  # for iteration over propositions
 

@@ -53,6 +53,11 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
         self._q = _q
         self.is_atomic = False
         self.bound_vars = inner_proposition.bound_vars.union({variable})
+        self.variables = inner_proposition.variables.copy()
+        self.variables.add(variable)
+        self.constants = inner_proposition.constants.copy()
+        self.sets = inner_proposition.sets.copy()
+        self.class_ns = inner_proposition.class_ns.copy()
 
     def __repr__(self) -> str:
         return f"{self._q} {self.variable}: {self.inner_proposition}"

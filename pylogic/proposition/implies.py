@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.and_ import And
     from pylogic.proposition.or_ import Or
+    from pylogic.structures.class_ import Class
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
     from pylogic.variable import Variable
@@ -53,6 +54,10 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         super().__init__(name, is_assumption, description=description, **kwargs)
         self.is_atomic = False
         self.bound_vars = antecedent.bound_vars.union(consequent.bound_vars)
+        self.variables = antecedent.variables.union(consequent.variables)
+        self.constants = antecedent.constants.union(consequent.constants)
+        self.sets = antecedent.sets.union(consequent.sets)
+        self.class_ns: set[Class] = antecedent.class_ns.union(consequent.class_ns)
 
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, Implies):

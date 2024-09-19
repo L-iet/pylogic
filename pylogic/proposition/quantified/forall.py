@@ -152,9 +152,14 @@ class Forall(_Quantified[TProposition]):
         """Logical tactic. Given self is proven, replace the variable in the inner
         proposition and get a proven proposition.
         """
+        from pylogic.variable import Variable
+
         # TODO: may need to define or override .replace for Forall to prevent
         # unnecessarily replacing the variable in the inner proposition
         assert self.is_proven, f"{self} is not proven"
+
+        if isinstance(expression_to_substitute, Variable):
+            expression_to_substitute.unbind()
         # I previously checked that expression_to_substitute does
         # not contain variables, but I think it's not necessary
         new_p = self.inner_proposition.replace(self.variable, expression_to_substitute)

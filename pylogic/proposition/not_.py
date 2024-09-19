@@ -88,6 +88,10 @@ class Not(Proposition, Generic[TProposition]):
         super().__init__(name, is_assumption, description=description, **kwargs)
         self.is_atomic = False
         self.bound_vars = negated.bound_vars.copy()
+        self.variables = negated.variables.copy()
+        self.constants = negated.constants.copy()
+        self.sets = negated.sets.copy()
+        self.class_ns = negated.class_ns.copy()
 
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, Not):

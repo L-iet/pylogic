@@ -28,20 +28,22 @@ class Constant(Symbol, Generic[T]):
             Decimal,
             context="Constant.__init__",
         )
-
+        if isinstance(value, Constant):
+            value = value.value
         self.value: T = cast(T, value)
-
+        super().__init__(str(value), *args, **kwargs)
         # if the constant is created from a proven existential statement
         # it won't be equal to any other constant
         self._from_existential_instance = kwargs.get(
             "_from_existential_instance", False
         )
-        super().__init__(str(value), *args, **kwargs)
 
     def __eq__(self, other: Any) -> bool:
         """
         Constant(0) == 0
         """
+        if self is other:
+            return True
         if isinstance(other, Constant):
             return (not self._from_existential_instance) and self.value == other.value
         return self.value == other
