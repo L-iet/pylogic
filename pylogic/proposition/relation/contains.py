@@ -14,12 +14,13 @@ if TYPE_CHECKING:
     from pylogic.structures.collection import Class
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
+    from pylogic.variable import Variable
 
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     Unevaluated = Symbol | Set | Expr
     Term = Unevaluated | Numeric
-    U = TypeVar("U", bound=Set | Class)
+    U = TypeVar("U", bound=Variable | Set | Class)
 else:
     Set = Any
     Term = Any

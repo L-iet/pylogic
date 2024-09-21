@@ -11,6 +11,7 @@ from pylogic.proposition.quantified.forall import Forall
 from pylogic.proposition.quantified.quantified import _Quantified
 from pylogic.proposition.relation.contains import IsContainedIn
 from pylogic.proposition.relation.equals import Equals
+from pylogic.proposition.relation.subsets import IsSubsetOf
 from pylogic.variable import Variable
 
 TProposition = TypeVar("TProposition", bound="Proposition")
@@ -70,7 +71,10 @@ class Exists(_Quantified[TProposition]):
         variable = Variable(existential_var_name, latex_name=latex_name, real=is_real)
         if expression_to_replace is not None:
             inner_proposition = inner_proposition.replace(
-                expression_to_replace, variable, positions=positions
+                expression_to_replace,
+                variable,
+                positions=positions,
+                equal_check=kwargs.get("equal_check"),
             )
         return cls(
             variable,
@@ -356,7 +360,9 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
         new_p = self.__class__(
             self.variable,
             self.set_,
-            self._inner_without_set.replace(current_val, new_val, positions=positions),
+            self._inner_without_set.replace(
+                current_val, new_val, positions=positions, equal_check=equal_check
+            ),
             _is_proven=False,
         )
         return new_p
@@ -551,7 +557,7 @@ class ExistsUniqueInSet(
             self.variable,
             self.set_,
             self._inner_without_set_and_unique.replace(
-                current_val, new_val, positions=positions
+                current_val, new_val, positions=positions, equal_check=equal_check
             ),
             _is_proven=False,
         )
@@ -583,3 +589,96 @@ class ExistsUniqueInSet(
             _assumptions=self.from_assumptions,
             _inference=self.deduced_from,
         )
+
+
+class ExistsSubset(Exists[And[IsSubsetOf, TProposition]]):
+    def __init__(
+        self,
+        variable: Variable,
+        set_: Set,
+        inner_proposition: TProposition,
+        is_assumption: bool = False,
+        description: str = "",
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            variable,
+            IsSubsetOf(variable, set_).and_(inner_proposition),
+            is_assumption=is_assumption,
+            description=description,
+            **kwargs,
+        )
+        self.set_ = set_
+        self.right_set = set_
+        self._inner_without_set = inner_proposition
+
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+    def __repr__(self) -> str:
+        return (
+            f"exists {self.variable} subset of {self.set_}: {self._inner_without_set}"
+        )
+
+    def _latex(self, printer=None) -> str:
+        var_latex = self.variable._latex()
+        return rf"\exists {var_latex} \subseteq {self.set_._latex()}: {self._inner_without_set._latex()}"
+
+    to_exists = ExistsInSet.to_exists
+    replace = ExistsInSet.replace
+    copy = ExistsInSet.copy
+    deepcopy = ExistsInSet.deepcopy
+
+
+class ExistsUniqueSubset(
+    ExistsSubset[And[TProposition, Forall[Implies[TProposition, Equals]]]]
+):
+    def __init__(
+        self,
+        variable: Variable,
+        set_: Set,
+        inner_proposition: TProposition,
+        is_assumption: bool = False,
+        description: str = "",
+        **kwargs,
+    ) -> None:
+        from pylogic.proposition.quantified.forall import ForallInSet
+
+        prev_latex_name = variable.latex_name.split("_")
+        if len(prev_latex_name) > 1:
+            # assuming curly braces are opened and closed correctly
+            if prev_latex_name[1].startswith("{"):
+                subscript = prev_latex_name[1][1:-1]
+            else:
+                subscript = prev_latex_name[1]
+            under_2 = r"\_2"
+            prev_latex_name[1] = f"{{{subscript + under_2}}}"
+        else:
+            prev_latex_name.append(r"\_2")
+        new_latex_name = "_".join(prev_latex_name)
+        other_var = Variable(variable.name + "_2", latex_name=new_latex_name)
+        other_prop = inner_proposition.replace(variable, other_var)
+        super().__init__(
+            variable,
+            set_,
+            inner_proposition.and_(
+                ForallInSet(
+                    other_var, set_, other_prop.implies(Equals(other_var, variable))
+                )
+            ),
+            is_assumption=is_assumption,
+            description=description,
+            **kwargs,
+        )
+        self._inner_without_set_and_unique = inner_proposition
+
+    def __repr__(self) -> str:
+        return f"exists 1 {self.variable} subset of {self.set_}: {self._inner_without_set_and_unique}"
+
+    def _latex(self, printer=None) -> str:
+        var_latex = self.variable._latex()
+        return rf"\exists ! {var_latex} \subseteq {self.set_._latex()}: {self._inner_without_set_and_unique._latex()}"
+
+    replace = ExistsUniqueInSet.replace
+    copy = ExistsUniqueInSet.copy
+    deepcopy = ExistsUniqueInSet.deepcopy

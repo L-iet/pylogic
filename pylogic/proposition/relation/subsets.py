@@ -11,16 +11,24 @@ if TYPE_CHECKING:
     from pylogic.proposition.proposition import Proposition
     from pylogic.proposition.quantified.forall import Forall
     from pylogic.proposition.relation.contains import IsContainedIn
+    from pylogic.structures.collection import Class
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
+    from pylogic.variable import Variable
 
     Term = Symbol | Set | Expr | int | float
+    T = TypeVar("T", bound=Variable | Set | Class)
+    U = TypeVar("U", bound=Variable | Set | Class)
+else:
+    Term = Any
+    T = Any
+    U = Any
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
 Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 
-class Subset(BinaryRelation[Set, Set]):
+class IsSubsetOf(BinaryRelation[T, U]):
     is_transitive = True
     name = "IsSubsetOf"
     infix_symbol = "issubset"
@@ -29,15 +37,15 @@ class Subset(BinaryRelation[Set, Set]):
 
     def __init__(
         self,
-        left: Set,
-        right: Set,
+        left: T,
+        right: U,
         is_assumption: bool = False,
         description: str = "",
         **kwargs,
     ) -> None:
-        self.right: Set = right
-        self.left: Set = left
-        name = f"{left.name} is a subset of {right.name}"
+        self.right: U = right
+        self.left: T = left
+        name = f"{left} is a subset of {right}"
         super().__init__(
             left,
             right,

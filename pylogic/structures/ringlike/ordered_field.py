@@ -18,6 +18,8 @@ from pylogic.symbol import Symbol
 from pylogic.variable import Variable
 
 if TYPE_CHECKING:
+    from pylogic.infix.infix import SpecialInfix
+
     Numeric = Fraction | int | float
     PBasic = Symbol | Numeric
     Unevaluated = Symbol | Set | Expr
@@ -67,6 +69,12 @@ class OrderedField(Field[Z]):
     ]
     strict_order_is_connected: ForallInSet[
         ForallInSet[Implies[Not[Equals], Or[StrictTotalOrder, StrictTotalOrder]]]
+    ]
+    add_to_both_sides_of_inequality: ForallInSet[
+        ForallInSet[ForallInSet[Implies[TotalOrder, TotalOrder]]]
+    ]
+    product_of_nonnegatives_is_nonnegative: ForallInSet[
+        ForallInSet[Implies[And[TotalOrder, TotalOrder], TotalOrder]]
     ]
     strict_total_order: StrictTotalOrderOp
     total_order: TotalOrderOp
@@ -294,6 +302,66 @@ class OrderedField(Field[Z]):
             description=f"strict total order is connected in {set_}",
         )
 
+    @classmethod
+    def property_add_to_both_sides_of_inequality(
+        cls,
+        set_: Set,
+        total_order: TotalOrderOp,
+        plus_operation: SpecialInfix[Term, Term, Expr, Expr],
+    ) -> ForallInSet[ForallInSet[ForallInSet[Implies[TotalOrder, TotalOrder]]]]:
+        a = Variable("a")
+        b = Variable("b")
+        c = Variable("c")
+        a_le_b = total_order(a, b)
+        a_plus_c_le_b_plus_c = total_order(plus_operation(a, c), plus_operation(b, c))
+        return ForallInSet(
+            a,
+            set_,
+            ForallInSet(
+                b,
+                set_,
+                ForallInSet(
+                    c,
+                    set_,
+                    Implies(
+                        a_le_b,
+                        a_plus_c_le_b_plus_c,
+                    ),
+                ),
+            ),
+            description=f"add to both sides of (total order) inequality in {set_}",
+        )
+
+    @classmethod
+    def property_product_of_nonnegatives_is_nonnegative(
+        cls,
+        set_: Set,
+        total_order: TotalOrderOp,
+        times_operation: SpecialInfix[Term, Term, Expr, Expr],
+    ) -> ForallInSet[ForallInSet[Implies[And[TotalOrder, TotalOrder], TotalOrder]]]:
+        """
+        Assuming the total order is a <= b, return
+        0 <= a and 0 <= b implies 0 <= a*b
+        """
+        a = Variable("a")
+        b = Variable("b")
+        a_ge_0 = total_order(0, a)
+        b_ge_0 = total_order(0, b)
+        a_times_b_ge_0 = total_order(0, times_operation(a, b))
+        return ForallInSet(
+            a,
+            set_,
+            ForallInSet(
+                b,
+                set_,
+                Implies(
+                    And(a_ge_0, b_ge_0),
+                    a_times_b_ge_0,
+                ),
+            ),
+            description=f"product of nonnegatives is nonnegative in {set_}",
+        )
+
     def __init__(
         self,
         name: str,
@@ -345,6 +413,20 @@ class OrderedField(Field[Z]):
             self, self.total_order, self.strict_total_order
         )
         self.strict_order_definition._set_is_axiom(True)
+
+        self.add_to_both_sides_of_inequality = (
+            OrderedField.property_add_to_both_sides_of_inequality(
+                self, self.total_order, self.plus_operation
+            )
+        )
+        self.add_to_both_sides_of_inequality._set_is_axiom(True)
+
+        self.product_of_nonnegatives_is_nonnegative = (
+            OrderedField.property_product_of_nonnegatives_is_nonnegative(
+                self, self.total_order, self.times_operation
+            )
+        )
+        self.product_of_nonnegatives_is_nonnegative._set_is_axiom(True)
 
         a, b, c = Variable("a"), Variable("b"), Variable("c")
         a_in_self = a.is_in(self, is_assumption=True)
@@ -443,6 +525,9 @@ class OrderedField(Field[Z]):
             .thus_forall(b_in_self)
             .thus_forall(a_in_self)
         )  # type: ignore
+
+        # TODO proving a <= 0 implies -a >= 0 (can use add -a to both sides)
+        ...
 
     def _build_total_and_strict_orders(
         self,

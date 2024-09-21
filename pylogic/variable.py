@@ -12,6 +12,7 @@ class Variable(Symbol):
         self._from_existential_instance = kwargs.pop(
             "_from_existential_instance", False
         )
+        self.elements = set()  # for variable sets
 
     def unbind(self) -> None:
         self.is_bound = False

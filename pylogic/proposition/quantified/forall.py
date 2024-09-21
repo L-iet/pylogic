@@ -9,6 +9,7 @@ from pylogic.proposition.implies import Implies
 from pylogic.proposition.proposition import Proposition, get_assumptions
 from pylogic.proposition.quantified.quantified import _Quantified
 from pylogic.proposition.relation.contains import IsContainedIn
+from pylogic.proposition.relation.subsets import IsSubsetOf
 
 if TYPE_CHECKING:
     from fractions import Fraction
@@ -16,7 +17,6 @@ if TYPE_CHECKING:
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.not_ import Not
     from pylogic.proposition.quantified.exists import Exists
-    from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
@@ -57,6 +57,14 @@ class Forall(_Quantified[TProposition]):
             description=description,
             **kwargs,
         )
+
+    def __call__(self, *terms: Term) -> Any:
+        prop = self
+        i = 0
+        while isinstance(prop, Forall) and i < len(terms):
+            prop = prop.in_particular(terms[i])
+            i += 1
+        return prop
 
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, Forall):
@@ -211,14 +219,6 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
     def __repr__(self) -> str:
         return f"forall {self.variable} in {self.set_}: {self._inner_without_set}"
 
-    def __call__(self, *terms: Term) -> Any:
-        prop = self
-        i = 0
-        while isinstance(prop, Forall) and i < len(terms):
-            prop = prop.in_particular(terms[i])
-            i += 1
-        return prop
-
     def replace(
         self,
         current_val: Term,
@@ -245,7 +245,9 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
         new_p = self.__class__(
             self.variable,
             self.set_,
-            self._inner_without_set.replace(current_val, new_val, positions=positions),
+            self._inner_without_set.replace(
+                current_val, new_val, positions=positions, equal_check=equal_check
+            ),
             _is_proven=False,
         )
         return new_p
@@ -321,3 +323,53 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
     def _latex(self, printer=None) -> str:
         var_latex = self.variable._latex()
         return rf"\forall {var_latex} \in {self.set_._latex()}: {self._inner_without_set._latex()}"
+
+
+class ForallSubsets(Forall[Implies[IsSubsetOf, TProposition]]):
+    def __init__(
+        self,
+        variable: Variable,
+        set_: Set,
+        inner_proposition: TProposition,
+        is_assumption: bool = False,
+        description: str = "",
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            variable,
+            IsSubsetOf(variable, set_).implies(inner_proposition),
+            is_assumption=is_assumption,
+            description=description,
+            **kwargs,
+        )
+        self.right_set = set_
+        self.set_ = set_
+        self._inner_without_set = inner_proposition
+
+    def __repr__(self) -> str:
+        return (
+            f"forall {self.variable} subsets of {self.set_}: {self._inner_without_set}"
+        )
+
+    def _latex(self, printer=None) -> str:
+        var_latex = self.variable._latex()
+        return rf"\forall {var_latex} \subseteq {self.set_._latex()}: {self._inner_without_set._latex()}"
+
+    replace = ForallInSet.replace
+    copy = ForallInSet.copy
+    deepcopy = ForallInSet.deepcopy
+    to_forall = ForallInSet.to_forall
+
+    def in_particular(
+        self,
+        expression_to_substitute: Term,
+        proof_expr_to_substitute_is_subset: IsSubsetOf,
+    ) -> TProposition:
+        """Logical tactic. Given self is proven, replace the variable in the inner
+        proposition and get a proven proposition.
+        """
+        assert self.is_proven, f"{self} is not proven"
+        impl = super().in_particular(expression_to_substitute)
+        ante = proof_expr_to_substitute_is_subset
+        new_p = impl.first_unit_definite_clause_resolve(ante)
+        return new_p  # type: ignore
