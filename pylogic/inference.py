@@ -77,6 +77,7 @@ rules: set[str] = {
     "right_distribute",
     "de_nest",
     "by_cases",
+    "by_empty",
 }
 
 T = TypeVar("T", bound="Proposition")

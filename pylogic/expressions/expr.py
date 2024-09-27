@@ -266,12 +266,12 @@ class CustomExpr(Expr, Generic[U]):
     def to_sympy(self) -> sp.Expr:
         return sp.Expr(*[to_sympy(arg) for arg in self.args])
 
-    def evaluate(self) -> U:
+    def evaluate(self) -> Self | U:
         """
         Calls the evaluation function with the arguments.
         """
         if self.eval_func is None:
-            raise NotImplementedError(f"Cannot evaluate {self.name}")
+            return self
         evaluated = self.eval_func(*self.args)
         return evaluated
 

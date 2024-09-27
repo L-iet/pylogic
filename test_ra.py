@@ -21,3 +21,5 @@
 #     distributive,
 # ]
 from pylogic.theories.real_analysis import *
+
+print(Reals.bounded_above_has_lub._latex())

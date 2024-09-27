@@ -13,6 +13,7 @@ Numeric = Fraction | int | float
 if TYPE_CHECKING:
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
+    from pylogic.proposition.relation.subsets import IsSubsetOf
     from pylogic.structures.set_ import Set
     from pylogic.sympy_helpers import PylSympySymbol
     from pylogic.variable import Variable
@@ -99,6 +100,7 @@ class Symbol:
                 and self.is_pair == other.is_pair
                 and self.is_list_ == other.is_list_
                 and self.is_sequence == other.is_sequence
+                and self.depends_on == other.depends_on
             )
         return False
 
@@ -119,10 +121,15 @@ class Symbol:
                 indeps.extend(dep.get_independent_dependencies())
         return tuple(indeps)
 
-    def equals(self, other: Symbol | Numeric | Expr, **kwargs) -> Equals:
+    def equals(self, other: Symbol | Numeric | Expr | Set, **kwargs) -> Equals:
         from pylogic.proposition.relation.equals import Equals
 
         return Equals(self, other, **kwargs)
+
+    def is_subset_of(self, other: Symbol | Set, **kwargs) -> IsSubsetOf:
+        from pylogic.proposition.relation.subsets import IsSubsetOf
+
+        return IsSubsetOf(self, other, **kwargs)  # type: ignore
 
     def _latex(self) -> str:
         return self.latex_name

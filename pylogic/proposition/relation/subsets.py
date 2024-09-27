@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Self, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Any, Self, TypedDict, TypeVar
 
 from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
@@ -94,3 +94,18 @@ class IsSubsetOf(BinaryRelation[T, U]):
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="to_forall"),
         )
+
+    def by_empty(self) -> Self:
+        """
+        Logical tactic.
+        If self is `EmptySet issubset A`, return self but proven
+        """
+        from pylogic.inference import Inference
+        from pylogic.structures.set_ import EmptySet
+
+        assert self.left == EmptySet, "left must be EmptySet"
+        new_p = self.copy()
+        new_p._set_is_proven(True)
+        new_p.from_assumptions = set()
+        new_p.deduced_from = Inference(self, rule="by_empty")
+        return new_p

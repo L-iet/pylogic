@@ -449,6 +449,8 @@ class OrderedField(Field[Z]):
         ).thus_forall(a_in_self)
 
         # 2. Strict order is asymmetric
+        a.unbind()
+        b.unbind()
         a_in_self.assume()
         b_in_self.assume()
         a_lt_b = self.strict_total_order(a, b, is_assumption=True)
@@ -481,6 +483,8 @@ class OrderedField(Field[Z]):
         # 3. Strict order is transitive
         # techically this is a theorem,
         # but we are just defining it to be true here.
+        a.unbind()
+        b.unbind()
         a_in_self.assume()
         b_in_self.assume()
         c_in_self.assume()
@@ -495,6 +499,8 @@ class OrderedField(Field[Z]):
         )
 
         # 4. Strict order is connected
+        a.unbind()
+        b.unbind()
         a_in_self.assume()
         b_in_self.assume()
         a_neq_b = neg(Equals(a, b), is_assumption=True)
