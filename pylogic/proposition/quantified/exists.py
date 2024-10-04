@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Self, TypedDict, TypeVar
 
+from pylogic import Term
 from pylogic.constant import Constant
 from pylogic.inference import Inference
 from pylogic.proposition.and_ import And
@@ -19,17 +20,9 @@ UProposition = TypeVar("UProposition", bound="Proposition")
 B = TypeVar("B", bound="Proposition")
 
 if TYPE_CHECKING:
-    from fractions import Fraction
-
-    from pylogic.expressions.expr import Expr
     from pylogic.proposition.not_ import Not
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
-
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
-    Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric
 
 
 Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})

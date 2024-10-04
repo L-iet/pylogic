@@ -3,20 +3,13 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import TYPE_CHECKING, Any, Generic, Protocol, Self, TypeVar
 
+from pylogic import Numeric, Term
+
 if TYPE_CHECKING:
     pass
 
-    from pylogic.expressions.expr import Expr
     from pylogic.proposition.ordering.greaterthan import GreaterThan
     from pylogic.proposition.ordering.lessthan import LessThan
-    from pylogic.symbol import Symbol
-
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
-    UnevaluatedExpr = Symbol | Expr
-    Term = UnevaluatedExpr | Numeric
-else:
-    Term = Any
 
 
 class _Ordering(Protocol):

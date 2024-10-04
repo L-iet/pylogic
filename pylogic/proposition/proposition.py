@@ -17,8 +17,8 @@ from typing import (
 from pylogic.printing.printing import str_print_order
 
 if TYPE_CHECKING:
+    from pylogic import Term, Unification
     from pylogic.constant import Constant
-    from pylogic.expressions.expr import Expr
     from pylogic.helpers import Side
     from pylogic.proposition.and_ import And
     from pylogic.proposition.contradiction import Contradiction
@@ -35,12 +35,6 @@ if TYPE_CHECKING:
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
     from pylogic.variable import Variable
-
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
-    Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric
-    Unification = dict[Variable, Term]
 
 
 Props = TypeVarTuple("Props")

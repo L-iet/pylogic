@@ -3,27 +3,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Generic, Literal, Self, TypedDict, TypeVar
 
+from pylogic import Term, Unification
 from pylogic.helpers import find_first
 from pylogic.inference import Inference
 from pylogic.proposition.not_ import neg
 from pylogic.proposition.proposition import Proposition, get_assumptions
 
 if TYPE_CHECKING:
-    from fractions import Fraction
-
-    from pylogic.expressions.expr import Expr
     from pylogic.proposition.and_ import And
     from pylogic.proposition.or_ import Or
     from pylogic.structures.class_ import Class
-    from pylogic.structures.set_ import Set
-    from pylogic.symbol import Symbol
-    from pylogic.variable import Variable
-
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
-    Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric
-    Unification = dict[Variable, Term]
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")

@@ -9,16 +9,8 @@ P = TypeVar("P", bound=Proposition)
 Q = TypeVar("Q", bound=Proposition)
 
 if TYPE_CHECKING:
-    from fractions import Fraction
-
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.quantified.forall import Forall, ForallInSet
-    from pylogic.symbol import Symbol
-
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
-    UnevaluatedExpr = Symbol | Expr
-    Term = UnevaluatedExpr | Numeric
 
 
 class ByProvers:

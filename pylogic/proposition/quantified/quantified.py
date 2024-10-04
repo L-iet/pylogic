@@ -5,21 +5,9 @@ from typing import TYPE_CHECKING, Callable, Generic, Literal, Self, TypeVar
 
 from sympy import latex
 
+from pylogic import Term, Unification
 from pylogic.proposition.proposition import Proposition
 from pylogic.variable import Variable
-
-if TYPE_CHECKING:
-    from fractions import Fraction
-
-    from pylogic.expressions.expr import Expr
-    from pylogic.structures.set_ import Set
-    from pylogic.symbol import Symbol
-
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
-    Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric
-    Unification = dict[Variable, Term]
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Callable, Self, TypedDict, TypeVar
 
 import sympy as sp
 
+from pylogic import Term
 from pylogic.inference import Inference
 from pylogic.proposition.implies import Implies
 from pylogic.proposition.proposition import Proposition, get_assumptions
@@ -12,21 +13,11 @@ from pylogic.proposition.relation.contains import IsContainedIn
 from pylogic.proposition.relation.subsets import IsSubsetOf
 
 if TYPE_CHECKING:
-    from fractions import Fraction
-
-    from pylogic.expressions.expr import Expr
     from pylogic.proposition.not_ import Not
     from pylogic.proposition.quantified.exists import Exists
     from pylogic.proposition.relation.equals import Equals
     from pylogic.structures.set_ import Set
-    from pylogic.symbol import Symbol
     from pylogic.variable import Variable
-
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
-    Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric
-
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")

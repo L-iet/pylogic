@@ -1,6 +1,7 @@
 from fractions import Fraction
 from typing import TYPE_CHECKING, Any, Callable, Iterable, TypeAlias, TypeVar
 
+from pylogic import Term, Unevaluated
 from pylogic.constant import Constant
 from pylogic.expressions.expr import Add, Mul
 from pylogic.proposition.and_ import And
@@ -30,12 +31,6 @@ if TYPE_CHECKING:
     HasLUB = ExistsUniqueInSet[
         And[IsUpperBound, ForallInSet[Implies[IsUpperBound, LessOrEqual]]]
     ]
-
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
-    Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric
-
     T = TypeVar("T", bound=Term)
     E = TypeVar("E", bound=Expr)
     Z = TypeVar("Z", str, int, float, complex, Fraction)
@@ -164,3 +159,29 @@ Reals = RealsField(
     zero=zero,
     one=one,
 )
+
+
+class Interval(Set):
+    def __init__(
+        self, a: T, b: T, a_inclusive: bool = False, b_inclusive: bool = False
+    ):
+        left_symb = "[" if a_inclusive else "("
+        right_symb = "]" if b_inclusive else ")"
+        super().__init__(
+            f"{left_symb}{a}, {b}{right_symb}",
+        )
+        self.a = a
+        self.b = b
+        self.a_inclusive = a_inclusive
+        self.b_inclusive = b_inclusive
+        self.is_subset_of_reals = IsSubsetOf(self, Reals)
+        self.is_subset_of_reals._set_is_proven(True)
+
+    def evaluate(self):
+        from pylogic.structures.set_ import EmptySet, FiniteSet
+
+        if self.a == self.b:
+            if self.a_inclusive and self.b_inclusive:
+                return FiniteSet(self.name, {self.a})
+            return EmptySet
+        return self

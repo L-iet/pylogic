@@ -4,18 +4,13 @@ from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar
 if TYPE_CHECKING:
     from fractions import Fraction
 
+    from pylogic import Term
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.proposition import Proposition
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
-
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
-    Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric
-    from pylogic.structures.set_ import Set
 
     T = TypeVar("T", bound=int, covariant=True)
     U = TypeVar("U", bound=Term)

@@ -2,24 +2,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Self, TypedDict, TypeVar
 
+from pylogic import Term
 from pylogic.expressions.expr import to_sympy
 from pylogic.inference import Inference
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 
 if TYPE_CHECKING:
-    from fractions import Fraction
-
-    from pylogic.expressions.expr import Expr
+    from pylogic.proposition.and_ import And
+    from pylogic.proposition.or_ import Or
     from pylogic.proposition.proposition import Proposition
     from pylogic.structures.collection import Class
     from pylogic.structures.set_ import Set
-    from pylogic.symbol import Symbol
     from pylogic.variable import Variable
 
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
-    Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric
     U = TypeVar("U", bound=Variable | Set | Class)
 else:
     Set = Any
@@ -178,3 +173,39 @@ class IsContainedIn(BinaryRelation[T, U]):
         assert self.is_proven, f"{self} is not proven"
 
         return self.right.predicate(self.left)
+
+    def thus_contained_in_at_least_one(self) -> Or[IsContainedIn, ...]:
+        """Logical tactic. Given x in Union[A, B, C],
+        return a proof that x in A or x in B or x in C"""
+        assert self.is_proven, f"{self} is not proven"
+        from pylogic.proposition.or_ import Or
+        from pylogic.structures.set_ import Union
+
+        assert isinstance(self.right, Union), f"{self.right} is not a Union"
+        return Or(
+            *[
+                IsContainedIn(self.left, set_) for set_ in self.right.sets
+            ],  # type: ignore
+            _is_proven=True,
+            _assumptions=self.from_assumptions,
+            _inference=Inference(self, rule="thus_contained_in_at_least_one"),
+        )
+
+    def thus_contained_in_all(self) -> And[IsContainedIn, ...]:
+        """Logical tactic. Given x in Intersection[A, B, C],
+        return a proof that x in A and x in B and x in C"""
+        assert self.is_proven, f"{self} is not proven"
+        from pylogic.proposition.and_ import And
+        from pylogic.structures.set_ import Intersection
+
+        assert isinstance(
+            self.right, Intersection
+        ), f"{self.right} is not an Intersection"
+        return And(
+            *[
+                IsContainedIn(self.left, set_) for set_ in self.right.sets
+            ],  # type: ignore
+            _is_proven=True,
+            _assumptions=self.from_assumptions,
+            _inference=Inference(self, rule="thus_contained_in_all"),
+        )

@@ -3,6 +3,7 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import Callable, Iterable, TypeAlias, TypeVar
 
+from pylogic import Term, Unevaluated
 from pylogic.constant import Constant
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.helpers import is_numeric
@@ -15,11 +16,6 @@ from pylogic.structures.grouplike.monoid import Monoid
 from pylogic.structures.ringlike.semirng import Semirng
 from pylogic.structures.set_ import Set
 from pylogic.symbol import Symbol
-
-Numeric = Fraction | int | float
-PBasic = Symbol | Numeric
-Unevaluated = Symbol | Set | Expr
-Term = Unevaluated | Numeric
 
 T = TypeVar("T", bound=Term)
 E = TypeVar("E", bound=Expr)

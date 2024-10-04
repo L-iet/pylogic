@@ -3,6 +3,7 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import TYPE_CHECKING, Any, Callable, Iterable, TypeAlias, TypeVar, cast
 
+from pylogic import Term, Unevaluated
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.proposition.and_ import And
 from pylogic.proposition.iff import Iff
@@ -19,11 +20,6 @@ from pylogic.variable import Variable
 
 if TYPE_CHECKING:
     from pylogic.infix.infix import SpecialInfix
-
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
-    Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric
 
     T = TypeVar("T", bound=Term)
     E = TypeVar("E", bound=Expr)

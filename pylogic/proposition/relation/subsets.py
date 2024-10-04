@@ -2,25 +2,22 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Self, TypedDict, TypeVar
 
+from pylogic import Term
 from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 
 if TYPE_CHECKING:
-    from pylogic.expressions.expr import Expr
     from pylogic.proposition.implies import Implies
     from pylogic.proposition.proposition import Proposition
     from pylogic.proposition.quantified.forall import Forall
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.structures.collection import Class
     from pylogic.structures.set_ import Set
-    from pylogic.symbol import Symbol
     from pylogic.variable import Variable
 
-    Term = Symbol | Set | Expr | int | float
     T = TypeVar("T", bound=Variable | Set | Class)
     U = TypeVar("U", bound=Variable | Set | Class)
 else:
-    Term = Any
     T = Any
     U = Any
 TProposition = TypeVar("TProposition", bound="Proposition")

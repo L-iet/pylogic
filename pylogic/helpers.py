@@ -25,15 +25,10 @@ P = TypeVar("P", bound=Proposition)
 Ps = TypeVarTuple("Ps")
 
 if TYPE_CHECKING:
+    from pylogic import Term, Unification
     from pylogic.constant import Constant
     from pylogic.structures.class_ import Class
     from pylogic.structures.set_ import Set
-
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
-    Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric
-    Unification = dict[Variable, Term]
 
 
 def replace(expr, old, new, equal_check: Callable | None = None) -> Any:

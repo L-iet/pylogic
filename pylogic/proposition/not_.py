@@ -11,23 +11,13 @@ from typing import (
     overload,
 )
 
+from pylogic import Term, Unification
 from pylogic.proposition.proposition import Proposition, get_assumptions
 
 if TYPE_CHECKING:
-    from fractions import Fraction
-
-    from pylogic.expressions.expr import Expr
     from pylogic.proposition.implies import Implies
     from pylogic.proposition.relation.binaryrelation import BinaryRelation
-    from pylogic.structures.set_ import Set
-    from pylogic.symbol import Symbol
-    from pylogic.variable import Variable
 
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
-    Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric
-    Unification = dict[Variable, Term]
     T = TypeVar("T", bound=BinaryRelation)
 else:
     T = TypeVar("T")

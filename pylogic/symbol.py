@@ -6,9 +6,8 @@ from typing import TYPE_CHECKING, Any, Callable, Self, cast
 import sympy as sp
 from sympy.matrices.expressions.matexpr import MatrixElement as MatEl
 
+from pylogic import Numeric
 from pylogic.expressions.expr import Add, Expr, Mul, Pow
-
-Numeric = Fraction | int | float
 
 if TYPE_CHECKING:
     from pylogic.proposition.relation.contains import IsContainedIn

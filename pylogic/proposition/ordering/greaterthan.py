@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar
 import sympy as sp
 from sympy import S as sympy_S
 
+from pylogic import Numeric, Term
 from pylogic.constant import Constant
 from pylogic.expressions.abs import Abs
 from pylogic.expressions.expr import Pow
@@ -16,17 +17,9 @@ from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from pylogic.proposition.relation.equals import Equals
 
 if TYPE_CHECKING:
-    from pylogic.expressions.expr import Expr
     from pylogic.proposition.not_ import Not
     from pylogic.proposition.ordering.lessthan import LessThan
-    from pylogic.symbol import Symbol
 
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
-    UnevaluatedExpr = Symbol | Expr
-    Term = UnevaluatedExpr | Numeric
-else:
-    Term = Any
 T = TypeVar("T", bound=Term)
 U = TypeVar("U", bound=Term)
 

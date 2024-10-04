@@ -51,6 +51,25 @@ class Constant(Symbol, Generic[T]):
     def __hash__(self) -> int:
         return super().__hash__()
 
+    def __int__(self) -> int:
+        return int(self.value)
+
+    def __float__(self) -> float:
+        return float(self.value)
+
+    def __complex__(self) -> complex:
+        return complex(self.value)
+
+    def to_fraction(self) -> Fraction:
+        if isinstance(self.value, Fraction):
+            return self.value
+        raise TypeError(f"{self.value} is not a Fraction")
+
+    def to_decimal(self) -> Decimal:
+        if isinstance(self.value, Decimal):
+            return self.value
+        raise TypeError(f"{self.value} is not a Decimal")
+
     @overload
     def to_sympy(self: Constant[int]) -> sp.Integer: ...
     @overload

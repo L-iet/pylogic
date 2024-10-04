@@ -5,18 +5,15 @@ from typing import TYPE_CHECKING
 
 import sympy as sp
 
+from pylogic import Term
 from pylogic.expressions.expr import Expr, to_sympy
 
 if TYPE_CHECKING:
     from pylogic.constant import Constant
-    from pylogic.symbol import Symbol
-
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
 
 
 class Abs(Expr):
-    def __init__(self, expr: Expr | PBasic) -> None:
+    def __init__(self, expr: Term) -> None:
         self.expr = expr
         super().__init__(expr)
 

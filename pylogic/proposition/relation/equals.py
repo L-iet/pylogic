@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Callable, Self, TypeVar
 
 from sympy import Basic, Integer
 
+from pylogic import Term
 from pylogic.expressions.abs import Abs
 from pylogic.expressions.expr import Expr
 from pylogic.helpers import Side
@@ -11,18 +12,6 @@ from pylogic.inference import Inference
 from pylogic.proposition.proposition import Proposition, get_assumptions
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 
-if TYPE_CHECKING:
-    from fractions import Fraction
-
-    from pylogic.structures.set_ import Set
-    from pylogic.symbol import Symbol
-
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
-    Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric
-else:
-    Term = Any
 T = TypeVar("T", bound=Term)
 U = TypeVar("U", bound=Term)
 TProposition = TypeVar("TProposition", bound="Proposition")
@@ -117,6 +106,17 @@ class Equals(BinaryRelation[T, U]):
             return new_p
         else:
             raise ValueError(f"{self} cannot be proven by simplification")
+
+    def by_inspection(self) -> Self:
+        """Logical tactic."""
+        if self.left == self.right:
+            new_p = self.copy()
+            new_p._set_is_proven(True)
+            new_p.from_assumptions = set()
+            new_p.deduced_from = Inference(self, rule="by_inspection")
+            return new_p
+        else:
+            raise ValueError(f"{self} cannot be proven by inspection")
 
     def substitute_into(
         self, side: Side | str, other_prop: TProposition

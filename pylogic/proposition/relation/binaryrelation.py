@@ -2,25 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable, Generic, Self, TypeVar
 
-from pylogic.expressions.expr import Expr
+from pylogic import Term
 from pylogic.helpers import replace
-from pylogic.printing.printing import latex_print_order, str_print_order
+from pylogic.printing.printing import str_print_order
 from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.relation.relation import Relation
 
-if TYPE_CHECKING:
-    from fractions import Fraction
-
-    from pylogic.structures.set_ import Set
-    from pylogic.symbol import Symbol
-
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
-    Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric
-    C = TypeVar("C", bound="BinaryRelation")
-else:
-    Term = Any
+C = TypeVar("C", bound="BinaryRelation")
 T = TypeVar("T", bound=Term)
 U = TypeVar("U", bound=Term)
 

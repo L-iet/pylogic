@@ -78,6 +78,8 @@ rules: set[str] = {
     "de_nest",
     "by_cases",
     "by_empty",
+    "thus_contained_in_at_least_one",
+    "thus_contained_in_all",
 }
 
 T = TypeVar("T", bound="Proposition")

@@ -1,23 +1,30 @@
 from __future__ import annotations
 
 from fractions import Fraction
-from typing import Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 import sympy as sp
+from sympy import oo
+from sympy.series.sequences import SeqFormula, SeqPer
 
 from pylogic.constant import Constant
 from pylogic.expressions.abs import Abs
 from pylogic.expressions.expr import Add, CustomExpr, Expr, Mul, Pow
+from pylogic.expressions.sequence_term import SequenceTerm
 from pylogic.symbol import Symbol
 from pylogic.variable import Variable
 
 B = TypeVar("B", bound=sp.Basic)
 
+if TYPE_CHECKING:
+    from pylogic.structures.sequence import FiniteSequence, PeriodicSequence, Sequence
+    from pylogic.structures.set_ import Set
+
 
 class PylSympySymbol(sp.Symbol):
     _pyl_init_args: tuple[Any, ...]
     _pyl_init_kwargs: dict[str, Any]
-    _pyl_class: str
+    _pyl_class: str | None
 
     def __new__(
         cls,
@@ -49,13 +56,23 @@ def sympy_to_pylogic(expr: sp.Pow) -> Pow: ...
 @overload
 def sympy_to_pylogic(expr: sp.Abs) -> Abs: ...
 @overload
+def sympy_to_pylogic(expr: SeqFormula) -> Sequence: ...
+@overload
+def sympy_to_pylogic(expr: SeqPer) -> PeriodicSequence: ...
+@overload
+def sympy_to_pylogic(expr: sp.Set) -> Set: ...
+@overload
 def sympy_to_pylogic(expr: PylSympySymbol) -> Symbol: ...
 @overload
 def sympy_to_pylogic(expr: sp.Expr) -> CustomExpr: ...
-def sympy_to_pylogic(expr: sp.Basic) -> Expr | Symbol:
+def sympy_to_pylogic(expr: sp.Basic) -> Set | Sequence | Expr | Symbol:
     """
     Can only convert sympy expressions that are supported by pylogic.
     """
+    from pylogic.structures.sequence import FiniteSequence, PeriodicSequence, Sequence
+    from pylogic.structures.set_ import Set
+
+    # TODO: Add support for more expressions
     match expr:
         case sp.Integer():
             return Constant(int(expr))
@@ -71,6 +88,29 @@ def sympy_to_pylogic(expr: sp.Basic) -> Expr | Symbol:
             return Pow(*[sympy_to_pylogic(arg) for arg in expr.args])
         case sp.Abs():
             return Abs(sympy_to_pylogic(expr.args[0]))
+        case SeqFormula():
+            if isinstance(expr.interval, sp.FiniteSet):
+                ind = list(expr.interval)[0]
+                return FiniteSequence("sp", [sympy_to_pylogic(expr.coeff(ind))], 1)
+            if expr.interval.right.is_infinite or expr.interval.left.is_infinite:  # type: ignore
+                return Sequence(
+                    "sp", nth_term=lambda n: sympy_to_pylogic(expr.coeff(n))
+                )
+            else:
+                # interval is bounded both ends
+                return FiniteSequence(
+                    "sp",
+                    nth_term=lambda n: sympy_to_pylogic(expr.coeff(n)),
+                    size=int(expr.interval.right - expr.interval.left + 1),  # type: ignore
+                )
+        case SeqPer():
+            return PeriodicSequence(
+                "sp",
+                initial_terms=list(map(int, expr.periodical)),  # type: ignore
+                period=int(expr.period),
+            )
+        case sp.Set():
+            return Set(repr(expr))
         case PylSympySymbol():
             if expr._pyl_class == "Variable":
                 return Variable(
@@ -80,6 +120,8 @@ def sympy_to_pylogic(expr: sp.Basic) -> Expr | Symbol:
                 return Constant(
                     expr.name, *expr._pyl_init_args, **expr._pyl_init_kwargs
                 )
+            elif expr._pyl_class == "SequenceTerm":
+                return SequenceTerm(*expr._pyl_init_args, **expr._pyl_init_kwargs)
             else:
                 raise ValueError(f"Unsupported _pyl_class: {expr._pyl_class}")
         case sp.Expr():

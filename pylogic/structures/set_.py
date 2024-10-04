@@ -4,25 +4,18 @@ from typing import TYPE_CHECKING, Callable, Iterable, Literal, Self, TypeVar, ov
 
 import sympy as sp
 
+from pylogic import Term
 from pylogic.proposition.contradiction import Contradiction
 from pylogic.structures.collection import Collection
 
 if TYPE_CHECKING:
-    from fractions import Fraction
-
-    from pylogic.expressions.expr import Expr
     from pylogic.proposition.proposition import Proposition
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
-    from pylogic.structures.set_ import Set
-    from pylogic.symbol import Symbol
+    from pylogic.structures.sequence import Sequence
 
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
-    Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric
-    T = TypeVar("T", bound=Term)
-    C = TypeVar("C", bound="Set")
+T = TypeVar("T", bound=Term)
+C = TypeVar("C", bound="Set")
 
 
 class Set(metaclass=Collection):
@@ -81,6 +74,9 @@ class Set(metaclass=Collection):
             self.is_real = False
         elif any(x is not None for x in (elements, containment_function, predicate)):
             raise ValueError("Must provide a name for the set.")
+        self.is_finite: bool | None = None
+        self.is_union: bool | None = None
+        self.is_intersection: bool | None = None
         self._init_args = ()
         self._init_kwargs = {
             "name": name,
@@ -192,6 +188,7 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
         """
         Check if two sets are structurally equal.
         """
+        # TODO: add conditions to this
         if not isinstance(other, Set):
             return False
         return self.name == other.name
@@ -272,6 +269,70 @@ UniversalSet = Set(
     containment_function=lambda x: not x.__class__.__name__.startswith("Collection"),
     illegal_occur_check=False,
 )
+
+
+class FiniteSet(Set):
+    def __init__(
+        self,
+        name: str | None = None,
+        elements: Iterable[Term] | None = None,
+    ):
+        super().__init__(name=name, elements=elements)
+        self.is_finite = True
+
+
+class Union(Set):
+    """
+    Represents the union of finitely many or countably-infinitely many sets.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        sets: Sequence[Set],
+    ):
+        super().__init__(name=name)
+        self.sets: Sequence[Set] = sets
+        self.is_union = True
+
+
+class FiniteUnion(Union):
+    """
+    Represents a union of a specified number of sets.
+    """
+
+    def __new__(cls, name: str, sets: Iterable[Set] | None = None) -> FiniteUnion | Set:
+        if not sets:
+            return EmptySet
+        return object.__new__(cls)
+
+    def __init__(
+        self,
+        name: str | None = None,
+        sets: Iterable[Set] | None = None,
+    ):
+        from pylogic.structures.sequence import FiniteSequence
+
+        Set.__init__(self, name=name or f"FiniteUnion({','.join(map(str, sets))}")  # type: ignore
+        self.set_objects: set[Set] = set(sets) if sets else set()
+        self.sets = FiniteSequence(self.name + "_sets", initial_terms=sets or [])  # type: ignore
+        self.is_union = True
+
+
+class FiniteIntersection(Set):
+    """
+    Represents an intersection of a specified number of sets.
+    """
+
+    def __init__(
+        self,
+        name: str | None = None,
+        sets: Iterable[Set] | None = None,
+    ):
+        super().__init__(name=name)
+        self.sets: set[Set] = set(sets) if sets else set()
+        self.is_intersection = True
+
 
 # Integers = Set(sympy_set=sp.Integers)
 # Rationals = Set(sympy_set=sp.Rationals)

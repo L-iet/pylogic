@@ -15,36 +15,32 @@ from typing import (
 
 import sympy as sp
 
+from pylogic import PBasic, Term, Unification
+
 if TYPE_CHECKING:
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
     from pylogic.structures.class_ import Class
+    from pylogic.structures.sequence import Sequence
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
     from pylogic.sympy_helpers import PylSympySymbol
     from pylogic.variable import Variable
-
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
 else:
     Symbol = Any
-    Numeric = Any
-    PBasic = Any
-    Unevaluated = Any
-    Term = Any
     Variable = Any
 
 
 class Expr(ABC):
     is_real = None
 
-    def __init__(self, *args: PBasic | Set | Expr, **kwargs: Any):
+    def __init__(self, *args: PBasic | Set | Sequence | Expr, **kwargs: Any):
         assert len(args) > 0, "Must provide at least one argument"
         self._build_args_and_symbols(*args)
         self._init_args = args
         self._init_kwargs = kwargs
 
-    def _build_args_and_symbols(self, *args: PBasic | Set | Expr) -> None:
+    def _build_args_and_symbols(self, *args: PBasic | Set | Sequence | Expr) -> None:
         from pylogic.constant import Constant
         from pylogic.structures.set_ import Set
         from pylogic.variable import Variable
@@ -221,10 +217,6 @@ class Expr(ABC):
             return d
 
 
-if TYPE_CHECKING:
-    Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric
-    Unification = dict[Variable, Term]
 U = TypeVar("U", bound=Term)
 
 
@@ -448,11 +440,11 @@ class Pow(Expr):
 
 
 def replace(
-    expr: PBasic | Set | Expr,
+    expr: PBasic | Set | Sequence | Expr,
     old: Any,
     new: Any,
     equal_check: Callable | None = None,
-) -> PBasic | Set | Expr:
+) -> PBasic | Set | Sequence | Expr:
     """
     For replacing subexpressions in an expression.
     `equal_check` is a function that checks if two

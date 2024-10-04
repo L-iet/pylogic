@@ -2,19 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
+from pylogic import Term
 from pylogic.proposition.proposition import Proposition
-
-if TYPE_CHECKING:
-    from fractions import Fraction
-
-    from pylogic.expressions.expr import Expr
-    from pylogic.structures.set_ import Set
-    from pylogic.symbol import Symbol
-
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
-    Unevaluated = Symbol | Set | Expr
-    Term = Unevaluated | Numeric
 
 
 class Relation(Proposition):
