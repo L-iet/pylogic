@@ -4,7 +4,7 @@ from decimal import Decimal
 from fractions import Fraction
 from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar, cast, overload
 
-from pylogic.helpers import is_numeric, type_check
+from pylogic.helpers import is_python_numeric, type_check
 from pylogic.symbol import Symbol
 
 if TYPE_CHECKING:
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
     from pylogic.sympy_helpers import PylSympySymbol
 
-T = TypeVar("T", str, int, float, complex, Fraction, Decimal)
+T = TypeVar("T", bound=str | int | float | complex | Fraction | Decimal)
 
 
 class Constant(Symbol, Generic[T]):
@@ -37,6 +37,22 @@ class Constant(Symbol, Generic[T]):
         self._from_existential_instance = kwargs.get(
             "_from_existential_instance", False
         )
+        if isinstance(value, int):
+            self._is_integer = True
+            if value >= 0:
+                self._is_natural = True
+            else:
+                self._is_natural = False
+        elif isinstance(value, Fraction):
+            self._is_rational = True
+            if value.denominator == 1:
+                self._is_integer = True
+                if value >= 0:
+                    self._is_natural = True
+                else:
+                    self._is_natural = False
+        elif isinstance(value, (Decimal, float)):
+            self._is_real = True
 
     def __eq__(self, other: Any) -> bool:
         """
@@ -59,6 +75,11 @@ class Constant(Symbol, Generic[T]):
 
     def __complex__(self) -> complex:
         return complex(self.value)
+
+    def __gt__(self, other: Any) -> bool:
+        if isinstance(other, Constant):
+            return self.value > other.value
+        return self.value > other
 
     def to_fraction(self) -> Fraction:
         if isinstance(self.value, Fraction):
@@ -85,7 +106,7 @@ class Constant(Symbol, Generic[T]):
     def to_sympy(
         self,
     ) -> PylSympySymbol | sp.Integer | sp.Float | sp.Add | sp.Rational | ImaginaryUnit:
-        if is_numeric(self.value):
+        if is_python_numeric(self.value):
             import sympy as sp
 
             return sp.sympify(self.value)
@@ -96,3 +117,7 @@ class Constant(Symbol, Generic[T]):
 
     def copy(self) -> Self:
         return self
+
+
+def Rational(numerator: int, denominator: int) -> Constant[Fraction]:
+    return Constant(Fraction(numerator, denominator))

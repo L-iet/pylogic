@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Callable, Generic, Iterable
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Callable, Generic
 from typing import Sequence as TSequence
 from typing import TypeVar, cast
 
@@ -6,16 +8,19 @@ from pylogic import Term
 from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
 
 if TYPE_CHECKING:
-    from fractions import Fraction
+    pass
 
     from pylogic.constant import Constant
-    from pylogic.expressions.expr import Expr
     from pylogic.expressions.sequence_term import SequenceTerm
+    from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.structures.set_ import Set
-    from pylogic.symbol import Symbol
+    from pylogic.variable import Variable
 
     T = TypeVar("T", bound=Term)
     C = TypeVar("C", bound="Set")
+else:
+    T = TypeVar("T")
+    C = TypeVar("C")
 
 
 class Sequence(Generic[T]):
@@ -42,10 +47,29 @@ class Sequence(Generic[T]):
     def __str__(self) -> str:
         return self.name
 
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Sequence):
+            return self.name == other.name and self.initial_terms == other.initial_terms
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash(
+            self.name,
+            self.nth_term,
+            self.is_infinite,
+            *self.initial_terms,
+        )
+
     def __getitem__(self, index: int) -> SequenceTerm[T]:
         from pylogic.expressions.sequence_term import SequenceTerm
 
         return SequenceTerm(self, index)
+
+    def is_in(self, set_: Set | Variable) -> IsContainedIn:
+        """
+        Return the proposition self in `set`.
+        """
+        return set_.contains(self)
 
 
 class PeriodicSequence(Sequence[T]):
@@ -86,6 +110,7 @@ class FiniteSequence(Sequence[T]):
         from pylogic.constant import Constant
         from pylogic.expressions.abs import Abs
         from pylogic.helpers import type_check
+        from pylogic.inference import Inference
         from pylogic.variable import Variable
 
         type_check(
@@ -107,5 +132,44 @@ class FiniteSequence(Sequence[T]):
         self.size = Abs(self) if size is None else size
         # TODO self.size_is_finite = self.size.is_in(Naturals0, _is_proven=True)
         self.size_at_least = GreaterOrEqual(
-            self.size, len(self.initial_terms), _is_proven=True
+            self.size,
+            len(self.initial_terms),
+            _is_proven=True,
+            _assumptions=set(),
+            _inference=Inference(None, rule="by_definition"),
         )
+
+
+class Pair(FiniteSequence[T]):
+    """
+    A pair is a finite sequence with two terms.
+    """
+
+    def __init__(self, name: str, first: T, second: T) -> None:
+        super().__init__(name, [first, second], size=2)
+        self.first = first
+        self.second = second
+
+    def __repr__(self) -> str:
+        return f"Pair({self.first}, {self.second})"
+
+    def __str__(self) -> str:
+        return f"({self.first}, {self.second})"
+
+
+class Triple(FiniteSequence[T]):
+    """
+    A triple is a finite sequence with three terms.
+    """
+
+    def __init__(self, name: str, first: T, second: T, third: T) -> None:
+        super().__init__(name, [first, second, third], size=3)
+        self.first = first
+        self.second = second
+        self.third = third
+
+    def __repr__(self) -> str:
+        return f"Triple({self.first}, {self.second}, {self.third})"
+
+    def __str__(self) -> str:
+        return f"({self.first}, {self.second}, {self.third})"

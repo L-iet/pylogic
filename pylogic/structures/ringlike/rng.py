@@ -13,7 +13,6 @@ from pylogic.proposition.relation.equals import Equals
 from pylogic.structures.grouplike.group import AbelianGroup, Group
 from pylogic.structures.ringlike.semirng import Semirng
 from pylogic.structures.set_ import Set
-from pylogic.symbol import Symbol
 
 T = TypeVar("T", bound=Term)
 E = TypeVar("E", bound=Expr)

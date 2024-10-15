@@ -1,5 +1,9 @@
+# Lean example on triangle numbers https://ahelwer.ca/post/2020-04-05-lean-assignment/
+from __future__ import annotations
+
 import sys
-from typing import TYPE_CHECKING, Any
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any, Self
 
 if not sys.warnoptions:
     import warnings
@@ -9,6 +13,7 @@ if not sys.warnoptions:
     warnings.simplefilter("ignore", PylogicInternalWarning)
 
 if TYPE_CHECKING:
+    from decimal import Decimal
     from fractions import Fraction
 
     from pylogic.expressions.expr import Expr
@@ -17,14 +22,27 @@ if TYPE_CHECKING:
     from pylogic.symbol import Symbol
     from pylogic.variable import Variable
 
-    Numeric = Fraction | int | float
-    PBasic = Symbol | Numeric
+    PythonNumeric = Fraction | int | float | complex | Decimal
+    PBasic = Symbol | PythonNumeric
     Unevaluated = Symbol | Sequence | Set | Expr
-    Term = Unevaluated | Numeric
+    Term = Unevaluated | PythonNumeric
     Unification = dict[Variable, Term]
 else:
     Term = Any
-    Numeric = Any
+    PythonNumeric = Any
     PBasic = Any
     Unevaluated = Any
     Unification = Any
+
+
+class PylogicObject(ABC):
+    """
+    Base class for all pylogic objects.
+    """
+
+    @abstractmethod
+    def replace(self, **kwargs) -> Self:
+        """
+        Replace the attributes of the object with the given values.
+        """
+        ...

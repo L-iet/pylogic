@@ -18,6 +18,7 @@ import sympy as sp
 from pylogic import PBasic, Term, Unification
 
 if TYPE_CHECKING:
+    from pylogic.proposition.proposition import Proposition
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
     from pylogic.structures.class_ import Class
@@ -32,27 +33,42 @@ else:
 
 
 class Expr(ABC):
-    is_real = None
+    def __init__(
+        self, *args: Proposition | PBasic | Set | Sequence | Expr, **kwargs: Any
+    ):
+        from pylogic.helpers import python_to_pylogic
 
-    def __init__(self, *args: PBasic | Set | Sequence | Expr, **kwargs: Any):
         assert len(args) > 0, "Must provide at least one argument"
+        args = tuple(map(python_to_pylogic, args))
         self._build_args_and_symbols(*args)
         self._init_args = args
         self._init_kwargs = kwargs
+        self.knowledge_base: set[Proposition] = set()
+        self.is_real: bool | None = None
+        self.is_rational: bool | None = None
+        self.is_integer: bool | None = None
+        self.is_natural: bool | None = None
 
-    def _build_args_and_symbols(self, *args: PBasic | Set | Sequence | Expr) -> None:
+    def _build_args_and_symbols(
+        self, *args: Proposition | PBasic | Set | Sequence | Expr
+    ) -> None:
         from pylogic.constant import Constant
         from pylogic.structures.set_ import Set
         from pylogic.variable import Variable
 
         self.args = args
         self.variables: set[Variable] = set()  # variables present in this expression
+        self.independent_dependencies: set[Variable] = set()
         self.constants: set[Constant] = set()
         self.sets: set[Set] = set()  # sets present in this expression
         self.class_ns: set[Class] = set()
+
+        # TODO: arg can be a proposition, a sequence as well
         for arg in args:
             if isinstance(arg, Variable):
                 self.variables.add(arg)
+                if len(arg.depends_on) == 0:
+                    self.independent_dependencies.add(arg)
             elif isinstance(arg, Constant):
                 self.constants.add(arg)
             elif isinstance(arg, Set):
@@ -60,6 +76,10 @@ class Expr(ABC):
             elif isinstance(arg, Expr):
                 self.symbols.update(arg.symbols)
                 self.sets.update(arg.sets)
+                self.variables.update(arg.variables)
+                self.constants.update(arg.constants)
+                self.class_ns.update(arg.class_ns)
+                self.independent_dependencies.update(arg.independent_dependencies)
             else:
                 cls = arg.__class__.__name__
                 if cls.startswith("Collection") and cls[10].isdigit():
@@ -138,7 +158,7 @@ class Expr(ABC):
         """
         if isinstance(other, Expr):
             return isinstance(other, self.__class__) and self.args == other.args
-        return False
+        return NotImplemented
 
     def eval_same(self, other: Any) -> bool:
         """
@@ -155,7 +175,7 @@ class Expr(ABC):
 
         return Equals(self, other, **kwargs)
 
-    def is_in(self, other: Set, **kwargs) -> IsContainedIn:
+    def is_in(self, other: Set | Variable, **kwargs) -> IsContainedIn:
         from pylogic.proposition.relation.contains import IsContainedIn
 
         return IsContainedIn(self, other, **kwargs)
@@ -163,17 +183,29 @@ class Expr(ABC):
     def __hash__(self) -> int:
         return hash((self.__class__.__name__, self.args))
 
-    def replace(self, old: Any, new: Any, equal_check: Callable | None = None) -> Self:
+    def replace(self, replace_dict: dict, equal_check: Callable | None = None) -> Self:
         """
         For replacing subexpressions in an expression.
         `equal_check` is a function that checks if two
         objects are equal in order to replace.
         """
+        for old in replace_dict:
+            new = replace_dict[old]
+            if equal_check is None:
+                if old == self:
+                    return new
+            else:
+                if equal_check(old, self):
+                    return new
         new_args = [
-            replace(arg, old, new, equal_check=equal_check) for arg in self.args
+            replace(arg, replace_dict, equal_check=equal_check)
+            for arg in self._init_args
         ]
-        new_expr = self.copy()
-        new_expr._build_args_and_symbols(*new_args)
+        new_kwargs = {
+            k: replace(v, replace_dict, equal_check=equal_check)
+            for k, v in self._init_kwargs.items()
+        }
+        new_expr = self.__class__(*new_args, **new_kwargs)
         return new_expr
 
     def copy(self) -> Self:
@@ -253,7 +285,7 @@ class CustomExpr(Expr, Generic[U]):
                 and self.eval_func is other.eval_func
                 and self.args == other.args
             )
-        return False
+        return NotImplemented
 
     def to_sympy(self) -> sp.Expr:
         return sp.Expr(*[to_sympy(arg) for arg in self.args])
@@ -295,15 +327,6 @@ class BinaryExpression(CustomExpr[U]):
     def __repr__(self) -> str:
         return f"BinOp{self.name.capitalize()}({self.left}, {self.right})"
 
-    def replace(self, old: Any, new: Any, equal_check: Callable | None = None) -> Self:
-        new_left = replace(self.left, old, new, equal_check=equal_check)
-        new_right = replace(self.right, old, new, equal_check=equal_check)
-        new_expr = self.copy()
-        new_expr._build_args_and_symbols(new_left, new_right)
-        new_expr.left = new_left
-        new_expr.right = new_right
-        return new_expr
-
     def _latex(self) -> str:
         from pylogic.helpers import latex
 
@@ -316,14 +339,29 @@ class BinaryExpression(CustomExpr[U]):
 class Add(Expr):
     def __init__(self, *args: Expr | PBasic):
         super().__init__(*args)
-        for arg in args:
-            if isinstance(arg, (int, float, Fraction)) or arg.is_real:
-                continue
-            else:
+        self.is_real = object()  # type: ignore
+        self.is_rational = object()  # type: ignore
+        self.is_integer = object()  # type: ignore
+        self.is_natural = object()  # type: ignore
+        for arg in self._init_args:
+            if (
+                self.is_real is not None and not arg.is_real
+            ):  # arg.is_real is False or None
                 self.is_real = None
-                break
-        else:
+            if self.is_rational is not None and not arg.is_rational:
+                self.is_rational = None
+            if self.is_integer is not None and not arg.is_integer:
+                self.is_integer = None
+            if self.is_natural is not None and not arg.is_natural:
+                self.is_natural = None
+        if self.is_real is not None:
             self.is_real = True
+        if self.is_rational is not None:
+            self.is_rational = True
+        if self.is_integer is not None:
+            self.is_integer = True
+        if self.is_natural is not None:
+            self.is_natural = True
 
     def evaluate(self) -> Add:
         from pylogic.sympy_helpers import sympy_to_pylogic
@@ -345,14 +383,29 @@ class Add(Expr):
 class Mul(Expr):
     def __init__(self, *args: PBasic | Expr):
         super().__init__(*args)
-        for arg in args:
-            if isinstance(arg, (int, float, Fraction)) or arg.is_real:
-                continue
-            else:
+        self.is_real = object()  # type: ignore
+        self.is_rational = object()  # type: ignore
+        self.is_integer = object()  # type: ignore
+        self.is_natural = object()  # type: ignore
+        for arg in self._init_args:
+            if (
+                self.is_real is not None and not arg.is_real
+            ):  # arg.is_real is False or None
                 self.is_real = None
-                break
-        else:
+            if self.is_rational is not None and not arg.is_rational:
+                self.is_rational = None
+            if self.is_integer is not None and not arg.is_integer:
+                self.is_integer = None
+            if self.is_natural is not None and not arg.is_natural:
+                self.is_natural = None
+        if self.is_real is not None:
             self.is_real = True
+        if self.is_rational is not None:
+            self.is_rational = True
+        if self.is_integer is not None:
+            self.is_integer = True
+        if self.is_natural is not None:
+            self.is_natural = True
 
     def evaluate(self) -> Mul:
         from pylogic.sympy_helpers import sympy_to_pylogic
@@ -388,16 +441,29 @@ class Pow(Expr):
         self.base = base
         self.exp = exp
         self.is_real = None
+        self.is_rational = None
+        self.is_integer = None
+        self.is_natural = None
         super().__init__(base, exp)
-
-    def replace(self, old: Any, new: Any, equal_check: Callable | None = None) -> Self:
-        new_base = replace(self.base, old, new, equal_check=equal_check)
-        new_exp = replace(self.exp, old, new, equal_check=equal_check)
-        new_expr = self.copy()
-        new_expr._build_args_and_symbols(new_base, new_exp)
-        new_expr.base = new_base
-        new_expr.exp = new_exp
-        return new_expr
+        base, exp = self._init_args
+        if base.is_real:
+            if exp.is_integer:
+                self.is_real = True
+        if base.is_rational:
+            if exp.is_integer:
+                self.is_rational = True
+        if base.is_integer:
+            if exp.is_integer:
+                self.is_rational = True
+            elif exp.is_natural:
+                self.is_integer = True
+        if base.is_natural:
+            if exp.is_integer:
+                self.is_rational = True
+            elif exp.is_natural:
+                self.is_natural = True
+            elif exp.is_rational:
+                self.is_real = True
 
     def evaluate(self) -> Pow:
         from pylogic.sympy_helpers import sympy_to_pylogic
@@ -440,23 +506,37 @@ class Pow(Expr):
 
 
 def replace(
-    expr: PBasic | Set | Sequence | Expr,
-    old: Any,
-    new: Any,
+    expr: Any,
+    replace_dict: dict,
     equal_check: Callable | None = None,
-) -> PBasic | Set | Sequence | Expr:
+) -> Any:
     """
     For replacing subexpressions in an expression.
     `equal_check` is a function that checks if two
     objects are equal in order to replace.
     """
+    from pylogic.proposition.proposition import Proposition
+    from pylogic.symbol import Symbol
+
     equal_check = equal_check or (lambda x, y: x == y)
-    if equal_check(old, expr):
-        return new
-    elif isinstance(expr, Expr):
-        return expr.replace(old, new, equal_check=equal_check)
-    else:
+
+    for old in replace_dict:
+        new = replace_dict[old]
+        if equal_check(old, expr):
+            return new
+
+    if isinstance(expr, (list, set, tuple)):
+        return type(expr)(
+            replace(e, replace_dict, equal_check=equal_check) for e in expr
+        )
+
+    # TODO: update with more types
+    if not isinstance(expr, (Expr, Proposition, Symbol)):
         return expr
+
+    if isinstance(expr, (Expr, Proposition)):
+        return expr.replace(replace_dict, equal_check=equal_check)
+    return expr
 
 
 @overload
@@ -474,6 +554,8 @@ def to_sympy(expr: Set) -> sp.Set: ...
 def to_sympy(expr: PBasic | Expr | Set) -> sp.Basic:
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
+
+    # TODO: add sequence and other types
 
     if isinstance(expr, int):
         return sp.Integer(expr)

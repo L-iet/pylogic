@@ -15,7 +15,6 @@ from pylogic.proposition.relation.equals import Equals
 from pylogic.structures.grouplike.group import Group
 from pylogic.structures.ringlike.ring import RIng
 from pylogic.structures.set_ import Set
-from pylogic.symbol import Symbol
 from pylogic.variable import Variable
 
 T = TypeVar("T", bound=Term)

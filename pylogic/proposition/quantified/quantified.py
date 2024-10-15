@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import TYPE_CHECKING, Callable, Generic, Literal, Self, TypeVar
+from typing import Callable, Generic, Literal, Self, TypeVar
 
-from sympy import latex
 
 from pylogic import Term, Unification
 from pylogic.proposition.proposition import Proposition
@@ -101,15 +100,13 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
 
     def replace(
         self,
-        current_val: Term,
-        new_val: Term,
+        replace_dict: dict[Term, Term],
         positions: list[list[int]] | None = None,
         equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
-        # assert not isinstance(new_val, Var), f"{new_val} is a Var"
         new_p: Self = self.copy()
         new_p.inner_proposition = new_p.inner_proposition.replace(
-            current_val, new_val, positions=positions, equal_check=equal_check
+            replace_dict, positions=positions, equal_check=equal_check
         )
         new_p._set_is_proven(False)
         new_p.from_assumptions = set()

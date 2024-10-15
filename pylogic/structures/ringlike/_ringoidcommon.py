@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from fractions import Fraction
 from typing import Any, Callable, Iterable, TypeAlias, TypeVar
 
 from pylogic import Term
@@ -10,7 +9,6 @@ from pylogic.proposition.quantified.forall import ForallInSet
 from pylogic.proposition.relation.contains import IsContainedIn
 from pylogic.structures.grouplike.magma import Magma
 from pylogic.structures.set_ import Set
-from pylogic.symbol import Symbol
 
 T = TypeVar("T", bound=Term)
 E = TypeVar("E", bound=Expr)
@@ -52,7 +50,7 @@ class _RingoidCommon(Set):
         times_operation: Callable[[T, T], E] | None = None,
         times_operation_symbol: str | None = None,
     ):
-        super().__init__(name, elements, containment_function)  # type: ignore
+        Set.__init__(self, name, elements, containment_function)  # type: ignore
         self.plus_operation_name = f"{self.name}_+"
         self.plus_operation_symbol = plus_operation_symbol or f"{self.name}_+"
         self.plus_eval_func = plus_operation
@@ -60,30 +58,40 @@ class _RingoidCommon(Set):
         self.times_operation_symbol = times_operation_symbol or f"{self.name}_*"
         self.times_eval_func = times_operation
 
-        self.magma_plus = Magma(
+        self.plus_operation: SpecialInfix[T, T, E, E]
+        self.times_operation: SpecialInfix[T, T, E, E]
+        # we inject the appropriate values using the Magma constructor into custom attribute names
+        Magma._initialize_with_custom_attr_names(
+            self,
             name=name,
             elements=elements,
             containment_function=containment_function,
-            operation=plus_operation,
-            operation_name=self.plus_operation_name,
-            operation_symbol=self.plus_operation_symbol,
+            operation=plus_operation,  # type: ignore
+            operation_name=f"{self.name}_+",
+            operation_symbol=plus_operation_symbol or f"{self.name}_+",
+            attr_names={
+                "operation_name": f"plus_operation_name",
+                "operation_symbol": "plus_operation_symbol",
+                "operation": "plus_operation",
+                "op": "plus_op",
+                "is_closed_under_op": "is_closed_under_plus",
+            },
         )
-        self.magma_times = Magma(
+        Magma._initialize_with_custom_attr_names(
+            self,
             name=name,
             elements=elements,
             containment_function=containment_function,
-            operation=times_operation,
-            operation_name=self.times_operation_name,
-            operation_symbol=self.times_operation_symbol,
-        )
-        self.plus_operation = self.magma_plus.operation
-        self.times_operation = self.magma_times.operation
-
-        self.is_closed_under_plus = self._replace_instance_set(
-            self.magma_plus, "is_closed_under_op"
-        )
-        self.is_closed_under_times = self._replace_instance_set(
-            self.magma_times, "is_closed_under_op"
+            operation=times_operation,  # type: ignore
+            operation_name=f"{self.name}_*",
+            operation_symbol=times_operation_symbol or f"{self.name}_*",
+            attr_names={
+                "operation_name": f"times_operation_name",
+                "operation_symbol": "times_operation_symbol",
+                "operation": "times_operation",
+                "op": "times_op",
+                "is_closed_under_op": "is_closed_under_times",
+            },
         )
 
         self.plus = self.plus_operation
@@ -102,7 +110,7 @@ class _RingoidCommon(Set):
     def _replace_instance_set(self, _instance_set: Set, _property: str) -> Any:
         orig_prop = getattr(_instance_set, _property)
         ret_val = orig_prop.replace(
-            _instance_set, self, equal_check=lambda x, y: x is y
+            {_instance_set: self}, equal_check=lambda x, y: x is y
         )
         ret_val._set_is_axiom(orig_prop.is_axiom)
         ret_val._set_is_proven(orig_prop._is_proven)

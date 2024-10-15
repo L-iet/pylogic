@@ -43,7 +43,6 @@ class Exists(_Quantified[TProposition]):
         latex_name: str | None = None,
         positions: list[list[int]] | None = None,
         is_assumption: bool = False,
-        is_real: bool = True,
         description: str = "",
         **kwargs,
     ) -> Exists[TProposition]:
@@ -60,12 +59,13 @@ class Exists(_Quantified[TProposition]):
             and positions = [[0, 0, 0], [0, 2], [1]]
             we end up with
             exists q: (forall x: (p1 q -> p2 x) /\ (p3 x) /\ (p4 q)) -> (p5 q)
+
+        Other keyword arguments are passed to the variable.
         """
-        variable = Variable(existential_var_name, latex_name=latex_name, real=is_real)
+        variable = Variable(existential_var_name, latex_name=latex_name, **kwargs)
         if expression_to_replace is not None:
             inner_proposition = inner_proposition.replace(
-                expression_to_replace,
-                variable,
+                {expression_to_replace: variable},
                 positions=positions,
                 equal_check=kwargs.get("equal_check"),
             )
@@ -97,7 +97,7 @@ class Exists(_Quantified[TProposition]):
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, Exists):
             return self.inner_proposition == other.inner_proposition
-        return False
+        return NotImplemented
 
     def __hash__(self) -> int:
         return super().__hash__()
@@ -110,6 +110,8 @@ class Exists(_Quantified[TProposition]):
         If self is proven, return a constant and a proven inner proposition.
         """
         assert self.is_proven, f"{self} is not proven"
+        from pylogic.proposition.and_ import And
+
         other_free_vars = tuple(
             {
                 v
@@ -126,10 +128,14 @@ class Exists(_Quantified[TProposition]):
             depends_on=other_free_vars,
             _from_existential_instance=True,
         )
-        proven_inner = self.inner_proposition.replace(self.variable, c)
+        proven_inner = self.inner_proposition.replace({self.variable: c})
         proven_inner._set_is_proven(True)
         proven_inner.from_assumptions = get_assumptions(self).copy()
         proven_inner.deduced_from = Inference(self, rule="extract")
+        if isinstance(proven_inner, And):
+            c.knowledge_base.update(proven_inner.extract())
+        else:
+            c.knowledge_base.add(proven_inner)
         return (c, proven_inner)
 
     def exists_modus_ponens(self, other: Forall[Implies[TProposition, B]]) -> Exists[B]:
@@ -219,7 +225,7 @@ class Exists(_Quantified[TProposition]):
                     ),
                 ]
             ) if (y1 == y2) and (
-                implies_antecedent == new_inner.replace(self.variable, y1)
+                implies_antecedent == new_inner.replace({self.variable: y1})
             ):
                 return ExistsUnique(
                     variable=self.variable,
@@ -260,7 +266,9 @@ class Exists(_Quantified[TProposition]):
             ) if (
                 (y1 == y2 == y3)
                 and (set_1 == set_2)
-                and all(Px.replace(self.variable, y1) == Py for Px, Py in zip(Pxs, Pys))
+                and all(
+                    Px.replace({self.variable: y1}) == Py for Px, Py in zip(Pxs, Pys)
+                )
             ):
                 return ExistsUniqueInSet(
                     variable=self.variable,
@@ -277,10 +285,57 @@ class Exists(_Quantified[TProposition]):
 
 
 class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
+    @classmethod
+    def from_proposition(
+        cls,
+        existential_var_name: str,
+        expression_to_replace: Term | None,
+        set_: Set | Variable,
+        inner_proposition: TProposition,
+        latex_name: str | None = None,
+        positions: list[list[int]] | None = None,
+        is_assumption: bool = False,
+        description: str = "",
+        **kwargs,
+    ) -> ExistsInSet[TProposition]:
+        r"""
+        latex_name: str | None
+            The latex representation of the existential variable.
+        positions: list[list[int]]
+            This is a list containing the positions of the expression_to_replace in self.
+            If None, we will search for all occurences of the expression_to_replace in self.
+            This is a nested list representing the path we need to go down in the proposition tree,
+            For example, if self is
+            (forall x: (p1 x -> p2 x) /\ (p3 x) /\ (p4 x)) -> (p5 x)
+            existential_var = q
+            and positions = [[0, 0, 0], [0, 2], [1]]
+            we end up with
+            exists q: (forall x: (p1 q -> p2 x) /\ (p3 x) /\ (p4 q)) -> (p5 q)
+        Other keyword arguments are passed to the variable.
+        """
+        variable = Variable(existential_var_name, latex_name=latex_name, **kwargs)
+        if expression_to_replace is not None:
+            assert (
+                expression_to_replace in set_
+            ), f"{expression_to_replace} not in {set_}"
+            inner_proposition = inner_proposition.replace(
+                {expression_to_replace: variable},
+                positions=positions,
+                equal_check=kwargs.get("equal_check"),
+            )
+        return cls(
+            variable,
+            set_,
+            inner_proposition,
+            is_assumption=is_assumption,
+            description=description,
+            **kwargs,
+        )
+
     def __init__(
         self,
         variable: Variable,
-        set_: Set,
+        set_: Set | Variable,
         inner_proposition: TProposition,
         is_assumption: bool = False,
         description: str = "",
@@ -326,23 +381,22 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
 
     def replace(
         self,
-        current_val: Term,
-        new_val: Term,
+        replace_dict: dict[Term, Term],
         positions: list[list[int]] | None = None,
         equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
         from pylogic.structures.set_ import Set
 
-        if current_val == self.variable:
+        if self.variable in replace_dict:
             raise ValueError("Cannot replace variable (not implemented)")
-        if current_val == self.set_:
-            assert isinstance(new_val, Set), f"{new_val} is not a set"
+        if self.set_ in replace_dict:
+            new_val = replace_dict[self.set_]
+            assert isinstance(new_val, Set) or new_val.is_set, f"{new_val} is not a set"
             new_p = self.__class__(
                 self.variable,
                 new_val,
                 self._inner_without_set.replace(
-                    current_val,
-                    new_val,
+                    replace_dict,
                     positions=positions,
                     equal_check=equal_check,
                 ),
@@ -354,7 +408,7 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
             self.variable,
             self.set_,
             self._inner_without_set.replace(
-                current_val, new_val, positions=positions, equal_check=equal_check
+                replace_dict, positions=positions, equal_check=equal_check
             ),
             _is_proven=False,
         )
@@ -410,7 +464,7 @@ class ExistsUnique(Exists[And[TProposition, Forall[Implies[TProposition, Equals]
             prev_latex_name.append(r"\_2")
         new_latex_name = "_".join(prev_latex_name)
         other_var = Variable(variable.name + "_2", latex_name=new_latex_name)
-        other_prop = inner_proposition.replace(variable, other_var)
+        other_prop = inner_proposition.replace({variable: other_var})
         super().__init__(
             variable,
             inner_proposition.and_(
@@ -431,18 +485,17 @@ class ExistsUnique(Exists[And[TProposition, Forall[Implies[TProposition, Equals]
 
     def replace(
         self,
-        current_val: Term,
-        new_val: Term,
+        replace_dict: dict[Term, Term],
         positions: list[list[int]] | None = None,
         equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
-        if current_val == self.variable:
+        if self.variable in replace_dict:
             raise ValueError("Cannot replace variable (not implemented)")
 
         new_p = self.__class__(
             self.variable,
             self._inner_without_unique.replace(
-                current_val, new_val, positions=positions, equal_check=equal_check
+                replace_dict, positions=positions, equal_check=equal_check
             ),
             _is_proven=False,
         )
@@ -501,7 +554,7 @@ class ExistsUniqueInSet(
             prev_latex_name.append(r"\_2")
         new_latex_name = "_".join(prev_latex_name)
         other_var = Variable(variable.name + "_2", latex_name=new_latex_name)
-        other_prop = inner_proposition.replace(variable, other_var)
+        other_prop = inner_proposition.replace({variable: other_var})
         super().__init__(
             variable,
             set_,
@@ -525,22 +578,22 @@ class ExistsUniqueInSet(
 
     def replace(
         self,
-        current_val: Term,
-        new_val: Term,
+        replace_dict: dict[Term, Term],
         positions: list[list[int]] | None = None,
         equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
         from pylogic.structures.set_ import Set
 
-        if current_val == self.variable:
+        if self.variable in replace_dict:
             raise ValueError("Cannot replace variable (not implemented)")
-        if current_val == self.set_:
+        if self.set_ in replace_dict:
+            new_val = replace_dict[self.set_]
             assert isinstance(new_val, Set), f"{new_val} is not a set"
             new_p = self.__class__(
                 self.variable,
                 new_val,
                 self._inner_without_set_and_unique.replace(
-                    current_val, new_val, positions=positions, equal_check=equal_check
+                    replace_dict, positions=positions, equal_check=equal_check
                 ),
                 _is_proven=False,
             )
@@ -550,7 +603,7 @@ class ExistsUniqueInSet(
             self.variable,
             self.set_,
             self._inner_without_set_and_unique.replace(
-                current_val, new_val, positions=positions, equal_check=equal_check
+                replace_dict, positions=positions, equal_check=equal_check
             ),
             _is_proven=False,
         )
@@ -650,7 +703,7 @@ class ExistsUniqueSubset(
             prev_latex_name.append(r"\_2")
         new_latex_name = "_".join(prev_latex_name)
         other_var = Variable(variable.name + "_2", latex_name=new_latex_name)
-        other_prop = inner_proposition.replace(variable, other_var)
+        other_prop = inner_proposition.replace({variable: other_var})
         super().__init__(
             variable,
             set_,

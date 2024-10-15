@@ -60,7 +60,7 @@ class Forall(_Quantified[TProposition]):
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, Forall):
             return self.inner_proposition == other.inner_proposition
-        return False
+        return NotImplemented
 
     def __hash__(self) -> int:
         return super().__hash__()
@@ -131,17 +131,16 @@ class Forall(_Quantified[TProposition]):
 
     def replace(
         self,
-        current_val: Term,
-        new_val: Term,
+        replace_dict: dict[Term, Term],
         positions: list[list[int]] | None = None,
         equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
-        if current_val == self.variable:
+        if self.variable in replace_dict:
             raise ValueError("Cannot replace variable (not implemented)")
         new_p = self.__class__(
             self.variable,
             self.inner_proposition.replace(
-                current_val, new_val, positions=positions, equal_check=equal_check
+                replace_dict, positions=positions, equal_check=equal_check
             ),
             _is_proven=False,
         )
@@ -161,7 +160,9 @@ class Forall(_Quantified[TProposition]):
             expression_to_substitute.unbind()
         # I previously checked that expression_to_substitute does
         # not contain variables, but I think it's not necessary
-        new_p = self.inner_proposition.replace(self.variable, expression_to_substitute)
+        new_p = self.inner_proposition.replace(
+            {self.variable: expression_to_substitute}
+        )
         new_p._set_is_proven(True)
         new_p.from_assumptions = get_assumptions(self).copy()
         new_p.deduced_from = Inference(self, rule="in_particular")
@@ -212,22 +213,22 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
 
     def replace(
         self,
-        current_val: Term,
-        new_val: Term,
+        replace_dict: dict[Term, Term],
         positions: list[list[int]] | None = None,
         equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
         from pylogic.structures.set_ import Set
 
-        if current_val == self.variable:
+        if self.variable in replace_dict:
             raise ValueError("Cannot replace variable (not implemented)")
-        if current_val == self.set_:
+        if self.set_ in replace_dict:
+            new_val = replace_dict[self.set_]
             assert isinstance(new_val, Set), f"{new_val} is not a set"
             new_p = self.__class__(
                 self.variable,
                 new_val,
                 self._inner_without_set.replace(
-                    current_val, new_val, positions=positions, equal_check=equal_check
+                    replace_dict, positions=positions, equal_check=equal_check
                 ),
                 _is_proven=False,
             )
@@ -237,7 +238,7 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
             self.variable,
             self.set_,
             self._inner_without_set.replace(
-                current_val, new_val, positions=positions, equal_check=equal_check
+                replace_dict, positions=positions, equal_check=equal_check
             ),
             _is_proven=False,
         )

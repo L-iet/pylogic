@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Generic, Self, TypeVar
+from typing import Callable, Generic, Self, TypeVar
 
 from pylogic import Term
 from pylogic.helpers import replace
@@ -83,8 +83,7 @@ class BinaryRelation(Relation, Generic[T, U]):
 
     def replace(
         self,
-        current_val: Term,
-        new_val: Term,
+        replace_dict: dict[Term, Term],
         positions: list[list[int]] | None = None,
         equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
@@ -98,11 +97,9 @@ class BinaryRelation(Relation, Generic[T, U]):
         new_right = old_right = self.right
 
         if positions is None or [0] in positions:
-            new_left = replace(old_left, current_val, new_val, equal_check=equal_check)
+            new_left = replace(old_left, replace_dict, equal_check=equal_check)
         if positions is None or [1] in positions:
-            new_right = replace(
-                old_right, current_val, new_val, equal_check=equal_check
-            )
+            new_right = replace(old_right, replace_dict, equal_check=equal_check)
         return self.__class__(
             new_left,
             new_right,
@@ -142,7 +139,7 @@ class BinaryRelation(Relation, Generic[T, U]):
         )
         assert (
             first_non_transitive is None
-        ), f"Chain of transitivity broken: {first_non_transitive} are not equal"
+        ), f"Chain of transitivity broken: {first_non_transitive[0]} and {first_non_transitive[1]} are not identical"
 
         new_p = self.__class__(
             self.left,

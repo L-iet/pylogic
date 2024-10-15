@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from fractions import Fraction
 from typing import TYPE_CHECKING, Any, Callable, Self, cast
 
 import sympy as sp
 from sympy.matrices.expressions.matexpr import MatrixElement as MatEl
 
-from pylogic import Numeric
+from pylogic import PythonNumeric, Term
 from pylogic.expressions.expr import Add, Expr, Mul, Pow
 
 if TYPE_CHECKING:
+    from pylogic.proposition.proposition import Proposition
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
     from pylogic.proposition.relation.subsets import IsSubsetOf
@@ -21,15 +21,19 @@ if TYPE_CHECKING:
 class Symbol:
     def __init__(self, *args, **kwargs) -> None:
         assert isinstance(args[0], str), "The first argument must be a string"
+        self.knowledge_base: set[Proposition] = set()
         self.name: str = args[0]
-        self.is_real: bool = kwargs.get("real", False)
-        self.is_set_: bool = kwargs.get("set_", False)
+        self._is_real: bool = kwargs.get("real", None)
+        self._is_rational: bool = kwargs.get("rational", None)
+        self._is_integer: bool = kwargs.get("integer", None)
+        self._is_natural: bool = kwargs.get("natural", None)
+        self.is_set_: bool = kwargs.get("set_", None)
         self.is_set: bool = self.is_set_
-        self.is_graph: bool = not self.is_set and kwargs.get("graph", False)
-        self.is_pair: bool = self.is_graph or kwargs.get("pair", False)
-        self.is_list_: bool = self.is_pair or kwargs.get("list_", False)
+        self.is_graph: bool = not self.is_set and kwargs.get("graph", None)
+        self.is_pair: bool = self.is_graph or kwargs.get("pair", None)
+        self.is_list_: bool = self.is_pair or kwargs.get("list_", None)
         self.is_list: bool = self.is_list_
-        self.is_sequence: bool = self.is_list or kwargs.get("sequence", False)
+        self.is_sequence: bool = self.is_list or kwargs.get("sequence", None)
         self._init_args = args
         self._init_kwargs = kwargs
         self._from_existential_instance = kwargs.get(
@@ -37,9 +41,25 @@ class Symbol:
         )
         self.latex_name = (
             kwargs.get("latex_name") or self.name
-        )  # using or here because latex_name=None is valid
+        )  # using "or" instead of default here because latex_name=None is valid
         self.depends_on: tuple[Symbol, ...] = kwargs.get("depends_on", ())
         self.independent_dependencies = self.get_independent_dependencies()
+
+    @property
+    def is_natural(self) -> bool:
+        return self._is_natural
+
+    @property
+    def is_integer(self) -> bool:
+        return self._is_integer or self.is_natural
+
+    @property
+    def is_rational(self) -> bool:
+        return self._is_rational or self.is_integer
+
+    @property
+    def is_real(self) -> bool:
+        return self._is_real or self.is_rational
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.name}, deps={self.depends_on})"
@@ -49,38 +69,38 @@ class Symbol:
             return f"{self.name}({', '.join(str(d) for d in self.independent_dependencies)})"
         return f"{self.name}"
 
-    def __add__(self, other: Symbol | Numeric | Expr) -> Add:
+    def __add__(self, other: Symbol | PythonNumeric | Expr) -> Add:
         return Add(self, other)
 
-    def __sub__(self, other: Symbol | Numeric | Expr) -> Add:
-        o = cast(Mul | Numeric, -other)
+    def __sub__(self, other: Symbol | PythonNumeric | Expr) -> Add:
+        o = cast(Mul | PythonNumeric, -other)
         return Add(self, o)
 
-    def __mul__(self, other: Symbol | Numeric | Expr) -> Mul:
+    def __mul__(self, other: Symbol | PythonNumeric | Expr) -> Mul:
         return Mul(self, other)
 
-    def __truediv__(self, other: Symbol | Numeric | Expr) -> Mul:
+    def __truediv__(self, other: Symbol | PythonNumeric | Expr) -> Mul:
         return Mul(self, Pow(other, -1))
 
     def __neg__(self) -> Mul:
         return Mul(-1, self)
 
-    def __pow__(self, other: Symbol | Numeric | Expr) -> Pow:
+    def __pow__(self, other: Symbol | PythonNumeric | Expr) -> Pow:
         return Pow(self, other)
 
-    def __radd__(self, other: Symbol | Numeric | Expr) -> Add:
+    def __radd__(self, other: Symbol | PythonNumeric | Expr) -> Add:
         return Add(other, self)
 
-    def __rsub__(self, other: Symbol | Numeric | Expr) -> Add:
+    def __rsub__(self, other: Symbol | PythonNumeric | Expr) -> Add:
         return Add(other, -self)
 
-    def __rmul__(self, other: Symbol | Numeric | Expr) -> Mul:
+    def __rmul__(self, other: Symbol | PythonNumeric | Expr) -> Mul:
         return Mul(other, self)
 
-    def __rtruediv__(self, other: Symbol | Numeric | Expr) -> Mul:
+    def __rtruediv__(self, other: Symbol | PythonNumeric | Expr) -> Mul:
         return Mul(other, Pow(self, -1))
 
-    def __rpow__(self, other: Symbol | Numeric | Expr) -> Pow:
+    def __rpow__(self, other: Symbol | PythonNumeric | Expr) -> Pow:
         return Pow(other, self)
 
     def __eq__(self, other: Any) -> bool:
@@ -101,7 +121,7 @@ class Symbol:
                 and self.is_sequence == other.is_sequence
                 and self.depends_on == other.depends_on
             )
-        return False
+        return NotImplemented
 
     def eval_same(self, other: Any) -> bool:
         """
@@ -120,7 +140,7 @@ class Symbol:
                 indeps.extend(dep.get_independent_dependencies())
         return tuple(indeps)
 
-    def equals(self, other: Symbol | Numeric | Expr | Set, **kwargs) -> Equals:
+    def equals(self, other: Symbol | PythonNumeric | Expr | Set, **kwargs) -> Equals:
         from pylogic.proposition.relation.equals import Equals
 
         return Equals(self, other, **kwargs)
@@ -142,13 +162,14 @@ class Symbol:
     def deepcopy(self) -> Self:
         return self.copy()
 
-    def replace(self, old, new, equal_check: Callable | None = None) -> Any:
+    def replace(self, replace_dict: dict, equal_check: Callable | None = None) -> Any:
         """
-        Replace occurences of `old` with `new` in the object.
+        Replace occurences of `old` with `new` in the object, where replace_dict = {old: new}.
         If `equal_check` is provided, it should be a function that takes two
         arguments and returns True if they are equal.
         """
         equal_check = equal_check or (lambda x, y: x == y)
+        old, new = replace_dict.popitem()
         if equal_check(old, self):
             return new
         return self
@@ -167,10 +188,28 @@ class Symbol:
     def evaluate(self) -> Self:
         return self
 
-    def is_in(self, other: Set, **kwargs) -> IsContainedIn:
+    def is_in(self, other: Set | Variable, **kwargs) -> IsContainedIn:
         from pylogic.proposition.relation.contains import IsContainedIn
 
         return IsContainedIn(self, other, **kwargs)
+
+    def _is_in_by_definition(self, other: Set | Variable) -> IsContainedIn:
+        from pylogic.inference import Inference
+        from pylogic.proposition.relation.contains import IsContainedIn
+
+        res = IsContainedIn(
+            self,
+            other,
+            _is_proven=True,
+            _assumptions=set(),
+            _inference=Inference(None, rule="by_definition"),
+        )
+        return res
+
+    def contains(self, other: Term, **kwargs) -> IsContainedIn:
+        from pylogic.proposition.relation.contains import IsContainedIn
+
+        return IsContainedIn(other, self, **kwargs)
 
     @property
     def nodes_edges(self) -> tuple[Self, Self]:

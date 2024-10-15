@@ -18,10 +18,10 @@ class Abs(Expr):
         super().__init__(expr)
 
     def evaluate(self) -> Abs | Constant:
-        from pylogic.helpers import is_numeric
+        from pylogic.helpers import is_python_numeric
         from pylogic.symbol import Symbol
 
-        if is_numeric(self.expr):
+        if is_python_numeric(self.expr):
             return Constant(abs(self.expr))  # type: ignore
         elif isinstance(self.expr, (Expr, Symbol)):
             return Abs(self.expr.evaluate())

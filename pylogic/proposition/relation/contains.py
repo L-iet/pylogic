@@ -57,7 +57,7 @@ class IsContainedIn(BinaryRelation[T, U]):
             or kwargs.get("is_assumption")
             or kwargs.get("is_axiom")
         ):
-            self.right.elements.add(self.left)
+            self._add_element_to_set()
 
     @property
     def set_(self) -> U:
@@ -67,28 +67,40 @@ class IsContainedIn(BinaryRelation[T, U]):
     def element(self) -> T:
         return self.left
 
+    def _add_element_to_set(self) -> None:
+        # TODO: add more here
+        if self.right.name in {"Naturals", "Reals"}:
+            substr = self.right.name[:-1].lower()
+            setattr(self.left, f"_is_{substr}", True)
+        self.left.knowledge_base.add(self)
+        self.right.elements.add(self.left)
+
     def _set_is_proven(self, value: bool) -> None:
         if value:
-            self.right.elements.add(self.left)
+            self._add_element_to_set()
         elif not (self.is_axiom or self.is_assumption):
             self.right.elements.discard(self.left)
+            self.left.knowledge_base.discard(self)
         super()._set_is_proven(value)
 
     def _set_is_assumption(self, value: bool) -> None:
         # TODO: fix this. I'm still getting some dummy variables in
         # set's elements although we called followed_from with this prop
+        # update Oct 11 2024, did I fix this?
         if value:
-            self.right.elements.add(self.left)
+            self._add_element_to_set()
         else:
             if not (self._is_proven or self.is_axiom):
                 self.right.elements.discard(self.left)
+                self.left.knowledge_base.discard(self)
         super()._set_is_assumption(value)
 
     def _set_is_axiom(self, value: bool) -> None:
         if value:
-            self.right.elements.add(self.left)
+            self._add_element_to_set()
         elif not (self._is_proven or self.is_assumption):
             self.right.elements.discard(self.left)
+            self.left.knowledge_base.discard(self)
         super()._set_is_axiom(value)
 
     def by_containment_func(self) -> Self:
@@ -149,7 +161,7 @@ class IsContainedIn(BinaryRelation[T, U]):
                     is_assumption=self.is_assumption,
                     _is_proven=True,
                     _assumptions=set(),
-                    _inference=Inference(self, rule="by_def"),
+                    _inference=Inference(self, rule="by_sympy_def"),
                 )  # type: ignore
         except (TypeError, NotImplementedError) as e:
             raise ValueError(
@@ -161,6 +173,10 @@ class IsContainedIn(BinaryRelation[T, U]):
         """Logical tactic. Use the set's containment function and sympy set to
         prove that it contains the element.
         """
+        from pylogic.helpers import getkey
+
+        if self in self.left.knowledge_base:
+            return getkey(self.left.knowledge_base, self)  # type: ignore
         try:
             return self.by_containment_func()
         except ValueError:

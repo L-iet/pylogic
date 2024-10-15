@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from fractions import Fraction
 from typing import Callable, Iterable, TypeAlias, TypeVar
 
 from pylogic import Term
@@ -13,7 +12,6 @@ from pylogic.proposition.relation.equals import Equals
 from pylogic.structures.ringlike.left_ringoid import LeftRingoid
 from pylogic.structures.ringlike.right_ringoid import RightRingoid
 from pylogic.structures.set_ import Set
-from pylogic.symbol import Symbol
 from pylogic.variable import Variable
 
 T = TypeVar("T", bound=Term)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Literal, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Literal, overload
 
 from pylogic.structures.collection import Collection
 
@@ -70,13 +70,18 @@ def containment_function(self, x: Any) -> bool:
     from pylogic.structures.set_ import Set
 
     # TODO: Should a Colletion{n} instance contain a Collection{n-2} instance and lower?
-
-    if isinstance(x, Set) or x.__class__.__name__.startswith("Collection"):
-        return self.level == x.level + 1 and self._containment_function(x)
     if x in self.elements:
         return True
+    if isinstance(x, Set) or x.__class__.__name__.startswith("Collection"):
+        return (
+            self.level == x.level + 1
+            and self._containment_function is not None
+            and self._containment_function(x)
+        )
     elif self._containment_function:
-        return self._containment_function(x)
+        res = self._containment_function(x)
+        self.elements.add(x) if res else None
+        return res
     return False
 
 

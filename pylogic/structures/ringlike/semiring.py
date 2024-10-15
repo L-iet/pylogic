@@ -6,7 +6,7 @@ from typing import Callable, Iterable, TypeAlias, TypeVar
 from pylogic import Term, Unevaluated
 from pylogic.constant import Constant
 from pylogic.expressions.expr import BinaryExpression, Expr
-from pylogic.helpers import is_numeric
+from pylogic.helpers import is_python_numeric
 from pylogic.infix.infix import SpecialInfix
 from pylogic.proposition.and_ import And
 from pylogic.proposition.quantified.forall import ForallInSet
@@ -15,7 +15,6 @@ from pylogic.proposition.relation.equals import Equals
 from pylogic.structures.grouplike.monoid import Monoid
 from pylogic.structures.ringlike.semirng import Semirng
 from pylogic.structures.set_ import Set
-from pylogic.symbol import Symbol
 
 T = TypeVar("T", bound=Term)
 E = TypeVar("E", bound=Expr)
@@ -58,7 +57,7 @@ class SemirIng(Semirng[Z]):
             times_operation=times_operation,
             times_operation_symbol=times_operation_symbol,
         )
-        if is_numeric(one):
+        if is_python_numeric(one):
             self.one: Constant[Z] = Constant(one)  # type: ignore
         else:
             self.one: Unevaluated = one or Constant(f"{self.name}_One")  # type: ignore

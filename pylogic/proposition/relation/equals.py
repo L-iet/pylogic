@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Self, TypeVar
+from typing import Callable, Self, TypeVar
 
 from sympy import Basic, Integer
 
@@ -119,7 +119,7 @@ class Equals(BinaryRelation[T, U]):
             raise ValueError(f"{self} cannot be proven by inspection")
 
     def substitute_into(
-        self, side: Side | str, other_prop: TProposition
+        self, side: Side | str, other_prop: TProposition, **kwargs
     ) -> TProposition:
         """
         If side == Side.LEFT, will look for self.right in other_prop and replace it with self.left.
@@ -138,11 +138,11 @@ class Equals(BinaryRelation[T, U]):
             side = Side.RIGHT
         other_side: Side = Side.RIGHT if side == Side.LEFT else Side.LEFT
         new_prop: TProposition = other_prop.replace(
-            self.get(other_side), self.get(side)
+            {self.get(other_side): self.get(side)}
         )
-        new_prop._set_is_proven(False)
-        new_prop.from_assumptions = set()
-        new_prop.deduced_from = None
+        new_prop._set_is_proven(kwargs.get("_is_proven", False))
+        new_prop.from_assumptions = kwargs.get("_assumptions", set())
+        new_prop.deduced_from = kwargs.get("_inference", None)
         return new_prop
 
     def p_substitute_into(

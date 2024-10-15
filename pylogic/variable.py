@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
+from pylogic import Term
 from pylogic.symbol import Symbol
+
+if TYPE_CHECKING:
+    from pylogic.proposition.relation.contains import IsContainedIn
 
 
 class Variable(Symbol):
@@ -13,6 +19,20 @@ class Variable(Symbol):
             "_from_existential_instance", False
         )
         self.elements = set()  # for variable sets
+
+    def __contains__(self, item: Any) -> bool:
+        """
+        For variable sets.
+        """
+        return item in self.elements
+
+    def predicate(self, x: Term) -> IsContainedIn:
+        """
+        For variable sets.
+        """
+        from pylogic.proposition.relation.contains import IsContainedIn
+
+        return IsContainedIn(x, self)
 
     def unbind(self) -> None:
         self.is_bound = False

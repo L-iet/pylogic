@@ -6,7 +6,7 @@ from typing import Callable, Generic, Iterable, TypeAlias, TypeVar
 from pylogic import Term, Unevaluated
 from pylogic.constant import Constant
 from pylogic.expressions.expr import BinaryExpression, Expr
-from pylogic.helpers import is_numeric
+from pylogic.helpers import is_python_numeric
 from pylogic.infix.infix import SpecialInfix
 from pylogic.proposition.and_ import And
 from pylogic.proposition.quantified.forall import ForallInSet
@@ -16,7 +16,6 @@ from pylogic.structures.grouplike.monoid import Monoid
 from pylogic.structures.grouplike.semigroup import Semigroup
 from pylogic.structures.ringlike.ringoid import Ringoid
 from pylogic.structures.set_ import Set
-from pylogic.symbol import Symbol
 from pylogic.variable import Variable
 
 T = TypeVar("T", bound=Term)
@@ -94,7 +93,7 @@ class CrookedSemirng(Ringoid, Generic[Z]):
             times_operation=times_operation,
             times_operation_symbol=times_operation_symbol,
         )
-        if is_numeric(zero):
+        if is_python_numeric(zero):
             self.zero: Constant[Z] = Constant(zero)  # type: ignore
         else:
             self.zero: Unevaluated = zero or Constant(f"{self.name}_Zero")  # type: ignore

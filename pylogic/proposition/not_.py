@@ -86,7 +86,7 @@ class Not(Proposition, Generic[TProposition]):
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, Not):
             return other.negated == self.negated
-        return False
+        return NotImplemented
 
     def __hash__(self) -> int:
         return hash(("not", self.negated))
@@ -135,14 +135,13 @@ class Not(Proposition, Generic[TProposition]):
 
     def replace(
         self,
-        current_val: Term,
-        new_val: Term,
+        replace_dict: dict[Term, Term],
         positions: list[list[int]] | None = None,
         equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
         new_p = self.__class__(
             self.negated.replace(
-                current_val, new_val, positions=positions, equal_check=equal_check
+                replace_dict, positions=positions, equal_check=equal_check
             )
         )
         return new_p

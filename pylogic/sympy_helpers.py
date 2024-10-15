@@ -4,7 +4,6 @@ from fractions import Fraction
 from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 import sympy as sp
-from sympy import oo
 from sympy.series.sequences import SeqFormula, SeqPer
 
 from pylogic.constant import Constant
@@ -17,7 +16,7 @@ from pylogic.variable import Variable
 B = TypeVar("B", bound=sp.Basic)
 
 if TYPE_CHECKING:
-    from pylogic.structures.sequence import FiniteSequence, PeriodicSequence, Sequence
+    from pylogic.structures.sequence import PeriodicSequence, Sequence
     from pylogic.structures.set_ import Set
 
 

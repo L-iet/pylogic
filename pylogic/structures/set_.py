@@ -1,6 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Iterable, Literal, Self, TypeVar, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Iterable,
+    Literal,
+    Self,
+    TypeVar,
+    overload,
+)
 
 import sympy as sp
 
@@ -9,10 +18,12 @@ from pylogic.proposition.contradiction import Contradiction
 from pylogic.structures.collection import Collection
 
 if TYPE_CHECKING:
+    from pylogic.expressions.expr import Expr
     from pylogic.proposition.proposition import Proposition
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
     from pylogic.structures.sequence import Sequence
+    from pylogic.symbol import Symbol
 
 T = TypeVar("T", bound=Term)
 C = TypeVar("C", bound="Set")
@@ -42,7 +53,7 @@ class Set(metaclass=Collection):
     @overload
     def __new__(cls) -> Set: ...
     @overload
-    def __new__(cls: type[C], name: str, *args, **kwargs) -> C: ...
+    def __new__(cls: type[C], *args, **kwargs) -> C: ...
     def __new__(cls, *args, **kwargs):
         if len(args) == 0 and len(kwargs) == 0:
             global EmptySet
@@ -77,6 +88,8 @@ class Set(metaclass=Collection):
         self.is_finite: bool | None = None
         self.is_union: bool | None = None
         self.is_intersection: bool | None = None
+        self.is_cartes_product: bool | None = None
+        self.is_cartes_power: bool | None = None
         self._init_args = ()
         self._init_kwargs = {
             "name": name,
@@ -85,6 +98,7 @@ class Set(metaclass=Collection):
             "predicate": predicate,
             "illegal_occur_check": illegal_occur_check,
         }
+        self.knowledge_base: set[Proposition] = set()
 
     def illegal_occur_check(
         self,
@@ -190,8 +204,11 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
         """
         # TODO: add conditions to this
         if not isinstance(other, Set):
-            return False
+            return NotImplemented
         return self.name == other.name
+
+    def __contains__(self, item: Any) -> bool:
+        return self.containment_function(item)
 
     def equals(self, other: Term, **kwargs) -> Equals:
         from pylogic.proposition.relation.equals import Equals
@@ -229,7 +246,9 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
         if x in self.elements:
             return True
         elif self._containment_function:
-            return self._containment_function(x)
+            res = self._containment_function(x)
+            self.elements.add(x) if res else None
+            return res
         return False
 
     def __repr__(self) -> str:
@@ -270,6 +289,12 @@ UniversalSet = Set(
     illegal_occur_check=False,
 )
 
+SingletonEmpty = Set(
+    "SingletonEmpty",
+    elements={EmptySet},
+    illegal_occur_check=False,
+)
+
 
 class FiniteSet(Set):
     def __init__(
@@ -288,11 +313,11 @@ class Union(Set):
 
     def __init__(
         self,
-        name: str,
         sets: Sequence[Set],
+        name: str | None = None,
     ):
         super().__init__(name=name)
-        self.sets: Sequence[Set] = sets
+        self.set_sequence: Sequence[Set] = sets
         self.is_union = True
 
 
@@ -301,37 +326,181 @@ class FiniteUnion(Union):
     Represents a union of a specified number of sets.
     """
 
-    def __new__(cls, name: str, sets: Iterable[Set] | None = None) -> FiniteUnion | Set:
+    @overload
+    def __new__(cls) -> Set: ...
+    @overload
+    def __new__(cls, sets: Iterable[Set], name: str | None = None) -> FiniteUnion: ...
+    def __new__(
+        cls, sets: Iterable[Set] | None = None, name: str | None = None, **kwargs
+    ) -> FiniteUnion | Set:
         if not sets:
             return EmptySet
         return object.__new__(cls)
 
     def __init__(
         self,
-        name: str | None = None,
         sets: Iterable[Set] | None = None,
+        name: str | None = None,
     ):
         from pylogic.structures.sequence import FiniteSequence
 
-        Set.__init__(self, name=name or f"FiniteUnion({','.join(map(str, sets))}")  # type: ignore
-        self.set_objects: set[Set] = set(sets) if sets else set()
-        self.sets = FiniteSequence(self.name + "_sets", initial_terms=sets or [])  # type: ignore
+        Set.__init__(self, name=name or f"FiniteUnion({','.join(map(str, sets))})")  # type: ignore
+        self.sets: set[Set] = set(sets) if sets else set()
+        self.set_sequence = FiniteSequence(self.name + "_sets", initial_terms=sets or [])  # type: ignore
         self.is_union = True
 
 
-class FiniteIntersection(Set):
+class Intersection(Set):
     """
-    Represents an intersection of a specified number of sets.
+    Represents the intersection of finitely many or countably-infinitely many sets.
     """
 
     def __init__(
         self,
+        sets: Sequence[Set],
         name: str | None = None,
-        sets: Iterable[Set] | None = None,
     ):
         super().__init__(name=name)
-        self.sets: set[Set] = set(sets) if sets else set()
+        self.set_sequence: Sequence[Set] = sets
         self.is_intersection = True
+
+
+class FiniteIntersection(Intersection):
+    """
+    Represents an intersection of a specified number of sets.
+    """
+
+    @overload
+    def __new__(cls) -> Set: ...
+    @overload
+    def __new__(
+        cls, sets: Iterable[Set], name: str | None = None
+    ) -> FiniteIntersection: ...
+    def __new__(
+        cls, sets: Iterable[Set] | None = None, name: str | None = None, **kwargs
+    ) -> FiniteIntersection | Set:
+        if not sets:
+            return UniversalSet
+        return object.__new__(cls)
+
+    def __init__(
+        self,
+        sets: Iterable[Set] | None = None,
+        name: str | None = None,
+    ):
+        from pylogic.structures.sequence import FiniteSequence
+
+        Set.__init__(self, name=name or f"FiniteIntersection({','.join(map(str, sets))})")  # type: ignore
+        self.sets: set[Set] = set(sets) if sets else set()
+        self.set_sequence = FiniteSequence(self.name + "_sets", initial_terms=sets or [])  # type: ignore
+        self.is_intersection = True
+
+
+class CartesProduct(Set):
+    """
+    Represents the cartesian product of finitely many or countably-infinitely many sets.
+    """
+
+    def __init__(
+        self,
+        sets: Sequence[Set],
+        name: str | None = None,
+    ):
+        super().__init__(name=name)
+        self.set_sequence: Sequence[Set] = sets
+        self.is_cartes_product = True
+
+
+class FiniteCartesProduct(CartesProduct):
+    """
+    Represents a cartesian product of a specified number of sets.
+    """
+
+    @overload
+    def __new__(cls) -> Set: ...
+    @overload
+    def __new__(
+        cls, sets: tuple[Set] | list[Set], name: str | None = None
+    ) -> FiniteCartesProduct: ...
+    def __new__(
+        cls,
+        sets: tuple[Set] | list[Set] | None = None,
+        name: str | None = None,
+        **kwargs,
+    ) -> FiniteCartesProduct | Set:
+        if not sets:
+            return SingletonEmpty
+        return object.__new__(cls)
+
+    def __init__(
+        self,
+        sets: tuple[Set] | list[Set] | None = None,
+        name: str | None = None,
+    ):
+        from pylogic.structures.sequence import FiniteSequence
+
+        Set.__init__(self, name=name or f"FiniteCartesProduct({','.join(map(str, sets))})")  # type: ignore
+        self.sets: set[Set] = set(sets) if sets else set()
+        self.set_tuple: tuple[Set, ...] = tuple(sets) if sets else tuple()
+        self.set_sequence = FiniteSequence(self.name + "_sets", initial_terms=sets or [])  # type: ignore
+        self.is_cartes_product = True
+
+
+class CartesPower(Set):
+    """
+    Represents the cartesian power of a set, such as R^2 = R x R.
+    """
+
+    # TODO: rules
+    """
+    UniversalSet * A = UniversalSet
+    EmptySet * A = EmptySet
+    SingletonEmpty * A = A
+    """
+
+    def __init__(
+        self,
+        base_set: Set,
+        power: Term,
+        name: str | None = None,
+    ):
+        super().__init__(name=name)
+        self.base_set: Set = base_set
+        self.power: Term = power  # TODO: check that power is natural number, int, etc.
+        self.is_cartes_power = True
+
+
+class Complement(Set):
+    """
+    Represents the complement of a set.
+    """
+
+    def __init__(
+        self,
+        base_set: Set,
+        name: str | None = None,
+    ):
+        super().__init__(name=name)
+        self.base_set: Set = base_set
+
+
+class Difference(Set):
+    """
+    Represents the difference of two sets A - B = A n B^c.
+    """
+
+    def __init__(
+        self,
+        a: Set,
+        b: Set,
+        name: str | None = None,
+    ):
+        super().__init__(name=name)
+        self.a: Set = a
+        self.b: Set = b
+
+    def to_intersection(self) -> FiniteIntersection:
+        return FiniteIntersection(sets=[self.a, Complement(self.b)])
 
 
 # Integers = Set(sympy_set=sp.Integers)

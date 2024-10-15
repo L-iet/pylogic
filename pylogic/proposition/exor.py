@@ -16,6 +16,15 @@ Props = tuple[Proposition, ...]
 
 
 class ExOr(_Junction[*Ps]):
+    """
+    This proposition is proven when exactly one of the propositions is proven
+    and the negations of the other propositions are proven.
+    In other words, it is true when exactly one of the propositions is true and all
+    the others are false.
+    We may not know which proposition is true, but we know that only one
+    is true.
+    """
+
     tactics: list[Tactic] = [
         {"name": "one_proven", "arguments": ["Proposition"]},
     ]
@@ -62,13 +71,26 @@ class ExOr(_Junction[*Ps]):
         )
         return new_p
 
-    def one_proven(self, p: Proposition) -> Self:
+    def one_proven(
+        self, positive_proven: Proposition, *negations_proven: Proposition
+    ) -> Self:
         """
-        Logical tactic. Given one proven proposition in self, return
-        a proof of self (exclusive or).
+        Logical tactic. Given that one proposition is proven and all the negations
+        of the other propositions are proven,
+        return a proof of self (exclusive or).
         """
-        assert p.is_proven, f"{p} is not proven"
-        assert p in self.propositions, f"{p} is not present in {self}"
+        assert all(
+            prop.is_proven for prop in (positive_proven, *negations_proven)
+        ), "Not all propositions are proven"
+        from pylogic.proposition.not_ import neg
+
+        all_positives = set(neg(neg_prop) for neg_prop in negations_proven).union(
+            {positive_proven}
+        )
+        assert all_positives == set(
+            self.propositions
+        ), "Not all propositions are present"
+
         new_p = self.copy()
         new_p._set_is_proven(True)
         new_p.deduced_from = Inference(self, p, rule="one_proven")

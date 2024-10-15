@@ -1,7 +1,7 @@
 # pyright: reportInvalidTypeForm=false
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Generic, Literal, Self, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Callable, Generic, Self, TypedDict, TypeVar
 
 from pylogic import Term
 from pylogic.helpers import find_first
@@ -52,7 +52,7 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, Iff):
             return self.left == other.left and self.right == other.right
-        return False
+        return NotImplemented
 
     def __hash__(self) -> int:
         return hash(("iff", self.left, self.right))
@@ -113,8 +113,7 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
 
     def replace(
         self,
-        current_val: Term,
-        new_val: Term,
+        replace_dict: dict[Term, Term],
         positions: list[list[int]] | None = None,
         equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
@@ -127,12 +126,8 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
             ante_positions = None
             cons_positions = None
         new_p = self.__class__(
-            self.left.replace(
-                current_val, new_val, ante_positions, equal_check=equal_check
-            ),
-            self.right.replace(
-                current_val, new_val, cons_positions, equal_check=equal_check
-            ),
+            self.left.replace(replace_dict, ante_positions, equal_check=equal_check),
+            self.right.replace(replace_dict, cons_positions, equal_check=equal_check),
             _is_proven=False,
         )
         return new_p

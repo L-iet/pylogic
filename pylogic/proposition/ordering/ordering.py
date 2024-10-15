@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from fractions import Fraction
-from typing import TYPE_CHECKING, Any, Generic, Protocol, Self, TypeVar
+from typing import TYPE_CHECKING, Protocol, Self
 
-from pylogic import Numeric, Term
+from pylogic import PythonNumeric, Term
 
 if TYPE_CHECKING:
     pass
@@ -43,7 +42,7 @@ class _Ordering(Protocol):
         return new_p
 
     @classmethod
-    def _mul(cls, instance: GreaterThan | LessThan, other: Numeric) -> Self:
+    def _mul(cls, instance: GreaterThan | LessThan, other: PythonNumeric) -> Self:
         from pylogic.inference import Inference
         from pylogic.proposition.ordering.greaterthan import GreaterThan
         from pylogic.proposition.ordering.lessthan import LessThan

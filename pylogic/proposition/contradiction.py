@@ -35,7 +35,9 @@ class Contradiction(Proposition):
         self.is_atomic = True
 
     def __eq__(self, other: Contradiction) -> bool:
-        return isinstance(other, Contradiction)
+        if not isinstance(other, Contradiction):
+            return NotImplemented
+        return True
 
     def deepcopy(self) -> Self:
         return self.__class__()

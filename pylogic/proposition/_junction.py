@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import (
     TYPE_CHECKING,
     Callable,
@@ -70,7 +70,7 @@ class _Junction(Proposition, Generic[*Ps], ABC):
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, self.__class__):
             return set(self.propositions) == set(other.propositions)
-        return False
+        return NotImplemented
 
     def __hash__(self) -> int:
         return hash((self._join_symbol, *self.propositions))
@@ -141,8 +141,7 @@ class _Junction(Proposition, Generic[*Ps], ABC):
 
     def replace(
         self,
-        current_val: Term,
-        new_val: Term,
+        replace_dict: dict[Term, Term],
         positions: list[list[int]] | None = None,
         equal_check: Callable | None = None,
     ) -> Self:
@@ -158,7 +157,7 @@ class _Junction(Proposition, Generic[*Ps], ABC):
             prop_positions_lists = [None] * len(self.propositions)
         new_p = self.__class__(
             *[
-                p.replace(current_val, new_val, prop_positions, equal_check=equal_check)  # type: ignore
+                p.replace(replace_dict, prop_positions, equal_check=equal_check)  # type: ignore
                 for p, prop_positions in zip(self.propositions, prop_positions_lists)
             ],
             _is_proven=False,

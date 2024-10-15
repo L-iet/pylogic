@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from fractions import Fraction
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TypeVar
 
 from pylogic import Term
 from pylogic.proposition.ordering.ordering import _Ordering

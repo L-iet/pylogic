@@ -16,7 +16,7 @@ class InfixOnly(Generic[T, U, V]):
 
     def __eq__(self, value: object) -> bool:
         if not isinstance(value, InfixOnly):
-            return False
+            return NotImplemented
         return self.operate is value.operate
 
     def __ror__(self, other: T) -> PrefixOnly[U, V]:
@@ -85,5 +85,5 @@ class SpecialInfix(InfixOnly, Generic[T, U, V, W]):
 
     def __eq__(self, value: object) -> bool:
         if not isinstance(value, SpecialInfix):
-            return False
+            return NotImplemented
         return self.operate is value.operate and self.call is value.call

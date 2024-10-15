@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from fractions import Fraction
 from typing import TYPE_CHECKING, Any, Callable, Iterable, TypeAlias, TypeVar
 
@@ -22,7 +24,6 @@ one = Constant(1)
 if TYPE_CHECKING:
     from pylogic.expressions.expr import BinaryExpression, Expr
     from pylogic.proposition.ordering.total import StrictTotalOrder, TotalOrder
-    from pylogic.symbol import Symbol
 
     IsUpperBound = ForallInSet[LessOrEqual]
     IsLowerBound = ForallInSet[LessOrEqual]
@@ -165,6 +166,8 @@ class Interval(Set):
     def __init__(
         self, a: T, b: T, a_inclusive: bool = False, b_inclusive: bool = False
     ):
+        from pylogic.inference import Inference
+
         left_symb = "[" if a_inclusive else "("
         right_symb = "]" if b_inclusive else ")"
         super().__init__(
@@ -174,8 +177,13 @@ class Interval(Set):
         self.b = b
         self.a_inclusive = a_inclusive
         self.b_inclusive = b_inclusive
-        self.is_subset_of_reals = IsSubsetOf(self, Reals)
-        self.is_subset_of_reals._set_is_proven(True)
+        self.is_subset_of_reals = IsSubsetOf(
+            self,
+            Reals,
+            _is_proven=True,
+            _inference=Inference(None, rule="by_definition"),
+        )
+        self.knowledge_base.add(self.is_subset_of_reals)
 
     def evaluate(self):
         from pylogic.structures.set_ import EmptySet, FiniteSet

@@ -54,7 +54,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
                 self.antecedent == other.antecedent
                 and self.consequent == other.consequent
             )
-        return False
+        return NotImplemented
 
     def __hash__(self) -> int:
         return hash(("impl", self.antecedent, self.consequent))
@@ -117,8 +117,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
 
     def replace(
         self,
-        current_val: Term,
-        new_val: Term,
+        replace_dict: dict[Term, Term],
         positions: list[list[int]] | None = None,
         equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> "Implies":
@@ -132,10 +131,10 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             cons_positions = None
         new_p = self.__class__(
             self.antecedent.replace(
-                current_val, new_val, ante_positions, equal_check=equal_check
+                replace_dict, ante_positions, equal_check=equal_check
             ),
             self.consequent.replace(
-                current_val, new_val, cons_positions, equal_check=equal_check
+                replace_dict, cons_positions, equal_check=equal_check
             ),
             _is_proven=False,
         )

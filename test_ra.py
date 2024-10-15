@@ -20,6 +20,6 @@
 #     mul_inv,
 #     distributive,
 # ]
-from pylogic.theories.real_analysis import *
+from pylogic.structures.ringlike.semiring import *
 
-print(Reals.bounded_above_has_lub._latex())
+print(S)

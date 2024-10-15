@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import warnings
-from fractions import Fraction
 from typing import (
     TYPE_CHECKING,
     Callable,
@@ -27,7 +26,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.implies import Implies
     from pylogic.proposition.not_ import Not
     from pylogic.proposition.or_ import Or
-    from pylogic.proposition.quantified.exists import Exists
+    from pylogic.proposition.quantified.exists import Exists, ExistsInSet
     from pylogic.proposition.quantified.forall import Forall, ForallInSet
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
@@ -109,7 +108,13 @@ class Proposition:
         args: list[Set | Term] | None
             The arguments of the proposition. If None, we assume the proposition has no arguments.
         """
-        from pylogic.helpers import get_class_ns, get_consts, get_sets, get_vars
+        from pylogic.helpers import (
+            get_class_ns,
+            get_consts,
+            get_sets,
+            get_vars,
+            python_to_pylogic,
+        )
         from pylogic.inference import Inference
 
         _is_proven: bool = cast(bool, kwargs.get("_is_proven", False))
@@ -124,7 +129,7 @@ class Proposition:
         self.name: str = name
         self.is_assumption: bool = is_assumption
         self.is_axiom: bool = is_axiom
-        self.args: list[Set | Term] = args or []
+        self.args: list[Set | Term] = list(map(python_to_pylogic, args or []))
         self.arity: int = len(self.args)
         self._is_proven: bool = _is_proven
         self.is_atomic: bool = True
@@ -134,15 +139,16 @@ class Proposition:
             self.from_assumptions = set()
         elif self._is_proven:
             assert _inference is not None, "Proven propositions must have an inference"
-            assert _assumptions is not None, "Proven propositions must have assumptions"
             self.deduced_from: Inference | None = _inference
-            self.from_assumptions: set[Proposition] = _assumptions
+            self.from_assumptions: set[Proposition] = _assumptions or set()
         else:
             self.deduced_from: Inference | None = None
             self.from_assumptions: set[Proposition] = set()
 
         self.bound_vars: set[Variable] = set()  # Variables that are bound to
         # quantifiers in the proposition.
+
+        self.is_todo: bool = False
 
         self.variables: set[Variable] = set()
         for a in self.args:
@@ -172,7 +178,7 @@ class Proposition:
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Proposition):
             return self.name == other.name and self.args == other.args
-        return False
+        return NotImplemented
 
     def _set_is_proven(self, value: bool) -> None:
         self._is_proven = value
@@ -182,6 +188,22 @@ class Proposition:
 
     def _set_is_axiom(self, value: bool) -> None:
         self.is_axiom = value
+
+    def todo(self) -> Self:
+        """
+        Mark the proposition as proven, but not yet implemented.
+        """
+        from pylogic.inference import Inference
+
+        self.is_todo = True
+        warnings.warn(
+            f"{self} is marked as TODO",
+            UserWarning,
+        )
+        self._set_is_proven(True)
+        self.from_assumptions = set()
+        self.deduced_from = Inference(self, rule="todo")
+        return self
 
     def assume(self) -> Self:
         """
@@ -270,13 +292,13 @@ class Proposition:
         """
         Create a deep copy of the proposition.
         """
-        from pylogic.helpers import is_numeric
+        from pylogic.helpers import is_python_numeric
 
         return self.__class__(
             self.name,
             is_assumption=self.is_assumption,
             description=self.description,
-            args=[a.deepcopy() if not is_numeric(a) else a for a in self.args],  # type: ignore
+            args=[a.deepcopy() if not is_python_numeric(a) else a for a in self.args],  # type: ignore
             _is_proven=self._is_proven,
             _inference=self.deduced_from,
             _assumptions=self.from_assumptions,
@@ -284,8 +306,7 @@ class Proposition:
 
     def replace(
         self,
-        current_val: Term,
-        new_val: Term,
+        replace_dict: dict[Term, Term],
         positions: list[list[int]] | None = None,
         equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
@@ -320,12 +341,14 @@ class Proposition:
             index += 1
             if (positions is not None) and not [index] in positions:
                 continue
-            if equal_check(current_val, arg):
-                new_p_args[index] = new_val
-            elif isinstance(arg, Expr):
-                new_p_args[index] = arg.replace(
-                    current_val, new_val, equal_check=equal_check
-                )
+            if isinstance(arg, Expr):
+                new_p_args[index] = arg.replace(replace_dict, equal_check=equal_check)
+            else:
+                for current_val in replace_dict:
+                    new_val = replace_dict[current_val]
+                    if equal_check(current_val, arg):
+                        new_p_args[index] = new_val
+                        break
 
         new_p = self.__class__(
             self.name,
@@ -340,6 +363,7 @@ class Proposition:
         ----------
         side: Side
             Side.LEFT or Side.RIGHT
+            The side of the equality to appear in the result
         equality: Equals
             An equality proposition. We look for the other side of the equality
             in self and replace it with the 'side'.
@@ -695,7 +719,7 @@ class Proposition:
             OtherProposition -> ~self
         """
         from pylogic.inference import Inference
-        from pylogic.proposition.not_ import Not, are_negs, neg
+        from pylogic.proposition.not_ import Not, are_negs
 
         assert self.is_proven, f"{self} is not proven"
         assert other.is_proven, f"{other} is not proven"
@@ -834,6 +858,7 @@ class Proposition:
         self,
         existential_var: str,
         expression_to_replace: Term,
+        set_: Set | Variable | Class | None = None,
         latex_name: str | None = None,
         positions: list[list[int]] | None = None,
     ) -> Exists[Self]:
@@ -844,12 +869,12 @@ class Proposition:
         For example, if self is x^2 + x > 0, existential_var is y and expression_to_replace is x^2, then
         we return the proven proposition Exists y: y + x > 0.
 
-        All occurences of the expression will be replaced according to sympy.subs.
-
         existential_var: str
             A new variable that is introduced into our new existential proposition.
         expression_to_replace: Set | SympyExpression
             An expression that is replaced by the new variable.
+        set_: Set
+            The set in which the existential variable is contained.
         latex_name: str | None
             The latex representation of the existential variable.
         positions: list[list[int]]
@@ -866,12 +891,15 @@ class Proposition:
         assert self.is_proven, f"{self} is not proven"
         from pylogic.helpers import find_first
         from pylogic.inference import Inference
-        from pylogic.proposition.quantified.exists import Exists
+        from pylogic.proposition.quantified.exists import Exists, ExistsInSet
         from pylogic.variable import Variable
 
+        # Check that the expression to replace does not depend on any bound variables
+        # prevent the sequence
+        # forall a: P(x0(a), a) -> exists x: forall a: P(x, a)
         if isinstance(expression_to_replace, Variable):
             first_not_in_atoms_or_bound = find_first(
-                lambda x: (x not in self.atoms) or (x.is_bound),
+                lambda x: (x.is_bound),
                 expression_to_replace.independent_dependencies,
             )
             if first_not_in_atoms_or_bound[1] is not None:
@@ -879,10 +907,14 @@ class Proposition:
                     f"{first_not_in_atoms_or_bound[1]} is not in the atoms of {self}, or is bound already, \
 and is a dependency of {expression_to_replace}"
                 )
-
-        new_p = Exists.from_proposition(
+        if set_ is None:
+            exists_cls = Exists
+        else:
+            exists_cls = ExistsInSet
+        new_p = exists_cls.from_proposition(
             existential_var_name=existential_var,
             expression_to_replace=expression_to_replace,
+            set_=set_,
             latex_name=latex_name,
             inner_proposition=self,
             positions=positions,
@@ -890,12 +922,20 @@ and is a dependency of {expression_to_replace}"
             _inference=Inference(self, rule="thus_there_exists"),
             _assumptions=get_assumptions(self).copy(),
         )
+
         return new_p
 
     @overload
     def thus_forall(
         self,
-        variable_or_containment: IsContainedIn[Term, Set | Class],
+        variable_or_containment: IsContainedIn[Term, Set | Variable | Class],
+        **kwargs,
+    ) -> ForallInSet[Self]: ...
+    @overload
+    def thus_forall(
+        self,
+        variable_or_containment: Variable,
+        set_: Set | Variable | Class,
         **kwargs,
     ) -> ForallInSet[Self]: ...
     @overload
@@ -906,7 +946,8 @@ and is a dependency of {expression_to_replace}"
     ) -> Forall[Self]: ...
     def thus_forall(
         self,
-        variable_or_containment: Variable | IsContainedIn[Term, Set | Class],
+        variable_or_containment: Variable | IsContainedIn[Term, Set | Variable | Class],
+        set_: Set | Variable | Class | None = None,
         **kwargs,
     ) -> Forall[Self] | ForallInSet[Self]:
         """
@@ -922,6 +963,9 @@ and is a dependency of {expression_to_replace}"
         from pylogic.variable import Variable
 
         if isinstance(variable_or_containment, IsContainedIn):
+            assert (
+                variable_or_containment.is_assumption
+            ), f"{variable_or_containment} is not an assumption"
             variable = variable_or_containment.left
             assert isinstance(variable, Variable), f"{variable} is not a variable"
             set_ = variable_or_containment.set_
@@ -929,8 +973,10 @@ and is a dependency of {expression_to_replace}"
             variable_or_containment._set_is_assumption(False)
         else:
             variable = variable_or_containment
-            set_ = None
-            cls = Forall
+            if set_ is not None:
+                assert variable in set_, f"{variable} is not in {set_}"
+            set_ = set_
+            cls = Forall if set_ is None else ForallInSet
         assert variable.is_bound is False, f"{variable} is already bound"
         assert len(variable.depends_on) == 0, f"{variable} depends on something"
         return cls(

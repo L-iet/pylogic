@@ -1,8 +1,5 @@
 from pylogic.constant import Constant
 from pylogic.expressions.expr import add, mul
-from pylogic.helpers import assume
-from pylogic.infix.by import by
-from pylogic.infix.is_ import equals, is_
 from pylogic.proposition.not_ import neg
 from pylogic.proposition.quantified.exists import ExistsInSet
 from pylogic.proposition.quantified.forall import ForallInSet

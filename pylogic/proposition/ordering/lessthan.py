@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from fractions import Fraction
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 from pylogic import Term
 from pylogic.constant import Constant
 from pylogic.proposition.ordering.ordering import _Ordering
 from pylogic.proposition.ordering.total import StrictTotalOrder
 from pylogic.proposition.proposition import get_assumptions
-from pylogic.proposition.relation.binaryrelation import BinaryRelation
 
 if TYPE_CHECKING:
     from pylogic.proposition.ordering.greaterthan import GreaterThan

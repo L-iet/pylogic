@@ -1,16 +1,12 @@
-from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar
+from typing import TYPE_CHECKING, Generic, Self, TypeVar
 
 # Hack for Type Checking
 if TYPE_CHECKING:
-    from fractions import Fraction
+    pass
 
     from pylogic import Term
-    from pylogic.expressions.expr import Expr
-    from pylogic.proposition.proposition import Proposition
-    from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
     from pylogic.structures.set_ import Set
-    from pylogic.symbol import Symbol
 
     T = TypeVar("T", bound=int, covariant=True)
     U = TypeVar("U", bound=Term)
@@ -41,7 +37,7 @@ class Collection(type, Generic[N]):
             return self.__name__ == other.__name__ or (
                 {self.__name__, other.__name__} == {"Set", "Class0"}
             )
-        return False
+        return NotImplemented
 
     def __hash__(self) -> int:
         return hash(self.__name__)

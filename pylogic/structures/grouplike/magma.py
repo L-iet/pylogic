@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from fractions import Fraction
-from typing import Callable, Iterable, TypeVar
+from typing import Callable, Iterable, TypedDict, TypeVar, Unpack
 
 from pylogic import Term
 from pylogic.expressions.expr import BinaryExpression, Expr
@@ -9,11 +8,31 @@ from pylogic.infix.infix import SpecialInfix
 from pylogic.proposition.quantified.forall import ForallInSet
 from pylogic.proposition.relation.contains import IsContainedIn
 from pylogic.structures.set_ import Set
-from pylogic.symbol import Symbol
 from pylogic.variable import Variable
 
 T = TypeVar("T", bound=Term)
 E = TypeVar("E", bound=Expr)
+
+AttrNames = TypedDict(
+    "AttrNames",
+    {
+        "operation_name": str,
+        "operation_symbol": str,
+        "operation": str,
+        "op": str,
+        "is_closed_under_op": str,
+    },
+)
+
+
+class CustomAttrNamesKwargs(TypedDict):
+    name: str
+    elements: Iterable | None
+    containment_function: Callable[..., bool] | None
+    operation: Callable[[Term, Term], Expr] | None
+    operation_name: str | None
+    operation_symbol: str | None
+    attr_names: AttrNames
 
 
 class Magma(Set):
@@ -36,6 +55,12 @@ class Magma(Set):
             description=f"{set_.name} is closed under the operation {operation.symbol}",
         )
 
+    @classmethod
+    def _initialize_with_custom_attr_names(
+        cls, set_instance, **kwargs: Unpack[CustomAttrNamesKwargs]
+    ) -> None:
+        cls.__init__(set_instance, **kwargs)
+
     def __init__(
         self,
         name: str,
@@ -44,32 +69,64 @@ class Magma(Set):
         operation: Callable[[T, T], E] | None = None,
         operation_name: str | None = None,
         operation_symbol: str | None = None,
+        **kwargs,
     ):
+        from pylogic.inference import Inference
+
+        # we use this because we want to be able to change the attribute names
+        # when we initialize instances in other classes
+        attr_names = kwargs.pop(
+            "attr_names",
+            {
+                "operation_name": "operation_name",
+                "operation_symbol": "operation_symbol",
+                "operation": "operation",
+                "op": "op",
+                "is_closed_under_op": "is_closed_under_op",
+            },
+        )
+        self.attr_names = attr_names
+
         # TODO: need to check that the set is closed under the operation
         # make this functionality optional
-        super().__init__(name, elements, containment_function)  # type: ignore
-        self.operation_name = operation_name or f"{self.name}_Op"
-        self.operation_symbol = operation_symbol or f"{self.name}_Op"
+        Set.__init__(self, name, elements, containment_function)  # type: ignore
+        opname = operation_name or f"{self.name}_Op"
+        opsymb = operation_symbol or f"{self.name}_Op"
+        setattr(self, attr_names["operation_name"], opname)
+        setattr(
+            self, attr_names["operation_symbol"], operation_symbol or f"{self.name}_Op"
+        )
 
         def bin_op_func(x: T, y: T) -> E:
             if operation is None:
                 return BinaryExpression(
-                    self.operation_name, self.operation_symbol, x, y, None  # type: ignore
+                    opname, opsymb, x, y, None  # type: ignore
                 )  # type: ignore
             result = operation(x, y)
+            result.knowledge_base.add(
+                IsContainedIn(
+                    result,
+                    self,
+                    _is_proven=True,
+                    _inference=Inference(None, rule="by_definition"),
+                )
+            )
             self.elements.add(result)
             return result
 
-        self.operation: SpecialInfix[Term, Term, Expr, Expr] = SpecialInfix(
+        op = SpecialInfix(
             operate=bin_op_func,
             call=bin_op_func,
-            symbol=self.operation_symbol,
-        )  # type: ignore
-        self.op = self.operation
-        self.is_closed_under_op = Magma.property_is_closed_under_op(
-            self, self.operation
+            symbol=operation_symbol or f"{self.name}_Op",
         )
-        self.is_closed_under_op._set_is_axiom(True)
+        setattr(self, attr_names["operation"], op)
+        setattr(self, attr_names["op"], op)
+        setattr(
+            self,
+            attr_names["is_closed_under_op"],
+            Magma.property_is_closed_under_op(self, op),
+        )
+        getattr(self, attr_names["is_closed_under_op"])._set_is_axiom(True)
         self._init_args = (name,)
         self._init_kwargs = {
             "elements": elements,
@@ -80,10 +137,13 @@ class Magma(Set):
         }
 
     def containment_function(self, x: Term) -> bool:
+        from pylogic.helpers import python_to_pylogic
+
+        x = python_to_pylogic(x)
         if isinstance(x, BinaryExpression):
             return (
-                x.name == self.operation_name
-                and x.symbol == self.operation_symbol
+                x.name == getattr(self, self.attr_names["operation_name"])
+                and x.symbol == getattr(self, self.attr_names["operation_symbol"])
                 and all(self.containment_function(arg) for arg in x.args)
             )
         return super().containment_function(x)

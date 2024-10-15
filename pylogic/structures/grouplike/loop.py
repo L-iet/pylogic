@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from fractions import Fraction
 from typing import TYPE_CHECKING, Callable, Iterable, TypeVar
 
 from pylogic import Term
 from pylogic.constant import Constant
 from pylogic.expressions.expr import Expr
-from pylogic.helpers import is_numeric
+from pylogic.helpers import is_python_numeric
 from pylogic.infix.infix import SpecialInfix
 from pylogic.proposition.and_ import And
 from pylogic.proposition.quantified.forall import ForallInSet
@@ -56,7 +55,7 @@ class Loop(Quasigroup):
             operation_name=operation_name,
             operation_symbol=operation_symbol,
         )
-        if is_numeric(identity):
+        if is_python_numeric(identity):
             identity = Constant(identity)  # type: ignore
         self.identity: Symbol | Constant | Set | Expr = identity or Constant(
             f"{self.operation_name}_Ident"

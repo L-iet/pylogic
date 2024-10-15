@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Generic, Self, TypeVar
 
-import sympy as sp
 
 from pylogic import Term
-from pylogic.expressions.expr import Expr, to_sympy
+from pylogic.expressions.expr import Expr
 from pylogic.structures.sequence import Sequence
 
 if TYPE_CHECKING:

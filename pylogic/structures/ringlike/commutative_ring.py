@@ -11,7 +11,6 @@ from pylogic.proposition.relation.equals import Equals
 from pylogic.structures.grouplike.group import AbelianGroup
 from pylogic.structures.ringlike.ring import RIng
 from pylogic.structures.set_ import Set
-from pylogic.symbol import Symbol
 
 T = TypeVar("T", bound=Term)
 E = TypeVar("E", bound=Expr)

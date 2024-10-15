@@ -61,9 +61,9 @@ def weak_induction(
     ), f"First premise {prem1} must be a statement about Naturals0"
     assert prem1.element == n, f"First premise {prem1} must be a statement about n"
     pred = induction_step.inner_proposition.consequent
-    p0 = pred.replace(n, -1)
+    p0 = pred.replace({n: -1})
     assert p0.eval_same(base_case) and base_case.eval_same(
-        prem2.replace(n, 0)
+        prem2.replace({n: 0})
     ), f"Base case {base_case} must be the same as P(0) {p0}"
     n.unbind()
     return Forall(
@@ -134,12 +134,12 @@ def strong_induction(
     ), f"{inner_prem2} must be a LessOrEqual statement"
     pred = prem2.inner_proposition.consequent
     pred_cons = induction_step.inner_proposition.consequent
-    assert pred.replace(m, 0).eval_same(base_case) and base_case.eval_same(
-        pred_cons.replace(n, -1)
+    assert pred.replace({m: 0}).eval_same(base_case) and base_case.eval_same(
+        pred_cons.replace({n: -1})
     ), "Terms used in the base case and induction step do not match accordingly."
     return Forall(
         n,
-        IsContainedIn(n, Naturals0).implies(pred.replace(m, n)),
+        IsContainedIn(n, Naturals0).implies(pred.replace({m: n})),
         _is_proven=True,
         _assumptions=get_assumptions(base_case).union(get_assumptions(induction_step)),
         _inference=Inference(base_case, induction_step, rule="strong_induction"),

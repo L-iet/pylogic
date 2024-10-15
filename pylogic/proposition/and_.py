@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Self, TypedDict, TypeVarTuple, Union
+from typing import TYPE_CHECKING, Self, TypedDict, TypeVarTuple
 
 from pylogic.inference import Inference
 from pylogic.proposition._junction import _Junction

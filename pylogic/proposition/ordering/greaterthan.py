@@ -1,19 +1,18 @@
 from __future__ import annotations
 
 from fractions import Fraction
-from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar
+from typing import TYPE_CHECKING, Self, TypeVar
 
 import sympy as sp
 from sympy import S as sympy_S
 
-from pylogic import Numeric, Term
+from pylogic import PythonNumeric, Term
 from pylogic.constant import Constant
 from pylogic.expressions.abs import Abs
 from pylogic.expressions.expr import Pow
 from pylogic.proposition.ordering.ordering import _Ordering
 from pylogic.proposition.ordering.total import StrictTotalOrder
 from pylogic.proposition.proposition import get_assumptions
-from pylogic.proposition.relation.binaryrelation import BinaryRelation
 from pylogic.proposition.relation.equals import Equals
 
 if TYPE_CHECKING:
@@ -168,10 +167,10 @@ class GreaterThan(StrictTotalOrder[T, U], _Ordering):
         # TODO: Implement this
         raise NotImplementedError
 
-    def __mul__(self, other: Numeric) -> GreaterThan:
+    def __mul__(self, other: PythonNumeric) -> GreaterThan:
         return super()._mul(self, other)
 
-    def __rmul__(self, other: Numeric) -> GreaterThan:
+    def __rmul__(self, other: PythonNumeric) -> GreaterThan:
         return super()._mul(self, other)
 
 
