@@ -455,14 +455,14 @@ class Pow(Expr):
         if base.is_integer:
             if exp.is_integer:
                 self.is_rational = True
-            elif exp.is_natural:
+            if exp.is_natural:
                 self.is_integer = True
         if base.is_natural:
             if exp.is_integer:
                 self.is_rational = True
-            elif exp.is_natural:
+            if exp.is_natural:
                 self.is_natural = True
-            elif exp.is_rational:
+            if exp.is_rational:
                 self.is_real = True
 
     def evaluate(self) -> Pow:
