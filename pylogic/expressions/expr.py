@@ -180,6 +180,21 @@ class Expr(ABC):
 
         return IsContainedIn(self, other, **kwargs)
 
+    def _is_in_by_rule(
+        self, other: Set | Class | Variable, rule: str = "by_definition"
+    ) -> IsContainedIn:
+        from pylogic.inference import Inference
+        from pylogic.proposition.relation.contains import IsContainedIn
+
+        res = IsContainedIn(
+            self,
+            other,
+            _is_proven=True,
+            _assumptions=set(),
+            _inference=Inference(None, rule=rule),
+        )
+        return res
+
     def __hash__(self) -> int:
         return hash((self.__class__.__name__, self.args))
 

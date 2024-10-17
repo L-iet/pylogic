@@ -42,8 +42,8 @@ class BinaryRelation(Relation, Generic[T, U]):
             description=description,
             **kwargs,
         )
-        self.left: T = left
-        self.right: U = right
+        self.left: T = self.args[0]
+        self.right: U = self.args[1]
 
     def __repr__(self) -> str:
         return f"{str_print_order(self.left)} {self.infix_symbol} {str_print_order(self.right)}"
@@ -54,6 +54,32 @@ class BinaryRelation(Relation, Generic[T, U]):
         left_latex = latex(self.left)
         right_latex = latex(self.right)
         return f"{left_latex} {self.infix_symbol_latex} {right_latex}"
+
+    def _set_is_inferred_true(self) -> None:
+        super()._set_is_inferred_true()
+        self.left.knowledge_base.add(self)
+
+    def _set_is_proven(self, value: bool) -> None:
+        super()._set_is_proven(value)
+        if value:
+            self._set_is_inferred_true()
+        elif not (self.is_axiom or self.is_assumption):
+            self.left.knowledge_base.discard(self)
+
+    def _set_is_assumption(self, value: bool) -> None:
+        super()._set_is_assumption(value)
+        if value:
+            self._set_is_inferred_true()
+        else:
+            if not (self._is_proven or self.is_axiom):
+                self.left.knowledge_base.discard(self)
+
+    def _set_is_axiom(self, value: bool) -> None:
+        super()._set_is_axiom(value)
+        if value:
+            self._set_is_inferred_true()
+        elif not (self._is_proven or self.is_assumption):
+            self.left.knowledge_base.discard(self)
 
     def copy(self) -> Self:
         return self.__class__(

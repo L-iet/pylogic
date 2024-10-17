@@ -387,13 +387,17 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
     ) -> Self:
         from pylogic.structures.set_ import Set
 
+        new_var = self.variable
         if self.variable in replace_dict:
-            raise ValueError("Cannot replace variable (not implemented)")
+            assert isinstance(
+                replace_dict[self.variable], Variable
+            ), "Cannot replace variable with non-variable"
+            new_var = replace_dict[self.variable]
         if self.set_ in replace_dict:
             new_val = replace_dict[self.set_]
             assert isinstance(new_val, Set) or new_val.is_set, f"{new_val} is not a set"
             new_p = self.__class__(
-                self.variable,
+                new_var,
                 new_val,
                 self._inner_without_set.replace(
                     replace_dict,
@@ -405,7 +409,7 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
             return new_p
 
         new_p = self.__class__(
-            self.variable,
+            new_var,
             self.set_,
             self._inner_without_set.replace(
                 replace_dict, positions=positions, equal_check=equal_check
@@ -489,11 +493,15 @@ class ExistsUnique(Exists[And[TProposition, Forall[Implies[TProposition, Equals]
         positions: list[list[int]] | None = None,
         equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
+        new_var = self.variable
         if self.variable in replace_dict:
-            raise ValueError("Cannot replace variable (not implemented)")
+            assert isinstance(
+                replace_dict[self.variable], Variable
+            ), "Cannot replace variable with non-variable"
+            new_var = replace_dict[self.variable]
 
         new_p = self.__class__(
-            self.variable,
+            new_var,
             self._inner_without_unique.replace(
                 replace_dict, positions=positions, equal_check=equal_check
             ),
@@ -584,13 +592,17 @@ class ExistsUniqueInSet(
     ) -> Self:
         from pylogic.structures.set_ import Set
 
+        new_var = self.variable
         if self.variable in replace_dict:
-            raise ValueError("Cannot replace variable (not implemented)")
+            assert isinstance(
+                replace_dict[self.variable], Variable
+            ), "Cannot replace variable with non-variable"
+            new_var = replace_dict[self.variable]
         if self.set_ in replace_dict:
             new_val = replace_dict[self.set_]
             assert isinstance(new_val, Set), f"{new_val} is not a set"
             new_p = self.__class__(
-                self.variable,
+                new_var,
                 new_val,
                 self._inner_without_set_and_unique.replace(
                     replace_dict, positions=positions, equal_check=equal_check
@@ -600,7 +612,7 @@ class ExistsUniqueInSet(
             return new_p
 
         new_p = self.__class__(
-            self.variable,
+            new_var,
             self.set_,
             self._inner_without_set_and_unique.replace(
                 replace_dict, positions=positions, equal_check=equal_check

@@ -1,7 +1,16 @@
 from __future__ import annotations
 
 from fractions import Fraction
-from typing import TYPE_CHECKING, Any, Callable, Iterable, TypeAlias, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Generic,
+    Iterable,
+    TypeAlias,
+    TypeVar,
+    cast,
+)
 
 from pylogic import Term, Unevaluated
 from pylogic.constant import Constant
@@ -10,6 +19,7 @@ from pylogic.proposition.and_ import And
 from pylogic.proposition.implies import Implies
 from pylogic.proposition.not_ import Not
 from pylogic.proposition.ordering.lessorequal import LessOrEqual
+from pylogic.proposition.ordering.lessthan import LessThan
 from pylogic.proposition.quantified.exists import ExistsInSet, ExistsUniqueInSet
 from pylogic.proposition.quantified.forall import ForallInSet, ForallSubsets
 from pylogic.proposition.relation.equals import Equals
@@ -24,6 +34,7 @@ one = Constant(1)
 if TYPE_CHECKING:
     from pylogic.expressions.expr import BinaryExpression, Expr
     from pylogic.proposition.ordering.total import StrictTotalOrder, TotalOrder
+    from pylogic.proposition.relation.contains import IsContainedIn
 
     IsUpperBound = ForallInSet[LessOrEqual]
     IsLowerBound = ForallInSet[LessOrEqual]
@@ -68,7 +79,6 @@ class RealsField(OrderedField):
     def property_bounded_above_has_lub(
         cls,
         set_: Set,
-        total_order: TotalOrderOp,
     ) -> ForallSubsets[
         Implies[
             And[Not[Equals], BoundedAbove],
@@ -77,45 +87,13 @@ class RealsField(OrderedField):
     ]:
         from pylogic.structures.set_ import EmptySet
 
-        def is_ub(ub, s) -> IsUpperBound:
-            x = Variable("x")
-            return ForallInSet(
-                x,
-                s,
-                total_order(x, ub),
-                description=f"{ub} is an upper bound of {s}",
-            )  # type:ignore
-
-        def bounded_above(s) -> BoundedAbove:
-            ub = Variable("ub")
-            return ExistsInSet(
-                ub,
-                set_,
-                is_ub(ub, s),
-                description=f"{s} is bounded above",
-            )
-
-        def has_lub(s) -> HasLUB:
-            lub = Variable("lub")
-            y = Variable("y")
-            return ExistsUniqueInSet(
-                lub,
-                set_,
-                is_ub(lub, s).and_(
-                    ForallInSet(
-                        y,
-                        set_,
-                        is_ub(y, s).implies(total_order(lub, y)),
-                    )
-                ),
-                description=f"{s} has a least upper bound",
-            )
-
         s = Variable("s", set_=True)
         return ForallSubsets(
             s,
             set_,
-            Not(s.equals(EmptySet)).and_(bounded_above(s)).implies(has_lub(s)),
+            Not(s.equals(EmptySet))
+            .and_(set_.bounded_above(s))
+            .implies(set_.has_lub(s)),
             description=f"Every nonempty subset of {set_} that is bounded above has a least upper bound",
         )
 
@@ -146,8 +124,43 @@ class RealsField(OrderedField):
             total_order=total_order,
             strict_total_order=strict_total_order,
         )
-        self.bounded_above_has_lub = RealsField.property_bounded_above_has_lub(
-            self, self.total_order
+        self.bounded_above_has_lub = RealsField.property_bounded_above_has_lub(self)
+        self.bounded_above_has_lub._set_is_axiom(True)
+        self.less_than = LessThan
+        self.less_or_equal = LessOrEqual
+
+    def is_ub(self, ub, s) -> IsUpperBound:
+        x = Variable("x")
+        return ForallInSet(
+            x,
+            s,
+            self.total_order(x, ub),
+            description=f"{ub} is an upper bound of {s}",
+        )  # type:ignore
+
+    def bounded_above(self, s) -> BoundedAbove:
+        ub = Variable("ub")
+        return ExistsInSet(
+            ub,
+            self,
+            self.is_ub(ub, s),
+            description=f"{s} is bounded above",
+        )
+
+    def has_lub(self, s) -> HasLUB:
+        lub = Variable("lub")
+        y = Variable("y")
+        return ExistsUniqueInSet(
+            lub,
+            self,
+            self.is_ub(lub, s).and_(
+                ForallInSet(
+                    y,
+                    self,
+                    self.is_ub(y, s).implies(self.total_order(lub, y)),
+                )
+            ),
+            description=f"{s} has a least upper bound",
         )
 
 
@@ -157,8 +170,11 @@ Reals = RealsField(
     plus_operation_symbol="+",
     times_operation=Mul,
     times_operation_symbol="*",
+    containment_function=lambda x: getattr(x, "is_real", False),
     zero=zero,
     one=one,
+    total_order=LessOrEqual,
+    strict_total_order=LessThan,
 )
 
 
@@ -166,17 +182,26 @@ class Interval(Set):
     def __init__(
         self, a: T, b: T, a_inclusive: bool = False, b_inclusive: bool = False
     ):
+        from pylogic.helpers import python_to_pylogic
         from pylogic.inference import Inference
+        from pylogic.proposition.ordering.lessorequal import LessOrEqual
+        from pylogic.proposition.ordering.lessthan import LessThan
+
+        a, b = python_to_pylogic(a), python_to_pylogic(b)  # type:ignore
 
         left_symb = "[" if a_inclusive else "("
         right_symb = "]" if b_inclusive else ")"
+        left_pred = LessOrEqual if a_inclusive else LessThan
+        right_pred = LessOrEqual if b_inclusive else LessThan
+        pred = lambda x: And(x.is_in(Reals), left_pred(a, x), right_pred(x, b))
         super().__init__(
-            f"{left_symb}{a}, {b}{right_symb}",
+            f"{left_symb}{a},{b}{right_symb}",
+            predicate=pred,
         )
         self.a = a
         self.b = b
-        self.a_inclusive = a_inclusive
-        self.b_inclusive = b_inclusive
+        self.a_inclusive = self.a._is_in_by_rule(self) if a_inclusive else None
+        self.b_inclusive = self.b._is_in_by_rule(self) if b_inclusive else None
         self.is_subset_of_reals = IsSubsetOf(
             self,
             Reals,

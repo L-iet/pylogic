@@ -3,7 +3,6 @@ from __future__ import annotations
 from abc import ABC
 from typing import Callable, Generic, Literal, Self, TypeVar
 
-
 from pylogic import Term, Unification
 from pylogic.proposition.proposition import Proposition
 from pylogic.variable import Variable
@@ -12,6 +11,11 @@ TProposition = TypeVar("TProposition", bound="Proposition")
 
 
 class _Quantified(Proposition, Generic[TProposition], ABC):
+    """
+    Note that the variable of a quantified proposition is bound and
+    has no assumptions.
+    """
+
     def __init__(
         self,
         _q: str,
@@ -35,13 +39,16 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
             **kwargs,
         )
         self.inner_proposition: TProposition = inner_proposition
-        self.variable: Variable = variable
+        var = self._reset_variable(
+            variable
+        ).copy()  # make a copy in case user uses the same variable elsewhere
+        self.variable: Variable = var
         self.variable.is_bound = True
         self._q = _q
         self.is_atomic = False
-        self.bound_vars = inner_proposition.bound_vars.union({variable})
+        self.bound_vars = inner_proposition.bound_vars.union({var})
         self.variables = inner_proposition.variables.copy()
-        self.variables.add(variable)
+        self.variables.add(var)
         self.constants = inner_proposition.constants.copy()
         self.sets = inner_proposition.sets.copy()
         self.class_ns = inner_proposition.class_ns.copy()
@@ -61,6 +68,16 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
             + f"{self._q} {self.variable}:\n"
             + self.inner_proposition.as_text(_indent=_indent + 1)
         )
+
+    def _reset_variable(self, variable: Variable) -> Variable:
+        # we don't reset is_set, is_list
+        # etc because those denote the type of the variable
+        # rather than properties of the variable itself
+        variable._is_real = None
+        variable._is_rational = None
+        variable._is_integer = None
+        variable._is_natural = None
+        return variable
 
     def describe(self, *, _indent=0) -> str:
         """
@@ -98,19 +115,38 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
             _inference=self.deduced_from,
         )  # type: ignore
 
+    def rename_variable(self, new_name: str) -> Self:
+        """
+        Logical tactic. Rename the bound variable.
+        """
+        from pylogic.inference import Inference
+
+        new_var = Variable(new_name)
+        new_p = self.replace({self.variable: new_var})
+        if self.is_proven:
+            new_p._set_is_proven(True)
+            new_p.deduced_from = Inference(self, rule="rename_variable")
+            new_p.from_assumptions = self.from_assumptions
+        return new_p
+
     def replace(
         self,
         replace_dict: dict[Term, Term],
         positions: list[list[int]] | None = None,
         equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
-        new_p: Self = self.copy()
-        new_p.inner_proposition = new_p.inner_proposition.replace(
-            replace_dict, positions=positions, equal_check=equal_check
+        new_var = self.variable
+        if self.variable in replace_dict:
+            assert isinstance(
+                replace_dict[self.variable], Variable
+            ), "Cannot replace variable with non-variable"
+            new_var = replace_dict[self.variable]
+        new_p = self.__class__(
+            variable=new_var,
+            inner_proposition=self.inner_proposition.replace(
+                replace_dict, positions, equal_check=equal_check
+            ),
         )
-        new_p._set_is_proven(False)
-        new_p.from_assumptions = set()
-        new_p.deduced_from = None
         return new_p
 
     def _latex(self, printer=None) -> str:

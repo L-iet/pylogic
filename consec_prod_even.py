@@ -12,6 +12,7 @@ zero_is_even = (
 )
 
 induction_hypothesis = assume(Naturals.even(n * (n + 1)))
+
 factor, n_times_nplus_1_is_2_times_factor = induction_hypothesis.extract()
 step1 = ((n + 1) * (n + 2)).equals(n * (n + 1) + 2 * (n + 1)).by_simplification()
 step2 = step1.p_substitute("right", n_times_nplus_1_is_2_times_factor[1])
@@ -27,3 +28,7 @@ print(induction_step)
 
 
 print(Naturals.weak_induction(zero_is_even, induction_step))
+
+"""
+
+"""

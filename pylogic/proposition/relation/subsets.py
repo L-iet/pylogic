@@ -6,6 +6,7 @@ from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 
 if TYPE_CHECKING:
+    from pylogic.expressions.sequence_term import SequenceTerm
     from pylogic.proposition.implies import Implies
     from pylogic.proposition.proposition import Proposition
     from pylogic.proposition.quantified.forall import Forall
@@ -14,8 +15,8 @@ if TYPE_CHECKING:
     from pylogic.structures.set_ import Set
     from pylogic.variable import Variable
 
-    T = TypeVar("T", bound=Variable | Set | Class)
-    U = TypeVar("U", bound=Variable | Set | Class)
+    T = TypeVar("T", bound=Variable | SequenceTerm | Set | Class)
+    U = TypeVar("U", bound=Variable | SequenceTerm | Set | Class)
 else:
     T = Any
     U = Any
@@ -49,6 +50,10 @@ class IsSubsetOf(BinaryRelation[T, U]):
             description=description,
             **kwargs,
         )
+        assert (
+            self.left.is_set and self.right.is_set
+        ), f"Both left and right must be sets, left: {left}, left.is_set: {left.is_set}, \
+right: {right}, right.is_set: {right.is_set}"
 
     def copy(self) -> Self:
         return self.__class__(
@@ -105,3 +110,43 @@ class IsSubsetOf(BinaryRelation[T, U]):
         new_p.from_assumptions = set()
         new_p.deduced_from = Inference(self, rule="by_empty")
         return new_p
+
+    def by_inspection(self) -> Self:
+        """
+        Logical tactic. If self is already proven, self is `A issubset A`,
+        or the predicate of self.left logically implies that any variable x in self.left is in self.right,
+        return self but proven.
+        """
+        from pylogic.helpers import getkey
+        from pylogic.inference import Inference
+        from pylogic.proposition.and_ import And
+        from pylogic.proposition.relation.contains import IsContainedIn
+        from pylogic.variable import Variable
+
+        proven = False
+
+        # already proven
+        if self in self.left.knowledge_base:
+            return getkey(self.left.knowledge_base, self)
+        if self.left == self.right:
+            proven = True
+
+        # seeing if we can derive x in right from assuming x in left
+        if hasattr(self.left, "predicate"):
+            x = Variable("x")
+            left_pred = self.left.predicate(x)
+            # left_pred._set_is_assumption(True)
+            match left_pred:
+                case IsContainedIn(
+                    left=x1, right=right
+                ) if x1 == x and right == self.right:
+                    proven = True
+                case And(propositions=props) if IsContainedIn(x, self.right) in props:
+                    proven = True
+        if proven:
+            new_p = self.copy()
+            new_p._set_is_proven(True)
+            new_p.from_assumptions = set()
+            new_p.deduced_from = Inference(self, rule="by_inspection")
+            return new_p
+        raise ValueError(f"Cannot prove that {self.left} is a subset of {self.right}")

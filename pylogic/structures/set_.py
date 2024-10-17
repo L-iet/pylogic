@@ -19,11 +19,14 @@ from pylogic.structures.collection import Collection
 
 if TYPE_CHECKING:
     from pylogic.expressions.expr import Expr
+    from pylogic.expressions.sequence_term import SequenceTerm
     from pylogic.proposition.proposition import Proposition
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
+    from pylogic.proposition.relation.subsets import IsSubsetOf
     from pylogic.structures.sequence import Sequence
     from pylogic.symbol import Symbol
+    from pylogic.variable import Variable
 
 T = TypeVar("T", bound=Term)
 C = TypeVar("C", bound="Set")
@@ -68,13 +71,17 @@ class Set(metaclass=Collection):
         predicate: Callable[[Term], Proposition] | None = None,
         illegal_occur_check: bool = True,
     ):
+        from pylogic.helpers import python_to_pylogic
+
         if name is not None:
             name = name.strip()
             sympy_set = sp.Set(name)
             assert " " not in name, "Set name cannot contain spaces"
             self.name = name or str(sympy_set)
             self.sympy_set = sympy_set
-            self.elements: set[Term] = set(elements) if elements else set()
+            self.elements: set[Term] = (
+                set(map(python_to_pylogic, elements)) if elements else set()
+            )  # type: ignore
             self._containment_function: Callable[[Term], bool] | None = (
                 containment_function
             )
@@ -82,7 +89,6 @@ class Set(metaclass=Collection):
                 self.illegal_occur_check(containment_function, predicate)
 
             self._predicate = predicate
-            self.is_real = False
         elif any(x is not None for x in (elements, containment_function, predicate)):
             raise ValueError("Must provide a name for the set.")
         self.is_finite: bool | None = None
@@ -90,6 +96,9 @@ class Set(metaclass=Collection):
         self.is_intersection: bool | None = None
         self.is_cartes_product: bool | None = None
         self.is_cartes_power: bool | None = None
+        self.is_real = False
+        self.is_set = True
+        self.is_set_ = True
         self._init_args = ()
         self._init_kwargs = {
             "name": name,
@@ -99,6 +108,7 @@ class Set(metaclass=Collection):
             "illegal_occur_check": illegal_occur_check,
         }
         self.knowledge_base: set[Proposition] = set()
+        self.is_empty: bool | None = None
 
     def illegal_occur_check(
         self,
@@ -236,6 +246,13 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
             return IsContainedIn(x, self)
         return self._predicate(x)
 
+    def is_subset_of(
+        self, other: Set | Variable | SequenceTerm, **kwargs
+    ) -> IsSubsetOf:
+        from pylogic.proposition.relation.subsets import IsSubsetOf
+
+        return IsSubsetOf(self, other, **kwargs)
+
     def evaluate(self) -> Set:
         return self
 
@@ -282,18 +299,21 @@ EmptySet = Set(
     predicate=lambda x: Contradiction(),
     illegal_occur_check=False,
 )
+EmptySet.is_empty = True
 
 UniversalSet = Set(
     "UniversalSet",
     containment_function=lambda x: not x.__class__.__name__.startswith("Collection"),
     illegal_occur_check=False,
 )
+UniversalSet.is_empty = False
 
 SingletonEmpty = Set(
     "SingletonEmpty",
     elements={EmptySet},
     illegal_occur_check=False,
 )
+SingletonEmpty.is_empty = False
 
 
 class FiniteSet(Set):
@@ -316,7 +336,13 @@ class Union(Set):
         sets: Sequence[Set],
         name: str | None = None,
     ):
-        super().__init__(name=name)
+        from pylogic.proposition.quantified.exists import ExistsInSet
+        from pylogic.theories.natural_numbers import Naturals
+        from pylogic.variable import Variable
+
+        k = Variable("k")
+        pred = lambda x: ExistsInSet(k, Naturals, x.is_in(sets[k]))
+        super().__init__(name=name, predicate=pred)
         self.set_sequence: Sequence[Set] = sets
         self.is_union = True
 
@@ -360,7 +386,13 @@ class Intersection(Set):
         sets: Sequence[Set],
         name: str | None = None,
     ):
-        super().__init__(name=name)
+        from pylogic.proposition.quantified.forall import ForallInSet
+        from pylogic.theories.natural_numbers import Naturals
+        from pylogic.variable import Variable
+
+        k = Variable("k")
+        pred = lambda x: ForallInSet(k, Naturals, x.is_in(sets[k]))
+        super().__init__(name=name, predicate=pred)
         self.set_sequence: Sequence[Set] = sets
         self.is_intersection = True
 

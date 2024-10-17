@@ -54,9 +54,7 @@ def get_vars(expr: Any) -> set[Variable]:
     """
     if isinstance(expr, Variable):
         return {expr}
-    if hasattr(expr, "variables"):
-        return expr.variables
-    return set()
+    return getattr(expr, "variables", set())
 
 
 def get_consts(expr: Any) -> set[Constant]:
@@ -69,9 +67,7 @@ def get_consts(expr: Any) -> set[Constant]:
         return {expr}
     if is_python_numeric(expr):
         return {Constant(expr)}
-    if hasattr(expr, "constants"):
-        return expr.constants
-    return set()
+    return getattr(expr, "constants", set())
 
 
 def get_sets(expr: Any) -> set[Set]:
@@ -82,9 +78,7 @@ def get_sets(expr: Any) -> set[Set]:
 
     if isinstance(expr, Set):
         return {expr}
-    if hasattr(expr, "sets"):
-        return expr.sets
-    return set()
+    return getattr(expr, "sets", set())
 
 
 def get_class_ns(expr: Any) -> set[Class]:
@@ -96,9 +90,7 @@ def get_class_ns(expr: Any) -> set[Class]:
         and expr.__class__.__name__[10].isdigit()
     ):
         return {expr}
-    if hasattr(expr, "class_ns"):
-        return expr.class_ns
-    return set()
+    return getattr(expr, "class_ns", set())
 
 
 def deepcopy(obj: T) -> T:
@@ -297,6 +289,8 @@ def python_to_pylogic(arg: dict) -> Set: ...
 def python_to_pylogic(arg: TNumeric) -> Constant[TNumeric]: ...
 @overload
 def python_to_pylogic(arg: str) -> Constant[str] | Sequence: ...
+@overload
+def python_to_pylogic(arg: Any) -> Proposition | Expr | Symbol | Sequence | Set: ...
 def python_to_pylogic(arg: Any) -> Proposition | Expr | Symbol | Sequence | Set:
     """
     Convert certain python objects to Pylogic objects.
@@ -410,7 +404,7 @@ class Getter(Generic[T]):
 RAISES = object()
 
 
-def getkey(keyed: Container, key: T, default: T = RAISES) -> T:
+def getkey(keyed: Container, key: T, default=RAISES) -> T:
     getter = Getter[T](key)
     if getter in keyed:
         # providing '__contains__' is implemented to call
@@ -421,4 +415,4 @@ def getkey(keyed: Container, key: T, default: T = RAISES) -> T:
         return getter.value
     if default is RAISES:
         raise KeyError(key)
-    return default
+    return default  # type: ignore

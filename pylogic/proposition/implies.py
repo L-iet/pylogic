@@ -62,6 +62,9 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
     def __repr__(self) -> str:
         return f"[{self.antecedent} -> {self.consequent}]"
 
+    def __call__(self, *props: Proposition):
+        return self.definite_clause_resolve(props)
+
     def _latex(self, printer=None) -> str:
         return rf"\left({self.antecedent._latex()} \rightarrow {self.consequent._latex()}\right)"
 
@@ -190,7 +193,8 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         )
 
     def definite_clause_resolve(
-        self, in_body: list[Proposition] | And[Proposition, ...]
+        self,
+        in_body: list[Proposition] | tuple[Proposition, ...] | And[Proposition, ...],
     ) -> Self | Implies[Proposition, UProposition] | UProposition:
         r"""
         Logical tactic. Given self `(A /\ B /\ C...) -> D` is proven, and
@@ -204,8 +208,8 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
 
         if not isinstance(self.antecedent, And):
             assert isinstance(
-                in_body, list
-            ), f"{in_body} should be a list since the antecedent is not an And"
+                in_body, (list, tuple)
+            ), f"{in_body} should be a list/tuple since the antecedent is not an And"
             return in_body[0].modus_ponens(self)  # type: ignore
 
         in_body_is_and = isinstance(in_body, And)
@@ -215,27 +219,29 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             assert in_body.is_proven, f"{in_body} is not proven"
             in_body_assumptions = get_assumptions(in_body)
         else:
-            assert isinstance(in_body, list), f"{in_body} is not a list"
+            assert isinstance(
+                in_body, (list, tuple)
+            ), f"{in_body} is not a list or tuple"
             in_body_assumptions: set[Proposition] = set()
             for prop in props:
                 assert prop.is_proven, f"{prop} is not proven"
                 in_body_assumptions = in_body_assumptions.union(get_assumptions(prop))
 
         rem_props = [prop for prop in self.antecedent.propositions if prop not in props]
+        # TODO: the inference may contain propositions with is_proven=False
+        # since we are using *props instead of in_body (the logic is valid & sound though)
         if len(rem_props) == 1:
             return Implies(
                 rem_props[0],
                 self.consequent,
                 _is_proven=True,
                 _assumptions=get_assumptions(self).union(in_body_assumptions),
-                _inference=Inference(self, in_body, rule="definite_clause_resolve"),
+                _inference=Inference(self, *props, rule="definite_clause_resolve"),
             )
         if len(rem_props) == 0:
             new_p = self.consequent.copy()
             new_p._set_is_proven(True)
-            new_p.deduced_from = Inference(
-                self, in_body, rule="definite_clause_resolve"
-            )
+            new_p.deduced_from = Inference(self, *props, rule="definite_clause_resolve")
             new_p.from_assumptions = get_assumptions(self).union(in_body_assumptions)
             return new_p
         new_p = Implies(
@@ -243,7 +249,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             self.consequent,
             _is_proven=True,
             _assumptions=get_assumptions(self).union(in_body_assumptions),
-            _inference=Inference(self, in_body, rule="definite_clause_resolve"),
+            _inference=Inference(self, *props, rule="definite_clause_resolve"),
         )
         return new_p  # type:ignore
 

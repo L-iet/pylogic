@@ -18,7 +18,14 @@ class Variable(Symbol):
         self._from_existential_instance = kwargs.pop(
             "_from_existential_instance", False
         )
-        self.elements = set()  # for variable sets
+        # for variable sets
+        self.elements = set()
+        self.is_empty: bool | None = None
+        self.is_cartes_power: bool | None = None
+        self.is_cartes_product: bool | None = None
+        self.is_finite: bool | None = None
+        self.is_intersection: bool | None = None
+        self.is_union: bool | None = None
 
     def __contains__(self, item: Any) -> bool:
         """
@@ -33,6 +40,12 @@ class Variable(Symbol):
         from pylogic.proposition.relation.contains import IsContainedIn
 
         return IsContainedIn(x, self)
+
+    def contains(self, x: Term, **kwargs) -> IsContainedIn:
+        """
+        For variable sets.
+        """
+        return IsContainedIn(x, self, **kwargs)
 
     def unbind(self) -> None:
         self.is_bound = False

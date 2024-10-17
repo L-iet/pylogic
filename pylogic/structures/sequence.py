@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Generic
+from typing import TYPE_CHECKING, Callable, Generic, Self
 from typing import Sequence as TSequence
 from typing import TypeVar, cast
 
@@ -8,10 +8,9 @@ from pylogic import Term
 from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
 
 if TYPE_CHECKING:
-    pass
-
     from pylogic.constant import Constant
     from pylogic.expressions.sequence_term import SequenceTerm
+    from pylogic.proposition.proposition import Proposition
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.structures.set_ import Set
     from pylogic.variable import Variable
@@ -26,6 +25,13 @@ else:
 class Sequence(Generic[T]):
     """
     A sequence is a countably infinite or finite ordered list of elements.
+
+    Parameters:
+        predicate: `Callable[[Term], Proposition] | None`
+        A function that receives a natural number and returns a proposition.
+        sequence.predicate() actually receives a natural number n and returns a proposition
+        about the corresponding sequence term.
+        So for all n, predicate(n) should be True.
     """
 
     def __init__(
@@ -33,13 +39,23 @@ class Sequence(Generic[T]):
         name: str,
         initial_terms: TSequence[T] | None = None,
         nth_term: Callable[[int], T] | None = None,
+        predicate: Callable[[Term], Proposition] | None = None,
     ) -> None:
+        from pylogic.constant import Constant
+        from pylogic.expressions.abs import Abs
+
+        init_inds = (
+            list(map(Constant, range(len(initial_terms)))) if initial_terms else []
+        )
+
         self.name: str = name
         self.initial_terms: list[T] = list(initial_terms) if initial_terms else []
-        self.terms: dict[int, T] = dict(enumerate(self.initial_terms))
-        self.nth_term: Callable[[int], T] | None = nth_term
-        self.is_infinite: bool | None = None
-        # TODO self.size: Term | None = None
+        self.terms: dict[Constant[int], T] = dict(zip(init_inds, self.initial_terms))
+        self.nth_term: Callable[[Term], T] | None = nth_term
+        self.is_finite: bool | None = None
+        self._predicate: Callable[[Term], Proposition] | None = predicate
+        self._predicate_uses_self = predicate is not None
+        self.size = Abs(self)
 
     def __repr__(self) -> str:
         return f"Sequence({self.name})"
@@ -54,22 +70,77 @@ class Sequence(Generic[T]):
 
     def __hash__(self) -> int:
         return hash(
-            self.name,
-            self.nth_term,
-            self.is_infinite,
-            *self.initial_terms,
+            (
+                self.name,
+                self.nth_term,
+                self.is_finite,
+                *self.initial_terms,
+            )
         )
 
-    def __getitem__(self, index: int) -> SequenceTerm[T]:
+    def __getitem__(self, index: Term) -> SequenceTerm[T]:
         from pylogic.expressions.sequence_term import SequenceTerm
 
         return SequenceTerm(self, index)
 
     def is_in(self, set_: Set | Variable) -> IsContainedIn:
         """
-        Return the proposition self in `set`.
+        Return the proposition `self in set_`.
         """
         return set_.contains(self)
+
+    def define_predicate(
+        self,
+        predicate: Callable[[Term], Proposition],
+        predicate_uses_self: bool = False,
+    ) -> None:
+        """
+        Define the predicate that the sequence satisfies.
+        Parameters:
+            predicate: `Callable[[Term], Proposition]`
+
+                A function that receives a natural number and returns a proposition.
+                sequence.predicate() actually receives a natural number n and returns a proposition
+                about the corresponding sequence term.
+                So for all n, predicate(n) should be True.
+
+            predicate_uses_self: bool
+
+                Whether the predicate uses `self`  (imported from pylogic.sequence) as opposed to the
+                reference of the actual sequence.
+                If `define_predicate` is being called, the sequence is already initialized and can
+                be referenced directly in the predicate. In this case, `predicate_uses_self` should be False.
+                If `self` is used in the predicate, `predicate_uses_self` should be True.
+                This facilitates replacing `self` with the actual sequence instance when the predicate is called.
+        """
+        self._predicate = predicate
+        if predicate_uses_self:
+            self._predicate_uses_self = True
+
+    def predicate(inst, expr: Term) -> Proposition:
+        """
+        Return the proposition that the term satisfies the predicate.
+
+        expr: Term
+            an expression that corresponds to a natural number.
+        """
+        from pylogic.helpers import python_to_pylogic
+        from pylogic.inference import Inference
+
+        expr = python_to_pylogic(expr)
+        assert expr.is_natural, "The argument must be a natural number"
+        if inst._predicate is None:
+            raise ValueError("No predicate was provided")
+        res = inst._predicate(expr)
+
+        # if the predicate was defined at initialization, replace the dummy self sequence
+        # with this instance
+        if self._predicate_uses_self:
+            res = res.replace({self: inst})
+        res._set_is_proven(True)
+        res.from_assumptions = set()
+        res.deduced_from = Inference(None, rule="by_predicate")
+        return res
 
 
 class PeriodicSequence(Sequence[T]):
@@ -173,3 +244,6 @@ class Triple(FiniteSequence[T]):
 
     def __str__(self) -> str:
         return f"({self.first}, {self.second}, {self.third})"
+
+
+self = Sequence("_PylogicSelfSeq")

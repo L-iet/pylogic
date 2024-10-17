@@ -135,10 +135,14 @@ class Forall(_Quantified[TProposition]):
         positions: list[list[int]] | None = None,
         equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
+        new_var = self.variable
         if self.variable in replace_dict:
-            raise ValueError("Cannot replace variable (not implemented)")
+            assert isinstance(
+                replace_dict[self.variable], Variable
+            ), "Cannot replace variable with non-variable"
+            new_var = replace_dict[self.variable]
         new_p = self.__class__(
-            self.variable,
+            new_var,
             self.inner_proposition.replace(
                 replace_dict, positions=positions, equal_check=equal_check
             ),
@@ -150,7 +154,10 @@ class Forall(_Quantified[TProposition]):
         """Logical tactic. Given self is proven, replace the variable in the inner
         proposition and get a proven proposition.
         """
+        from pylogic.helpers import python_to_pylogic
         from pylogic.variable import Variable
+
+        expression_to_substitute = python_to_pylogic(expression_to_substitute)
 
         # TODO: may need to define or override .replace for Forall to prevent
         # unnecessarily replacing the variable in the inner proposition
@@ -218,14 +225,19 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
         equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
         from pylogic.structures.set_ import Set
+        from pylogic.variable import Variable
 
+        new_var = self.variable
         if self.variable in replace_dict:
-            raise ValueError("Cannot replace variable (not implemented)")
+            assert isinstance(
+                replace_dict[self.variable], Variable
+            ), "Cannot replace variable with non-variable"
+            new_var = replace_dict[self.variable]
         if self.set_ in replace_dict:
             new_val = replace_dict[self.set_]
             assert isinstance(new_val, Set), f"{new_val} is not a set"
             new_p = self.__class__(
-                self.variable,
+                new_var,
                 new_val,
                 self._inner_without_set.replace(
                     replace_dict, positions=positions, equal_check=equal_check
@@ -235,7 +247,7 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
             return new_p
 
         new_p = self.__class__(
-            self.variable,
+            new_var,
             self.set_,
             self._inner_without_set.replace(
                 replace_dict, positions=positions, equal_check=equal_check
@@ -355,13 +367,16 @@ class ForallSubsets(Forall[Implies[IsSubsetOf, TProposition]]):
     def in_particular(
         self,
         expression_to_substitute: Term,
-        proof_expr_to_substitute_is_subset: IsSubsetOf,
+        proof_expr_to_substitute_is_subset: IsSubsetOf | None = None,
     ) -> TProposition:
         """Logical tactic. Given self is proven, replace the variable in the inner
         proposition and get a proven proposition.
         """
         assert self.is_proven, f"{self} is not proven"
         impl = super().in_particular(expression_to_substitute)
-        ante = proof_expr_to_substitute_is_subset
+        if proof_expr_to_substitute_is_subset is None:
+            ante = IsSubsetOf(expression_to_substitute, self.right_set).by_inspection()
+        else:
+            ante = proof_expr_to_substitute_is_subset
         new_p = impl.first_unit_definite_clause_resolve(ante)
         return new_p  # type: ignore

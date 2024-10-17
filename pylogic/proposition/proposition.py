@@ -180,14 +180,26 @@ class Proposition:
             return self.name == other.name and self.args == other.args
         return NotImplemented
 
+    def _set_is_inferred_true(self) -> None:
+        """
+        Used in some subclasses like IsContainedIn for custom behaviour when a proof is made
+        """
+        pass
+
     def _set_is_proven(self, value: bool) -> None:
         self._is_proven = value
+        if value:
+            self._set_is_inferred_true()
 
     def _set_is_assumption(self, value: bool) -> None:
         self.is_assumption = value
+        if value:
+            self._set_is_inferred_true()
 
     def _set_is_axiom(self, value: bool) -> None:
         self.is_axiom = value
+        if value:
+            self._set_is_inferred_true()
 
     def todo(self) -> Self:
         """
@@ -368,6 +380,15 @@ class Proposition:
             An equality proposition. We look for the other side of the equality
             in self and replace it with the 'side'.
         """
+        if self.is_proven and equality.is_proven and not kwargs:
+            from pylogic.inference import Inference
+
+            kwargs = dict(
+                _is_proven=True,
+                _inference=Inference(self, equality, rule="p_substitute"),
+                _assumptions=get_assumptions(self).union(get_assumptions(equality)),
+            )
+
         return equality.substitute_into(side, self, **kwargs)
 
     def p_substitute(self, side: Side | str, equality: Equals) -> Self:
@@ -859,6 +880,9 @@ class Proposition:
         existential_var: str,
         expression_to_replace: Term,
         set_: Set | Variable | Class | None = None,
+        expression_to_replace_is_in_set: (
+            IsContainedIn[Term, Set | Variable | Class] | None
+        ) = None,
         latex_name: str | None = None,
         positions: list[list[int]] | None = None,
     ) -> Exists[Self]:
@@ -875,6 +899,8 @@ class Proposition:
             An expression that is replaced by the new variable.
         set_: Set
             The set in which the existential variable is contained.
+        expression_to_replace_is_in_set: IsContainedIn
+            A proposition that states that the expression_to_replace is in the set_.
         latex_name: str | None
             The latex representation of the existential variable.
         positions: list[list[int]]
@@ -911,6 +937,15 @@ and is a dependency of {expression_to_replace}"
             exists_cls = Exists
         else:
             exists_cls = ExistsInSet
+            if expression_to_replace_is_in_set is None:
+                # try to prove by inspection
+                expression_to_replace.is_in(set_).by_inspection()
+            else:
+                assert (
+                    isinstance(expression_to_replace_is_in_set, IsContainedIn)
+                    and expression_to_replace_is_in_set.left == expression_to_replace
+                    and expression_to_replace_is_in_set.set_ == set_
+                ), f"{expression_to_replace_is_in_set} is not a proof that {expression_to_replace} is in {set_}"
         new_p = exists_cls.from_proposition(
             existential_var_name=existential_var,
             expression_to_replace=expression_to_replace,

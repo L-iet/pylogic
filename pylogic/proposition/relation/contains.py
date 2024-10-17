@@ -8,14 +8,17 @@ from pylogic.inference import Inference
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 
 if TYPE_CHECKING:
+    from pylogic.expressions.sequence_term import SequenceTerm
     from pylogic.proposition.and_ import And
+    from pylogic.proposition.not_ import Not
     from pylogic.proposition.or_ import Or
     from pylogic.proposition.proposition import Proposition
+    from pylogic.proposition.relation.equals import Equals
     from pylogic.structures.collection import Class
     from pylogic.structures.set_ import Set
     from pylogic.variable import Variable
 
-    U = TypeVar("U", bound=Variable | Set | Class)
+    U = TypeVar("U", bound=Variable | Set | Class | SequenceTerm)
 else:
     Set = Any
     Term = Any
@@ -57,7 +60,7 @@ class IsContainedIn(BinaryRelation[T, U]):
             or kwargs.get("is_assumption")
             or kwargs.get("is_axiom")
         ):
-            self._add_element_to_set()
+            self._set_is_inferred_true()
 
     @property
     def set_(self) -> U:
@@ -67,41 +70,42 @@ class IsContainedIn(BinaryRelation[T, U]):
     def element(self) -> T:
         return self.left
 
-    def _add_element_to_set(self) -> None:
+    def _set_is_inferred_true(self) -> None:
+        super()._set_is_inferred_true()
         # TODO: add more here
-        if self.right.name in {"Naturals", "Reals"}:
+        if self.right.name in {"Naturals", "Integers", "Rationals", "Reals"}:
             substr = self.right.name[:-1].lower()
             setattr(self.left, f"_is_{substr}", True)
         self.left.knowledge_base.add(self)
         self.right.elements.add(self.left)
 
     def _set_is_proven(self, value: bool) -> None:
+        super()._set_is_proven(value)
         if value:
-            self._add_element_to_set()
+            self._set_is_inferred_true()
         elif not (self.is_axiom or self.is_assumption):
             self.right.elements.discard(self.left)
             self.left.knowledge_base.discard(self)
-        super()._set_is_proven(value)
 
     def _set_is_assumption(self, value: bool) -> None:
+        super()._set_is_assumption(value)
         # TODO: fix this. I'm still getting some dummy variables in
         # set's elements although we called followed_from with this prop
         # update Oct 11 2024, did I fix this?
         if value:
-            self._add_element_to_set()
+            self._set_is_inferred_true()
         else:
             if not (self._is_proven or self.is_axiom):
                 self.right.elements.discard(self.left)
                 self.left.knowledge_base.discard(self)
-        super()._set_is_assumption(value)
 
     def _set_is_axiom(self, value: bool) -> None:
+        super()._set_is_axiom(value)
         if value:
-            self._add_element_to_set()
+            self._set_is_inferred_true()
         elif not (self._is_proven or self.is_assumption):
             self.right.elements.discard(self.left)
             self.left.knowledge_base.discard(self)
-        super()._set_is_axiom(value)
 
     def by_containment_func(self) -> Self:
         """Logical tactic. Use the set's containment function to prove that it
@@ -187,8 +191,33 @@ class IsContainedIn(BinaryRelation[T, U]):
         the predicate that the element satisfies.
         """
         assert self.is_proven, f"{self} is not proven"
+        from pylogic.proposition.proposition import get_assumptions
 
-        return self.right.predicate(self.left)
+        res = self.right.predicate(self.left)
+        res._set_is_proven(True)
+        res.from_assumptions = get_assumptions(self)
+        res.deduced_from = Inference(self, rule="thus_predicate")
+        return res
+
+    def thus_not_empty(self) -> Not[Equals]:
+        """
+        Logical tactic. Given self = x in S is proven, return a proof that S is not empty.
+        """
+        assert self.is_proven, f"{self} is not proven"
+        from pylogic.proposition.not_ import Not
+        from pylogic.proposition.proposition import get_assumptions
+        from pylogic.proposition.relation.equals import Equals
+        from pylogic.structures.set_ import EmptySet
+
+        self.set_.is_empty = False
+        res = Not(
+            Equals(self.set_, EmptySet),
+            _is_proven=True,
+            _inference=Inference(self, rule="thus_not_empty"),
+            _assumptions=get_assumptions(self),
+        )
+        self.set_.knowledge_base.add(res)
+        return res
 
     def thus_contained_in_at_least_one(self) -> Or[IsContainedIn, ...]:
         """Logical tactic. Given x in Union[A, B, C],

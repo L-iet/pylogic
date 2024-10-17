@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Self, cast
+from typing import TYPE_CHECKING, Any, Callable, Self, TypeVar, cast
 
 import sympy as sp
 from sympy.matrices.expressions.matexpr import MatrixElement as MatEl
@@ -9,13 +9,19 @@ from pylogic import PythonNumeric, Term
 from pylogic.expressions.expr import Add, Expr, Mul, Pow
 
 if TYPE_CHECKING:
+    from pylogic.expressions.sequence_term import SequenceTerm
     from pylogic.proposition.proposition import Proposition
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
     from pylogic.proposition.relation.subsets import IsSubsetOf
+    from pylogic.structures.class_ import Class
     from pylogic.structures.set_ import Set
     from pylogic.sympy_helpers import PylSympySymbol
     from pylogic.variable import Variable
+
+    S = TypeVar("S", bound=Set)
+else:
+    S = TypeVar("S")
 
 
 class Symbol:
@@ -65,7 +71,9 @@ class Symbol:
         return f"{self.__class__.__name__}({self.name}, deps={self.depends_on})"
 
     def __str__(self):
-        if len(self.independent_dependencies) > 0:
+        from pylogic.enviroment_settings.set_view_symbol_deps import VIEW_VARIABLE_DEPS
+
+        if len(self.independent_dependencies) > 0 and VIEW_VARIABLE_DEPS:
             return f"{self.name}({', '.join(str(d) for d in self.independent_dependencies)})"
         return f"{self.name}"
 
@@ -112,13 +120,14 @@ class Symbol:
         if isinstance(other, Symbol):
             return (not self._from_existential_instance) and (
                 self.name == other.name
-                and self.__class__ == other.__class__
-                and self.is_real == other.is_real
-                and self.is_set_ == other.is_set_
-                and self.is_graph == other.is_graph
-                and self.is_pair == other.is_pair
-                and self.is_list_ == other.is_list_
-                and self.is_sequence == other.is_sequence
+                # TODO: fix replace not working well
+                # and self.__class__ == other.__class__
+                # and self.is_real == other.is_real
+                # and self.is_set_ == other.is_set_
+                # and self.is_graph == other.is_graph
+                # and self.is_pair == other.is_pair
+                # and self.is_list_ == other.is_list_
+                # and self.is_sequence == other.is_sequence
                 and self.depends_on == other.depends_on
             )
         return NotImplemented
@@ -188,12 +197,16 @@ class Symbol:
     def evaluate(self) -> Self:
         return self
 
-    def is_in(self, other: Set | Variable, **kwargs) -> IsContainedIn:
+    def is_in(
+        self, other: Set | Variable | Class | SequenceTerm[S], **kwargs
+    ) -> IsContainedIn:
         from pylogic.proposition.relation.contains import IsContainedIn
 
         return IsContainedIn(self, other, **kwargs)
 
-    def _is_in_by_definition(self, other: Set | Variable) -> IsContainedIn:
+    def _is_in_by_rule(
+        self, other: Set | Class | Variable, rule: str = "by_definition"
+    ) -> IsContainedIn:
         from pylogic.inference import Inference
         from pylogic.proposition.relation.contains import IsContainedIn
 
@@ -202,7 +215,7 @@ class Symbol:
             other,
             _is_proven=True,
             _assumptions=set(),
-            _inference=Inference(None, rule="by_definition"),
+            _inference=Inference(None, rule=rule),
         )
         return res
 

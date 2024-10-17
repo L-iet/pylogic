@@ -91,6 +91,49 @@ class Not(Proposition, Generic[TProposition]):
     def __hash__(self) -> int:
         return hash(("not", self.negated))
 
+    def _set_is_inferred_true(self) -> None:
+        super()._set_is_inferred_true()
+        from pylogic.proposition.relation.binaryrelation import BinaryRelation
+        from pylogic.proposition.relation.equals import Equals
+        from pylogic.structures.set_ import EmptySet
+
+        match self.negated:
+            case Equals(right=r) if r == EmptySet:
+                self.negated.left.is_empty = False
+                self.negated.left.knowledge_base.add(self)
+            case BinaryRelation():
+                self.negated.left.knowledge_base.add(self)
+
+    def _set_is_proven(self, value: bool) -> None:
+        super()._set_is_proven(value)
+        if value:
+            self._set_is_inferred_true()
+        elif not (self.is_axiom or self.is_assumption):
+            from pylogic.proposition.relation.binaryrelation import BinaryRelation
+
+            if isinstance(self.negated, BinaryRelation):
+                self.negated.left.knowledge_base.discard(self)
+
+    def _set_is_assumption(self, value: bool) -> None:
+        super()._set_is_assumption(value)
+        if value:
+            self._set_is_inferred_true()
+        elif not (self._is_proven or self.is_axiom):
+            from pylogic.proposition.relation.binaryrelation import BinaryRelation
+
+            if isinstance(self.negated, BinaryRelation):
+                self.negated.left.knowledge_base.discard(self)
+
+    def _set_is_axiom(self, value: bool) -> None:
+        super()._set_is_axiom(value)
+        if value:
+            self._set_is_inferred_true()
+        elif not (self._is_proven or self.is_assumption):
+            from pylogic.proposition.relation.binaryrelation import BinaryRelation
+
+            if isinstance(self.negated, BinaryRelation):
+                self.negated.left.knowledge_base.discard(self)
+
     def copy(self) -> Self:
         return self.__class__(
             self.negated,
