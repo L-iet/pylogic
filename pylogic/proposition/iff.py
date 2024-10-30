@@ -21,6 +21,11 @@ Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 
 class Iff(Proposition, Generic[TProposition, UProposition]):
+    # order of operations for propositions (0-indexed)
+    # not xor and or => <=> forall forallInSet forallSubsets exists existsInSet existsUnique
+    # existsUniqueInSet existsSubset existsUniqueSubset Proposition
+    _precedence = 5
+
     tactics: list[Tactic] = [
         {"name": "forward_implication", "arguments": []},
         {"name": "reverse_implication", "arguments": []},
@@ -57,13 +62,22 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
     def __hash__(self) -> int:
         return hash(("iff", self.left, self.right))
 
+    def __str__(self) -> str:
+        wrap = lambda p: (
+            f"({p})" if p.__class__._precedence > self.__class__._precedence else str(p)
+        )
+        return f"{wrap(self.left)} <-> {wrap(self.right)}"
+
     def __repr__(self) -> str:
-        return f"[{self.left} <-> {self.right}]"
+        return f"Iff({self.left!r}, {self.right!r})"
 
     def _latex(self, printer=None) -> str:
-        return (
-            rf"\left({self.left._latex()} \leftrightarrow {self.right._latex()}\right)"
+        wrap = lambda p: (
+            rf"\left({p}\right)"
+            if p.__class__._precedence > self.__class__._precedence
+            else p._latex()
         )
+        return rf"{wrap(self.left)} \leftrightarrow {wrap(self.right)}"
 
     def copy(self) -> Self:
         return self.__class__(

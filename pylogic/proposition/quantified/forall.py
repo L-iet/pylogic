@@ -26,11 +26,20 @@ Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 
 class Forall(_Quantified[TProposition]):
+    # order of operations for propositions (0-indexed)
+    # not xor and or => <=> forall forallInSet forallSubsets exists existsInSet existsUnique
+    # existsUniqueInSet existsSubset existsUniqueSubset Proposition
+    _precedence = 6
+
     tactics: list[Tactic] = [
         {"name": "quantified_modus_ponens", "arguments": ["Implies"]},
         {"name": "hence_matrices_are_equal", "arguments": []},
         {"name": "de_morgan", "arguments": []},
     ]
+
+    _q = "forall"
+    _bin_symb = None
+    _innermost_prop_attr = "inner_proposition"
 
     def __init__(
         self,
@@ -49,7 +58,7 @@ class Forall(_Quantified[TProposition]):
             **kwargs,
         )
 
-    def __call__(self, *terms: Term) -> Any:
+    def __call__(self, *terms: Term) -> Proposition:
         prop = self
         i = 0
         while isinstance(prop, Forall) and i < len(terms):
@@ -193,6 +202,15 @@ class Forall(_Quantified[TProposition]):
 
 
 class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
+    # order of operations for propositions (0-indexed)
+    # not xor and or => <=> forall forallInSet forallSubsets exists existsInSet existsUnique
+    # existsUniqueInSet existsSubset existsUniqueSubset Proposition
+    _precedence = 7
+
+    _q = "forall"
+    _bin_symb = "in"
+    _innermost_prop_attr = "_inner_without_set"
+
     def __init__(
         self,
         variable: Variable,
@@ -214,9 +232,6 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
 
     def __hash__(self) -> int:
         return super().__hash__()
-
-    def __repr__(self) -> str:
-        return f"forall {self.variable} in {self.set_}: {self._inner_without_set}"
 
     def replace(
         self,
@@ -324,12 +339,17 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
         new_p = impl.first_unit_definite_clause_resolve(ante)
         return new_p  # type: ignore
 
-    def _latex(self, printer=None) -> str:
-        var_latex = self.variable._latex()
-        return rf"\forall {var_latex} \in {self.set_._latex()}: {self._inner_without_set._latex()}"
-
 
 class ForallSubsets(Forall[Implies[IsSubsetOf, TProposition]]):
+    # order of operations for propositions (0-indexed)
+    # not xor and or => <=> forall forallInSet forallSubsets exists existsInSet existsUnique
+    # existsUniqueInSet existsSubset existsUniqueSubset Proposition
+    _precedence = 8
+
+    _q = "forall"
+    _bin_symb = "subset of"
+    _innermost_prop_attr = "_inner_without_set"
+
     def __init__(
         self,
         variable: Variable,
@@ -349,15 +369,6 @@ class ForallSubsets(Forall[Implies[IsSubsetOf, TProposition]]):
         self.right_set = set_
         self.set_ = set_
         self._inner_without_set = inner_proposition
-
-    def __repr__(self) -> str:
-        return (
-            f"forall {self.variable} subsets of {self.set_}: {self._inner_without_set}"
-        )
-
-    def _latex(self, printer=None) -> str:
-        var_latex = self.variable._latex()
-        return rf"\forall {var_latex} \subseteq {self.set_._latex()}: {self._inner_without_set._latex()}"
 
     replace = ForallInSet.replace
     copy = ForallInSet.copy

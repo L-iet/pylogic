@@ -31,6 +31,8 @@ if TYPE_CHECKING:
 T = TypeVar("T", bound=Term)
 C = TypeVar("C", bound="Set")
 
+# TODO: implement __eq__, __hash__, __repr__ and latex methods for all classes
+
 
 class Set(metaclass=Collection):
     """
@@ -70,6 +72,7 @@ class Set(metaclass=Collection):
         containment_function: Callable[[Term], bool] | None = None,
         predicate: Callable[[Term], Proposition] | None = None,
         illegal_occur_check: bool = True,
+        latex_str: str | None = None,
     ):
         from pylogic.helpers import python_to_pylogic
 
@@ -109,6 +112,7 @@ class Set(metaclass=Collection):
         }
         self.knowledge_base: set[Proposition] = set()
         self.is_empty: bool | None = None
+        self.latex_str = latex_str or self.name
 
     def illegal_occur_check(
         self,
@@ -239,6 +243,22 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
 
         return IsContainedIn(other, self, is_assumption=is_assumption, **kwargs)
 
+    def countable(self, is_assumption: bool = False, **kwargs) -> Exists:
+        # TODO: make this  ExistsInSet where set is the class of
+        # all sequences
+        from pylogic.proposition.quantified.exists import Exists
+        from pylogic.structures.set_ import SeqSet
+        from pylogic.variable import Variable
+
+        s = Variable("s", sequence=True)
+        return Exists(
+            s,
+            self.equals(SeqSet(s)),
+            description=f"{self} is countable",
+            is_assumption=is_assumption,
+            **kwargs,
+        )
+
     def predicate(self, x: Term) -> Proposition:
         from pylogic.proposition.relation.contains import IsContainedIn
 
@@ -281,7 +301,7 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
         return hash(("Set", self.name, self.containment_function))
 
     def _latex(self, printer=None) -> str:
-        return rf"\text{{{self.name}}}"
+        return self.latex_str
 
     def _repr_latex_(self) -> str:
         return f"$${self._latex()}$$"
@@ -298,6 +318,7 @@ EmptySet = Set(
     containment_function=lambda x: False,
     predicate=lambda x: Contradiction(),
     illegal_occur_check=False,
+    latex_str=r"\emptyset",
 )
 EmptySet.is_empty = True
 
@@ -305,6 +326,7 @@ UniversalSet = Set(
     "UniversalSet",
     containment_function=lambda x: not x.__class__.__name__.startswith("Collection"),
     illegal_occur_check=False,
+    latex_str=r"\mathcal{U}",
 )
 UniversalSet.is_empty = False
 
@@ -312,6 +334,7 @@ SingletonEmpty = Set(
     "SingletonEmpty",
     elements={EmptySet},
     illegal_occur_check=False,
+    latex_str=r"\{\emptyset\}",
 )
 SingletonEmpty.is_empty = False
 
@@ -321,9 +344,25 @@ class FiniteSet(Set):
         self,
         name: str | None = None,
         elements: Iterable[Term] | None = None,
+        **kwargs,
     ):
-        super().__init__(name=name, elements=elements)
+        super().__init__(name=name, elements=elements, **kwargs)
         self.is_finite = True
+
+    def __eq__(self, other: FiniteSet) -> bool:
+        if not isinstance(other, FiniteSet):
+            return NotImplemented
+        return self.elements == other.elements
+
+    def __hash__(self) -> int:
+        elements = tuple(sorted(self.elements, key=lambda x: str(x)))
+        return hash(("FiniteSet", self.name, elements))
+
+    def __str__(self) -> str:
+        return str(self.elements)
+
+    def __repr__(self) -> str:
+        return f"FiniteSet({self.elements})"
 
 
 class Union(Set):
@@ -333,18 +372,40 @@ class Union(Set):
 
     def __init__(
         self,
-        sets: Sequence[Set],
+        sets: Sequence[Set | Variable],
         name: str | None = None,
+        **kwargs,
     ):
         from pylogic.proposition.quantified.exists import ExistsInSet
         from pylogic.theories.natural_numbers import Naturals
         from pylogic.variable import Variable
 
+        pred0 = kwargs.pop("predicate", None)
+
         k = Variable("k")
-        pred = lambda x: ExistsInSet(k, Naturals, x.is_in(sets[k]))
-        super().__init__(name=name, predicate=pred)
-        self.set_sequence: Sequence[Set] = sets
+        pred = lambda x: (
+            ExistsInSet(k, Naturals, x.is_in(sets[k]))
+            if pred0 is None
+            else ExistsInSet(k, Naturals, x.is_in(sets[k])).and_(pred0(x))
+        )
+        latex_str = kwargs.pop("latex_str", None) or rf"\bigcup {sets._latex()}"
+        super().__init__(name=name, predicate=pred, latex_str=latex_str, **kwargs)
+        self.set_sequence: Sequence[Set | Variable] = sets
         self.is_union = True
+
+    def __eq__(self, other: Union) -> bool:
+        if not isinstance(other, Union):
+            return NotImplemented
+        return self.set_sequence == other.set_sequence
+
+    def __hash__(self) -> int:
+        return hash(("Union", self.name, self.set_sequence))
+
+    def __str__(self) -> str:
+        return f"Union({self.set_sequence})"
+
+    def __repr__(self) -> str:
+        return f"Union({self.set_sequence!r})"
 
 
 class FiniteUnion(Union):
@@ -355,9 +416,14 @@ class FiniteUnion(Union):
     @overload
     def __new__(cls) -> Set: ...
     @overload
-    def __new__(cls, sets: Iterable[Set], name: str | None = None) -> FiniteUnion: ...
     def __new__(
-        cls, sets: Iterable[Set] | None = None, name: str | None = None, **kwargs
+        cls, sets: Iterable[Set | Variable], name: str | None = None
+    ) -> FiniteUnion: ...
+    def __new__(
+        cls,
+        sets: Iterable[Set | Variable] | None = None,
+        name: str | None = None,
+        **kwargs,
     ) -> FiniteUnion | Set:
         if not sets:
             return EmptySet
@@ -365,15 +431,35 @@ class FiniteUnion(Union):
 
     def __init__(
         self,
-        sets: Iterable[Set] | None = None,
+        sets: Iterable[Set | Variable] | None = None,
         name: str | None = None,
+        **kwargs,
     ):
         from pylogic.structures.sequence import FiniteSequence
 
-        Set.__init__(self, name=name or f"FiniteUnion({','.join(map(str, sets))})")  # type: ignore
-        self.sets: set[Set] = set(sets) if sets else set()
+        latex_str = kwargs.pop("latex_str", None) or r"\cup".join(
+            map(lambda x: x._latex(), sets)
+        )
+
+        Set.__init__(self, name=name or f"FiniteUnion({','.join(map(str, sets))})", latex_str=latex_str, **kwargs)  # type: ignore
+        self.sets: set[Set | Variable] = set(sets) if sets else set()
         self.set_sequence = FiniteSequence(self.name + "_sets", initial_terms=sets or [])  # type: ignore
         self.is_union = True
+
+    def __eq__(self, other: FiniteUnion) -> bool:
+        if not isinstance(other, FiniteUnion):
+            return NotImplemented
+        return self.sets == other.sets
+
+    def __hash__(self) -> int:
+        sets_ = tuple(sorted(self.sets, key=lambda x: x.name))
+        return hash(("FiniteUnion", self.name, sets_))
+
+    def __str__(self) -> str:
+        return f"FiniteUnion({self.sets})"
+
+    def __repr__(self) -> str:
+        return f"FiniteUnion({self.sets})"
 
 
 class Intersection(Set):
@@ -383,18 +469,40 @@ class Intersection(Set):
 
     def __init__(
         self,
-        sets: Sequence[Set],
+        sets: Sequence[Set | Variable],
         name: str | None = None,
+        **kwargs,
     ):
         from pylogic.proposition.quantified.forall import ForallInSet
         from pylogic.theories.natural_numbers import Naturals
         from pylogic.variable import Variable
 
+        pred0 = kwargs.pop("predicate", None)
+
         k = Variable("k")
-        pred = lambda x: ForallInSet(k, Naturals, x.is_in(sets[k]))
-        super().__init__(name=name, predicate=pred)
-        self.set_sequence: Sequence[Set] = sets
+        pred = lambda x: (
+            ForallInSet(k, Naturals, x.is_in(sets[k]))
+            if pred0 is None
+            else ForallInSet(k, Naturals, x.is_in(sets[k])).and_(pred0(x))
+        )
+        latex_str = kwargs.pop("latex_str", None) or rf"\bigcap {sets._latex()}"
+        super().__init__(name=name, predicate=pred, latex_str=latex_str, **kwargs)
+        self.set_sequence: Sequence[Set | Variable] = sets
         self.is_intersection = True
+
+    def __eq__(self, other: Intersection) -> bool:
+        if not isinstance(other, Intersection):
+            return NotImplemented
+        return self.set_sequence == other.set_sequence
+
+    def __hash__(self) -> int:
+        return hash(("Intersection", self.name, self.set_sequence))
+
+    def __str__(self) -> str:
+        return f"Intersection({self.set_sequence})"
+
+    def __repr__(self) -> str:
+        return f"Intersection({self.set_sequence!r})"
 
 
 class FiniteIntersection(Intersection):
@@ -406,10 +514,13 @@ class FiniteIntersection(Intersection):
     def __new__(cls) -> Set: ...
     @overload
     def __new__(
-        cls, sets: Iterable[Set], name: str | None = None
+        cls, sets: Iterable[Set | Variable], name: str | None = None
     ) -> FiniteIntersection: ...
     def __new__(
-        cls, sets: Iterable[Set] | None = None, name: str | None = None, **kwargs
+        cls,
+        sets: Iterable[Set | Variable] | None = None,
+        name: str | None = None,
+        **kwargs,
     ) -> FiniteIntersection | Set:
         if not sets:
             return UniversalSet
@@ -417,15 +528,35 @@ class FiniteIntersection(Intersection):
 
     def __init__(
         self,
-        sets: Iterable[Set] | None = None,
+        sets: Iterable[Set | Variable] | None = None,
         name: str | None = None,
+        **kwargs,
     ):
         from pylogic.structures.sequence import FiniteSequence
 
-        Set.__init__(self, name=name or f"FiniteIntersection({','.join(map(str, sets))})")  # type: ignore
-        self.sets: set[Set] = set(sets) if sets else set()
+        latex_str = kwargs.pop("latex_str", None) or r"\cap".join(
+            map(lambda x: x._latex(), sets)
+        )
+
+        Set.__init__(self, name=name or f"FiniteIntersection({','.join(map(str, sets))})", latex_str=latex_str, **kwargs)  # type: ignore
+        self.sets: set[Set | Variable] = set(sets) if sets else set()
         self.set_sequence = FiniteSequence(self.name + "_sets", initial_terms=sets or [])  # type: ignore
         self.is_intersection = True
+
+    def __eq__(self, other: FiniteIntersection) -> bool:
+        if not isinstance(other, FiniteIntersection):
+            return NotImplemented
+        return self.sets == other.sets
+
+    def __hash__(self) -> int:
+        sets_ = tuple(sorted(self.sets, key=lambda x: x.name))
+        return hash(("FiniteIntersection", self.name, sets_))
+
+    def __str__(self) -> str:
+        return f"FiniteIntersection({self.sets})"
+
+    def __repr__(self) -> str:
+        return f"FiniteIntersection({self.sets})"
 
 
 class CartesProduct(Set):
@@ -435,12 +566,29 @@ class CartesProduct(Set):
 
     def __init__(
         self,
-        sets: Sequence[Set],
+        sets: Sequence[Set | Variable],
         name: str | None = None,
+        **kwargs,
     ):
-        super().__init__(name=name)
-        self.set_sequence: Sequence[Set] = sets
+        latex_str = kwargs.pop("latex_str", None) or rf"\prod {sets._latex()}"
+        # pred = kwargs.pop("predicate", None)
+        super().__init__(name=name, latex_str=latex_str, **kwargs)
+        self.set_sequence: Sequence[Set | Variable] = sets
         self.is_cartes_product = True
+
+    def __eq__(self, other: CartesProduct) -> bool:
+        if not isinstance(other, CartesProduct):
+            return NotImplemented
+        return self.set_sequence == other.set_sequence
+
+    def __hash__(self) -> int:
+        return hash(("CartesProduct", self.name, self.set_sequence))
+
+    def __str__(self) -> str:
+        return f"CartesProduct({self.set_sequence})"
+
+    def __repr__(self) -> str:
+        return f"CartesProduct({self.set_sequence!r})"
 
 
 class FiniteCartesProduct(CartesProduct):
@@ -452,11 +600,13 @@ class FiniteCartesProduct(CartesProduct):
     def __new__(cls) -> Set: ...
     @overload
     def __new__(
-        cls, sets: tuple[Set] | list[Set], name: str | None = None
+        cls,
+        sets: tuple[Set | Variable, ...] | list[Set | Variable],
+        name: str | None = None,
     ) -> FiniteCartesProduct: ...
     def __new__(
         cls,
-        sets: tuple[Set] | list[Set] | None = None,
+        sets: tuple[Set | Variable, ...] | list[Set | Variable] | None = None,
         name: str | None = None,
         **kwargs,
     ) -> FiniteCartesProduct | Set:
@@ -466,16 +616,33 @@ class FiniteCartesProduct(CartesProduct):
 
     def __init__(
         self,
-        sets: tuple[Set] | list[Set] | None = None,
+        sets: tuple[Set | Variable, ...] | list[Set | Variable] | None = None,
         name: str | None = None,
+        **kwargs,
     ):
         from pylogic.structures.sequence import FiniteSequence
 
-        Set.__init__(self, name=name or f"FiniteCartesProduct({','.join(map(str, sets))})")  # type: ignore
-        self.sets: set[Set] = set(sets) if sets else set()
-        self.set_tuple: tuple[Set, ...] = tuple(sets) if sets else tuple()
+        latex_str = kwargs.pop("latex_str", None) or r"\times".join(
+            map(lambda x: x._latex(), sets)
+        )
+
+        Set.__init__(self, name=name or f"FiniteCartesProduct({','.join(map(str, sets))})", latex_str=latex_str, **kwargs)  # type: ignore
+        self.sets: set[Set | Variable] = set(sets) if sets else set()
+        self.set_tuple: tuple[Set | Variable, ...] = tuple(sets) if sets else tuple()
         self.set_sequence = FiniteSequence(self.name + "_sets", initial_terms=sets or [])  # type: ignore
         self.is_cartes_product = True
+
+    def __eq__(self, other: FiniteCartesProduct) -> bool:
+        if not isinstance(other, FiniteCartesProduct):
+            return NotImplemented
+        return self.sets == other.sets
+
+    def __hash__(self) -> int:
+        sets_ = tuple(sorted(self.sets, key=lambda x: x.name))
+        return hash(("FiniteCartesProduct", self.name, sets_))
+
+    def __str__(self) -> str:
+        return f"FiniteCartesProduct({self.sets})"
 
 
 class CartesPower(Set):
@@ -484,6 +651,7 @@ class CartesPower(Set):
     """
 
     # TODO: rules
+    # note that * is left-associative (left to right)
     """
     UniversalSet * A = UniversalSet
     EmptySet * A = EmptySet
@@ -492,14 +660,34 @@ class CartesPower(Set):
 
     def __init__(
         self,
-        base_set: Set,
+        base_set: Set | Variable,
         power: Term,
         name: str | None = None,
+        **kwargs,
     ):
-        super().__init__(name=name)
-        self.base_set: Set = base_set
+        latex_str = (
+            kwargs.pop("latex_str", None)
+            or rf"{{{base_set._latex()}}}^{{{power._latex()}}}"
+        )
+        super().__init__(name=name, latex_str=latex_str, **kwargs)
+        self.base_set: Set | Variable = base_set
         self.power: Term = power  # TODO: check that power is natural number, int, etc.
         self.is_cartes_power = True
+
+    def __eq__(self, other: CartesPower) -> bool:
+        if not isinstance(other, CartesPower):
+            return NotImplemented
+        return self.base_set == other.base_set and self.power == other.power
+
+    def __hash__(self) -> int:
+        return hash(("CartesPower", self.base_set, self.power))
+
+    def __str__(self) -> str:
+        power = self.power if isinstance(self.power, Symbol) else f"({self.power})"
+        return f"{self.base_set}^{power}"
+
+    def __repr__(self) -> str:
+        return f"CartesPower({self.base_set!r}, {self.power!r})"
 
 
 class Complement(Set):
@@ -509,41 +697,91 @@ class Complement(Set):
 
     def __init__(
         self,
-        base_set: Set,
+        base_set: Set | Variable,
         name: str | None = None,
+        **kwargs,
     ):
-        super().__init__(name=name)
-        self.base_set: Set = base_set
+        latex_str = kwargs.pop("latex_str", None) or rf"{base_set._latex()}^{{c}}"
+        super().__init__(name=name, latex_str=latex_str, **kwargs)
+        self.base_set: Set | Variable = base_set
 
 
 class Difference(Set):
-    """
-    Represents the difference of two sets A - B = A n B^c.
+    r"""
+    Represents the difference of two sets A \ B = A n B^c.
     """
 
     def __init__(
         self,
-        a: Set,
-        b: Set,
+        a: Set | Variable,
+        b: Set | Variable,
         name: str | None = None,
+        **kwargs,
     ):
-        super().__init__(name=name)
-        self.a: Set = a
-        self.b: Set = b
+        latex_str = (
+            kwargs.pop("latex_str", None) or rf"{a._latex()} \setminus {b._latex()}"
+        )
+        super().__init__(name=name, latex_str=latex_str, **kwargs)
+        self.a: Set | Variable = a
+        self.b: Set | Variable = b
+
+    def __eq__(self, other: Difference) -> bool:
+        if not isinstance(other, Difference):
+            return NotImplemented
+        return self.a == other.a and self.b == other.b
+
+    def __hash__(self) -> int:
+        return hash(("Difference", self.a, self.b))
+
+    def __str__(self) -> str:
+        return f"{self.a} \\ {self.b}"
+
+    def __repr__(self) -> str:
+        return f"Difference({self.a!r}, {self.b!r})"
 
     def to_intersection(self) -> FiniteIntersection:
         return FiniteIntersection(sets=[self.a, Complement(self.b)])
 
 
-# Integers = Set(sympy_set=sp.Integers)
-# Rationals = Set(sympy_set=sp.Rationals)
-# Reals = Set(sympy_set=sp.Reals)
-# Naturals = Set(sympy_set=sp.Naturals)
-# Naturals0 = Set(sympy_set=sp.Naturals0)
-# Graphs = Set(name="Graphs", containment_function=lambda x: x.is_graph)  # type: ignore
-# Matrices = Set(name="Matrices")
-# Vectors = Set(name="Vectors")
-# Functions = Set(name="Functions")
-# Sequences = Set(name="Sequences", containment_function=lambda x: x.is_sequence)  # type: ignore
-# Lists = Set(name="Lists", containment_function=lambda x: x.is_list) # type: ignore
-# Pairs = Set(name="Pairs", containment_function=lambda x: x.is_pair) # type: ignore
+class SeqSet(Set):
+    """
+    Represents a set containing all elements of a sequence.
+    """
+
+    def __init__(
+        self,
+        sequence: Sequence | Variable,
+        name: str | None = None,
+        **kwargs,
+    ):
+        from pylogic.proposition.quantified.exists import ExistsInSet
+        from pylogic.theories.natural_numbers import Naturals
+        from pylogic.variable import Variable
+
+        latex_str = (
+            kwargs.pop("latex_str", None) or rf"\{{ {sequence._latex()} \cdots \}}"
+        )
+        pred0 = kwargs.pop("predicate", None)
+
+        k = Variable("k")
+        pred = lambda x: (
+            ExistsInSet(k, Naturals, x.equals(sequence[k]))
+            if pred0 is None
+            else ExistsInSet(k, Naturals, x.equals(sequence[k])).and_(pred0(x))
+        )
+        super().__init__(name=name, predicate=pred, latex_str=latex_str, **kwargs)
+        self.sequence: Sequence | Variable = sequence
+
+    def __eq__(self, other: SeqSet) -> bool:
+        if not isinstance(other, SeqSet):
+            return NotImplemented
+        return self.sequence == other.sequence
+
+    def __hash__(self) -> int:
+        return hash(("SeqSet", self.sequence))
+
+    def __str__(self) -> str:
+        return f"{{{self.sequence}...}}"
+
+    def __repr__(self) -> str:
+        return f"SeqSet({self.sequence!r})"

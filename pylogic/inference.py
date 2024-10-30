@@ -14,7 +14,6 @@ rules: set[str] = {
     "apply",
     "by_cases",
     "by_containment_func",
-    "by_sympy_def",
     "by_definition",
     "by_empty",
     "by_inspection",
@@ -70,7 +69,6 @@ rules: set[str] = {
     "thus_contained_in_all",
     "thus_contained_in_at_least_one",
     "thus_forall",
-    "thus_forall_in_set",
     "thus_not_empty",
     "thus_predicate",
     "thus_there_exists",
@@ -86,6 +84,7 @@ rules: set[str] = {
     "unit_resolve",
     "weak_induction",
     "zero_abs_is_0",
+    "close_assumptions_context",
 }
 
 T = TypeVar("T", bound="Proposition")

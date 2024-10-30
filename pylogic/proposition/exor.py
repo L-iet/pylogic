@@ -25,6 +25,11 @@ class ExOr(_Junction[*Ps]):
     is true.
     """
 
+    # order of operations for propositions (0-indexed)
+    # not xor and or => <=> forall forallInSet forallSubsets exists existsInSet existsUnique
+    # existsUniqueInSet existsSubset existsUniqueSubset Proposition
+    _precedence = 1
+
     tactics: list[Tactic] = [
         {"name": "one_proven", "arguments": ["Proposition"]},
     ]

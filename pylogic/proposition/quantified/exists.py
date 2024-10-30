@@ -29,10 +29,19 @@ Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 
 class Exists(_Quantified[TProposition]):
+    # order of operations for propositions (0-indexed)
+    # not xor and or => <=> forall forallInSet forallSubsets exists existsInSet existsUnique
+    # existsUniqueInSet existsSubset existsUniqueSubset Proposition
+    _precedence = 9
+
     tactics: list[Tactic] = [
         {"name": "exists_modus_ponens", "arguments": ["Forall"]},
         {"name": "de_morgan", "arguments": []},
     ]
+
+    _q = "exists"
+    _bin_symb = None
+    _innermost_prop_attr = "inner_proposition"
 
     @classmethod
     def from_proposition(
@@ -285,6 +294,15 @@ class Exists(_Quantified[TProposition]):
 
 
 class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
+    # order of operations for propositions (0-indexed)
+    # not xor and or => <=> forall forallInSet forallSubsets exists existsInSet existsUnique
+    # existsUniqueInSet existsSubset existsUniqueSubset Proposition
+    _precedence = 10
+
+    _q = "exists"
+    _bin_symb = "in"
+    _innermost_prop_attr = "_inner_without_set"
+
     @classmethod
     def from_proposition(
         cls,
@@ -353,13 +371,6 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
 
     def __hash__(self) -> int:
         return super().__hash__()
-
-    def __repr__(self) -> str:
-        return f"exists {self.variable} in {self.set_}: {self._inner_without_set}"
-
-    def _latex(self, printer=None) -> str:
-        var_latex = self.variable._latex()
-        return rf"\exists {var_latex} \in {self.set_._latex()}: {self._inner_without_set._latex()}"
 
     def to_exists(self, **kwargs) -> Exists[And[IsContainedIn, TProposition]]:
         """
@@ -444,6 +455,15 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
 
 
 class ExistsUnique(Exists[And[TProposition, Forall[Implies[TProposition, Equals]]]]):
+    # order of operations for propositions (0-indexed)
+    # not xor and or => <=> forall forallInSet forallSubsets exists existsInSet existsUnique
+    # existsUniqueInSet existsSubset existsUniqueSubset Proposition
+    _precedence = 11
+
+    _q = "exists 1"
+    _bin_symb = None
+    _innermost_prop_attr = "_inner_without_unique"
+
     def __init__(
         self,
         variable: Variable,
@@ -479,13 +499,6 @@ class ExistsUnique(Exists[And[TProposition, Forall[Implies[TProposition, Equals]
             **kwargs,
         )
         self._inner_without_unique = inner_proposition
-
-    def __repr__(self) -> str:
-        return f"exists 1 {self.variable}: {self._inner_without_unique}"
-
-    def _latex(self, printer=None) -> str:
-        var_latex = self.variable._latex()
-        return rf"\exists ! {var_latex}: {self._inner_without_unique._latex()}"
 
     def replace(
         self,
@@ -538,6 +551,15 @@ class ExistsUnique(Exists[And[TProposition, Forall[Implies[TProposition, Equals]
 class ExistsUniqueInSet(
     ExistsInSet[And[TProposition, Forall[Implies[TProposition, Equals]]]]
 ):
+    # order of operations for propositions (0-indexed)
+    # not xor and or => <=> forall forallInSet forallSubsets exists existsInSet existsUnique
+    # existsUniqueInSet existsSubset existsUniqueSubset Proposition
+    _precedence = 12
+
+    _q = "exists 1"
+    _bin_symb = "in"
+    _innermost_prop_attr = "_inner_without_set_and_unique"
+
     def __init__(
         self,
         variable: Variable,
@@ -576,13 +598,6 @@ class ExistsUniqueInSet(
             **kwargs,
         )
         self._inner_without_set_and_unique = inner_proposition
-
-    def __repr__(self) -> str:
-        return f"exists 1 {self.variable} in {self.set_}: {self._inner_without_set_and_unique}"
-
-    def _latex(self, printer=None) -> str:
-        var_latex = self.variable._latex()
-        return rf"\exists ! {var_latex} \in {self.set_._latex()}: {self._inner_without_set_and_unique._latex()}"
 
     def replace(
         self,
@@ -650,6 +665,15 @@ class ExistsUniqueInSet(
 
 
 class ExistsSubset(Exists[And[IsSubsetOf, TProposition]]):
+    # order of operations for propositions (0-indexed)
+    # not xor and or => <=> forall forallInSet forallSubsets exists existsInSet existsUnique
+    # existsUniqueInSet existsSubset existsUniqueSubset Proposition
+    _precedence = 13
+
+    _q = "exists"
+    _bin_symb = "subset of"
+    _innermost_prop_attr = "_inner_without_set"
+
     def __init__(
         self,
         variable: Variable,
@@ -673,15 +697,6 @@ class ExistsSubset(Exists[And[IsSubsetOf, TProposition]]):
     def __hash__(self) -> int:
         return super().__hash__()
 
-    def __repr__(self) -> str:
-        return (
-            f"exists {self.variable} subset of {self.set_}: {self._inner_without_set}"
-        )
-
-    def _latex(self, printer=None) -> str:
-        var_latex = self.variable._latex()
-        return rf"\exists {var_latex} \subseteq {self.set_._latex()}: {self._inner_without_set._latex()}"
-
     to_exists = ExistsInSet.to_exists
     replace = ExistsInSet.replace
     copy = ExistsInSet.copy
@@ -691,6 +706,15 @@ class ExistsSubset(Exists[And[IsSubsetOf, TProposition]]):
 class ExistsUniqueSubset(
     ExistsSubset[And[TProposition, Forall[Implies[TProposition, Equals]]]]
 ):
+    # order of operations for propositions (0-indexed)
+    # not xor and or => <=> forall forallInSet forallSubsets exists existsInSet existsUnique
+    # existsUniqueInSet existsSubset existsUniqueSubset Proposition
+    _precedence = 14
+
+    _q = "exists 1"
+    _bin_symb = "subset of"
+    _innermost_prop_attr = "_inner_without_set_and_unique"
+
     def __init__(
         self,
         variable: Variable,
@@ -729,13 +753,6 @@ class ExistsUniqueSubset(
             **kwargs,
         )
         self._inner_without_set_and_unique = inner_proposition
-
-    def __repr__(self) -> str:
-        return f"exists 1 {self.variable} subset of {self.set_}: {self._inner_without_set_and_unique}"
-
-    def _latex(self, printer=None) -> str:
-        var_latex = self.variable._latex()
-        return rf"\exists ! {var_latex} \subseteq {self.set_._latex()}: {self._inner_without_set_and_unique._latex()}"
 
     replace = ExistsUniqueInSet.replace
     copy = ExistsUniqueInSet.copy

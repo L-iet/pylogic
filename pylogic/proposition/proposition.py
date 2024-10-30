@@ -73,6 +73,11 @@ class Proposition:
         The assumptions that were used to deduce this proposition. Excludes self.
     """
 
+    # order of operations for propositions (0-indexed)
+    # not xor and or => <=> forall forallInSet forallSubsets exists existsInSet existsUnique
+    # existsUniqueInSet existsSubset existsUniqueSubset Proposition
+    _precedence = 15
+
     tactics: list[Tactic] = [
         {"name": "p_substitute", "arguments": ["Side", "Equality"]},
         {"name": "p_and", "arguments": []},
@@ -187,14 +192,25 @@ class Proposition:
         pass
 
     def _set_is_proven(self, value: bool) -> None:
+        from pylogic.assumptions_context import assumptions_contexts
+
         self._is_proven = value
         if value:
             self._set_is_inferred_true()
+        context = assumptions_contexts[-1]
+        if context is not None and value:
+            context._proven.append(self)
 
     def _set_is_assumption(self, value: bool) -> None:
+        from pylogic.assumptions_context import assumptions_contexts
+
         self.is_assumption = value
         if value:
             self._set_is_inferred_true()
+
+        context = assumptions_contexts[-1]
+        if context is not None and value:
+            context.assumptions.append(self)
 
     def _set_is_axiom(self, value: bool) -> None:
         self.is_axiom = value
@@ -238,7 +254,14 @@ class Proposition:
     def __repr__(self) -> str:
         if self.args:
             args_str = tuple(str_print_order(a) for a in self.args)
-            return f"{self.name} ({', '.join(args_str)})"
+            return f"Proposition({self.name}, {', '.join(args_str)})"
+        else:
+            return f"Proposition({self.name})"
+
+    def __str__(self) -> str:
+        if self.args:
+            args_str = tuple(str_print_order(a) for a in self.args)
+            return f"{self.name}({', '.join(args_str)})"
         else:
             return self.name
 
@@ -249,7 +272,9 @@ class Proposition:
         from pylogic.helpers import latex
 
         args_latex = [latex(a) for a in self.args]
-        return rf"\text{{{self.name}}} \left({', '.join(args_latex)}\right)"
+        if not args_latex:
+            return rf"\text{{{self.name}}}"
+        return rf"\text{{{self.name}}}\left({', '.join(args_latex)}\right)"
 
     def _repr_latex_(self) -> str:
         return f"$${self._latex()}$$"
@@ -944,7 +969,7 @@ and is a dependency of {expression_to_replace}"
                 assert (
                     isinstance(expression_to_replace_is_in_set, IsContainedIn)
                     and expression_to_replace_is_in_set.left == expression_to_replace
-                    and expression_to_replace_is_in_set.set_ == set_
+                    and expression_to_replace_is_in_set.right == set_
                 ), f"{expression_to_replace_is_in_set} is not a proof that {expression_to_replace} is in {set_}"
         new_p = exists_cls.from_proposition(
             existential_var_name=existential_var,
@@ -1003,7 +1028,7 @@ and is a dependency of {expression_to_replace}"
             ), f"{variable_or_containment} is not an assumption"
             variable = variable_or_containment.left
             assert isinstance(variable, Variable), f"{variable} is not a variable"
-            set_ = variable_or_containment.set_
+            set_ = variable_or_containment.right
             cls = ForallInSet
             variable_or_containment._set_is_assumption(False)
         else:

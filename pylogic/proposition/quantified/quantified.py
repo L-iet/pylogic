@@ -53,8 +53,52 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
         self.sets = inner_proposition.sets.copy()
         self.class_ns = inner_proposition.class_ns.copy()
 
+    def __str__(self) -> str:
+        from pylogic.proposition.not_ import Not
+
+        mid_part = str(self.variable)
+        if self._bin_symb is not None:
+            mid_part += f" {self._bin_symb} {self.set_}"
+
+        innermost_prop = getattr(self, self._innermost_prop_attr)
+        # only wrap the innermost proposition in parentheses if it is not atomic
+        # and not a quantified proposition
+        inner_part = (
+            f"({innermost_prop})"
+            if (not innermost_prop.is_atomic)
+            and (not isinstance(innermost_prop, (_Quantified, Not)))
+            else str(innermost_prop)
+        )
+        return f"{self._q} {mid_part}: {inner_part}"
+
+    def _latex(self, printer=None) -> str:
+        from pylogic.proposition.not_ import Not
+
+        mid_part = self.variable._latex()
+        bin_symb_to_latex = {"subset of": r"\subseteq", "in": r"\in"}
+        quant_symb_to_latex = {
+            "forall": r"\forall",
+            "exists": r"\exists",
+            "exists 1": r"\exists !",
+        }
+        if self._bin_symb is not None:
+            mid_part += f" {bin_symb_to_latex[self._bin_symb]} {self.set_._latex()}"
+
+        innermost_prop = getattr(self, self._innermost_prop_attr)
+        # only wrap the innermost proposition in parentheses if it is not atomic
+        # and not a quantified proposition
+        inner_part = (
+            rf"\left({innermost_prop._latex()}\right)"
+            if (not innermost_prop.is_atomic)
+            and (not isinstance(innermost_prop, (_Quantified, Not)))
+            else innermost_prop._latex()
+        )
+        return rf"\{quant_symb_to_latex[self._q]} {mid_part}: {inner_part}"
+
     def __repr__(self) -> str:
-        return f"{self._q} {self.variable}: {self.inner_proposition}"
+        if self._bin_symb is not None:
+            return f"{self.__class__.__name__}({self.variable!r}, {self.set_!r}, {getattr(self, self._innermost_prop_attr)!r})"
+        return f"{self.__class__.__name__}({self.variable!r}, {getattr(self, self._innermost_prop_attr)!r})"
 
     def __hash__(self) -> int:
         return hash((self._q, self.variable, self.inner_proposition))
@@ -148,11 +192,6 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
             ),
         )
         return new_p
-
-    def _latex(self, printer=None) -> str:
-        q_arg = self.variable
-        arg_latex = q_arg._latex()
-        return rf"\{self._q} {arg_latex}: {self.inner_proposition._latex()}"
 
     def unify(self, other: Self) -> Unification | Literal[True] | None:
         if self.__class__ != other.__class__:

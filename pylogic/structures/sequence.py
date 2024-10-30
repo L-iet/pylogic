@@ -12,7 +12,8 @@ if TYPE_CHECKING:
     from pylogic.expressions.sequence_term import SequenceTerm
     from pylogic.proposition.proposition import Proposition
     from pylogic.proposition.relation.contains import IsContainedIn
-    from pylogic.structures.set_ import Set
+    from pylogic.proposition.relation.equals import Equals
+    from pylogic.structures.set_ import SeqSet, Set
     from pylogic.variable import Variable
 
     T = TypeVar("T", bound=Term)
@@ -31,7 +32,11 @@ class Sequence(Generic[T]):
         A function that receives a natural number and returns a proposition.
         sequence.predicate() actually receives a natural number n and returns a proposition
         about the corresponding sequence term.
-        So for all n, predicate(n) should be True.
+        So `forall n, predicate(n)` is True.
+
+        Note that if a term `x` is the nth term of the sequence, then `predicate(n)`
+        is True, but if some predicate is True for `x`, it doesn't necessarily mean that
+        `x` is in the sequence.
     """
 
     def __init__(
@@ -83,11 +88,34 @@ class Sequence(Generic[T]):
 
         return SequenceTerm(self, index)
 
+    def equals(self, other: Term, **kwargs) -> Equals:
+        from pylogic.proposition.relation.equals import Equals
+
+        return Equals(self, other, **kwargs)
+
     def is_in(self, set_: Set | Variable) -> IsContainedIn:
         """
         Return the proposition `self in set_`.
         """
         return set_.contains(self)
+
+    def contains(
+        self, other: Term, is_assumption: bool = False, **kwargs
+    ) -> IsContainedIn[Term, SeqSet]:
+        """elementhood"""
+        from pylogic.proposition.relation.contains import IsContainedIn
+        from pylogic.structures.set_ import SeqSet
+
+        return IsContainedIn(other, SeqSet(self), is_assumption=is_assumption, **kwargs)
+
+    def evaluate(self) -> Self:
+        return self
+
+    def to_sympy(self):
+        raise NotImplementedError
+
+    def _latex(self, printer=None) -> str:
+        return self.name
 
     def define_predicate(
         self,

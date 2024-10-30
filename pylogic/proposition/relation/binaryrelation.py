@@ -46,7 +46,10 @@ class BinaryRelation(Relation, Generic[T, U]):
         self.right: U = self.args[1]
 
     def __repr__(self) -> str:
-        return f"{str_print_order(self.left)} {self.infix_symbol} {str_print_order(self.right)}"
+        return f"{self.__class__.__name__}({self.left}, {self.right})"
+
+    def __str__(self) -> str:
+        return f"{self.left} {self.infix_symbol} {self.right}"
 
     def _latex(self, printer=None) -> str:
         from pylogic.helpers import latex

@@ -15,6 +15,11 @@ Props = tuple[Proposition, ...]
 
 
 class Or(_Junction[*Ps]):
+    # order of operations for propositions (0-indexed)
+    # not xor and or => <=> forall forallInSet forallSubsets exists existsInSet existsUnique
+    # existsUniqueInSet existsSubset existsUniqueSubset Proposition
+    _precedence = 3
+
     tactics: list[Tactic] = [
         {"name": "unit_resolve", "arguments": ["Proposition"]},
         {"name": "one_proven", "arguments": ["Proposition"]},

@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.proposition import Proposition
     from pylogic.proposition.relation.equals import Equals
     from pylogic.structures.collection import Class
+    from pylogic.structures.sequence import Sequence
     from pylogic.structures.set_ import Set
     from pylogic.variable import Variable
 
@@ -61,10 +62,6 @@ class IsContainedIn(BinaryRelation[T, U]):
             or kwargs.get("is_axiom")
         ):
             self._set_is_inferred_true()
-
-    @property
-    def set_(self) -> U:
-        return self.right
 
     @property
     def element(self) -> T:
@@ -115,7 +112,7 @@ class IsContainedIn(BinaryRelation[T, U]):
             if self.right.containment_function(self.left):
                 return IsContainedIn(
                     self.element,
-                    self.set_,
+                    self.right,
                     _is_proven=True,
                     _assumptions=set(),
                     _inference=Inference(self, rule="by_containment_func"),
@@ -131,6 +128,10 @@ class IsContainedIn(BinaryRelation[T, U]):
         """Logical tactic. Use the set's predicate function to prove that it
         contains the element
         """
+        # For sequence s = self.right, self.left would need to be a natural number n
+        # representing the index of the sequence term.
+        # However, (n in s).by_predicate(...) would then be nonsensical.
+        assert self.right.is_set, f"{self.right} is not a set"
         try:
             if (
                 proven_predicate.is_proven
@@ -138,7 +139,7 @@ class IsContainedIn(BinaryRelation[T, U]):
             ):
                 return IsContainedIn(
                     self.element,
-                    self.set_,
+                    self.right,
                     _is_proven=True,
                     _assumptions=set(),
                     _inference=Inference(self, rule="by_predicate"),
@@ -150,29 +151,6 @@ class IsContainedIn(BinaryRelation[T, U]):
         else:
             raise ValueError(f"Cannot prove that {self.right} contains {self.left}")
 
-    def by_sympy_def(self) -> Self:
-        """Logical tactic. Use sympy's definition of the set to prove that
-        it contains the element.
-        """
-        try:
-            if self.left in self.right.elements or (
-                hasattr(self.right, "sympy_set")  # in case self.right is a Class{n}
-                and to_sympy(self.left) in self.right.sympy_set  # type: ignore
-            ):
-                return IsContainedIn(
-                    self.element,
-                    self.set_,
-                    is_assumption=self.is_assumption,
-                    _is_proven=True,
-                    _assumptions=set(),
-                    _inference=Inference(self, rule="by_sympy_def"),
-                )  # type: ignore
-        except (TypeError, NotImplementedError) as e:
-            raise ValueError(
-                f"Cannot prove that {self.right} contains {self.left}\nThis was a result of\n{e}"
-            )
-        raise ValueError(f"Cannot prove that {self.right} contains {self.left}")
-
     def by_inspection(self) -> Self:
         """Logical tactic. Use the set's containment function and sympy set to
         prove that it contains the element.
@@ -181,16 +159,14 @@ class IsContainedIn(BinaryRelation[T, U]):
 
         if self in self.left.knowledge_base:
             return getkey(self.left.knowledge_base, self)  # type: ignore
-        try:
-            return self.by_containment_func()
-        except ValueError:
-            return self.by_sympy_def()
+        return self.by_containment_func()
 
     def thus_predicate(self) -> Proposition:
         """Logical tactic. Given that the set contains the element, return
         the predicate that the element satisfies.
         """
         assert self.is_proven, f"{self} is not proven"
+        assert self.right.is_set, f"{self.right} is not a set"  # see by_predicate
         from pylogic.proposition.proposition import get_assumptions
 
         res = self.right.predicate(self.left)
@@ -209,14 +185,14 @@ class IsContainedIn(BinaryRelation[T, U]):
         from pylogic.proposition.relation.equals import Equals
         from pylogic.structures.set_ import EmptySet
 
-        self.set_.is_empty = False
+        self.right.is_empty = False
         res = Not(
-            Equals(self.set_, EmptySet),
+            Equals(self.right, EmptySet),
             _is_proven=True,
             _inference=Inference(self, rule="thus_not_empty"),
             _assumptions=get_assumptions(self),
         )
-        self.set_.knowledge_base.add(res)
+        self.right.knowledge_base.add(res)
         return res
 
     def thus_contained_in_at_least_one(self) -> Or[IsContainedIn, ...]:

@@ -71,7 +71,7 @@ class Symbol:
         return f"{self.__class__.__name__}({self.name}, deps={self.depends_on})"
 
     def __str__(self):
-        from pylogic.enviroment_settings.set_view_symbol_deps import VIEW_VARIABLE_DEPS
+        from pylogic.enviroment_settings.settings import VIEW_VARIABLE_DEPS
 
         if len(self.independent_dependencies) > 0 and VIEW_VARIABLE_DEPS:
             return f"{self.name}({', '.join(str(d) for d in self.independent_dependencies)})"

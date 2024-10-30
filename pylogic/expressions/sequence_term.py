@@ -4,19 +4,20 @@ from typing import TYPE_CHECKING, Generic, Self, TypeVar
 
 from pylogic import Term
 from pylogic.expressions.expr import Expr
-from pylogic.structures.sequence import Sequence
 
 if TYPE_CHECKING:
     from pylogic.proposition.relation.contains import IsContainedIn
+    from pylogic.structures.sequence import Sequence
     from pylogic.sympy_helpers import PylSympySymbol
+    from pylogic.variable import Variable
 
 T = TypeVar("T", bound=Term)
 
 
 class SequenceTerm(Expr, Generic[T]):
-    def __init__(self, sequence: Sequence[T], index: Term) -> None:
+    def __init__(self, sequence: Sequence[T] | Variable, index: Term) -> None:
         super().__init__(sequence, index)
-        self.sequence: Sequence[T] = sequence
+        self.sequence: Sequence[T] | Variable = sequence
         self.index = self.args[1]
 
         # for sequence of sets.
@@ -48,6 +49,10 @@ class SequenceTerm(Expr, Generic[T]):
         return IsContainedIn(term, self, **kwargs)
 
     def evaluate(self) -> SequenceTerm | T:
+        from pylogic.variable import Variable
+
+        if isinstance(self.sequence, Variable):
+            return self
         from pylogic.constant import Constant
 
         indx = self.index.evaluate()

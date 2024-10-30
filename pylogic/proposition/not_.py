@@ -61,6 +61,11 @@ def are_negs(p: Proposition, q: Proposition) -> bool:
 
 
 class Not(Proposition, Generic[TProposition]):
+    # order of operations for propositions (0-indexed)
+    # not xor and or => <=> forall forallInSet forallSubsets exists existsInSet existsUnique
+    # existsUniqueInSet existsSubset existsUniqueSubset Proposition
+    _precedence = 0
+
     tactics: list[Tactic] = [
         {"name": "modus_tollens", "arguments": ["Implies"]},
         {"name": "de_morgan", "arguments": []},
@@ -82,6 +87,35 @@ class Not(Proposition, Generic[TProposition]):
         self.constants = negated.constants.copy()
         self.sets = negated.sets.copy()
         self.class_ns = negated.class_ns.copy()
+
+    def __str__(self) -> str:
+        from pylogic.proposition.quantified.quantified import _Quantified
+
+        # only wrap the innermost proposition in parentheses if it is not atomic
+        # and not a quantified proposition
+        inner_part = (
+            f"({self.negated})"
+            if (not self.negated.is_atomic)
+            and (not isinstance(self.negated, (_Quantified, Not)))
+            else str(self.negated)
+        )
+        return f"~{inner_part}"
+
+    def _latex(self, printer=None) -> str:
+        from pylogic.proposition.quantified.quantified import _Quantified
+
+        # only wrap the innermost proposition in parentheses if it is not atomic
+        # and not a quantified proposition
+        inner_part = (
+            rf"\left({self.negated._latex()}\right)"
+            if (not self.negated.is_atomic)
+            and (not isinstance(self.negated, (_Quantified, Not)))
+            else self.negated._latex()
+        )
+        return rf"\neg {inner_part}"
+
+    def __repr__(self) -> str:
+        return f"Not({self.negated!r})"
 
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, Not):

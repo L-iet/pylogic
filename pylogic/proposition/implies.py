@@ -21,6 +21,11 @@ Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
 
 
 class Implies(Proposition, Generic[TProposition, UProposition]):
+    # order of operations for propositions (0-indexed)
+    # not xor and or => <=> forall forallInSet forallSubsets exists existsInSet existsUnique
+    # existsUniqueInSet existsSubset existsUniqueSubset Proposition
+    _precedence = 4
+
     tactics: list[Tactic] = [
         {"name": "hypothetical_syllogism", "arguments": ["Implies"]},
         {"name": "impl_elim", "arguments": []},
@@ -59,14 +64,27 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
     def __hash__(self) -> int:
         return hash(("impl", self.antecedent, self.consequent))
 
+    def __str__(self) -> str:
+        wrap = lambda p: (
+            f"({p})"
+            if not p.is_atomic and p.__class__._precedence > self.__class__._precedence
+            else str(p)
+        )
+        return f"{wrap(self.antecedent)} -> {wrap(self.consequent)}"
+
     def __repr__(self) -> str:
-        return f"[{self.antecedent} -> {self.consequent}]"
+        return f"Implies({self.antecedent!r}, {self.consequent!r})"
 
     def __call__(self, *props: Proposition):
         return self.definite_clause_resolve(props)
 
     def _latex(self, printer=None) -> str:
-        return rf"\left({self.antecedent._latex()} \rightarrow {self.consequent._latex()}\right)"
+        wrap = lambda p: (
+            rf"\left({p}\right)"
+            if not p.is_atomic and p.__class__._precedence > self.__class__._precedence
+            else p._latex()
+        )
+        return rf"{wrap(self.antecedent)} \rightarrow {wrap(self.consequent)}"
 
     def copy(self) -> Self:
         return self.__class__(

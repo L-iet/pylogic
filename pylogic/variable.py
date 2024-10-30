@@ -6,6 +6,8 @@ from pylogic import Term
 from pylogic.symbol import Symbol
 
 if TYPE_CHECKING:
+    from pylogic.expressions.sequence_term import SequenceTerm
+    from pylogic.proposition.quantified.exists import Exists
     from pylogic.proposition.relation.contains import IsContainedIn
 
 
@@ -27,6 +29,11 @@ class Variable(Symbol):
         self.is_intersection: bool | None = None
         self.is_union: bool | None = None
 
+        from pylogic.assumptions_context import assumptions_contexts
+
+        if assumptions_contexts[-1] is not None and len(self.depends_on) == 0:
+            assumptions_contexts[-1].assumptions.append(self)
+
     def __contains__(self, item: Any) -> bool:
         """
         For variable sets.
@@ -46,6 +53,29 @@ class Variable(Symbol):
         For variable sets.
         """
         return IsContainedIn(x, self, **kwargs)
+
+    def countable(self, is_assumption: bool = False, **kwargs) -> Exists:
+        # for variable sets
+        # TODO: make this  ExissInSet where set is the class of
+        # all sequences
+        from pylogic.proposition.quantified.exists import Exists
+        from pylogic.structures.set_ import SeqSet
+        from pylogic.variable import Variable
+
+        s = Variable("s", sequence=True)
+        return Exists(
+            s,
+            self.equals(SeqSet(s)),
+            description=f"{self} is countable",
+            is_assumption=is_assumption,
+            **kwargs,
+        )
+
+    def __getitem__(self, index: Term) -> SequenceTerm:
+        # for variable sequences
+        from pylogic.expressions.sequence_term import SequenceTerm
+
+        return SequenceTerm(self, index)
 
     def unbind(self) -> None:
         self.is_bound = False

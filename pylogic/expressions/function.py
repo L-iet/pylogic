@@ -139,7 +139,7 @@ class Function(Expr):
             for p in parameters:
                 for prop in p.knowledge_base:
                     if isinstance(prop, IsContainedIn):
-                        individual_sets.append(prop.set_)
+                        individual_sets.append(prop.right)
                         break
                 else:
                     # we could not find a set for this parameter

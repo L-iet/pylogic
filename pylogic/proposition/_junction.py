@@ -187,7 +187,7 @@ class _Junction(Proposition, Generic[*Ps], ABC):
         )
         return new_p
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         if self._join_symbol == "or":
             join_symbol = r" \/ "
         elif self._join_symbol == "and":
@@ -196,8 +196,16 @@ class _Junction(Proposition, Generic[*Ps], ABC):
             join_symbol = " xor "
         else:
             join_symbol = self._join_symbol
-        s = join_symbol.join([repr(p) for p in self.propositions])
-        return f"({s})"
+        wrap = lambda p: (
+            f"({p})"
+            if not p.is_atomic and p.__class__._precedence > self.__class__._precedence
+            else str(p)
+        )
+        s = join_symbol.join([wrap(p) for p in self.propositions])
+        return s
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({', '.join(map(repr, self.propositions))})"
 
     def _latex(self, printer=None) -> str:
         if self._join_symbol == "or":
@@ -208,8 +216,13 @@ class _Junction(Proposition, Generic[*Ps], ABC):
             join_symbol = r"\oplus "
         else:
             join_symbol = rf"{self._join_symbol} \ "
+        wrap = lambda p: (
+            rf"\left({p._latex()}\right)"
+            if not p.is_atomic and p.__class__._precedence > self.__class__._precedence
+            else p._latex()
+        )
         s = join_symbol.join([p._latex() for p in self.propositions])  # type: ignore
-        return rf"\left({s}\right)"
+        return s
 
     def unify(self, other: Self) -> Unification | Literal[True] | None:
         if not isinstance(other, self.__class__):
