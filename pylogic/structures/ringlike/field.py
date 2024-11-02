@@ -42,8 +42,22 @@ class Field(DivisionRIng[Z]):
         times_operation: Callable[[T, T], E] | None = None,
         times_operation_symbol: str | None = None,
         one: Z | Unevaluated | None = None,
+        **kwargs,
     ):
-        super().__init__(
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "zero": zero,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+            "one": one,
+        }
+        self._init_kwargs.update(kwargs)
+        DivisionRIng.__init__(
+            self,
             name=name,
             elements=elements,
             containment_function=containment_function,
@@ -53,6 +67,7 @@ class Field(DivisionRIng[Z]):
             times_operation=times_operation,
             times_operation_symbol=times_operation_symbol,
             one=one,
+            **kwargs,
         )
         self.abelian_group_times = AbelianGroup(
             name=name,
@@ -66,14 +81,3 @@ class Field(DivisionRIng[Z]):
         self.times_is_commutative = self._replace_instance_set(
             self.abelian_group_times, "op_is_commutative"
         )
-        self._init_args = (name,)
-        self._init_kwargs = {
-            "elements": elements,
-            "containment_function": containment_function,
-            "plus_operation": plus_operation,
-            "plus_operation_symbol": plus_operation_symbol,
-            "zero": zero,
-            "times_operation": times_operation,
-            "times_operation_symbol": times_operation_symbol,
-            "one": one,
-        }

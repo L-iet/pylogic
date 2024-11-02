@@ -84,8 +84,10 @@ class Group(Monoid):
         operation_name: str | None = None,
         operation_symbol: str | None = None,
         identity: T | None = None,
+        **kwargs,
     ):
-        super().__init__(
+        Monoid.__init__(
+            self,
             name=name,
             elements=elements,
             containment_function=containment_function,
@@ -93,7 +95,19 @@ class Group(Monoid):
             operation_name=operation_name,
             operation_symbol=operation_symbol,
             identity=identity,
+            **kwargs,
         )
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "operation": operation,
+            "operation_name": operation_name,
+            "operation_symbol": operation_symbol,
+            "identity": identity,
+        }
+        self._init_kwargs.update(kwargs)
+
         a = Variable("a")
         self.latin_square = Group.property_latin_square(self, self.operation)
         self.latin_square._set_is_axiom(True)
@@ -178,20 +192,10 @@ class Group(Monoid):
 
         self.have_inverses = (
             cx_inv_property.p_and(cx_unique_property)
-            .thus_there_exists("a_inv", cx, latex_name="a_{inv}")
+            .thus_there_exists("a_inv", cx, latex_name=r"a_{\text{inv}}")
             .to_exists_unique_in_set()
             .thus_forall(a_in_self)
         )  # type: ignore
-
-        self._init_args = (name,)
-        self._init_kwargs = {
-            "elements": elements,
-            "containment_function": containment_function,
-            "operation": operation,
-            "operation_name": operation_name,
-            "operation_symbol": operation_symbol,
-            "identity": identity,
-        }
 
 
 class AbelianGroup(Group):

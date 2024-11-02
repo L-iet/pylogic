@@ -46,8 +46,22 @@ class SemirIng(Semirng[Z]):
         times_operation: Callable[[T, T], E] | None = None,
         times_operation_symbol: str | None = None,
         one: Z | Unevaluated | None = None,
+        **kwargs,
     ):
-        super().__init__(
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "zero": zero,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+            "one": one,
+        }
+        self._init_kwargs.update(kwargs)
+        Semirng.__init__(
+            self,
             name=name,
             elements=elements,
             containment_function=containment_function,
@@ -56,6 +70,7 @@ class SemirIng(Semirng[Z]):
             zero=zero,
             times_operation=times_operation,
             times_operation_symbol=times_operation_symbol,
+            **kwargs,
         )
         if is_python_numeric(one):
             self.one: Constant[Z] = Constant(one)  # type: ignore
@@ -74,14 +89,3 @@ class SemirIng(Semirng[Z]):
         self.times_has_identity = self._replace_instance_set(
             self.monoid_times, "has_identity"
         )
-        self._init_args = (name,)
-        self._init_kwargs = {
-            "elements": elements,
-            "containment_function": containment_function,
-            "plus_operation": plus_operation,
-            "plus_operation_symbol": plus_operation_symbol,
-            "zero": zero,
-            "times_operation": times_operation,
-            "times_operation_symbol": times_operation_symbol,
-            "one": one,
-        }

@@ -52,8 +52,19 @@ class Semigroup(Magma):
         operation: Callable[[T, T], E] | None = None,
         operation_name: str | None = None,
         operation_symbol: str | None = None,
+        **kwargs,
     ):
-        super().__init__(
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "operation": operation,
+            "operation_name": operation_name,
+            "operation_symbol": operation_symbol,
+        }
+        self._init_kwargs.update(kwargs)
+        Magma.__init__(
+            self,
             name=name,
             elements=elements,
             containment_function=containment_function,
@@ -65,11 +76,3 @@ class Semigroup(Magma):
             self, self.operation
         )
         self.op_is_associative._set_is_axiom(True)
-        self._init_args = (name,)
-        self._init_kwargs = {
-            "elements": elements,
-            "containment_function": containment_function,
-            "operation": operation,
-            "operation_name": operation_name,
-            "operation_symbol": operation_symbol,
-        }

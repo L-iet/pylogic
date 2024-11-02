@@ -66,21 +66,8 @@ class Ringoid(LeftRingoid, RightRingoid):
         plus_operation_symbol: str | None = None,
         times_operation: Callable[[T, T], E] | None = None,
         times_operation_symbol: str | None = None,
+        **kwargs,
     ):
-        # LeftRingoid.__init__
-        super().__init__(
-            name=name,
-            elements=elements,
-            containment_function=containment_function,
-            plus_operation=plus_operation,
-            plus_operation_symbol=plus_operation_symbol,
-            times_operation=times_operation,
-            times_operation_symbol=times_operation_symbol,
-        )
-        self.times_dist_over_plus = And(
-            self.times_left_dist_over_plus,
-            self.times_right_dist_over_plus,
-        ).all_proven()
         self._init_args = (name,)
         self._init_kwargs = {
             "elements": elements,
@@ -90,3 +77,19 @@ class Ringoid(LeftRingoid, RightRingoid):
             "times_operation": times_operation,
             "times_operation_symbol": times_operation_symbol,
         }
+        self._init_kwargs.update(kwargs)
+        # LeftRingoid.__init__
+        super().__init__(
+            name=name,
+            elements=elements,
+            containment_function=containment_function,
+            plus_operation=plus_operation,
+            plus_operation_symbol=plus_operation_symbol,
+            times_operation=times_operation,
+            times_operation_symbol=times_operation_symbol,
+            **kwargs,
+        )
+        self.times_dist_over_plus = And(
+            self.times_left_dist_over_plus,
+            self.times_right_dist_over_plus,
+        ).all_proven()

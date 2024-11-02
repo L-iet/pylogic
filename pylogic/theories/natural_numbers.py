@@ -479,4 +479,5 @@ Naturals = NaturalsSemiring(
     one=one,
     total_order=LessOrEqual,
     strict_total_order=LessThan,
+    latex_name="\\mathbb{N}",
 )

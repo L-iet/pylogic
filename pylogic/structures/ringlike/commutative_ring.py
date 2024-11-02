@@ -40,22 +40,8 @@ class CommutativeRIng(RIng[Z]):
         times_operation: Callable[[T, T], E] | None = None,
         times_operation_symbol: str | None = None,
         one: Z | Unevaluated | None = None,
+        **kwargs,
     ):
-        super().__init__(
-            name=name,
-            elements=elements,
-            containment_function=containment_function,
-            plus_operation=plus_operation,
-            plus_operation_symbol=plus_operation_symbol,
-            zero=zero,
-            times_operation=times_operation,
-            times_operation_symbol=times_operation_symbol,
-            one=one,
-        )
-        self.times_is_commutative = CommutativeRIng.property_times_is_commutative(
-            self, self.times_operation
-        )
-        self.times_is_commutative._set_is_axiom(True)
         self._init_args = (name,)
         self._init_kwargs = {
             "elements": elements,
@@ -67,3 +53,21 @@ class CommutativeRIng(RIng[Z]):
             "times_operation_symbol": times_operation_symbol,
             "one": one,
         }
+        self._init_kwargs.update(kwargs)
+        RIng.__init__(
+            self,
+            name=name,
+            elements=elements,
+            containment_function=containment_function,
+            plus_operation=plus_operation,
+            plus_operation_symbol=plus_operation_symbol,
+            zero=zero,
+            times_operation=times_operation,
+            times_operation_symbol=times_operation_symbol,
+            one=one,
+            **kwargs,
+        )
+        self.times_is_commutative = CommutativeRIng.property_times_is_commutative(
+            self, self.times_operation
+        )
+        self.times_is_commutative._set_is_axiom(True)

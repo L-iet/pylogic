@@ -82,18 +82,8 @@ and y in {set_.name} such that a {operation.symbol} x = b and y {operation.symbo
         operation: Callable[[T, T], E] | None = None,
         operation_name: str | None = None,
         operation_symbol: str | None = None,
+        **kwargs,
     ):
-        super().__init__(
-            name=name,
-            elements=elements,
-            containment_function=containment_function,
-            operation=operation,
-            operation_name=operation_name,
-            operation_symbol=operation_symbol,
-        )
-
-        self.latin_square = Quasigroup.property_latin_square(self, self.operation)
-        self.latin_square._set_is_axiom(True)
         self._init_args = (name,)
         self._init_kwargs = {
             "elements": elements,
@@ -102,3 +92,18 @@ and y in {set_.name} such that a {operation.symbol} x = b and y {operation.symbo
             "operation_name": operation_name,
             "operation_symbol": operation_symbol,
         }
+        self._init_kwargs.update(kwargs)
+
+        Magma.__init__(
+            self,
+            name=name,
+            elements=elements,
+            containment_function=containment_function,
+            operation=operation,
+            operation_name=operation_name,
+            operation_symbol=operation_symbol,
+            **kwargs,
+        )
+
+        self.latin_square = Quasigroup.property_latin_square(self, self.operation)
+        self.latin_square._set_is_axiom(True)

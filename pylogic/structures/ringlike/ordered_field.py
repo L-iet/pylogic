@@ -114,9 +114,8 @@ class OrderedField(Field[Z], OrderedSet):
         one: Z | Unevaluated | None = None,
         total_order: TotalOrderOp | None = None,
         strict_total_order: StrictTotalOrderOp | None = None,
+        **kwargs,
     ):
-        # TODO: add **kwargs for arguments like illegal_occur_check
-
         # explicitly call __init__ of both superclasses due to mro
         Field.__init__(
             self,
@@ -129,6 +128,7 @@ class OrderedField(Field[Z], OrderedSet):
             times_operation=times_operation,
             times_operation_symbol=times_operation_symbol,
             one=one,
+            **kwargs,
         )
         OrderedSet.__init__(
             self,
@@ -137,6 +137,7 @@ class OrderedField(Field[Z], OrderedSet):
             containment_function=containment_function,  # type: ignore
             total_order=total_order,
             strict_total_order=strict_total_order,
+            **kwargs,
         )
 
         self.add_to_both_sides_of_inequality = (

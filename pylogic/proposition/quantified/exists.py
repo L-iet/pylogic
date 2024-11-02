@@ -114,7 +114,9 @@ class Exists(_Quantified[TProposition]):
     def __iter__(self):
         return iter(self.extract())
 
-    def extract(self) -> tuple[Symbol, TProposition]:
+    def extract(
+        self, symbol_name: str | None = None, symbol_latex_name: str | None = None
+    ) -> tuple[Symbol, TProposition]:
         """Logical tactic.
         If self is proven, return a constant and a proven inner proposition.
         """
@@ -133,7 +135,8 @@ class Exists(_Quantified[TProposition]):
         else:
             cls = Variable
         c = cls(
-            self.variable.name,
+            symbol_name or self.variable.name,
+            latex_name=symbol_latex_name or self.variable.latex_name,
             depends_on=other_free_vars,
             _from_existential_instance=True,
         )

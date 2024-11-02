@@ -67,7 +67,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
     def __str__(self) -> str:
         wrap = lambda p: (
             f"({p})"
-            if not p.is_atomic and p.__class__._precedence > self.__class__._precedence
+            if not p.is_atomic and p.__class__._precedence >= self.__class__._precedence
             else str(p)
         )
         return f"{wrap(self.antecedent)} -> {wrap(self.consequent)}"
@@ -81,7 +81,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
     def _latex(self, printer=None) -> str:
         wrap = lambda p: (
             rf"\left({p}\right)"
-            if not p.is_atomic and p.__class__._precedence > self.__class__._precedence
+            if not p.is_atomic and p.__class__._precedence >= self.__class__._precedence
             else p._latex()
         )
         return rf"{wrap(self.antecedent)} \rightarrow {wrap(self.consequent)}"

@@ -1,11 +1,6 @@
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Generic,
-    TypeVar,
-    TypeVarTuple,
-)
+from typing import TYPE_CHECKING, Generic, TypeVar, TypeVarTuple
 
 import sympy as sp
 
@@ -25,6 +20,11 @@ T = TypeVar("T", bound=Term)
 
 
 class PiecewiseExpr(Expr, Generic[*Ps]):
+    # order of operations for expressions (0-indexed)
+    # Function MinElement Abs SequenceTerm Pow Prod Mul Sum Add Binary_Expr
+    # Custom_Expr Piecewise Relation(eg <, subset)
+    _precedence = 11
+
     def __init__(
         self, *branches: *Ps, otherwise: Expr | None = None, name: str | None = None
     ) -> None:

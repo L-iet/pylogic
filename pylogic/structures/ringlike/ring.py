@@ -56,7 +56,20 @@ class RIng(SemirIng[Z]):
         times_operation: Callable[[T, T], E] | None = None,
         times_operation_symbol: str | None = None,
         one: Z | Unevaluated | None = None,
+        **kwargs,
     ):
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "zero": zero,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+            "one": one,
+        }
+        self._init_kwargs.update(kwargs)
         super().__init__(
             name=name,
             elements=elements,
@@ -67,6 +80,7 @@ class RIng(SemirIng[Z]):
             times_operation=times_operation,
             times_operation_symbol=times_operation_symbol,
             one=one,
+            **kwargs,
         )
         self.abelian_group_plus = AbelianGroup(
             name=name,
@@ -83,14 +97,3 @@ class RIng(SemirIng[Z]):
         self.plus_latin_square = self._replace_instance_set(
             self.abelian_group_plus, "latin_square"
         )
-        self._init_args = (name,)
-        self._init_kwargs = {
-            "elements": elements,
-            "containment_function": containment_function,
-            "plus_operation": plus_operation,
-            "plus_operation_symbol": plus_operation_symbol,
-            "zero": zero,
-            "times_operation": times_operation,
-            "times_operation_symbol": times_operation_symbol,
-            "one": one,
-        }

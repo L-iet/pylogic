@@ -25,6 +25,8 @@ else:
 
 
 class Symbol:
+    is_atomic = True
+
     def __init__(self, *args, **kwargs) -> None:
         assert isinstance(args[0], str), "The first argument must be a string"
         self.knowledge_base: set[Proposition] = set()

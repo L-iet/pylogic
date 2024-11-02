@@ -77,6 +77,7 @@ class Proposition:
     # not xor and or => <=> forall forallInSet forallSubsets exists existsInSet existsUnique
     # existsUniqueInSet existsSubset existsUniqueSubset Proposition
     _precedence = 15
+    _is_wrapped = False
 
     tactics: list[Tactic] = [
         {"name": "p_substitute", "arguments": ["Side", "Equality"]},

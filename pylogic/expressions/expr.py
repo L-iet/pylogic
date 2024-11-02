@@ -33,6 +33,9 @@ else:
 
 
 class Expr(ABC):
+    is_atomic = False
+    _is_wrapped = False
+
     def __init__(
         self, *args: Proposition | PBasic | Set | Sequence | Expr, **kwargs: Any
     ):
@@ -287,6 +290,10 @@ class CustomExpr(Expr, Generic[U]):
         self._init_args = (name, *args)
         self._init_kwargs = {"eval_func": eval_func, "latex_func": latex_func}
 
+        # if the latex repr is wrapped (eg in a function call)
+        # so that we can avoid parentheses
+        self._is_wrapped = latex_func is None
+
     def __repr__(self) -> str:
         return f"CustomExpr{self.name.capitalize()}({', '.join(map(repr, self.args))})"
 
@@ -316,11 +323,14 @@ class CustomExpr(Expr, Generic[U]):
 
     def _latex(self) -> str:
         if self.latex_func is None:
-            return repr(self)
+            return rf"\text{{{repr(self)}}}"
         return self.latex_func(*self.args)
 
     def __str__(self) -> str:
         return f"{self.name}({', '.join(map(str, self.args))})"
+
+    def __repr__(self) -> str:
+        return f"CustomExpr_{self.name}({', '.join(map(repr, self.args))})"
 
 
 class BinaryExpression(CustomExpr[U]):
@@ -343,15 +353,18 @@ class BinaryExpression(CustomExpr[U]):
         return f"BinOp{self.name.capitalize()}({self.left}, {self.right})"
 
     def _latex(self) -> str:
-        from pylogic.helpers import latex
-
-        return rf"\left({latex(self.left)} {self.symbol} {latex(self.right)}\right)"
+        return rf"\left({self.left._latex()} {self.symbol} {self.right._latex()}\right)"
 
     def __str__(self) -> str:
         return f"({self.left} {self.symbol} {self.right})"
 
 
 class Add(Expr):
+    # order of operations for expressions (0-indexed)
+    # Function MinElement Abs SequenceTerm Pow Prod Mul Sum Add Binary_Expr
+    # Custom_Expr Piecewise Relation(eg <, subset)
+    _precedence = 8
+
     def __init__(self, *args: Expr | PBasic):
         super().__init__(*args)
         self.is_real = object()  # type: ignore
@@ -387,15 +400,32 @@ class Add(Expr):
         return sp.Add(*[to_sympy(arg) for arg in self.args])
 
     def _latex(self) -> str:
-        from pylogic.helpers import latex
-
-        return r"{\left(" + " + ".join([latex(a) for a in self.args]) + r"\right)}"
+        wrap = lambda p: (
+            rf"\left({p._latex()}\right)"
+            if not p.is_atomic
+            and not p._is_wrapped
+            and p.__class__._precedence >= self.__class__._precedence
+            else p._latex()
+        )
+        return " + ".join(map(wrap, self.args))
 
     def __str__(self) -> str:
-        return " + ".join(map(str, self.args))
+        wrap = lambda p: (
+            f"({p})"
+            if not p.is_atomic
+            and not p._is_wrapped
+            and p.__class__._precedence >= self.__class__._precedence
+            else str(p)
+        )
+        return " + ".join(map(wrap, self.args))
 
 
 class Mul(Expr):
+    # order of operations for expressions (0-indexed)
+    # Function MinElement Abs SequenceTerm Pow Prod Mul Sum Add Binary_Expr
+    # Custom_Expr Piecewise Relation(eg <, subset)
+    _precedence = 6
+
     def __init__(self, *args: PBasic | Expr):
         super().__init__(*args)
         self.is_real = object()  # type: ignore
@@ -431,36 +461,39 @@ class Mul(Expr):
         return sp.Mul(*[to_sympy(arg) for arg in self.args])
 
     def _latex(self) -> str:
-        from pylogic.helpers import latex
-
-        args = []
-        for arg in self.args:
-            if isinstance(arg, Add):
-                args.append(rf"\left({latex(arg)}\right)")
-            else:
-                args.append(str(arg))
-        return "{" + r" \cdot ".join(args) + "}"
+        wrap = lambda p: (
+            rf"\left({p._latex()}\right)"
+            if not p.is_atomic
+            and not p._is_wrapped
+            and p.__class__._precedence >= self.__class__._precedence
+            else p._latex()
+        )
+        return r" \cdot ".join(map(wrap, self.args))
 
     def __str__(self) -> str:
-        args = []
-        for arg in self.args:
-            if isinstance(arg, Add):
-                args.append(f"({arg})")
-            else:
-                args.append(str(arg))
-        return f"{' * '.join(args)}"
+        wrap = lambda p: (
+            f"({p})"
+            if not p.is_atomic and p.__class__._precedence >= self.__class__._precedence
+            else str(p)
+        )
+        return " * ".join(map(wrap, self.args))
 
 
 class Pow(Expr):
+    # order of operations for expressions (0-indexed)
+    # Function MinElement Abs SequenceTerm Pow Prod Mul Sum Add Binary_Expr
+    # Custom_Expr Piecewise Relation(eg <, subset)
+    _precedence = 4
+
     def __init__(self, base: PBasic | Expr, exp: PBasic | Expr):
-        self.base = base
-        self.exp = exp
+        super().__init__(base, exp)
+        self.base = self.args[0]
+        self.exp = self.args[1]
         self.is_real = None
         self.is_rational = None
         self.is_integer = None
         self.is_natural = None
-        super().__init__(base, exp)
-        base, exp = self._init_args
+        base, exp = self.args
         if base.is_real:
             if exp.is_integer:
                 self.is_real = True
@@ -489,35 +522,23 @@ class Pow(Expr):
         return sp.Pow(to_sympy(self.base), to_sympy(self.exp))
 
     def _latex(self) -> str:
-        from pylogic.helpers import latex
-
         if (
-            isinstance(self.base, Symbol)
-            or isinstance(self.base, int)
-            or isinstance(self.base, float)
+            self.base.is_atomic
+            or self.base._is_wrapped
+            or self.base.__class__._precedence <= self.__class__._precedence
         ):
-            base_latex = latex(self.base)
+            base_latex = self.base._latex()
         else:
             base_latex = rf"\left({latex(self.base)}\right)"
-        exp_latex = latex(self.exp)
-        return "{" + f"{base_latex}^{{{exp_latex}}}" + "}"
+        exp_latex = self.exp._latex()
+        return f"{base_latex}^{{{exp_latex}}}"
 
     def __str__(self) -> str:
-        from pylogic.symbol import Symbol
-
-        if (
-            isinstance(self.base, Symbol)
-            or isinstance(self.base, int)
-            or isinstance(self.base, float)
-        ):
+        if self.base.is_atomic:
             base_str = str(self.base)
         else:
             base_str = f"({self.base})"
-        if isinstance(self.exp, int) or isinstance(self.exp, float):
-            power_str = str(self.exp)
-        else:
-            power_str = f"({self.exp})"
-        return f"{base_str}^{power_str}"
+        return f"{base_str}^{self.exp}"
 
 
 def replace(

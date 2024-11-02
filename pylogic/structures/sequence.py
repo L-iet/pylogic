@@ -39,6 +39,8 @@ class Sequence(Generic[T]):
         `x` is in the sequence.
     """
 
+    is_atomic = True
+
     def __init__(
         self,
         name: str,

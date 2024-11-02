@@ -15,6 +15,12 @@ T = TypeVar("T", bound=Term)
 
 
 class SequenceTerm(Expr, Generic[T]):
+    # order of operations for expressions (0-indexed)
+    # Function MinElement Abs SequenceTerm Pow Prod Mul Sum Add Binary_Expr
+    # Custom_Expr Piecewise Relation(eg <, subset)
+    _precedence = 3
+    is_atomic = True
+
     def __init__(self, sequence: Sequence[T] | Variable, index: Term) -> None:
         super().__init__(sequence, index)
         self.sequence: Sequence[T] | Variable = sequence
@@ -89,7 +95,7 @@ class SequenceTerm(Expr, Generic[T]):
         )
 
     def _latex(self) -> str:
-        return f"{self.sequence.name}_{{{self.index}}}"
+        return f"{{{self.sequence.name}}}_{{{self.index._latex()}}}"
 
     def __str__(self) -> str:
         return self.name

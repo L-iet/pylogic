@@ -83,8 +83,21 @@ class CrookedSemirng(Ringoid, Generic[Z]):
         zero: Z | Unevaluated | None = None,
         times_operation: Callable[[T, T], E] | None = None,
         times_operation_symbol: str | None = None,
+        **kwargs,
     ):
-        super().__init__(
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "zero": zero,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+        }
+        self._init_kwargs.update(kwargs)
+        Ringoid.__init__(
+            self,
             name=name,
             elements=elements,
             containment_function=containment_function,
@@ -92,6 +105,7 @@ class CrookedSemirng(Ringoid, Generic[Z]):
             plus_operation_symbol=plus_operation_symbol,
             times_operation=times_operation,
             times_operation_symbol=times_operation_symbol,
+            **kwargs,
         )
         if is_python_numeric(zero):
             self.zero: Constant[Z] = Constant(zero)  # type: ignore
@@ -128,13 +142,3 @@ class CrookedSemirng(Ringoid, Generic[Z]):
             self, self.times_operation, self.zero
         )
         self.zero_mul_eq_zero._set_is_axiom(True)
-        self._init_args = (name,)
-        self._init_kwargs = {
-            "elements": elements,
-            "containment_function": containment_function,
-            "plus_operation": plus_operation,
-            "plus_operation_symbol": plus_operation_symbol,
-            "zero": zero,
-            "times_operation": times_operation,
-            "times_operation_symbol": times_operation_symbol,
-        }

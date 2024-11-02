@@ -13,6 +13,13 @@ if TYPE_CHECKING:
 
 
 class Abs(Expr):
+    # order of operations for expressions (0-indexed)
+    # Function MinElement Abs SequenceTerm Pow Prod Mul Sum Add Binary_Expr
+    # Custom_Expr Piecewise Relation(eg <, subset)
+    _precedence = 2
+
+    _is_wrapped = True
+
     def __init__(self, expr: Term) -> None:
         self.expr = expr
         super().__init__(expr)
@@ -31,9 +38,7 @@ class Abs(Expr):
         return sp.Abs(to_sympy(self.expr))
 
     def _latex(self) -> str:
-        if isinstance(self.expr, (int, float, Fraction)):
-            return rf"\left|{self.expr}\right|"
-        return rf"\left|{self.expr._latex()}\right|"
+        return f"\\left|{self.expr._latex()}\\right|"
 
     def __str__(self) -> str:
         return f"|{self.expr}|"

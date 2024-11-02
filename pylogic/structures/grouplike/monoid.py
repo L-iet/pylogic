@@ -53,16 +53,30 @@ class Monoid(Semigroup):
         operation_name: str | None = None,
         operation_symbol: str | None = None,
         identity: T | None = None,
+        **kwargs,
     ):
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "operation": operation,
+            "operation_name": operation_name,
+            "operation_symbol": operation_symbol,
+            "identity": identity,
+        }
+        self._init_kwargs.update(kwargs)
+
         if elements is not None and identity is not None:
             assert identity in elements, "Identity must be in the set of elements"
-        super().__init__(
+        Semigroup.__init__(
+            self,
             name=name,
             elements=elements,
             containment_function=containment_function,
             operation=operation,
             operation_name=operation_name,
             operation_symbol=operation_symbol,
+            **kwargs,
         )
         if is_python_numeric(identity):
             identity = Constant(identity)  # type: ignore
@@ -74,15 +88,6 @@ class Monoid(Semigroup):
             self, self.operation, self.identity
         )
         self.has_identity._set_is_axiom(True)
-        self._init_args = (name,)
-        self._init_kwargs = {
-            "elements": elements,
-            "containment_function": containment_function,
-            "operation": operation,
-            "operation_name": operation_name,
-            "operation_symbol": operation_symbol,
-            "identity": identity,
-        }
 
     def containment_function(self, x: Term) -> bool:
         return x == self.identity or super().containment_function(x)

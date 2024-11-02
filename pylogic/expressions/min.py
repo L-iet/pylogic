@@ -1,18 +1,18 @@
 from __future__ import annotations
 
-from fractions import Fraction
-from typing import TYPE_CHECKING
-
 import sympy as sp
 
 from pylogic import Term
-from pylogic.expressions.expr import Expr, to_sympy
-
-if TYPE_CHECKING:
-    from pylogic.constant import Constant
+from pylogic.expressions.expr import Expr
 
 
 class MinElement(Expr):
+    # order of operations for expressions (0-indexed)
+    # Function MinElement Abs SequenceTerm Pow Prod Mul Sum Add Binary_Expr
+    # Custom_Expr Piecewise Relation(eg <, subset)
+    _precedence = 1
+    _is_wrapped = True
+
     def __init__(self, expr: Term) -> None:
         self.expr = expr
         super().__init__(expr)
@@ -50,7 +50,7 @@ class MinElement(Expr):
         raise NotImplementedError
 
     def _latex(self) -> str:
-        return rf"\text{{MinElement}}\left({self.expr}\right)"
+        return rf"\text{{MinElement}}\left({self.expr._latex()}\right)"
 
     def __str__(self) -> str:
         return f"MinElement({self.expr})"

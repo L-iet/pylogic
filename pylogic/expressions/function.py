@@ -98,6 +98,12 @@ class Function(Expr):
     the function's `args` include the domain and codomain.
     """
 
+    # order of operations for expressions (0-indexed)
+    # Function MinElement Abs SequenceTerm Pow Prod Mul Sum Add Binary_Expr
+    # Custom_Expr Piecewise Relation(eg <, subset)
+    _precedence = 0
+    _is_wrapped = True
+
     def __init__(
         self,
         name: str,
@@ -261,7 +267,7 @@ class Function(Expr):
         return sp.Function(self.name)
 
     def _latex(self) -> str:
-        return rf"\text{{{self.name}}}: {self.domain._latex()} \to {self.codomain._latex()}"
+        return rf"{self.name}: {self.domain._latex()} \to {self.codomain._latex()}"
 
     def __str__(self) -> str:
         return f"{self.name}: {self.domain} -> {self.codomain}"
@@ -325,6 +331,8 @@ class Function(Expr):
 
 
 class CalledFunction(Expr):
+    _is_wrapped = True
+
     def __init__(
         self,
         function: Function,
@@ -449,7 +457,7 @@ class CalledFunction(Expr):
         # TODO: fix and test this to enable conversion back if needed
 
     def _latex(self) -> str:
-        return rf"\text{{{self.function.name}}}\left({', '.join(arg._latex() for arg in self.arguments)}\right)"
+        return rf"{self.function.name}\left({', '.join(arg._latex() for arg in self.arguments)}\right)"
 
     def __str__(self) -> str:
         return f"{self.function.name}({', '.join(str(arg) for arg in self.arguments)})"

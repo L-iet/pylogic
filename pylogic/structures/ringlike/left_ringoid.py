@@ -65,9 +65,8 @@ class LeftRingoid(_RingoidCommon):
         plus_operation_symbol: str | None = None,
         times_operation: Callable[[T, T], E] | None = None,
         times_operation_symbol: str | None = None,
+        **kwargs,
     ):
-        # When initializing a ringoid, super() here points to
-        # RightRingoid due to MRO
         super().__init__(
             name=name,
             elements=elements,
@@ -76,6 +75,7 @@ class LeftRingoid(_RingoidCommon):
             plus_operation_symbol=plus_operation_symbol,
             times_operation=times_operation,
             times_operation_symbol=times_operation_symbol,
+            **kwargs,
         )
 
         self.times_left_dist_over_plus = LeftRingoid.property_times_left_dist_over_plus(

@@ -93,7 +93,7 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
             and (not isinstance(innermost_prop, (_Quantified, Not)))
             else innermost_prop._latex()
         )
-        return rf"\{quant_symb_to_latex[self._q]} {mid_part}: {inner_part}"
+        return rf"{quant_symb_to_latex[self._q]} {mid_part}: {inner_part}"
 
     def __repr__(self) -> str:
         if self._bin_symb is not None:

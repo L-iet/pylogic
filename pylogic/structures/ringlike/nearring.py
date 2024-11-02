@@ -56,8 +56,22 @@ class NearrIng(CrookedSemirIng[Z]):
         times_operation: Callable[[T, T], E] | None = None,
         times_operation_symbol: str | None = None,
         one: Z | Unevaluated | None = None,
+        **kwargs,
     ):
-        super().__init__(
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "zero": zero,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+            "one": one,
+        }
+        self._init_kwargs.update(kwargs)
+        CrookedSemirIng.__init__(
+            self,
             name=name,
             elements=elements,
             containment_function=containment_function,
@@ -67,6 +81,7 @@ class NearrIng(CrookedSemirIng[Z]):
             times_operation=times_operation,
             times_operation_symbol=times_operation_symbol,
             one=one,
+            **kwargs,
         )
         self.group_plus = Group(
             name=name,
@@ -83,14 +98,3 @@ class NearrIng(CrookedSemirIng[Z]):
         self.plus_latin_square = self._replace_instance_set(
             self.group_plus, "latin_square"
         )
-        self._init_args = (name,)
-        self._init_kwargs = {
-            "elements": elements,
-            "containment_function": containment_function,
-            "plus_operation": plus_operation,
-            "plus_operation_symbol": plus_operation_symbol,
-            "zero": zero,
-            "times_operation": times_operation,
-            "times_operation_symbol": times_operation_symbol,
-            "one": one,
-        }

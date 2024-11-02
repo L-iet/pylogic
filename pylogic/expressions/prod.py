@@ -17,6 +17,12 @@ class Prod(Expr):
     For products of sets, see pylogic.structures.set_.CartesProduct
     """
 
+    # order of operations for expressions (0-indexed)
+    # Function MinElement Abs SequenceTerm Pow Prod Mul Sum Add Binary_Expr
+    # Custom_Expr Piecewise Relation(eg <, subset)
+    _precedence = 5
+    _is_wrapped = True
+
     def __init__(self, sequence: Sequence) -> None:
         self.sequence = sequence
         super().__init__(sequence)

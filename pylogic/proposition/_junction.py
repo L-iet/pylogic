@@ -198,7 +198,10 @@ class _Junction(Proposition, Generic[*Ps], ABC):
             join_symbol = self._join_symbol
         wrap = lambda p: (
             f"({p})"
-            if not p.is_atomic and p.__class__._precedence > self.__class__._precedence
+            if (p.__class__.__name__ == "ExOr")  # a xor b xor c != (a xor b) xor c
+            or (
+                not p.is_atomic and p.__class__._precedence > self.__class__._precedence
+            )
             else str(p)
         )
         s = join_symbol.join([wrap(p) for p in self.propositions])
@@ -218,7 +221,7 @@ class _Junction(Proposition, Generic[*Ps], ABC):
             join_symbol = rf"{self._join_symbol} \ "
         wrap = lambda p: (
             rf"\left({p._latex()}\right)"
-            if not p.is_atomic and p.__class__._precedence > self.__class__._precedence
+            if not p.is_atomic and p.__class__._precedence >= self.__class__._precedence
             else p._latex()
         )
         s = join_symbol.join([p._latex() for p in self.propositions])  # type: ignore

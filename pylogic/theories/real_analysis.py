@@ -110,6 +110,7 @@ class RealsField(OrderedField):
         one: Z | Unevaluated | None = None,
         total_order: TotalOrderOp | None = None,
         strict_total_order: StrictTotalOrderOp | None = None,
+        **kwargs,
     ):
         super().__init__(
             name=name,
@@ -123,6 +124,7 @@ class RealsField(OrderedField):
             one=one,
             total_order=total_order,
             strict_total_order=strict_total_order,
+            **kwargs,
         )
         self.bounded_above_has_lub = RealsField.property_bounded_above_has_lub(self)
         self.bounded_above_has_lub._set_is_axiom(True)
@@ -175,6 +177,7 @@ Reals = RealsField(
     one=one,
     total_order=LessOrEqual,
     strict_total_order=LessThan,
+    latex_name="\\mathbb{R}",
 )
 
 

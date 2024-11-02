@@ -65,6 +65,7 @@ class RightRingoid(_RingoidCommon):
         plus_operation_symbol: str | None = None,
         times_operation: Callable[[T, T], E] | None = None,
         times_operation_symbol: str | None = None,
+        **kwargs,
     ):
         super().__init__(
             name=name,
@@ -74,6 +75,7 @@ class RightRingoid(_RingoidCommon):
             plus_operation_symbol=plus_operation_symbol,
             times_operation=times_operation,
             times_operation_symbol=times_operation_symbol,
+            **kwargs,
         )
 
         self.times_right_dist_over_plus = (
