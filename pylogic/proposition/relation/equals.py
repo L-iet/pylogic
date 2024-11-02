@@ -80,7 +80,7 @@ class Equals(BinaryRelation[T, U]):
         return proven
 
     def by_simplification(self) -> Self:
-        """Logical tactic."""
+        """Logical inference rule."""
 
         left_doit = (
             self.left.evaluate() if isinstance(self.left, (Basic, Expr)) else self.left
@@ -108,7 +108,7 @@ class Equals(BinaryRelation[T, U]):
             raise ValueError(f"{self} cannot be proven by simplification")
 
     def by_inspection(self) -> Self:
-        """Logical tactic."""
+        """Logical inference rule."""
         if self.left == self.right:
             new_p = self.copy()
             new_p._set_is_proven(True)
@@ -149,7 +149,7 @@ class Equals(BinaryRelation[T, U]):
         self, side: Side | str, other_prop: TProposition
     ) -> TProposition:
         """
-        Logical tactic.
+        Logical inference rule.
         If side == Side.LEFT, will look for self.right in other_prop and replace it with self.left.
         Returns a proven proposition.
         Parameters
@@ -171,7 +171,7 @@ class Equals(BinaryRelation[T, U]):
 
     def zero_abs_is_0(self) -> Equals:
         """
-        Logical tactic. If self is of the form Abs(x) = 0,
+        Logical inference rule. If self is of the form Abs(x) = 0,
         return a proof of x = 0.
         """
         assert self.is_proven, f"{self} is not proven"

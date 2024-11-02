@@ -48,18 +48,6 @@ class SemirIng(Semirng[Z]):
         one: Z | Unevaluated | None = None,
         **kwargs,
     ):
-        self._init_args = (name,)
-        self._init_kwargs = {
-            "elements": elements,
-            "containment_function": containment_function,
-            "plus_operation": plus_operation,
-            "plus_operation_symbol": plus_operation_symbol,
-            "zero": zero,
-            "times_operation": times_operation,
-            "times_operation_symbol": times_operation_symbol,
-            "one": one,
-        }
-        self._init_kwargs.update(kwargs)
         Semirng.__init__(
             self,
             name=name,
@@ -72,6 +60,18 @@ class SemirIng(Semirng[Z]):
             times_operation_symbol=times_operation_symbol,
             **kwargs,
         )
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "zero": zero,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+            "one": one,
+        }
+        self._init_kwargs.update(kwargs)
         if is_python_numeric(one):
             self.one: Constant[Z] = Constant(one)  # type: ignore
         else:

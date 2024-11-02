@@ -118,7 +118,7 @@ absolute_value_nonnegative = Forall(
 
 def absolute_value_nonnegative_f(x: Term) -> Or[GreaterThan, Equals]:
     """
-    Logical tactic. If x is a real number, returns a proven proposition of the form Abs(x) > 0 V Abs(x) = 0.
+    Logical inference rule. If x is a real number, returns a proven proposition of the form Abs(x) > 0 V Abs(x) = 0.
     """
     abs_x = Abs(x)
     return Or(

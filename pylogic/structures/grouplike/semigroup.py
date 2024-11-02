@@ -54,15 +54,6 @@ class Semigroup(Magma):
         operation_symbol: str | None = None,
         **kwargs,
     ):
-        self._init_args = (name,)
-        self._init_kwargs = {
-            "elements": elements,
-            "containment_function": containment_function,
-            "operation": operation,
-            "operation_name": operation_name,
-            "operation_symbol": operation_symbol,
-        }
-        self._init_kwargs.update(kwargs)
         Magma.__init__(
             self,
             name=name,
@@ -72,6 +63,15 @@ class Semigroup(Magma):
             operation_name=operation_name,
             operation_symbol=operation_symbol,
         )
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "operation": operation,
+            "operation_name": operation_name,
+            "operation_symbol": operation_symbol,
+        }
+        self._init_kwargs.update(kwargs)
         self.op_is_associative = Semigroup.property_op_is_associative(
             self, self.operation
         )

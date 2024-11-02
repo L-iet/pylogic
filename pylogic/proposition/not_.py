@@ -12,6 +12,7 @@ from typing import (
 )
 
 from pylogic import Term, Unification
+from pylogic.enviroment_settings.settings import settings
 from pylogic.proposition.proposition import Proposition, get_assumptions
 
 if TYPE_CHECKING:
@@ -24,7 +25,7 @@ else:
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
-Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
+InferenceRule = TypedDict("InferenceRule", {"name": str, "arguments": list[str]})
 
 
 @overload
@@ -40,11 +41,14 @@ def neg(
 ) -> Not[TProposition] | TProposition:
     """
     Given a proposition, return its negation.
-    Law of excluded middle is assumed, so
+    In intuitionistic logic, double-negation-elimination is not valid, so
+    the result of neg(Not(p)) is ~~p.
+
+    In classical logic, double-negation-elimination is valid, so the result of
     neg(Not(p)) is p.
-    Keyword arguments are not used in the case of neg(Not(p)): the result is p.
+    Keyword arguments are not used in this case for neg(Not(p)): the result is p.
     """
-    if isinstance(p, Not):
+    if isinstance(p, Not) and settings["USE_CLASSICAL_LOGIC"]:
         return p.negated
     return Not(p, is_assumption, **kwargs)
 
@@ -66,9 +70,10 @@ class Not(Proposition, Generic[TProposition]):
     # existsUniqueInSet existsSubset existsUniqueSubset Proposition
     _precedence = 0
 
-    tactics: list[Tactic] = [
+    _inference_rules: list[InferenceRule] = [
         {"name": "modus_tollens", "arguments": ["Implies"]},
         {"name": "de_morgan", "arguments": []},
+        {"name": "symmetric", "arguments": []},
     ]
 
     def __init__(
@@ -125,48 +130,55 @@ class Not(Proposition, Generic[TProposition]):
     def __hash__(self) -> int:
         return hash(("not", self.negated))
 
-    def _set_is_inferred_true(self) -> None:
-        super()._set_is_inferred_true()
+    def _set_is_inferred(self, value: bool) -> None:
+        super()._set_is_inferred(value)
+        from pylogic.constant import Constant
         from pylogic.proposition.relation.binaryrelation import BinaryRelation
         from pylogic.proposition.relation.equals import Equals
         from pylogic.structures.set_ import EmptySet
 
         match self.negated:
-            case Equals(right=r) if r == EmptySet:
-                self.negated.left.is_empty = False
-                self.negated.left.knowledge_base.add(self)
+            case Equals(right=r):
+                if r == EmptySet:
+                    if value:
+                        self.negated.left.is_empty = False
+                        self.negated.left.knowledge_base.add(self)
+                    else:
+                        self.negated.left.is_empty = None
+                        self.negated.left.knowledge_base.discard(self)
+                elif r == Constant(0):
+                    if value:
+                        self.negated.left.is_nonzero = True
+                        self.negated.left.knowledge_base.add(self)
+                    else:
+                        self.negated.left.is_nonzero = None
+                        self.negated.left.knowledge_base.discard(self)
             case BinaryRelation():
-                self.negated.left.knowledge_base.add(self)
+                if value:
+                    self.negated.left.knowledge_base.add(self)
+                else:
+                    self.negated.left.knowledge_base.discard(self)
 
     def _set_is_proven(self, value: bool) -> None:
         super()._set_is_proven(value)
         if value:
-            self._set_is_inferred_true()
+            self._set_is_inferred(True)
         elif not (self.is_axiom or self.is_assumption):
-            from pylogic.proposition.relation.binaryrelation import BinaryRelation
-
-            if isinstance(self.negated, BinaryRelation):
-                self.negated.left.knowledge_base.discard(self)
+            self._set_is_inferred(False)
 
     def _set_is_assumption(self, value: bool) -> None:
         super()._set_is_assumption(value)
         if value:
-            self._set_is_inferred_true()
+            self._set_is_inferred(True)
         elif not (self._is_proven or self.is_axiom):
-            from pylogic.proposition.relation.binaryrelation import BinaryRelation
-
-            if isinstance(self.negated, BinaryRelation):
-                self.negated.left.knowledge_base.discard(self)
+            self._set_is_inferred(False)
 
     def _set_is_axiom(self, value: bool) -> None:
         super()._set_is_axiom(value)
         if value:
-            self._set_is_inferred_true()
+            self._set_is_inferred(True)
         elif not (self._is_proven or self.is_assumption):
-            from pylogic.proposition.relation.binaryrelation import BinaryRelation
-
-            if isinstance(self.negated, BinaryRelation):
-                self.negated.left.knowledge_base.discard(self)
+            self._set_is_inferred(False)
 
     def copy(self) -> Self:
         return self.__class__(
@@ -243,7 +255,7 @@ class Not(Proposition, Generic[TProposition]):
         ),
     ) -> UProposition | Not[UProposition]:
         """
-        Logical tactic.
+        Logical inference rule.
         other: Implies
             Must be an implication that has been proven whose structure is
             OtherProposition -> ~self
@@ -256,12 +268,20 @@ class Not(Proposition, Generic[TProposition]):
     def de_morgan(self) -> Proposition:
         """
         Apply De Morgan's law to this negation.
+
+        In intuitionistic logic, the only valid De Morgan's laws are
+
+        `~A and ~B <-> ~(A or B)`
+
+        `~A or ~B -> ~(A and B)`.
         """
         from pylogic.inference import Inference
         from pylogic.proposition.and_ import And
         from pylogic.proposition.or_ import Or
 
         if isinstance(self.negated, And):
+            if settings["USE_CLASSICAL_LOGIC"] == False:
+                return self
             negs: list[Proposition] = [
                 neg(p.de_morgan()) for p in self.negated.propositions  # type:ignore
             ]
@@ -272,9 +292,12 @@ class Not(Proposition, Generic[TProposition]):
                 _inference=Inference(self, rule="de_morgan"),
             )
         elif isinstance(self.negated, Or):
-            negs: list[Proposition] = [
-                neg(p.de_morgan()) for p in self.negated.propositions  # type:ignore
-            ]
+            if settings["USE_CLASSICAL_LOGIC"] == False:
+                negs = [Not(p.de_morgan()) for p in self.negated.propositions]
+            else:
+                negs: list[Proposition] = [
+                    neg(p.de_morgan()) for p in self.negated.propositions  # type:ignore
+                ]
             return And(
                 *negs,  # type: ignore
                 _is_proven=self.is_proven,
@@ -309,7 +332,8 @@ Occured when trying to unify `{self}` and `{other}`"
 
     def symmetric(self: Not[T]) -> Not[BinaryRelation]:
         """
-        Logical tactic. If self is ~(a R b), return a proof of ~(b R a).
+        Logical inference rule. If self is ~(a R b), where R is a symmetric relation,
+        return a proof of ~(b R a).
         """
         from pylogic.inference import Inference
 

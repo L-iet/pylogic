@@ -139,6 +139,20 @@ class OrderedField(Field[Z], OrderedSet):
             strict_total_order=strict_total_order,
             **kwargs,
         )
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "zero": zero,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+            "one": one,
+            "total_order": total_order,
+            "strict_total_order": strict_total_order,
+        }
+        self._init_kwargs.update(kwargs)
 
         self.add_to_both_sides_of_inequality = (
             OrderedField.property_add_to_both_sides_of_inequality(

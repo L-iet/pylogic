@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
 B = TypeVar("B", bound="Proposition")
-Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
+InferenceRule = TypedDict("InferenceRule", {"name": str, "arguments": list[str]})
 
 
 class Forall(_Quantified[TProposition]):
@@ -31,9 +31,9 @@ class Forall(_Quantified[TProposition]):
     # existsUniqueInSet existsSubset existsUniqueSubset Proposition
     _precedence = 6
 
-    tactics: list[Tactic] = [
+    _inference_rules: list[InferenceRule] = [
         {"name": "quantified_modus_ponens", "arguments": ["Implies"]},
-        {"name": "hence_matrices_are_equal", "arguments": []},
+        {"name": "in_particular", "arguments": ["Term"]},
         {"name": "de_morgan", "arguments": []},
     ]
 
@@ -74,43 +74,11 @@ class Forall(_Quantified[TProposition]):
     def __hash__(self) -> int:
         return super().__hash__()
 
-    def hence_matrices_are_equal(self) -> Equals:
-        """
-        Logical tactic.
-        If self is a proven proposition of the form
-        forall i: forall j: forall k:...: A[i, j, k...] = B[i, j, k...],
-        returns a proven proposition of the form A = B.
-        Note that the indices must appear in the same order in the foralls.
-        """
-        assert self.is_proven, f"{self} is not proven"
-        indices: list[Variable] = []
-        prop = self
-        while isinstance(prop, Forall):
-            # TODO: check why is_integer is not seen
-            assert prop.variable.is_integer, f"{prop.variable} is not an integer"  # type: ignore
-            # maybe also check for is nonnegative
-            indices.append(prop.variable)
-            prop = prop.inner_proposition
-        assert isinstance(prop, Equals), f"{prop} is not an equality"
-        MatEl = sp.matrices.expressions.matexpr.MatrixElement  # type: ignore
-        assert isinstance(prop.left, MatEl) and isinstance(
-            prop.right, MatEl
-        ), f"The inner equality {prop} is not between matrix elements"
-        left_mat, *left_indices = prop.left.args  # type: ignore
-        right_mat, *right_indices = prop.right.args  # type: ignore
-        for i, index in enumerate(indices):
-            assert (
-                index == left_indices[i] == right_indices[i]
-            ), f"Indices mismatch: {index}, {left_indices[i]}, {right_indices[i]}"
-        new_p = Equals(left_mat, right_mat)
-        new_p._set_is_proven(True)
-        return new_p
-
     def quantified_modus_ponens(
         self, other: Forall[Implies[TProposition, B]] | Exists[Implies[TProposition, B]]
     ) -> Forall[B] | Exists[B]:
         """
-        Logical tactic. If self is forall x: P(x) and given forall x: P(x) -> Q(x)
+        Logical inference rule. If self is forall x: P(x) and given forall x: P(x) -> Q(x)
         (or exists x: P(x) -> Q(x)), and each is proven, conclude
         forall x: Q(x) (or exists x: Q(x)).
         """
@@ -160,7 +128,7 @@ class Forall(_Quantified[TProposition]):
         return new_p
 
     def in_particular(self, expression_to_substitute: Term) -> TProposition:
-        """Logical tactic. Given self is proven, replace the variable in the inner
+        """Logical inference rule. Given self is proven, replace the variable in the inner
         proposition and get a proven proposition.
         """
         from pylogic.helpers import python_to_pylogic
@@ -184,12 +152,30 @@ class Forall(_Quantified[TProposition]):
         new_p.deduced_from = Inference(self, rule="in_particular")
         return new_p
 
-    def de_morgan(self) -> Not[Exists[Not[TProposition]]]:
+    def de_morgan(self) -> Proposition:
         """
         Apply De Morgan's law to a universally quantified sentence.
+
+        In intuitionistic logic, the only valid De Morgan's laws are
+
+        `~A and ~B <-> ~(A or B)`
+
+        `~A or ~B -> ~(A and B)`.
         """
+        from pylogic.enviroment_settings.settings import settings
         from pylogic.proposition.not_ import Not, neg
         from pylogic.proposition.quantified.exists import Exists
+
+        if settings["USE_CLASSICAL_LOGIC"] == False:
+            if not isinstance(self.inner_proposition, Not):
+                return self
+            self.variable.unbind()
+            return Not(
+                Exists(self.variable, self.inner_proposition.negated.de_morgan()),
+                _is_proven=self.is_proven,
+                _assumptions=get_assumptions(self).copy(),
+                _inference=Inference(self, rule="de_morgan"),
+            )
 
         inner_negated = neg(self.inner_proposition.de_morgan())
         self.variable.unbind()
@@ -314,7 +300,7 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
         expression_to_substitute: Term,
         proof_expr_to_substitute_in_set: Proposition | None = None,
     ) -> TProposition:
-        """Logical tactic. Given self is proven, replace the variable in the inner
+        """Logical inference rule. Given self is proven, replace the variable in the inner
         proposition and get a proven proposition.
         """
         assert self.is_proven, f"{self} is not proven"
@@ -380,7 +366,7 @@ class ForallSubsets(Forall[Implies[IsSubsetOf, TProposition]]):
         expression_to_substitute: Term,
         proof_expr_to_substitute_is_subset: IsSubsetOf | None = None,
     ) -> TProposition:
-        """Logical tactic. Given self is proven, replace the variable in the inner
+        """Logical inference rule. Given self is proven, replace the variable in the inner
         proposition and get a proven proposition.
         """
         assert self.is_proven, f"{self} is not proven"

@@ -4,6 +4,7 @@ from decimal import Decimal
 from fractions import Fraction
 from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar, cast, overload
 
+from pylogic.enviroment_settings.settings import settings
 from pylogic.helpers import is_python_numeric, type_check
 from pylogic.symbol import Symbol
 
@@ -11,6 +12,12 @@ if TYPE_CHECKING:
     import sympy as sp
     from sympy.core.numbers import ImaginaryUnit
 
+    from pylogic.proposition.not_ import Not
+    from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
+    from pylogic.proposition.ordering.greaterthan import GreaterThan
+    from pylogic.proposition.ordering.lessorequal import LessOrEqual
+    from pylogic.proposition.ordering.lessthan import LessThan
+    from pylogic.proposition.relation.equals import Equals
     from pylogic.sympy_helpers import PylSympySymbol
 
 T = TypeVar("T", bound=str | int | float | complex | Fraction | Decimal)
@@ -58,11 +65,58 @@ class Constant(Symbol, Generic[T]):
         """
         Constant(0) == 0
         """
+        from pylogic.proposition.proposition import Proposition
+        from pylogic.structures.sequence import Sequence
+        from pylogic.structures.set_ import Set
+        from pylogic.variable import Variable
+
         if self is other:
             return True
         if isinstance(other, Constant):
-            return (not self._from_existential_instance) and self.value == other.value
-        return self.value == other
+            return (
+                (not self._from_existential_instance)
+                and (not other._from_existential_instance)
+                and self.value == other.value
+            )
+        if isinstance(other, (Variable, Set, Sequence, Proposition)):
+            return False
+        return NotImplemented
+
+    def __lt__(self, other: Any) -> bool | LessThan:
+        from pylogic.proposition.ordering.lessthan import LessThan
+
+        if settings["PYTHON_OPS_RETURN_PROPS"]:
+            return LessThan(self, other)
+        if isinstance(other, Constant):
+            return self.value < other.value
+        return self.value < other
+
+    def __le__(self, other: Any) -> bool | LessOrEqual:
+        from pylogic.proposition.ordering.lessorequal import LessOrEqual
+
+        if settings["PYTHON_OPS_RETURN_PROPS"]:
+            return LessOrEqual(self, other)
+        if isinstance(other, Constant):
+            return self.value <= other.value
+        return self.value <= other
+
+    def __gt__(self, other: Any) -> bool | GreaterThan:
+        from pylogic.proposition.ordering.greaterthan import GreaterThan
+
+        if settings["PYTHON_OPS_RETURN_PROPS"]:
+            return GreaterThan(self, other)
+        if isinstance(other, Constant):
+            return self.value > other.value
+        return self.value > other
+
+    def __ge__(self, other: Any) -> bool | GreaterOrEqual:
+        from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
+
+        if settings["PYTHON_OPS_RETURN_PROPS"]:
+            return GreaterOrEqual(self, other)
+        if isinstance(other, Constant):
+            return self.value >= other.value
+        return self.value >= other
 
     def __hash__(self) -> int:
         return super().__hash__()
@@ -75,11 +129,6 @@ class Constant(Symbol, Generic[T]):
 
     def __complex__(self) -> complex:
         return complex(self.value)
-
-    def __gt__(self, other: Any) -> bool:
-        if isinstance(other, Constant):
-            return self.value > other.value
-        return self.value > other
 
     def to_fraction(self) -> Fraction:
         if isinstance(self.value, Fraction):

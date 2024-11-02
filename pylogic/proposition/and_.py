@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.not_ import Not
     from pylogic.proposition.or_ import Or
 
-Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
+InferenceRule = TypedDict("InferenceRule", {"name": str, "arguments": list[str]})
 
 Ps = TypeVarTuple("Ps")
 Props = tuple[Proposition, ...]
@@ -24,9 +24,14 @@ class And(_Junction[*Ps]):
     # existsUniqueInSet existsSubset existsUniqueSubset Proposition
     _precedence = 2
 
-    tactics: list[Tactic] = [
+    _inference_rules: list[InferenceRule] = [
+        {"name": "extract", "arguments": []},
         {"name": "all_proven", "arguments": []},
         {"name": "de_morgan", "arguments": []},
+        {"name": "to_exor", "arguments": []},
+        {"name": "left_distribute", "arguments": []},
+        {"name": "right_distribute", "arguments": []},
+        {"name": "distribute", "arguments": []},
     ]
     _distributes_over_ = {"Or", "ExOr"}
 
@@ -69,7 +74,9 @@ class And(_Junction[*Ps]):
 
     def extract(self):
         """
-        Will prove all propositions if self is proven.
+        Logical inference rule. Get all conjunct of a conjunction as a tuple.
+
+        Will prove all conjuncts if the conjunction is proven.
         """
         if self.is_proven:
             new_props: tuple[*Ps] = [p.copy() for p in self.propositions]  # type: ignore
@@ -84,7 +91,7 @@ class And(_Junction[*Ps]):
         return super().remove_duplicates()  # type: ignore
 
     def all_proven(self) -> Self:
-        """Logical tactic. If all propositions are proven, the conjunction is
+        """Logical inference rule. If all propositions are proven, the conjunction is
         proven."""
         for p in self.propositions:
             if not p.is_proven:  # type: ignore
@@ -95,11 +102,34 @@ class And(_Junction[*Ps]):
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(p))  # type: ignore
         return new_p
 
-    def de_morgan(self) -> Not[Or[*Props]]:
+    def de_morgan(self) -> Proposition:
         """Apply De Morgan's law to the conjunction to get an
-        equivalent proposition."""
+        equivalent proposition.
+
+        In intuitionistic logic, the only valid De Morgan's laws are
+
+        `~A and ~B <-> ~(A or B)`
+
+        `~A or ~B -> ~(A and B)`.
+
+        In this case, the conjunction must be made of negations to return a different result..
+        """
+        # valid laws here
+        # https://math.stackexchange.com/a/120209/1382176
+
+        from pylogic.enviroment_settings.settings import settings
         from pylogic.proposition.not_ import Not, neg
         from pylogic.proposition.or_ import Or
+
+        if settings["USE_CLASSICAL_LOGIC"] == False:
+            if not all(isinstance(p, Not) for p in self.propositions):
+                return self
+            return Not(
+                Or(*[p.negated.de_morgan() for p in self.propositions]),
+                _is_proven=self.is_proven,
+                _assumptions=get_assumptions(self),
+                _inference=Inference(self, rule="de_morgan"),
+            )
 
         negs: list[Proposition] = [
             neg(p.de_morgan()) for p in self.propositions  # type:ignore
@@ -113,7 +143,7 @@ class And(_Junction[*Ps]):
 
     def to_exor(self) -> ExOr[Proposition, ...]:  # type: ignore
         r"""
-        Logical tactic. If self is of the form
+        Logical inference rule. If self is of the form
         `And(Or(A, B, C,...), A -> [~B /\ ~C /\...], B -> [~A /\ ~C /\...], C -> [~A /\ ~B /\...], ...)`,
 
         return `ExOr(A, B, C, ...)`.
@@ -122,8 +152,8 @@ class And(_Junction[*Ps]):
 
         Raises:
             AssertionError: If wrong structure of propositions is given.
-            AttributeError: If second to last propositions are not implications
-                with conjunctions as consequents.
+            AttributeError: If the second, third, etc to the last proposition
+            are not all implications with conjunctions as consequents.
         """
         from pylogic.helpers import find_first
         from pylogic.proposition.exor import ExOr

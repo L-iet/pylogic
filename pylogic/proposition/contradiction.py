@@ -7,15 +7,16 @@ from pylogic.inference import Inference
 from pylogic.proposition.proposition import Proposition
 
 if TYPE_CHECKING:
+    from pylogic.proposition.not_ import Not
     from pylogic.proposition.or_ import Or
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
-Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
+InferenceRule = TypedDict("InferenceRule", {"name": str, "arguments": list[str]})
 
 
 class Contradiction(Proposition):
-    tactics: list[Tactic] = [
+    _inference_rules: list[InferenceRule] = [
         {"name": "thus_assumptions_cannot_all_hold", "arguments": []}
     ]
     """
@@ -25,8 +26,8 @@ class Contradiction(Proposition):
     def __init__(self, **kwargs) -> None:
         if "_is_proven" in kwargs:
             assert (
-                len(kwargs.get("_assumptions", [])) > 1
-            ), "A proven contradiction must have multiple assumptions"
+                len(kwargs.get("_assumptions", [])) > 0
+            ), "A proven contradiction must have an assumption"
         super().__init__(
             "contradiction",
             description="contradiction",
@@ -45,17 +46,42 @@ class Contradiction(Proposition):
     def copy(self) -> Self:
         return self.__class__()
 
-    def thus_assumptions_cannot_all_hold(self) -> Or[Proposition, ...]:
+    def thus_assumptions_cannot_all_hold(
+        self,
+    ) -> Or[Proposition, ...] | Not[Proposition]:
         """
-        Logical tactic. Given a contradiction, return the disjunction of the
-        negations of the assumptions.
+        Logical inference rule. Given a contradiction, return the proposition
+        that not all of the assumptions can hold at the same time.
+
+        In classical logic, this is the same as the disjunction of the negations of the
+        assumptions.
+
+        In intuitionistic logic, this is the negation of the conjunction of the assumptions.
         """
-        from pylogic.proposition.not_ import neg
+        from pylogic.enviroment_settings.settings import settings
+        from pylogic.proposition.and_ import And
+        from pylogic.proposition.not_ import Not, neg
         from pylogic.proposition.or_ import Or
 
         assert self.is_proven, "This contradiction is not proven"
-        return Or(
-            *[neg(a) for a in self.from_assumptions],  # type: ignore
+        if len(self.from_assumptions) == 1:
+            return neg(
+                self.from_assumptions.pop(),
+                description="",
+                _is_proven=True,
+                _assumptions=self.from_assumptions,
+                _inference=Inference(self, rule="thus_assumptions_cannot_all_hold"),
+            )
+        if settings["USE_CLASSICAL_LOGIC"]:
+            return Or(
+                *[neg(a) for a in self.from_assumptions],  # type: ignore
+                description="",
+                _is_proven=True,
+                _assumptions=self.from_assumptions,
+                _inference=Inference(self, rule="thus_assumptions_cannot_all_hold"),
+            )
+        return Not(
+            And(*self.from_assumptions),  # type: ignore
             description="",
             _is_proven=True,
             _assumptions=self.from_assumptions,

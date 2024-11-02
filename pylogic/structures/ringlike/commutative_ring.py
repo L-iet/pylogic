@@ -42,18 +42,6 @@ class CommutativeRIng(RIng[Z]):
         one: Z | Unevaluated | None = None,
         **kwargs,
     ):
-        self._init_args = (name,)
-        self._init_kwargs = {
-            "elements": elements,
-            "containment_function": containment_function,
-            "plus_operation": plus_operation,
-            "plus_operation_symbol": plus_operation_symbol,
-            "zero": zero,
-            "times_operation": times_operation,
-            "times_operation_symbol": times_operation_symbol,
-            "one": one,
-        }
-        self._init_kwargs.update(kwargs)
         RIng.__init__(
             self,
             name=name,
@@ -67,6 +55,18 @@ class CommutativeRIng(RIng[Z]):
             one=one,
             **kwargs,
         )
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "zero": zero,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+            "one": one,
+        }
+        self._init_kwargs.update(kwargs)
         self.times_is_commutative = CommutativeRIng.property_times_is_commutative(
             self, self.times_operation
         )

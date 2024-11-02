@@ -6,10 +6,17 @@ import sympy as sp
 from sympy.matrices.expressions.matexpr import MatrixElement as MatEl
 
 from pylogic import PythonNumeric, Term
+from pylogic.enviroment_settings.settings import settings
 from pylogic.expressions.expr import Add, Expr, Mul, Pow
 
 if TYPE_CHECKING:
+    from pylogic.expressions.abs import Abs
     from pylogic.expressions.sequence_term import SequenceTerm
+    from pylogic.proposition.not_ import Not
+    from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
+    from pylogic.proposition.ordering.greaterthan import GreaterThan
+    from pylogic.proposition.ordering.lessorequal import LessOrEqual
+    from pylogic.proposition.ordering.lessthan import LessThan
     from pylogic.proposition.proposition import Proposition
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
@@ -42,6 +49,9 @@ class Symbol:
         self.is_list_: bool = self.is_pair or kwargs.get("list_", None)
         self.is_list: bool = self.is_list_
         self.is_sequence: bool = self.is_list or kwargs.get("sequence", None)
+        self._is_nonzero: bool | None = kwargs.get("nonzero", None)
+        self._is_positive: bool | None = kwargs.get("positive", None)
+        self._is_negative: bool | None = kwargs.get("negative", None)
         self._init_args = args
         self._init_kwargs = kwargs
         self._from_existential_instance = kwargs.get(
@@ -52,30 +62,57 @@ class Symbol:
         )  # using "or" instead of default here because latex_name=None is valid
         self.depends_on: tuple[Symbol, ...] = kwargs.get("depends_on", ())
         self.independent_dependencies = self.get_independent_dependencies()
+        self.sets_contained_in: set[Set] = kwargs.get("sets_contained_in", set())
 
     @property
-    def is_natural(self) -> bool:
+    def is_natural(self) -> bool | None:
         return self._is_natural
 
     @property
-    def is_integer(self) -> bool:
+    def is_integer(self) -> bool | None:
         return self._is_integer or self.is_natural
 
     @property
-    def is_rational(self) -> bool:
+    def is_rational(self) -> bool | None:
         return self._is_rational or self.is_integer
 
     @property
-    def is_real(self) -> bool:
+    def is_real(self) -> bool | None:
         return self._is_real or self.is_rational
+
+    @property
+    def is_nonzero(self) -> bool | None:
+        return self._is_nonzero or self._is_positive or self._is_negative
+
+    @property
+    def is_positive(self) -> bool | None:
+        return self._is_positive or (
+            self._is_nonzero
+            and (None if self._is_negative is None else not self._is_negative)
+        )
+
+    @property
+    def is_negative(self) -> bool | None:
+        return self._is_negative or (
+            self._is_nonzero
+            and (None if self._is_positive is None else not self._is_positive)
+        )
+
+    @property
+    def is_nonpositive(self) -> bool | None:
+        return (not self.is_positive) if self.is_positive is not None else None
+
+    @property
+    def is_nonnegative(self) -> bool | None:
+        return not self.is_negative if self.is_negative is not None else None
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.name}, deps={self.depends_on})"
 
     def __str__(self):
-        from pylogic.enviroment_settings.settings import VIEW_VARIABLE_DEPS
+        from pylogic.enviroment_settings.settings import settings
 
-        if len(self.independent_dependencies) > 0 and VIEW_VARIABLE_DEPS:
+        if len(self.independent_dependencies) > 0 and settings["SHOW_VARIABLE_DEPS"]:
             return f"{self.name}({', '.join(str(d) for d in self.independent_dependencies)})"
         return f"{self.name}"
 
@@ -90,10 +127,13 @@ class Symbol:
         return Mul(self, other)
 
     def __truediv__(self, other: Symbol | PythonNumeric | Expr) -> Mul:
+        if self == 1:
+            return Pow(other, -1)
         return Mul(self, Pow(other, -1))
 
     def __neg__(self) -> Mul:
-        return Mul(-1, self)
+        val = Mul(-1, self)
+        return val
 
     def __pow__(self, other: Symbol | PythonNumeric | Expr) -> Pow:
         return Pow(self, other)
@@ -107,8 +147,15 @@ class Symbol:
     def __rmul__(self, other: Symbol | PythonNumeric | Expr) -> Mul:
         return Mul(other, self)
 
-    def __rtruediv__(self, other: Symbol | PythonNumeric | Expr) -> Mul:
+    def __rtruediv__(self, other: Symbol | PythonNumeric | Expr) -> Mul | Pow:
+        if other == 1:
+            return Pow(self, -1)
         return Mul(other, Pow(self, -1))
+
+    def __abs__(self) -> Abs:
+        from pylogic.expressions.abs import Abs
+
+        return Abs(self)
 
     def __rpow__(self, other: Symbol | PythonNumeric | Expr) -> Pow:
         return Pow(other, self)
@@ -120,18 +167,50 @@ class Symbol:
         if self is other:
             return True
         if isinstance(other, Symbol):
-            return (not self._from_existential_instance) and (
-                self.name == other.name
-                # TODO: fix replace not working well
-                # and self.__class__ == other.__class__
-                # and self.is_real == other.is_real
-                # and self.is_set_ == other.is_set_
-                # and self.is_graph == other.is_graph
-                # and self.is_pair == other.is_pair
-                # and self.is_list_ == other.is_list_
-                # and self.is_sequence == other.is_sequence
-                and self.depends_on == other.depends_on
+            return (
+                (not self._from_existential_instance)
+                and (not other._from_existential_instance)
+                and (
+                    self.name == other.name
+                    # TODO: fix replace not working well
+                    # and self.__class__ == other.__class__
+                    # and self.is_real == other.is_real
+                    # and self.is_set_ == other.is_set_
+                    # and self.is_graph == other.is_graph
+                    # and self.is_pair == other.is_pair
+                    # and self.is_list_ == other.is_list_
+                    # and self.is_sequence == other.is_sequence
+                    and self.depends_on == other.depends_on
+                )
             )
+        return NotImplemented
+
+    def __lt__(self, other: Any) -> bool | LessThan:
+        from pylogic.proposition.ordering.lessthan import LessThan
+
+        if settings["PYTHON_OPS_RETURN_PROPS"]:
+            return LessThan(self, other)
+        return NotImplemented
+
+    def __le__(self, other: Any) -> bool | LessOrEqual:
+        from pylogic.proposition.ordering.lessorequal import LessOrEqual
+
+        if settings["PYTHON_OPS_RETURN_PROPS"]:
+            return LessOrEqual(self, other)
+        return NotImplemented
+
+    def __gt__(self, other: Any) -> bool | GreaterThan:
+        from pylogic.proposition.ordering.greaterthan import GreaterThan
+
+        if settings["PYTHON_OPS_RETURN_PROPS"]:
+            return GreaterThan(self, other)
+        return NotImplemented
+
+    def __ge__(self, other: Any) -> bool | GreaterOrEqual:
+        from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
+
+        if settings["PYTHON_OPS_RETURN_PROPS"]:
+            return GreaterOrEqual(self, other)
         return NotImplemented
 
     def eval_same(self, other: Any) -> bool:

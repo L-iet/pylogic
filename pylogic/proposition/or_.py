@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     pass
 
 Ps = TypeVarTuple("Ps")
-Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
+InferenceRule = TypedDict("InferenceRule", {"name": str, "arguments": list[str]})
 Props = tuple[Proposition, ...]
 
 
@@ -20,11 +20,16 @@ class Or(_Junction[*Ps]):
     # existsUniqueInSet existsSubset existsUniqueSubset Proposition
     _precedence = 3
 
-    tactics: list[Tactic] = [
+    _inference_rules: list[InferenceRule] = [
         {"name": "unit_resolve", "arguments": ["Proposition"]},
         {"name": "one_proven", "arguments": ["Proposition"]},
         {"name": "de_morgan", "arguments": []},
         {"name": "resolve", "arguments": ["Proposition"]},
+        {"name": "unit_resolve", "arguments": ["Proposition"]},
+        {"name": "by_cases", "arguments": []},
+        {"name": "left_distribute", "arguments": []},
+        {"name": "right_distribute", "arguments": []},
+        {"name": "distribute", "arguments": []},
     ]
 
     _distributes_over_ = {"And"}
@@ -60,7 +65,7 @@ class Or(_Junction[*Ps]):
 
     def one_proven(self, p: Proposition) -> Self:
         """
-        Logical tactic. Given one proven proposition in self, return
+        Logical inference rule. Given one proven proposition in self, return
         a proof of self (disjunction).
         """
         assert p.is_proven, f"{p} is not proven"
@@ -72,10 +77,30 @@ class Or(_Junction[*Ps]):
         return new_p
 
     def de_morgan(self) -> Proposition:
-        """Apply De Morgan's law to the disjunction to get an
-        equivalent proposition."""
+        """
+        Logical inference rule.
+        Apply De Morgan's law to the disjunction to get an
+        equivalent proposition.
+
+        In intuitionistic logic, the only valid De Morgan's laws are
+
+        `~A and ~B <-> ~(A or B)`
+
+        `~A or ~B -> ~(A and B)`.
+        """
+        from pylogic.enviroment_settings.settings import settings
         from pylogic.proposition.and_ import And
         from pylogic.proposition.not_ import Not, neg
+
+        if settings["USE_CLASSICAL_LOGIC"] == False:
+            if not all(isinstance(p, Not) for p in self.propositions):
+                return self
+            return Not(
+                And(*[p.negated.de_morgan() for p in self.propositions]),
+                _is_proven=self.is_proven,
+                _assumptions=get_assumptions(self),
+                _inference=Inference(self, rule="de_morgan"),
+            )
 
         negs: list[Proposition] = [
             neg(p.de_morgan()) for p in self.propositions  # type:ignore

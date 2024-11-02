@@ -51,6 +51,7 @@ class _RingoidCommon(Set):
         times_operation_symbol: str | None = None,
         **kwargs,
     ):
+        Set.__init__(self, name, elements, containment_function, **kwargs)  # type: ignore
         self._init_args = (name,)
         self._init_kwargs = {
             "elements": elements,
@@ -61,7 +62,6 @@ class _RingoidCommon(Set):
             "times_operation_symbol": times_operation_symbol,
         }
         self._init_kwargs.update(kwargs)
-        Set.__init__(self, name, elements, containment_function, **kwargs)  # type: ignore
         self.plus_operation_name = f"{self.name}_+"
         self.plus_operation_symbol = plus_operation_symbol or f"{self.name}_+"
         self.plus_eval_func = plus_operation

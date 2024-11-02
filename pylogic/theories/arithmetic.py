@@ -35,7 +35,7 @@ def weak_induction(
     induction_step: Forall[Implies[And[IsContainedIn, TProposition], TProposition]],
 ) -> Forall[Implies[IsContainedIn, TProposition]]:
     r"""
-    Logical tactic. Induction on the set of natural numbers including 0, `Naturals0`.
+    Logical inference rule. Induction on the set of natural numbers including 0, `Naturals0`.
     Given base case P(0) and induction step forall n: (n in Naturals0 /\ P(n)) -> P(n+1),
     prove forall n: n in Naturals0 -> P(n).
     """
@@ -88,7 +88,7 @@ def strong_induction(
     ],
 ) -> Forall[Implies[IsContainedIn, TProposition]]:
     r"""
-    Logical tactic. Induction on the set of natural numbers including 0, `Naturals0`.
+    Logical inference rule. Induction on the set of natural numbers including 0, `Naturals0`.
     Given base case P(0) and induction step
     forall n:
         (n in Naturals0 /\

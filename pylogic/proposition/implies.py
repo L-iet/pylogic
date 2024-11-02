@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
 VProposition = TypeVar("VProposition", bound="Proposition")
-Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
+InferenceRule = TypedDict("InferenceRule", {"name": str, "arguments": list[str]})
 
 
 class Implies(Proposition, Generic[TProposition, UProposition]):
@@ -26,11 +26,12 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
     # existsUniqueInSet existsSubset existsUniqueSubset Proposition
     _precedence = 4
 
-    tactics: list[Tactic] = [
+    _inference_rules: list[InferenceRule] = [
         {"name": "hypothetical_syllogism", "arguments": ["Implies"]},
         {"name": "impl_elim", "arguments": []},
         {"name": "definite_clause_resolve", "arguments": ["Proposition"]},
         {"name": "unit_definite_clause_resolve", "arguments": ["Proposition"]},
+        {"name": "first_unit_definite_clause_resolve", "arguments": ["Proposition"]},
         {"name": "contrapositive", "arguments": []},
     ]
 
@@ -162,7 +163,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         return new_p
 
     def contrapositive(self) -> Implies[Proposition, Proposition]:
-        r"""Logical tactic. Given self (`A -> B`) is proven, return the corresponding
+        r"""Logical inference rule. Given self (`A -> B`) is proven, return the corresponding
         contrapositive (`~B -> ~A`)
         """
         assert self.is_proven, f"{self} is not proven"
@@ -174,21 +175,28 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             _inference=Inference(self, rule="contrapositive"),
         )
 
-    def hypothetical_syllogism(
-        self, other: Implies[UProposition, VProposition]
-    ) -> Implies[TProposition, VProposition]:
+    def hypothetical_syllogism(self, *others: Implies) -> Implies:
         """
-        Logical tactic.
+        Logical inference rule. If self is A->B, and others are
+        B->C, C->D, ..., Y->Z, return A->Z.
+
+        The antecedent of the next proposition must be the consequent of the previous one.
         """
         assert self.is_proven, f"{self} is not proven"
-        assert isinstance(other, Implies), f"{other} is not an implication"
-        assert other.is_proven, f"{other} is not proven"
-        assert (
-            self.consequent == other.antecedent
-        ), f"Does not follow logically: {self},  {other}"
+        assert len(others) > 0, "No propositions given"
+        curr_consequent = self.consequent
+        curr_prop = self
+        for other in others:
+            assert isinstance(other, Implies), f"{other} is not an implication"
+            assert other.is_proven, f"{other} is not proven"
+            assert (
+                curr_consequent == other.antecedent
+            ), f"Does not follow logically: {curr_prop},  {other}"
+            curr_consequent = other.consequent
+            curr_prop = other
         i = Implies(
             self.antecedent,
-            other.consequent,
+            others[-1].consequent,
             _is_proven=True,
             _assumptions=get_assumptions(self).union(get_assumptions(other)),
             _inference=Inference(self, other, rule="hypothetical_syllogism"),
@@ -196,12 +204,17 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         return i
 
     def impl_elim(self) -> Or:
-        r"""Logical tactic. Given self (`A -> B`) is proven, return the corresponding
-        disjunction form (`~A \/ B`)
+        r"""Logical inference rule. Given self (`A -> B`) is proven, return the corresponding
+        disjunction form (`~A \/ B`).
+
+        This only works in classical logic, and will raise an error otherwise.
+        Set pylogic.enviroment_settings.settings.settings["USE_CLASSICAL_LOGIC"] = True to use this.
         """
         assert self.is_proven, f"{self} is not proven"
+        from pylogic.enviroment_settings.settings import settings
         from pylogic.proposition.or_ import Or
 
+        assert settings["USE_CLASSICAL_LOGIC"], "Classical logic is not enabled"
         return Or(
             neg(self.antecedent),
             self.consequent,
@@ -215,7 +228,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         in_body: list[Proposition] | tuple[Proposition, ...] | And[Proposition, ...],
     ) -> Self | Implies[Proposition, UProposition] | UProposition:
         r"""
-        Logical tactic. Given self `(A /\ B /\ C...) -> D` is proven, and
+        Logical inference rule. Given self `(A /\ B /\ C...) -> D` is proven, and
         given a conjunction (or list representing a conjunction) of some props
         in the antecedent (say A and B) is proven, return a proof of the new
         definite clause `(C /\ ...) -> D` or `C -> D` if only C is left in
@@ -275,7 +288,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         self, in_body: Proposition
     ) -> Self | Implies[Proposition, UProposition] | UProposition:
         r"""
-        Logical tactic. Given self `(A /\ B /\ C...) -> D` is proven, and
+        Logical inference rule. Given self `(A /\ B /\ C...) -> D` is proven, and
         given one of the props (say B) in the antecedent is proven,
         return a proof of the new definite clause `(A /\ C /\ ...) -> D`
         or `A -> D` if only A is left in the body, or D if the antecedent is
@@ -287,7 +300,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         self, first_in_body: Proposition
     ) -> Self | Implies[Proposition, UProposition] | UProposition:
         r"""
-        Logical tactic. Given self `(A /\ B /\ C...) -> D` is proven, given A is proven,
+        Logical inference rule. Given self `(A /\ B /\ C...) -> D` is proven, given A is proven,
         return a proof of the new definite clause `(B /\ C /\ ...) -> D`
         or D if the antecedent is left empty.
         Slightly faster than `unit_definite_clause_resolve`.

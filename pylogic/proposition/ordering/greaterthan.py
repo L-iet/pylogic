@@ -115,7 +115,7 @@ class GreaterThan(StrictTotalOrder[T, U], _Ordering):
     def p_multiply_by_positive(
         self, x: Term, proof_x_is_positive: "GreaterThan | LessThan"
     ) -> "GreaterThan":
-        """Logical tactic.
+        """Logical inference rule.
         Same as multiply_by_positive, but returns a proven proposition"""
         assert self.is_proven, f"{self} is not proven"
         new_p = self.multiply_by_positive(x, proof_x_is_positive)
@@ -124,7 +124,7 @@ class GreaterThan(StrictTotalOrder[T, U], _Ordering):
     def p_multiply_by_negative(
         self, x: Term, proof_x_is_negative: "GreaterThan | LessThan"
     ) -> "GreaterThan":
-        """Logical tactic.
+        """Logical inference rule.
         Same as multiply_by_negative, but returns a proven proposition"""
         assert self.is_proven, f"{self} is not proven"
         new_p = self.multiply_by_negative(x, proof_x_is_negative)
@@ -155,14 +155,14 @@ class GreaterThan(StrictTotalOrder[T, U], _Ordering):
         )
 
     def p_to_less_than(self):
-        """Logical tactic. Same as to_less_than, but returns a proven proposition"""
+        """Logical inference rule. Same as to_less_than, but returns a proven proposition"""
         assert self.is_proven, f"{self} is not proven"
         new_p = self.to_less_than()
         return new_p
 
     def by_inspection(self) -> Self:
         """
-        Logical tactic. Determine if the proposition is true by inspection.
+        Logical inference rule. Determine if the proposition is true by inspection.
         """
         # TODO: Implement this
         raise NotImplementedError
@@ -175,7 +175,7 @@ class GreaterThan(StrictTotalOrder[T, U], _Ordering):
 
 
 def is_absolute(expr: Term, expr_not_zero: Not[Equals]) -> "GreaterThan":
-    """Logical tactic.
+    """Logical inference rule.
     Given an expr of the form sympy.Abs(x) and a proof that the expr is
     not zero,
     return a proven proposition that says sympy.Abs(x) > 0
@@ -200,7 +200,7 @@ def is_absolute(expr: Term, expr_not_zero: Not[Equals]) -> "GreaterThan":
 
 
 def is_even_power(expr: Term) -> "GreaterThan":
-    """Logical tactic.
+    """Logical inference rule.
     Given an expr of the form x**(2n), return a proven proposition that says
     x**(2n) > 0
     """
@@ -223,7 +223,7 @@ def is_even_power(expr: Term) -> "GreaterThan":
 def is_rational_power(
     expr: Term, proof_base_is_positive: "GreaterThan"
 ) -> "GreaterThan":
-    """Logical tactic.
+    """Logical inference rule.
     Given an expr of the form x**(p/q) and a proof that x > 0,
     return a proven proposition that says
     x**(p/q) > 0

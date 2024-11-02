@@ -68,16 +68,6 @@ class Ringoid(LeftRingoid, RightRingoid):
         times_operation_symbol: str | None = None,
         **kwargs,
     ):
-        self._init_args = (name,)
-        self._init_kwargs = {
-            "elements": elements,
-            "containment_function": containment_function,
-            "plus_operation": plus_operation,
-            "plus_operation_symbol": plus_operation_symbol,
-            "times_operation": times_operation,
-            "times_operation_symbol": times_operation_symbol,
-        }
-        self._init_kwargs.update(kwargs)
         # LeftRingoid.__init__
         super().__init__(
             name=name,
@@ -89,6 +79,16 @@ class Ringoid(LeftRingoid, RightRingoid):
             times_operation_symbol=times_operation_symbol,
             **kwargs,
         )
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+        }
+        self._init_kwargs.update(kwargs)
         self.times_dist_over_plus = And(
             self.times_left_dist_over_plus,
             self.times_right_dist_over_plus,

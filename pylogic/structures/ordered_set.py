@@ -369,7 +369,8 @@ class OrderedSet(Set):
         strict_total_order: StrictTotalOrderOp | None = None,
         **kwargs,
     ):
-        super().__init__(
+        Set.__init__(
+            self,
             name=name,
             elements=elements,
             containment_function=containment_function,
@@ -377,6 +378,16 @@ class OrderedSet(Set):
             illegal_occur_check=illegal_occur_check,
             **kwargs,
         )
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "predicate": predicate,
+            "illegal_occur_check": illegal_occur_check,
+            "total_order": total_order,
+            "strict_total_order": strict_total_order,
+            **kwargs,
+        }
         self._build_total_and_strict_orders(total_order, strict_total_order)
         self.order_is_reflexive = OrderedSet.property_order_is_reflexive(
             self, self.total_order

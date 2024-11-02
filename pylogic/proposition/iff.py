@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
 VProposition = TypeVar("VProposition", bound="Proposition")
-Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
+InferenceRule = TypedDict("InferenceRule", {"name": str, "arguments": list[str]})
 
 
 class Iff(Proposition, Generic[TProposition, UProposition]):
@@ -26,7 +26,7 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
     # existsUniqueInSet existsSubset existsUniqueSubset Proposition
     _precedence = 5
 
-    tactics: list[Tactic] = [
+    _inference_rules: list[InferenceRule] = [
         {"name": "forward_implication", "arguments": []},
         {"name": "reverse_implication", "arguments": []},
         {"name": "converse", "arguments": []},
@@ -149,7 +149,7 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
         return new_p
 
     def forward_implication(self) -> Implies[TProposition, UProposition]:
-        r"""Logical tactic. Given self (`A <-> B`) is proven, return the forward
+        r"""Logical inference rule. Given self (`A <-> B`) is proven, return the forward
         implication `A -> B`.
         """
         return Implies(
@@ -161,7 +161,7 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
         )
 
     def reverse_implication(self) -> Implies[UProposition, TProposition]:
-        r"""Logical tactic. Given self (`A <-> B`) is proven, return the reverse
+        r"""Logical inference rule. Given self (`A <-> B`) is proven, return the reverse
         implication `B -> A`.
         """
         return Implies(
@@ -173,7 +173,7 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
         )
 
     def converse(self) -> Iff[UProposition, TProposition]:
-        r"""Logical tactic. Given self (`A <-> B`) is proven, return the converse
+        r"""Logical inference rule. Given self (`A <-> B`) is proven, return the converse
         `B <-> A`.
         """
         return Iff(
@@ -185,7 +185,7 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
         )
 
     def inverse(self) -> Iff[Not[TProposition], Not[UProposition]]:
-        r"""Logical tactic. Given self (`A <-> B`) is proven, return the inverse
+        r"""Logical inference rule. Given self (`A <-> B`) is proven, return the inverse
         `~A <-> ~B`.
         """
         return Iff(
@@ -197,7 +197,7 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
         )
 
     def contrapositive(self) -> Iff[Not[UProposition], Not[TProposition]]:
-        r"""Logical tactic. Given self (`A <-> B`) is proven, return the contrapositive
+        r"""Logical inference rule. Given self (`A <-> B`) is proven, return the contrapositive
         `~B <-> ~A`.
         """
         return Iff(

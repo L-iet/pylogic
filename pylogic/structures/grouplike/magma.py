@@ -73,16 +73,6 @@ class Magma(Set):
     ):
         from pylogic.inference import Inference
 
-        self._init_args = (name,)
-        self._init_kwargs = {
-            "elements": elements,
-            "containment_function": containment_function,
-            "operation": operation,
-            "operation_name": operation_name,
-            "operation_symbol": operation_symbol,
-        }
-        self._init_kwargs.update(kwargs)
-
         # we use this because we want to be able to change the attribute names
         # when we initialize instances in other classes
         attr_names = kwargs.pop(
@@ -100,6 +90,15 @@ class Magma(Set):
         # TODO: need to check that the set is closed under the operation
         # make this functionality optional
         Set.__init__(self, name, elements, containment_function, **kwargs)  # type: ignore
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "operation": operation,
+            "operation_name": operation_name,
+            "operation_symbol": operation_symbol,
+        }
+        self._init_kwargs.update(kwargs)
         opname = operation_name or f"{self.name}_Op"
         opsymb = operation_symbol or f"{self.name}_Op"
         setattr(self, attr_names["operation_name"], opname)

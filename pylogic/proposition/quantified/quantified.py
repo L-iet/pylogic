@@ -161,7 +161,7 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
 
     def rename_variable(self, new_name: str) -> Self:
         """
-        Logical tactic. Rename the bound variable.
+        Logical inference rule. Rename the bound variable.
         """
         from pylogic.inference import Inference
 

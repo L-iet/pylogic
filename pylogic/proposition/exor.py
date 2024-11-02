@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.and_ import And
 
 Ps = TypeVarTuple("Ps")
-Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
+InferenceRule = TypedDict("InferenceRule", {"name": str, "arguments": list[str]})
 Props = tuple[Proposition, ...]
 
 
@@ -30,8 +30,12 @@ class ExOr(_Junction[*Ps]):
     # existsUniqueInSet existsSubset existsUniqueSubset Proposition
     _precedence = 1
 
-    tactics: list[Tactic] = [
-        {"name": "one_proven", "arguments": ["Proposition"]},
+    _inference_rules: list[InferenceRule] = [
+        {"name": "one_proven_rem_false", "arguments": ["Proposition"]},
+        {"name": "one_proven", "arguments": ["Proposition", "Proposition"]},
+        {"name": "resolve", "arguments": ["Proposition"]},
+        {"name": "unit_resolve", "arguments": ["Proposition"]},
+        {"name": "by_cases", "arguments": []},
     ]
     _supports_resolve = True
     _supports_by_cases = True
@@ -59,7 +63,7 @@ class ExOr(_Junction[*Ps]):
 
     def one_proven_rem_false(self, p: Proposition) -> And[*Props]:
         """
-        Logical tactic. Given self is proven, and one proven proposition in self,
+        Logical inference rule. Given self is proven, and one proven proposition in self,
         return a proof that all the remaining propositions are false.
         """
         assert self.is_proven, f"{self} is not proven"
@@ -76,13 +80,14 @@ class ExOr(_Junction[*Ps]):
         )
         return new_p
 
+    @classmethod
     def one_proven(
-        self, positive_proven: Proposition, *negations_proven: Proposition
+        cls, positive_proven: Proposition, *negations_proven: Proposition
     ) -> Self:
         """
-        Logical tactic. Given that one proposition is proven and all the negations
+        Logical inference rule. Given that one proposition is proven and all the negations
         of the other propositions are proven,
-        return a proof of self (exclusive or).
+        return a proof of an ExOr.
         """
         assert all(
             prop.is_proven for prop in (positive_proven, *negations_proven)
@@ -92,12 +97,12 @@ class ExOr(_Junction[*Ps]):
         all_positives = set(neg(neg_prop) for neg_prop in negations_proven).union(
             {positive_proven}
         )
-        assert all_positives == set(
-            self.propositions
-        ), "Not all propositions are present"
-
-        new_p = self.copy()
-        new_p._set_is_proven(True)
-        new_p.deduced_from = Inference(self, p, rule="one_proven")
-        new_p.from_assumptions = get_assumptions(self).union(get_assumptions(p))
+        new_p = cls(
+            *all_positives,
+            _is_proven=True,
+            _assumptions=get_assumptions(positive_proven).union(
+                *[get_assumptions(neg_prop) for neg_prop in negations_proven]
+            ),
+            _inference=Inference(positive_proven, *negations_proven, rule="one_proven"),
+        )
         return new_p

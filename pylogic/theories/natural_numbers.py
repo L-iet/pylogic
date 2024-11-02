@@ -213,6 +213,7 @@ class NaturalsSemiring(SemirIng, OrderedSet):
         one: Z | Unevaluated | None = None,
         total_order: TotalOrderOp | None = None,
         strict_total_order: StrictTotalOrderOp | None = None,
+        **kwargs,
     ):
         SemirIng.__init__(
             self,
@@ -225,6 +226,7 @@ class NaturalsSemiring(SemirIng, OrderedSet):
             times_operation=times_operation,
             times_operation_symbol=times_operation_symbol,
             one=one,
+            **kwargs,
         )
         OrderedSet.__init__(
             self,
@@ -233,7 +235,22 @@ class NaturalsSemiring(SemirIng, OrderedSet):
             containment_function=containment_function,
             total_order=total_order,
             strict_total_order=strict_total_order,
+            **kwargs,
         )
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "zero": zero,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+            "one": one,
+            "total_order": total_order,
+            "strict_total_order": strict_total_order,
+        }
+        self._init_kwargs.update(kwargs)
         self.successor = Function("Naturals.successor", self, self)
         self.well_ordering_set = NaturalsSemiring.property_well_ordering_set(
             self, self.total_order
@@ -256,7 +273,7 @@ class NaturalsSemiring(SemirIng, OrderedSet):
         ],
     ) -> ForallInSet[Proposition]:
         r"""
-        Logical tactic. This uses the principle of strong induction given the base case and inductive step.
+        Logical inference rule. This uses the principle of strong induction given the base case and inductive step.
         Given base case P(0) and induction step
         forall n in N:
             forall k in N: (k <= n -> P(k))
@@ -316,7 +333,7 @@ You may have dangling assumptions whose scopes are not properly closed."
         induction_step: ForallInSet[Implies[Proposition, Proposition]],
     ) -> ForallInSet[Proposition]:
         r"""
-        Logical tactic. This uses the principle of weak induction given the base case and inductive step.
+        Logical inference rule. This uses the principle of weak induction given the base case and inductive step.
         Given base case P(0) and induction step
         forall n in N: P(n) -> P(n+1),
         return a proof of forall n in N, P(n).
@@ -404,7 +421,7 @@ You may have dangling assumptions whose scopes are not properly closed."
         self, prop: Proposition, argument: Term | None = None
     ) -> ExistsInSet[And[Proposition, ForallInSet[Implies[Proposition, TotalOrder]]]]:
         r"""
-        Logical tactic. Given a proposition about naturals, prove that there is a
+        Logical inference rule. Given a proposition about naturals, prove that there is a
         least natural number satisfying it.
         If argument is provided, it should be an argument of the proposition
         and will be used in patter-matching to construct the result.

@@ -44,7 +44,7 @@ def by_call(*ps: Proposition, rule: str = "") -> ByProvers:
 
 def by_forall(p: P, prover: Forall[Proposition] | ForallInSet[Proposition]) -> P:
     """
-    Logical tactic. We try to prove p using prover, a Forall statement.
+    Logical inference rule. We try to prove p using prover, a Forall statement.
     """
     from pylogic.inference import Inference
     from pylogic.proposition.proposition import get_assumptions
@@ -78,7 +78,7 @@ def by_forall(p: P, prover: Forall[Proposition] | ForallInSet[Proposition]) -> P
 
 def _by(p: P, prover: Proposition) -> P:
     """
-    Logical tactic. We try to prove p using prover.
+    Logical inference rule. We try to prove p using prover.
     """
     assert prover.is_proven, f"{prover} is not proven"
     from pylogic.proposition.quantified.forall import Forall
@@ -90,5 +90,5 @@ def _by(p: P, prover: Proposition) -> P:
 
 by: Annotated[
     SpecialInfix[Proposition, Proposition, Proposition, ByProvers],
-    "Logical tactic. We try to prove the left argument using the right (prover)",
+    "Logical inference rule. We try to prove the left argument using the right (prover)",
 ] = SpecialInfix(_by, by_call)

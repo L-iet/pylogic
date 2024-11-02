@@ -58,31 +58,34 @@ class BinaryRelation(Relation, Generic[T, U]):
         right_latex = latex(self.right)
         return f"{left_latex} {self.infix_symbol_latex} {right_latex}"
 
-    def _set_is_inferred_true(self) -> None:
-        super()._set_is_inferred_true()
-        self.left.knowledge_base.add(self)
+    def _set_is_inferred(self, value: bool) -> None:
+        super()._set_is_inferred(value)
+        if value:
+            self.left.knowledge_base.add(self)
+        else:
+            self.left.knowledge_base.discard(self)
 
     def _set_is_proven(self, value: bool) -> None:
         super()._set_is_proven(value)
         if value:
-            self._set_is_inferred_true()
+            self._set_is_inferred(True)
         elif not (self.is_axiom or self.is_assumption):
-            self.left.knowledge_base.discard(self)
+            self._set_is_inferred(False)
 
     def _set_is_assumption(self, value: bool) -> None:
         super()._set_is_assumption(value)
         if value:
-            self._set_is_inferred_true()
+            self._set_is_inferred(True)
         else:
             if not (self._is_proven or self.is_axiom):
-                self.left.knowledge_base.discard(self)
+                self._set_is_inferred(False)
 
     def _set_is_axiom(self, value: bool) -> None:
         super()._set_is_axiom(value)
         if value:
-            self._set_is_inferred_true()
+            self._set_is_inferred(True)
         elif not (self._is_proven or self.is_assumption):
-            self.left.knowledge_base.discard(self)
+            self._set_is_inferred(False)
 
     def copy(self) -> Self:
         return self.__class__(
@@ -138,7 +141,7 @@ class BinaryRelation(Relation, Generic[T, U]):
 
     def transitive(self, *others: Self) -> Self:
         """
-        Logical Tactic. If self is of the form a Relation b and other is of the form b Relation c,
+        Logical InferenceRule. If self is of the form a Relation b and other is of the form b Relation c,
         returns a proven relation of the form a Relation c.
         Will try to evaluate expressions if self.right and other.left don't have
         the same structure.
@@ -183,7 +186,7 @@ class BinaryRelation(Relation, Generic[T, U]):
 
     def symmetric(self) -> BinaryRelation[U, T]:
         """
-        Logical tactic. If self is proven, return a proof of self.right Relation self.left.
+        Logical inference rule. If self is proven, return a proof of self.right Relation self.left.
         """
         from pylogic.inference import Inference
 
@@ -199,7 +202,7 @@ class BinaryRelation(Relation, Generic[T, U]):
     @classmethod
     def reflexive(cls: type[C], term: T) -> C:
         """
-        Logical tactic. Given a term, return a reflexive relation of the form term R term.
+        Logical inference rule. Given a term, return a reflexive relation of the form term R term.
         """
         from pylogic.inference import Inference
 

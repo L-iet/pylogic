@@ -58,18 +58,6 @@ class NearrIng(CrookedSemirIng[Z]):
         one: Z | Unevaluated | None = None,
         **kwargs,
     ):
-        self._init_args = (name,)
-        self._init_kwargs = {
-            "elements": elements,
-            "containment_function": containment_function,
-            "plus_operation": plus_operation,
-            "plus_operation_symbol": plus_operation_symbol,
-            "zero": zero,
-            "times_operation": times_operation,
-            "times_operation_symbol": times_operation_symbol,
-            "one": one,
-        }
-        self._init_kwargs.update(kwargs)
         CrookedSemirIng.__init__(
             self,
             name=name,
@@ -83,6 +71,18 @@ class NearrIng(CrookedSemirIng[Z]):
             one=one,
             **kwargs,
         )
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "zero": zero,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+            "one": one,
+        }
+        self._init_kwargs.update(kwargs)
         self.group_plus = Group(
             name=name,
             elements=elements,

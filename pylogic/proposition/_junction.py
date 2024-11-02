@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from pylogic.symbol import Symbol
     from pylogic.variable import Variable
 
-Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
+InferenceRule = TypedDict("InferenceRule", {"name": str, "arguments": list[str]})
 
 T = TypeVar("T", bound="_Junction")
 
@@ -252,7 +252,7 @@ Occured when trying to unify `{self}` and `{other}`"
 
     def resolve(self, p: list[Proposition] | And[*Props]) -> Proposition | Self:
         r"""
-        Logical tactic. Given self is proven, and p is proven, where p is
+        Logical inference rule. Given self is proven, and p is proven, where p is
         a conjunction or list of negations of propositions in self,
         return a proven disjunction of the remaining propositions in self.
 
@@ -302,7 +302,7 @@ Occured when trying to unify `{self}` and `{other}`"
 
     def by_cases(self, *implications: Implies[Proposition, Proposition]) -> Proposition:
         r"""
-        Logical tactic.
+        Logical inference rule.
         If self is of the form `A \/ B \/ C...`, and there are implications
         `A -> D`, `B -> E`, `C -> F...`, return `D \/ E \/ F...`.
         """
@@ -327,7 +327,7 @@ Occured when trying to unify `{self}` and `{other}`"
 
     def unit_resolve(self, p: Proposition) -> Proposition | Self:
         """
-        Logical tactic. Given self is proven, and p is proven, where p is
+        Logical inference rule. Given self is proven, and p is proven, where p is
         a negation of one of the propositions in self, return a proven disjunction
         of the remaining propositions in self.
         """
@@ -365,7 +365,7 @@ Occured when trying to unify `{self}` and `{other}`"
 
     def left_distribute(self) -> Proposition:
         r"""
-        Logical tactic. Return an equivalent proposition
+        Logical inference rule. Return an equivalent proposition
         that is the result of left distribution.
         For example, if self is `A \/ (B /\ C)`, return `(A \/ B) /\ (A \/ C)`.
         """
@@ -387,7 +387,7 @@ Occured when trying to unify `{self}` and `{other}`"
 
     def right_distribute(self) -> Proposition:
         r"""
-        Logical tactic. Return an equivalent proposition
+        Logical inference rule. Return an equivalent proposition
         that is the result of right distribution.
         For example, if self is `(A /\ B) \/ C`, return `(A \/ C) /\ (B \/ C)`.
         """
@@ -409,7 +409,7 @@ Occured when trying to unify `{self}` and `{other}`"
 
     def distribute(self) -> Proposition:
         """
-        Logical tactic. Return an equivalent proposition
+        Logical inference rule. Return an equivalent proposition
         that is the result of distribution.
         Defaults to left distribution unless not possible.
         """

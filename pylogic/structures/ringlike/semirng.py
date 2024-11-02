@@ -41,17 +41,6 @@ class Semirng(CrookedSemirng[Z]):
         times_operation_symbol: str | None = None,
         **kwargs,
     ):
-        self._init_args = (name,)
-        self._init_kwargs = {
-            "elements": elements,
-            "containment_function": containment_function,
-            "plus_operation": plus_operation,
-            "plus_operation_symbol": plus_operation_symbol,
-            "zero": zero,
-            "times_operation": times_operation,
-            "times_operation_symbol": times_operation_symbol,
-        }
-        self._init_kwargs.update(kwargs)
         CrookedSemirng.__init__(
             self,
             name=name,
@@ -64,6 +53,17 @@ class Semirng(CrookedSemirng[Z]):
             times_operation_symbol=times_operation_symbol,
             **kwargs,
         )
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "zero": zero,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+        }
+        self._init_kwargs.update(kwargs)
         self.plus_is_commutative = Semirng.property_plus_is_commutative(
             self, self.plus_operation
         )

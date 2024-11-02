@@ -6,5 +6,6 @@ This is a simple proof assistant for propositional and predicate logic. The goal
 ## Installation
 
 - Clone the repository
-- Install the requirements using `pip install -r requirements.txt`
-- You can also check out other demos of Pylogic in `main.py` and `pylogic_demo.ipynb`
+- From the root directory, install the requirements using `pip install -r requirements.txt`
+- Check out `tutorial_demo.ipynb` for an intro tutorial, or `pylogic_demo.ipynb`
+to look at a slightly more involved example.

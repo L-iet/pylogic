@@ -46,16 +46,6 @@ class Loop(Quasigroup):
         identity: T | None = None,
         **kwargs,
     ):
-        self._init_args = (name,)
-        self._init_kwargs = {
-            "elements": elements,
-            "containment_function": containment_function,
-            "operation": operation,
-            "operation_name": operation_name,
-            "operation_symbol": operation_symbol,
-            "identity": identity,
-        }
-        self._init_kwargs.update(kwargs)
 
         if elements is not None and identity is not None:
             assert identity in elements, "Identity must be in the set of elements"
@@ -69,6 +59,16 @@ class Loop(Quasigroup):
             operation_symbol=operation_symbol,
             **kwargs,
         )
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "operation": operation,
+            "operation_name": operation_name,
+            "operation_symbol": operation_symbol,
+            "identity": identity,
+        }
+        self._init_kwargs.update(kwargs)
         if is_python_numeric(identity):
             identity = Constant(identity)  # type: ignore
         self.identity: Symbol | Constant | Set | Expr = identity or Constant(

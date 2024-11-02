@@ -294,7 +294,7 @@ def python_to_pylogic(arg: Any) -> Proposition | Expr | Symbol | Sequence | Set:
 def python_to_pylogic(arg: Any) -> Proposition | Expr | Symbol | Sequence | Set:
     """
     Convert certain python objects to Pylogic objects.
-    A Python character/str with one character is co\nverted to a Pylogic Constant.
+    A Python character/str with one character is converted to a Pylogic Constant.
     A Python set is converted to a Pylogic Set.
     A Python dictionary is converted to a Pylogic Set of Pairs.
     A Python tuple is converted to a Pylogic Pair, Triple, or Sequence.

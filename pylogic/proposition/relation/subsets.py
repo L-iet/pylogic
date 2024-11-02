@@ -22,7 +22,7 @@ else:
     U = Any
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
-Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
+InferenceRule = TypedDict("InferenceRule", {"name": str, "arguments": list[str]})
 
 
 class IsSubsetOf(BinaryRelation[T, U]):
@@ -30,7 +30,7 @@ class IsSubsetOf(BinaryRelation[T, U]):
     name = "IsSubsetOf"
     infix_symbol = "issubset"
     infix_symbol_latex = r"\subseteq"
-    tactics: list[Tactic] = []
+    _inference_rules: list[InferenceRule] = []
 
     def __init__(
         self,
@@ -98,7 +98,7 @@ right: {right}, right.is_set: {right.is_set}"
 
     def by_empty(self) -> Self:
         """
-        Logical tactic.
+        Logical inference rule.
         If self is `EmptySet issubset A`, return self but proven
         """
         from pylogic.inference import Inference
@@ -113,7 +113,7 @@ right: {right}, right.is_set: {right.is_set}"
 
     def by_inspection(self) -> Self:
         """
-        Logical tactic. If self is already proven, self is `A issubset A`,
+        Logical inference rule. If self is already proven, self is `A issubset A`,
         or the predicate of self.left logically implies that any variable x in self.left is in self.right,
         return self but proven.
         """

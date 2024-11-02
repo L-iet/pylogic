@@ -224,6 +224,8 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
         return self.name == other.name
 
     def __contains__(self, item: Any) -> bool:
+        if settings["PYTHON_OPS_RETURN_PROPS"]:
+            return self.contains(item)
         return self.containment_function(item)
 
     def equals(self, other: Term, **kwargs) -> Equals:

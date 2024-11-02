@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from pylogic.symbol import Symbol
 
 
-Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
+InferenceRule = TypedDict("InferenceRule", {"name": str, "arguments": list[str]})
 
 
 class Exists(_Quantified[TProposition]):
@@ -34,9 +34,13 @@ class Exists(_Quantified[TProposition]):
     # existsUniqueInSet existsSubset existsUniqueSubset Proposition
     _precedence = 9
 
-    tactics: list[Tactic] = [
+    _inference_rules: list[InferenceRule] = [
         {"name": "exists_modus_ponens", "arguments": ["Forall"]},
+        {"name": "extract", "arguments": []},
         {"name": "de_morgan", "arguments": []},
+        {"name": "to_exists_in_set", "arguments": []},
+        {"name": "to_exists_unique", "arguments": []},
+        {"name": "to_exists_unique_in_set", "arguments": []},
     ]
 
     _q = "exists"
@@ -115,9 +119,9 @@ class Exists(_Quantified[TProposition]):
         return iter(self.extract())
 
     def extract(
-        self, symbol_name: str | None = None, symbol_latex_name: str | None = None
+        self, name: str | None = None, latex_name: str | None = None
     ) -> tuple[Symbol, TProposition]:
-        """Logical tactic.
+        """Logical inference rule.
         If self is proven, return a constant and a proven inner proposition.
         """
         assert self.is_proven, f"{self} is not proven"
@@ -135,8 +139,8 @@ class Exists(_Quantified[TProposition]):
         else:
             cls = Variable
         c = cls(
-            symbol_name or self.variable.name,
-            latex_name=symbol_latex_name or self.variable.latex_name,
+            name or self.variable.name,
+            latex_name=latex_name or name or self.variable.latex_name,
             depends_on=other_free_vars,
             _from_existential_instance=True,
         )
@@ -152,7 +156,7 @@ class Exists(_Quantified[TProposition]):
 
     def exists_modus_ponens(self, other: Forall[Implies[TProposition, B]]) -> Exists[B]:
         """
-        Logical tactic. If self is exists x: P(x) and given forall x: P(x) -> Q(x)
+        Logical inference rule. If self is exists x: P(x) and given forall x: P(x) -> Q(x)
         and each is proven, conclude exists x: Q(x).
         """
         from pylogic.inference import Inference
@@ -174,13 +178,31 @@ class Exists(_Quantified[TProposition]):
         )
         return new_p
 
-    def de_morgan(self) -> Not[Forall[Not[TProposition]]]:
+    def de_morgan(self) -> Proposition:
         """
         Apply De Morgan's law to an existentially quantified sentence.
+
+        In intuitionistic logic, the only valid De Morgan's laws are
+
+        `~A and ~B <-> ~(A or B)`
+
+        `~A or ~B -> ~(A and B)`.
         """
+        from pylogic.enviroment_settings.settings import settings
         from pylogic.inference import Inference
         from pylogic.proposition.not_ import Not, neg
         from pylogic.proposition.quantified.forall import Forall
+
+        if settings["USE_CLASSICAL_LOGIC"] == False:
+            if not isinstance(self.inner_proposition, Not):
+                return self
+            self.variable.unbind()
+            return Not(
+                Forall(self.variable, self.inner_proposition.negated.de_morgan()),
+                _is_proven=self.is_proven,
+                _assumptions=get_assumptions(self).copy(),
+                _inference=Inference(self, rule="de_morgan"),
+            )
 
         inner_negated = neg(self.inner_proposition.de_morgan())
         self.variable.unbind()

@@ -26,7 +26,7 @@ else:
     U = Any
 T = TypeVar("T", bound=Term)
 
-Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
+InferenceRule = TypedDict("InferenceRule", {"name": str, "arguments": list[str]})
 
 
 class IsContainedIn(BinaryRelation[T, U]):
@@ -34,7 +34,7 @@ class IsContainedIn(BinaryRelation[T, U]):
     name = "IsContainedIn"
     infix_symbol = "in"
     infix_symbol_latex = r"\in"
-    tactics: list[Tactic] = [
+    _inference_rules: list[InferenceRule] = [
         {"name": "by_containment_func", "arguments": []},
         {"name": "by_def", "arguments": []},
     ]
@@ -61,28 +61,36 @@ class IsContainedIn(BinaryRelation[T, U]):
             or kwargs.get("is_assumption")
             or kwargs.get("is_axiom")
         ):
-            self._set_is_inferred_true()
+            self._set_is_inferred(True)
 
     @property
     def element(self) -> T:
         return self.left
 
-    def _set_is_inferred_true(self) -> None:
-        super()._set_is_inferred_true()
-        # TODO: add more here
-        if self.right.name in {"Naturals", "Integers", "Rationals", "Reals"}:
-            substr = self.right.name[:-1].lower()
-            setattr(self.left, f"_is_{substr}", True)
-        self.left.knowledge_base.add(self)
-        self.right.elements.add(self.left)
+    def _set_is_inferred(self, value: bool) -> None:
+        super()._set_is_inferred(value)
+        if value:
+            # TODO: add more here
+            if self.right.name in {"Naturals", "Integers", "Rationals", "Reals"}:
+                substr = self.right.name[:-1].lower()
+                setattr(self.left, f"_is_{substr}", True)
+            self.left.knowledge_base.add(self)
+            self.left.sets_contained_in.add(self.right)
+            self.right.elements.add(self.left)
+        else:
+            if self.right.name in {"Naturals", "Integers", "Rationals", "Reals"}:
+                substr = self.right.name[:-1].lower()
+                setattr(self.left, f"_is_{substr}", None)
+            self.left.knowledge_base.discard(self)
+            self.left.sets_contained_in.discard(self.right)
+            self.right.elements.discard(self.left)
 
     def _set_is_proven(self, value: bool) -> None:
         super()._set_is_proven(value)
         if value:
-            self._set_is_inferred_true()
+            self._set_is_inferred(True)
         elif not (self.is_axiom or self.is_assumption):
-            self.right.elements.discard(self.left)
-            self.left.knowledge_base.discard(self)
+            self._set_is_inferred(False)
 
     def _set_is_assumption(self, value: bool) -> None:
         super()._set_is_assumption(value)
@@ -90,22 +98,19 @@ class IsContainedIn(BinaryRelation[T, U]):
         # set's elements although we called followed_from with this prop
         # update Oct 11 2024, did I fix this?
         if value:
-            self._set_is_inferred_true()
-        else:
-            if not (self._is_proven or self.is_axiom):
-                self.right.elements.discard(self.left)
-                self.left.knowledge_base.discard(self)
+            self._set_is_inferred(True)
+        elif not (self._is_proven or self.is_axiom):
+            self._set_is_inferred(False)
 
     def _set_is_axiom(self, value: bool) -> None:
         super()._set_is_axiom(value)
         if value:
-            self._set_is_inferred_true()
+            self._set_is_inferred(True)
         elif not (self._is_proven or self.is_assumption):
-            self.right.elements.discard(self.left)
-            self.left.knowledge_base.discard(self)
+            self._set_is_inferred(False)
 
     def by_containment_func(self) -> Self:
-        """Logical tactic. Use the set's containment function to prove that it
+        """Logical inference rule. Use the set's containment function to prove that it
         contains the element
         """
         try:
@@ -125,7 +130,7 @@ class IsContainedIn(BinaryRelation[T, U]):
             raise ValueError(f"Cannot prove that {self.right} contains {self.left}")
 
     def by_predicate(self, proven_predicate: Proposition) -> Self:
-        """Logical tactic. Use the set's predicate function to prove that it
+        """Logical inference rule. Use the set's predicate function to prove that it
         contains the element
         """
         # For sequence s = self.right, self.left would need to be a natural number n
@@ -152,7 +157,7 @@ class IsContainedIn(BinaryRelation[T, U]):
             raise ValueError(f"Cannot prove that {self.right} contains {self.left}")
 
     def by_inspection(self) -> Self:
-        """Logical tactic. Use the set's containment function and sympy set to
+        """Logical inference rule. Use the set's containment function and sympy set to
         prove that it contains the element.
         """
         from pylogic.helpers import getkey
@@ -162,7 +167,7 @@ class IsContainedIn(BinaryRelation[T, U]):
         return self.by_containment_func()
 
     def thus_predicate(self) -> Proposition:
-        """Logical tactic. Given that the set contains the element, return
+        """Logical inference rule. Given that the set contains the element, return
         the predicate that the element satisfies.
         """
         assert self.is_proven, f"{self} is not proven"
@@ -177,7 +182,7 @@ class IsContainedIn(BinaryRelation[T, U]):
 
     def thus_not_empty(self) -> Not[Equals]:
         """
-        Logical tactic. Given self = x in S is proven, return a proof that S is not empty.
+        Logical inference rule. Given self = x in S is proven, return a proof that S is not empty.
         """
         assert self.is_proven, f"{self} is not proven"
         from pylogic.proposition.not_ import Not
@@ -196,7 +201,7 @@ class IsContainedIn(BinaryRelation[T, U]):
         return res
 
     def thus_contained_in_at_least_one(self) -> Or[IsContainedIn, ...]:
-        """Logical tactic. Given x in Union[A, B, C],
+        """Logical inference rule. Given x in Union[A, B, C],
         return a proof that x in A or x in B or x in C"""
         assert self.is_proven, f"{self} is not proven"
         from pylogic.proposition.or_ import Or
@@ -213,7 +218,7 @@ class IsContainedIn(BinaryRelation[T, U]):
         )
 
     def thus_contained_in_all(self) -> And[IsContainedIn, ...]:
-        """Logical tactic. Given x in Intersection[A, B, C],
+        """Logical inference rule. Given x in Intersection[A, B, C],
         return a proof that x in A and x in B and x in C"""
         assert self.is_proven, f"{self} is not proven"
         from pylogic.proposition.and_ import And

@@ -16,8 +16,15 @@ from typing import (
 import sympy as sp
 
 from pylogic import PBasic, Term, Unification
+from pylogic.enviroment_settings.settings import settings
 
 if TYPE_CHECKING:
+    from pylogic.expressions.abs import Abs
+    from pylogic.proposition.not_ import Not
+    from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
+    from pylogic.proposition.ordering.greaterthan import GreaterThan
+    from pylogic.proposition.ordering.lessorequal import LessOrEqual
+    from pylogic.proposition.ordering.lessthan import LessThan
     from pylogic.proposition.proposition import Proposition
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
@@ -51,6 +58,11 @@ class Expr(ABC):
         self.is_rational: bool | None = None
         self.is_integer: bool | None = None
         self.is_natural: bool | None = None
+        self.is_nonzero: bool | None = None
+        self.is_positive: bool | None = None
+        self.is_negative: bool | None = None
+        self.is_nonpositive: bool | None = None
+        self.is_nonnegative: bool | None = None
 
     def _build_args_and_symbols(
         self, *args: Proposition | PBasic | Set | Sequence | Expr
@@ -87,6 +99,8 @@ class Expr(ABC):
                 cls = arg.__class__.__name__
                 if cls.startswith("Collection") and cls[10].isdigit():
                     self.class_ns.add(arg)  # type: ignore
+
+        self.sets_contained_in: set[Set] = set()
 
     @property
     def symbols(self) -> set[Symbol]:
@@ -137,6 +151,11 @@ class Expr(ABC):
     def __neg__(self) -> Mul:
         return Mul(-1, self)
 
+    def __abs__(self) -> Abs:
+        from pylogic.expressions.abs import Abs
+
+        return Abs(self)
+
     def __pow__(self, other: Expr | PBasic) -> Pow:
         return Pow(self, other)
 
@@ -149,7 +168,9 @@ class Expr(ABC):
     def __rmul__(self, other: Expr | PBasic) -> Mul:
         return Mul(other, self)
 
-    def __rtruediv__(self, other: Expr | PBasic) -> Mul:
+    def __rtruediv__(self, other: Expr | PBasic) -> Mul | Pow:
+        if other == 1:
+            return Pow(self, -1)
         return Mul(other, Pow(self, -1))
 
     def __rpow__(self, other: Expr | PBasic) -> Pow:
@@ -161,6 +182,34 @@ class Expr(ABC):
         """
         if isinstance(other, Expr):
             return isinstance(other, self.__class__) and self.args == other.args
+        return NotImplemented
+
+    def __lt__(self, other: Any) -> bool | LessThan:
+        from pylogic.proposition.ordering.lessthan import LessThan
+
+        if settings["PYTHON_OPS_RETURN_PROPS"]:
+            return LessThan(self, other)
+        return NotImplemented
+
+    def __le__(self, other: Any) -> bool | LessOrEqual:
+        from pylogic.proposition.ordering.lessorequal import LessOrEqual
+
+        if settings["PYTHON_OPS_RETURN_PROPS"]:
+            return LessOrEqual(self, other)
+        return NotImplemented
+
+    def __gt__(self, other: Any) -> bool | GreaterThan:
+        from pylogic.proposition.ordering.greaterthan import GreaterThan
+
+        if settings["PYTHON_OPS_RETURN_PROPS"]:
+            return GreaterThan(self, other)
+        return NotImplemented
+
+    def __ge__(self, other: Any) -> bool | GreaterOrEqual:
+        from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
+
+        if settings["PYTHON_OPS_RETURN_PROPS"]:
+            return GreaterOrEqual(self, other)
         return NotImplemented
 
     def eval_same(self, other: Any) -> bool:
@@ -371,7 +420,21 @@ class Add(Expr):
         self.is_rational = object()  # type: ignore
         self.is_integer = object()  # type: ignore
         self.is_natural = object()  # type: ignore
-        for arg in self._init_args:
+
+        self.is_nonzero = None
+        self.is_positive = None
+        self.is_negative = None
+        self.is_nonpositive = None
+        self.is_nonnegative = None
+        at_least_one_pos = False
+        at_least_one_neg = False
+        at_least_one_nonneg = False
+        at_least_one_nonpos = False
+        all_negatives = True
+        all_positives = True
+        all_nonnegatives = True
+        all_nonpositives = True
+        for i, arg in enumerate(self._init_args):
             if (
                 self.is_real is not None and not arg.is_real
             ):  # arg.is_real is False or None
@@ -382,6 +445,27 @@ class Add(Expr):
                 self.is_integer = None
             if self.is_natural is not None and not arg.is_natural:
                 self.is_natural = None
+
+            if arg.is_positive:
+                at_least_one_pos = True
+                at_least_one_nonneg = True
+                all_negatives = False
+                all_nonpositives = False
+            if arg.is_nonnegative:
+                at_least_one_nonneg = True
+                all_negatives = False
+            if arg.is_negative:
+                at_least_one_neg = True
+                at_least_one_nonpos = True
+                all_positives = False
+                all_nonnegatives = False
+            if arg.is_nonpositive:
+                at_least_one_nonpos = True
+                all_positives = False
+            if arg.is_nonzero == False:
+                all_positives = False
+                all_negatives = False
+
         if self.is_real is not None:
             self.is_real = True
         if self.is_rational is not None:
@@ -390,6 +474,34 @@ class Add(Expr):
             self.is_integer = True
         if self.is_natural is not None:
             self.is_natural = True
+        # if all_negatives:
+        #     self.is_negative = True
+        #     self.is_nonzero = True
+        #     self.is_positive = False
+        #     self.is_nonnegative = False
+        #     self.is_nonpositive = True
+        # if all_positives:
+        #     self.is_positive = True
+        #     self.is_nonzero = True
+        #     self.is_negative = False
+        #     self.is_nonnegative = True
+        #     self.is_nonpositive = False
+        if all_nonnegatives:
+            self.is_nonnegative = True
+            self.is_negative = False
+            if at_least_one_pos:
+                self.is_positive = True
+                self.is_nonzero = True
+                self.is_nonpositive = False
+        if all_nonpositives:
+            self.is_nonpositive = True
+            self.is_positive = False
+            if at_least_one_neg:
+                self.is_negative = True
+                self.is_nonzero = True
+                self.is_nonnegative = False
+        if all_negatives is False and all_positives is False:
+            pass
 
     def evaluate(self) -> Add:
         from pylogic.sympy_helpers import sympy_to_pylogic
@@ -461,6 +573,8 @@ class Mul(Expr):
         return sp.Mul(*[to_sympy(arg) for arg in self.args])
 
     def _latex(self) -> str:
+        from pylogic.constant import Constant
+
         wrap = lambda p: (
             rf"\left({p._latex()}\right)"
             if not p.is_atomic
@@ -468,7 +582,23 @@ class Mul(Expr):
             and p.__class__._precedence >= self.__class__._precedence
             else p._latex()
         )
-        return r" \cdot ".join(map(wrap, self.args))
+        s = ""
+        last_was_minus = False
+        for a in self.args:
+            if a == Constant(-1):
+                s += "{-"
+                last_was_minus = True
+            else:
+                if last_was_minus:
+                    s += f"{wrap(a)}}}"
+                elif len(s) == 0:
+                    s += wrap(a)
+                else:
+                    s += rf" \cdot {wrap(a)}"
+                last_was_minus = False
+        if last_was_minus:
+            s += "1}"
+        return s
 
     def __str__(self) -> str:
         wrap = lambda p: (
@@ -476,7 +606,21 @@ class Mul(Expr):
             if not p.is_atomic and p.__class__._precedence >= self.__class__._precedence
             else str(p)
         )
-        return " * ".join(map(wrap, self.args))
+        s = ""
+        last_was_minus = False
+        for a in self.args:
+            if a == -1:
+                s += "-"
+                last_was_minus = True
+            else:
+                if last_was_minus or len(s) == 0:
+                    s += wrap(a)
+                else:
+                    s += f" * {wrap(a)}"
+                last_was_minus = False
+        if last_was_minus:
+            s += "1"
+        return s
 
 
 class Pow(Expr):

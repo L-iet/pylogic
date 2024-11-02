@@ -57,17 +57,6 @@ class Rng(Semirng[Z]):
         times_operation_symbol: str | None = None,
         **kwargs,
     ):
-        self._init_args = (name,)
-        self._init_kwargs = {
-            "elements": elements,
-            "containment_function": containment_function,
-            "plus_operation": plus_operation,
-            "plus_operation_symbol": plus_operation_symbol,
-            "zero": zero,
-            "times_operation": times_operation,
-            "times_operation_symbol": times_operation_symbol,
-        }
-        self._init_kwargs.update(kwargs)
         Semirng.__init__(
             self,
             name=name,
@@ -80,6 +69,17 @@ class Rng(Semirng[Z]):
             times_operation_symbol=times_operation_symbol,
             **kwargs,
         )
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "zero": zero,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+        }
+        self._init_kwargs.update(kwargs)
         self.abelian_group_plus = AbelianGroup(
             name=name,
             elements=elements,

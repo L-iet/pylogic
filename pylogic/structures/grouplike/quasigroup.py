@@ -84,16 +84,6 @@ and y in {set_.name} such that a {operation.symbol} x = b and y {operation.symbo
         operation_symbol: str | None = None,
         **kwargs,
     ):
-        self._init_args = (name,)
-        self._init_kwargs = {
-            "elements": elements,
-            "containment_function": containment_function,
-            "operation": operation,
-            "operation_name": operation_name,
-            "operation_symbol": operation_symbol,
-        }
-        self._init_kwargs.update(kwargs)
-
         Magma.__init__(
             self,
             name=name,
@@ -104,6 +94,15 @@ and y in {set_.name} such that a {operation.symbol} x = b and y {operation.symbo
             operation_symbol=operation_symbol,
             **kwargs,
         )
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "operation": operation,
+            "operation_name": operation_name,
+            "operation_symbol": operation_symbol,
+        }
+        self._init_kwargs.update(kwargs)
 
         self.latin_square = Quasigroup.property_latin_square(self, self.operation)
         self.latin_square._set_is_axiom(True)

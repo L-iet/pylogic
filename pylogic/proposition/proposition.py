@@ -13,7 +13,7 @@ from typing import (
     overload,
 )
 
-from pylogic.printing.printing import str_print_order
+from pylogic.enviroment_settings.settings import settings
 
 if TYPE_CHECKING:
     from pylogic import Term, Unification
@@ -40,7 +40,7 @@ Props = TypeVarTuple("Props")
 
 TProposition = TypeVar("TProposition", bound="Proposition")
 UProposition = TypeVar("UProposition", bound="Proposition")
-Tactic = TypedDict("Tactic", {"name": str, "arguments": list[str]})
+InferenceRule = TypedDict("InferenceRule", {"name": str, "arguments": list[str]})
 
 
 ####################################################
@@ -79,7 +79,8 @@ class Proposition:
     _precedence = 15
     _is_wrapped = False
 
-    tactics: list[Tactic] = [
+    # TODO: arguments are not accurate
+    _inference_rules: list[InferenceRule] = [
         {"name": "p_substitute", "arguments": ["Side", "Equality"]},
         {"name": "p_and", "arguments": []},
         {"name": "p_and_reverse", "arguments": []},
@@ -89,6 +90,10 @@ class Proposition:
         {"name": "followed_from", "arguments": []},
         {"name": "thus_there_exists", "arguments": ["str", "Term", "list[list[int]]"]},
         {"name": "thus_forall", "arguments": ["Variable"]},
+        {"name": "de_morgan", "arguments": []},
+        {"name": "modus_tollens", "arguments": ["Implies"]},
+        {"name": "de_morgan", "arguments": []},
+        {"name": "contradicts", "arguments": ["Proposition"]},
         {"name": "de_morgan", "arguments": []},
     ]
 
@@ -111,7 +116,7 @@ class Proposition:
             negations are never proven.
         description: str
             A description of what this proposition is.
-        args: list[Set | Term] | None
+        args: list[Term] | None
             The arguments of the proposition. If None, we assume the proposition has no arguments.
         """
         from pylogic.helpers import (
@@ -186,7 +191,11 @@ class Proposition:
             return self.name == other.name and self.args == other.args
         return NotImplemented
 
-    def _set_is_inferred_true(self) -> None:
+    @property
+    def inference_rules(self) -> list[str]:
+        return [r["name"] for r in self._inference_rules]
+
+    def _set_is_inferred(self, value: bool) -> None:
         """
         Used in some subclasses like IsContainedIn for custom behaviour when a proof is made
         """
@@ -197,7 +206,7 @@ class Proposition:
 
         self._is_proven = value
         if value:
-            self._set_is_inferred_true()
+            self._set_is_inferred(True)
         context = assumptions_contexts[-1]
         if context is not None and value:
             context._proven.append(self)
@@ -207,7 +216,7 @@ class Proposition:
 
         self.is_assumption = value
         if value:
-            self._set_is_inferred_true()
+            self._set_is_inferred(True)
 
         context = assumptions_contexts[-1]
         if context is not None and value:
@@ -216,7 +225,7 @@ class Proposition:
     def _set_is_axiom(self, value: bool) -> None:
         self.is_axiom = value
         if value:
-            self._set_is_inferred_true()
+            self._set_is_inferred(True)
 
     def todo(self) -> Self:
         """
@@ -254,20 +263,58 @@ class Proposition:
 
     def __repr__(self) -> str:
         if self.args:
-            args_str = tuple(str_print_order(a) for a in self.args)
+            args_str = tuple(str(a) for a in self.args)
             return f"Proposition({self.name}, {', '.join(args_str)})"
         else:
             return f"Proposition({self.name})"
 
     def __str__(self) -> str:
         if self.args:
-            args_str = tuple(str_print_order(a) for a in self.args)
+            args_str = tuple(str(a) for a in self.args)
             return f"{self.name}({', '.join(args_str)})"
         else:
             return self.name
 
     def __copy__(self) -> Self:
         return self.copy()
+
+    def __bool__(self) -> bool:
+        raise TypeError("Cannot convert proposition to bool")
+
+    def __rshift__(self, other: Proposition) -> Implies[Proposition, Proposition]:
+        if settings["PYTHON_OPS_RETURN_PROPS"]:
+            from pylogic.proposition.implies import Implies
+
+            return Implies(self, other)
+        return NotImplemented
+
+    def __and__(self, other: Proposition) -> And[Proposition, Proposition]:
+        if settings["PYTHON_OPS_RETURN_PROPS"]:
+            from pylogic.proposition.and_ import And
+
+            return And(self, other)
+        return NotImplemented
+
+    def __or__(self, other: Proposition) -> Or[Proposition, Proposition]:
+        if settings["PYTHON_OPS_RETURN_PROPS"]:
+            from pylogic.proposition.or_ import Or
+
+            return Or(self, other)
+        return NotImplemented
+
+    def __xor__(self, other: Proposition) -> ExOr[Proposition, Proposition]:
+        if settings["PYTHON_OPS_RETURN_PROPS"]:
+            from pylogic.proposition.exor import ExOr
+
+            return ExOr(self, other)
+        return NotImplemented
+
+    def __invert__(self) -> Not[Proposition]:
+        if settings["PYTHON_OPS_RETURN_PROPS"]:
+            from pylogic.proposition.not_ import Not
+
+            return Not(self)
+        return NotImplemented
 
     def _latex(self, printer=None) -> str:
         from pylogic.helpers import latex
@@ -419,7 +466,7 @@ class Proposition:
 
     def p_substitute(self, side: Side | str, equality: Equals) -> Self:
         """
-        Logical tactic.
+        Logical inference rule.
         Parameters
         ----------
         side: Side
@@ -517,14 +564,25 @@ class Proposition:
         allow_duplicates: bool
             If True, we do not remove duplicate propositions.
         """
+        from pylogic.inference import Inference
         from pylogic.proposition.and_ import And
 
         props = []
+        first_not_proven = None
         for p in (self, *others):
+            if not p.is_proven and first_not_proven is None:
+                first_not_proven = p
             if isinstance(p, And):
                 props.extend(p.de_nest().propositions)
             else:
                 props.append(p)
+        if first_not_proven is None:
+            kwargs["_is_proven"] = True
+            kwargs["_assumptions"] = get_assumptions(self).union(
+                *[get_assumptions(o) for o in others]  # type: ignore
+            )
+            kwargs["_inference"] = Inference(self, *others, rule="all_proven")
+
         new_p = And(*props, is_assumption=is_assumption, **kwargs)  # type: ignore
         if not allow_duplicates:
             return new_p.remove_duplicates()
@@ -587,14 +645,24 @@ class Proposition:
         allow_duplicates: bool
             If True, we do not remove duplicate propositions.
         """
+        from pylogic.inference import Inference
         from pylogic.proposition.or_ import Or
 
         props = []
+        first_proven = None
         for p in (self, *others):
+            if p.is_proven and first_proven is None:
+                first_proven = p
             if isinstance(p, Or):
                 props.extend(p.de_nest().propositions)
             else:
                 props.append(p)
+        if first_proven is not None:
+            kwargs["_is_proven"] = True
+            kwargs["_assumptions"] = get_assumptions(self).union(
+                *[get_assumptions(o) for o in others]  # type: ignore
+            )
+            kwargs["_inference"] = Inference(self, *others, rule="one_proven")
         new_p = Or(*props, is_assumption=is_assumption, **kwargs)  # type:ignore
         if not allow_duplicates:
             return new_p.remove_duplicates()
@@ -639,14 +707,26 @@ class Proposition:
         allow_duplicates: bool
             If True, we do not remove duplicate propositions.
         """
+        from pylogic.inference import Inference
         from pylogic.proposition.exor import ExOr
 
         props = []
+        will_be_proven = None
         for p in (self, *others):
+            if p.is_proven and will_be_proven is None:
+                will_be_proven = True
+            elif p.is_proven:
+                will_be_proven = False
             if isinstance(p, ExOr):
                 props.extend(p.de_nest().propositions)
             else:
                 props.append(p)
+        if will_be_proven:
+            kwargs["_is_proven"] = True
+            kwargs["_assumptions"] = get_assumptions(self).union(
+                *[get_assumptions(o) for o in others]  # type:ignore
+            )
+            kwargs["_inference"] = Inference(self, *others, rule="one_proven")
         new_p = ExOr(*props, is_assumption=is_assumption, **kwargs)  # type:ignore
         if not allow_duplicates:
             return new_p.remove_duplicates()
@@ -680,7 +760,7 @@ class Proposition:
     def p_and(
         self, *others: *Props, allow_duplicates: bool = False
     ) -> And[Self, *Props]:
-        """Logical tactic.
+        """Logical inference rule.
         Same as and_, but returns a proven proposition when self and all others are proven.
         """
         from pylogic.inference import Inference
@@ -704,7 +784,7 @@ class Proposition:
     def p_and_reverse(
         self, *others: *Props, allow_duplicates: bool = False
     ) -> And[*Props, Self]:
-        """Logical tactic.
+        """Logical inference rule.
         Same as and_reverse, but returns a proven proposition when self and all others are proven.
         """
         from pylogic.inference import Inference
@@ -727,7 +807,7 @@ class Proposition:
 
     def modus_ponens(self, other: Implies[Self, TProposition]) -> TProposition:
         """
-        Logical tactic.
+        Logical inference rule.
         other: Implies
             Must be an implication that has been proven whose structure is
             self -> OtherProposition
@@ -760,7 +840,7 @@ class Proposition:
         other: Implies[Not[TProposition], Not[Self]] | Implies[TProposition, Not[Self]],
     ) -> TProposition | Not[TProposition]:
         """
-        Logical tactic.
+        Logical inference rule.
         other: Implies
             Must be an implication that has been proven whose structure is
             OtherProposition -> ~self
@@ -787,7 +867,7 @@ class Proposition:
 
     def is_one_of(self, other: And, *, __recursing: bool = False) -> Self:
         r"""
-        Logical tactic.
+        Logical inference rule.
         If we have proven other, we can prove any of the propositions in it.
         other: And
             Must be a conjunction that has been proven where one of the propositions is self.
@@ -813,7 +893,7 @@ class Proposition:
 
     def is_special_case_of(self, other: Forall[Self]) -> Self:
         """
-        Logical tactic.
+        Logical inference rule.
         other: Proposition
             A proven forall proposition that implies this proposition.
         """
@@ -849,7 +929,7 @@ class Proposition:
 
     def followed_from(self, *assumptions, **kwargs):  # type: ignore
         """
-        Logical tactic.
+        Logical inference rule.
         Given self is proven, return a new proposition that is an implication of
         the form And(*assumptions) -> self.
         *assumptions: Proposition
@@ -913,7 +993,7 @@ class Proposition:
         positions: list[list[int]] | None = None,
     ) -> Exists[Self]:
         r"""
-        Logical tactic.
+        Logical inference rule.
         Given self is proven, return a new proposition that there exists an existential_var such that
         self is true, when self is expressed in terms of that existential_var.
         For example, if self is x^2 + x > 0, existential_var is y and expression_to_replace is x^2, then
@@ -1012,7 +1092,7 @@ and is a dependency of {expression_to_replace}"
         **kwargs,
     ) -> Forall[Self] | ForallInSet[Self]:
         """
-        Logical tactic.
+        Logical inference rule.
         Given self is proven, return a new proposition that for all variables, self is true.
         This inference rule binds the variable, so you cannot reuse the variable
         unless you unbind it.
@@ -1052,7 +1132,7 @@ and is a dependency of {expression_to_replace}"
 
     def close_all_scopes(self) -> Proposition:
         """
-        Logical tactic.
+        Logical inference rule.
         Close all scopes in the proposition.
         If assumptions (A) were used to deduce this proposition (self), they are
         removed and we get a proof of A -> self.
@@ -1080,12 +1160,18 @@ and is a dependency of {expression_to_replace}"
     def de_morgan(self) -> Self:
         """
         Apply De Morgan's law to self to return an equivalent proposition.
+
+        In intuitionistic logic, the only valid De Morgan's laws are
+
+        `~A and ~B <-> ~(A or B)`
+
+        `~A or ~B -> ~(A and B)`.
         """
         return self
 
     def contradicts(self, other: Proposition) -> Contradiction:
         """
-        Logical tactic. If self and other are negations (and both proven),
+        Logical inference rule. If self and other are negations (and both proven),
         return a contradiction.
         """
         assert self.is_proven, f"{self} is not proven"
@@ -1145,6 +1231,26 @@ and is a dependency of {expression_to_replace}"
             return True
         else:
             return d
+
+
+def predicate(name: str) -> Callable[..., Proposition]:
+    """
+    Create a predicate with a given name.
+
+    A predicate is a python function that returns a proposition.
+    """
+
+    def inner(*args, **kwargs) -> Proposition:
+        return Proposition(name, args=args, **kwargs)
+
+    return inner
+
+
+def prop(name: str, *args: Term, **kwargs) -> Proposition:
+    """
+    Create a proposition with a given name and arguments.
+    """
+    return Proposition(name, args=args, **kwargs)
 
 
 if __name__ == "__main__":

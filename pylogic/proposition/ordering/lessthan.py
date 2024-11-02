@@ -104,7 +104,7 @@ class LessThan(StrictTotalOrder[T, U], _Ordering):
     def p_multiply_by_positive(
         self, x: Term, proof_x_is_positive: "GreaterThan | LessThan"
     ) -> "LessThan":
-        """Logical tactic.
+        """Logical inference rule.
         Same as multiply_by_positive, but returns a proven proposition"""
 
         assert self.is_proven, f"{self} is not proven"
@@ -114,7 +114,7 @@ class LessThan(StrictTotalOrder[T, U], _Ordering):
     def p_multiply_by_negative(
         self, x: Term, proof_x_is_negative: "GreaterThan | LessThan"
     ) -> "LessThan":
-        """Logical tactic.
+        """Logical inference rule.
         Same as multiply_by_negative, but returns a proven proposition"""
 
         assert self.is_proven, f"{self} is not proven"
@@ -145,14 +145,14 @@ class LessThan(StrictTotalOrder[T, U], _Ordering):
         )  # type: ignore
 
     def p_to_greater_than(self):
-        """Logical tactic. Same as to_greater_than, but returns a proven proposition"""
+        """Logical inference rule. Same as to_greater_than, but returns a proven proposition"""
         assert self.is_proven, f"{self} is not proven"
         new_p = self.to_greater_than()
         return new_p
 
     def by_inspection(self) -> LessThan:
         """
-        Logical tactic. Determine if the proposition is true by inspection.
+        Logical inference rule. Determine if the proposition is true by inspection.
         """
         raise NotImplementedError
 

@@ -1,12 +1,13 @@
 from __future__ import annotations
-from typing import TypeVar, Generic, Literal
 
-from pylogic.proposition.proposition import Proposition
-from pylogic.proposition.quantified.forall import Forall
-from pylogic.proposition.quantified.exists import Exists
+from typing import Generic, Literal, TypeVar
+
 from pylogic.proposition.and_ import And
-from pylogic.proposition.or_ import Or
 from pylogic.proposition.implies import Implies
+from pylogic.proposition.or_ import Or
+from pylogic.proposition.proposition import Proposition
+from pylogic.proposition.quantified.exists import Exists
+from pylogic.proposition.quantified.forall import Forall
 
 T = TypeVar("T", bound="Proposition")
 U = TypeVar("U", bound="Proposition")
@@ -78,7 +79,7 @@ def inference_rule_search(
 ) -> InferenceResult[T, U] | None:
     """
     Search for if target can be inferred from the premises using the inference rule.
-    premises: propositions we haven't yet called the tactic on
+    premises: propositions we haven't yet called the inference rule on
     all_props: all proven propositions
     """
     prem_prop = get_prop(prem)

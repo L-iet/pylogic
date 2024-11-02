@@ -58,18 +58,6 @@ class RIng(SemirIng[Z]):
         one: Z | Unevaluated | None = None,
         **kwargs,
     ):
-        self._init_args = (name,)
-        self._init_kwargs = {
-            "elements": elements,
-            "containment_function": containment_function,
-            "plus_operation": plus_operation,
-            "plus_operation_symbol": plus_operation_symbol,
-            "zero": zero,
-            "times_operation": times_operation,
-            "times_operation_symbol": times_operation_symbol,
-            "one": one,
-        }
-        self._init_kwargs.update(kwargs)
         super().__init__(
             name=name,
             elements=elements,
@@ -82,6 +70,18 @@ class RIng(SemirIng[Z]):
             one=one,
             **kwargs,
         )
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "zero": zero,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+            "one": one,
+        }
+        self._init_kwargs.update(kwargs)
         self.abelian_group_plus = AbelianGroup(
             name=name,
             elements=elements,
