@@ -329,7 +329,7 @@ class CustomExpr(Expr, Generic[U]):
         self,
         name: str,
         *args: PBasic | Expr,
-        eval_func: Callable[..., U] | None = None,
+        eval_func: Callable[..., U | None] | None = None,
         latex_func: Callable[..., str] | None = None,
     ):
         super().__init__(*args)
@@ -342,9 +342,6 @@ class CustomExpr(Expr, Generic[U]):
         # if the latex repr is wrapped (eg in a function call)
         # so that we can avoid parentheses
         self._is_wrapped = latex_func is None
-
-    def __repr__(self) -> str:
-        return f"CustomExpr{self.name.capitalize()}({', '.join(map(repr, self.args))})"
 
     def __hash__(self) -> int:
         return hash((self.__class__.__name__, self.name, self.args))
@@ -368,6 +365,8 @@ class CustomExpr(Expr, Generic[U]):
         if self.eval_func is None:
             return self
         evaluated = self.eval_func(*self.args)
+        if evaluated is None:
+            return self
         return evaluated
 
     def _latex(self) -> str:
@@ -382,6 +381,29 @@ class CustomExpr(Expr, Generic[U]):
         return f"CustomExpr_{self.name}({', '.join(map(repr, self.args))})"
 
 
+def distance(
+    a, b, eval_func: Callable[[U, U], Term | None] | None = None
+) -> CustomExpr:
+    """
+    General distance function.
+
+    Returns an expression representing the 'distance' between two terms.
+
+    When evaluated, it returns the absolute value of the difference for real numbers,
+    or the result of the evaluation function for other types.
+    """
+    return CustomExpr(
+        "distance",
+        a,
+        b,
+        eval_func=lambda x, y: (
+            abs(x - y)
+            if x.is_real and y.is_real
+            else (eval_func(x, y) if eval_func else None)
+        ),
+    )
+
+
 class BinaryExpression(CustomExpr[U]):
     def __init__(
         self,
@@ -389,7 +411,7 @@ class BinaryExpression(CustomExpr[U]):
         symbol: str,
         left: PBasic | Expr,
         right: PBasic | Expr,
-        eval_func: Callable[[U, U], U] | None = None,
+        eval_func: Callable[[U, U], U | None] | None = None,
         latex_func: Callable[[str, str], str] | None = None,
     ):
         super().__init__(name, left, right, eval_func=eval_func, latex_func=latex_func)

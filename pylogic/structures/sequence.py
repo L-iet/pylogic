@@ -68,7 +68,7 @@ class Sequence(Generic[T]):
         return f"Sequence({self.name})"
 
     def __str__(self) -> str:
-        return self.name
+        return f"({self.name}_n)"
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Sequence):
@@ -117,7 +117,7 @@ class Sequence(Generic[T]):
         raise NotImplementedError
 
     def _latex(self, printer=None) -> str:
-        return self.name
+        return rf"\left({self.name}_n\right)"
 
     def define_predicate(
         self,

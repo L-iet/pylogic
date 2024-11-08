@@ -491,16 +491,16 @@ class Proposition:
 
     @overload
     def implies(
-        self, other: TProposition, is_assumption: bool = False, **kwargs
-    ) -> Implies[Self, TProposition]: ...
-
-    @overload
-    def implies(
         self,
         other: Implies[TProposition, UProposition],
         is_assumption: bool = False,
         **kwargs,
     ) -> Implies[And[Self, TProposition], UProposition]: ...
+
+    @overload
+    def implies(
+        self, other: TProposition, is_assumption: bool = False, **kwargs
+    ) -> Implies[Self, TProposition]: ...
 
     def implies(
         self,
