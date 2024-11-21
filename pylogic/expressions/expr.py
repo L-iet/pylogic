@@ -58,11 +58,34 @@ class Expr(ABC):
         self.is_rational: bool | None = None
         self.is_integer: bool | None = None
         self.is_natural: bool | None = None
-        self.is_nonzero: bool | None = None
-        self.is_positive: bool | None = None
-        self.is_negative: bool | None = None
+        self.is_zero: bool | None = None
         self.is_nonpositive: bool | None = None
         self.is_nonnegative: bool | None = None
+        self.is_even: bool | None = None
+
+    @property
+    def is_positive(self) -> bool | None:
+        from pylogic.helpers import ternary_and, ternary_not
+
+        return ternary_and(ternary_not(self.is_zero), self.is_nonnegative)
+
+    @property
+    def is_negative(self) -> bool | None:
+        from pylogic.helpers import ternary_and, ternary_not, ternary_or
+
+        return ternary_and(ternary_not(self.is_zero), self.is_nonpositive)
+
+    @property
+    def is_odd(self) -> bool | None:
+        from pylogic.helpers import ternary_not
+
+        return ternary_not(self.is_even)
+
+    @property
+    def is_nonzero(self) -> bool | None:
+        from pylogic.helpers import ternary_not
+
+        return ternary_not(self.is_zero)
 
     def _build_args_and_symbols(
         self, *args: Proposition | PBasic | Set | Sequence | Expr
@@ -437,93 +460,64 @@ class Add(Expr):
     _precedence = 8
 
     def __init__(self, *args: Expr | PBasic):
+        from pylogic.helpers import ternary_or
+
         super().__init__(*args)
-        self.is_real = object()  # type: ignore
-        self.is_rational = object()  # type: ignore
-        self.is_integer = object()  # type: ignore
-        self.is_natural = object()  # type: ignore
-
-        self.is_nonzero = None
-        self.is_positive = None
-        self.is_negative = None
-        self.is_nonpositive = None
-        self.is_nonnegative = None
-        at_least_one_pos = False
-        at_least_one_neg = False
-        at_least_one_nonneg = False
-        at_least_one_nonpos = False
-        all_negatives = True
-        all_positives = True
-        all_nonnegatives = True
-        all_nonpositives = True
+        all_real = True
+        all_rational = True
+        all_integer = True
+        all_natural = True
+        all_nonnegative = True
+        all_zero = True
+        all_nonpositive = True
+        all_even = True
+        exists_positive = False
+        exists_negative = False
+        count_odd = 0
+        count_even = 0
+        total_args = len(self._init_args)
         for i, arg in enumerate(self._init_args):
-            if (
-                self.is_real is not None and not arg.is_real
-            ):  # arg.is_real is False or None
-                self.is_real = None
-            if self.is_rational is not None and not arg.is_rational:
-                self.is_rational = None
-            if self.is_integer is not None and not arg.is_integer:
-                self.is_integer = None
-            if self.is_natural is not None and not arg.is_natural:
-                self.is_natural = None
-
+            if not arg.is_real:
+                all_real = False
+            if not arg.is_rational:
+                all_rational = False
+            if not arg.is_integer:
+                all_integer = False
+            if not arg.is_natural:
+                all_natural = False
+            if not arg.is_nonnegative:
+                all_nonnegative = False
+            if not arg.is_zero:
+                all_zero = False
+            if not arg.is_nonpositive:
+                all_nonpositive = False
+            if arg.is_even:
+                count_even += 1
+            elif not arg.is_even:
+                all_even = False
+            if arg.is_even is False:
+                count_odd += 1
             if arg.is_positive:
-                at_least_one_pos = True
-                at_least_one_nonneg = True
-                all_negatives = False
-                all_nonpositives = False
-            if arg.is_nonnegative:
-                at_least_one_nonneg = True
-                all_negatives = False
+                exists_positive = True
             if arg.is_negative:
-                at_least_one_neg = True
-                at_least_one_nonpos = True
-                all_positives = False
-                all_nonnegatives = False
-            if arg.is_nonpositive:
-                at_least_one_nonpos = True
-                all_positives = False
-            if arg.is_nonzero == False:
-                all_positives = False
-                all_negatives = False
+                exists_negative = True
+        self.is_real = ternary_or(all_real, None)
+        self.is_rational = ternary_or(all_rational, None)
+        self.is_integer = ternary_or(all_integer, None)
+        self.is_natural = ternary_or(all_natural, None)
+        self.is_nonnegative = ternary_or(all_nonnegative, None)
+        self.is_zero = ternary_or(all_zero, None)
+        self.is_nonpositive = ternary_or(all_nonpositive, None)
+        self.is_even = ternary_or(all_even, None)
 
-        if self.is_real is not None:
-            self.is_real = True
-        if self.is_rational is not None:
-            self.is_rational = True
-        if self.is_integer is not None:
-            self.is_integer = True
-        if self.is_natural is not None:
-            self.is_natural = True
-        # if all_negatives:
-        #     self.is_negative = True
-        #     self.is_nonzero = True
-        #     self.is_positive = False
-        #     self.is_nonnegative = False
-        #     self.is_nonpositive = True
-        # if all_positives:
-        #     self.is_positive = True
-        #     self.is_nonzero = True
-        #     self.is_negative = False
-        #     self.is_nonnegative = True
-        #     self.is_nonpositive = False
-        if all_nonnegatives:
-            self.is_nonnegative = True
-            self.is_negative = False
-            if at_least_one_pos:
-                self.is_positive = True
-                self.is_nonzero = True
-                self.is_nonpositive = False
-        if all_nonpositives:
-            self.is_nonpositive = True
-            self.is_positive = False
-            if at_least_one_neg:
-                self.is_negative = True
-                self.is_nonzero = True
-                self.is_nonnegative = False
-        if all_negatives is False and all_positives is False:
-            pass
+        if all_nonnegative and exists_positive:
+            self.is_zero = False
+        if all_nonpositive and exists_negative:
+            self.is_zero = False
+        if count_odd % 2 == 0 and count_even == total_args - count_odd:
+            self.is_even = True
+        elif count_odd % 2 == 1 and count_even == total_args - count_odd:
+            self.is_even = False
 
     def evaluate(self) -> Add:
         from pylogic.sympy_helpers import sympy_to_pylogic
@@ -561,30 +555,67 @@ class Mul(Expr):
     _precedence = 6
 
     def __init__(self, *args: PBasic | Expr):
+        from pylogic.helpers import ternary_or
+
         super().__init__(*args)
-        self.is_real = object()  # type: ignore
-        self.is_rational = object()  # type: ignore
-        self.is_integer = object()  # type: ignore
-        self.is_natural = object()  # type: ignore
-        for arg in self._init_args:
-            if (
-                self.is_real is not None and not arg.is_real
-            ):  # arg.is_real is False or None
-                self.is_real = None
-            if self.is_rational is not None and not arg.is_rational:
-                self.is_rational = None
-            if self.is_integer is not None and not arg.is_integer:
-                self.is_integer = None
-            if self.is_natural is not None and not arg.is_natural:
-                self.is_natural = None
-        if self.is_real is not None:
+        all_real = True
+        all_rational = True
+        all_integer = True
+        all_natural = True
+        all_nonzero = True
+        count_nonpositive = 0
+        count_nonnegative = 0
+        exists_zero = False
+        count_even = 0
+        count_odd = 0
+        total_args = len(self._init_args)
+
+        for i, arg in enumerate(self._init_args):
+            if not arg.is_real:
+                all_real = False
+            if not arg.is_rational:
+                all_rational = False
+            if not arg.is_integer:
+                all_integer = False
+            if not arg.is_natural:
+                all_natural = False
+            if arg.is_zero is None:
+                all_nonzero = False
+            if arg.is_even:
+                count_even += 1
+            if arg.is_even is False:
+                count_odd += 1
+            if arg.is_zero:
+                exists_zero = True
+                all_nonzero = False
+            if arg.is_nonpositive:
+                count_nonpositive += 1
+            if arg.is_nonnegative:
+                count_nonnegative += 1
+
+        if all_real:
             self.is_real = True
-        if self.is_rational is not None:
-            self.is_rational = True
-        if self.is_integer is not None:
-            self.is_integer = True
-        if self.is_natural is not None:
-            self.is_natural = True
+            if exists_zero:
+                self.is_zero = True
+            elif all_nonzero:
+                self.is_zero = False
+        self.is_rational = ternary_or(all_rational, None)
+        self.is_integer = ternary_or(all_integer, None)
+        self.is_natural = ternary_or(all_natural, None)
+        if (
+            count_nonpositive % 2 == 0
+            and count_nonnegative == total_args - count_nonpositive
+        ):
+            self.is_nonnegative = True
+        if (
+            count_nonpositive % 2 == 1
+            and count_nonnegative == total_args - count_nonpositive
+        ):
+            self.is_nonpositive = True
+        if count_even > 0 and count_even + count_odd == total_args:
+            self.is_even = True
+        if count_odd == total_args:
+            self.is_even = False
 
     def evaluate(self) -> Mul:
         from pylogic.sympy_helpers import sympy_to_pylogic
@@ -655,29 +686,38 @@ class Pow(Expr):
         super().__init__(base, exp)
         self.base = self.args[0]
         self.exp = self.args[1]
-        self.is_real = None
-        self.is_rational = None
-        self.is_integer = None
-        self.is_natural = None
-        base, exp = self.args
-        if base.is_real:
-            if exp.is_integer:
+
+        if self.base.is_zero and self.exp.is_positive:
+            self.is_zero = True
+        if self.base.is_nonnegative and self.exp.is_nonnegative:
+            self.is_nonnegative = True
+        if self.base.is_positive and (self.exp.is_even is False):
+            self.is_zero = False
+            self.is_nonnegative = True
+        if self.base.is_nonpositive and self.exp.is_even:
+            self.is_nonnegative = True
+        if self.base.is_negative and (self.exp.is_even is False):
+            self.is_zero = False
+            self.is_nonpositive = True
+
+        if self.base.is_real and self.exp.is_positive:
+            self.is_real = True
+
+        if self.base.is_zero is False:
+            if self.exp.is_even:
+                self.is_zero = False
+                self.is_nonnegative = True
+
+            if self.base.is_real and self.exp.is_integer:
                 self.is_real = True
-        if base.is_rational:
-            if exp.is_integer:
-                self.is_rational = True
-        if base.is_integer:
-            if exp.is_integer:
-                self.is_rational = True
-            if exp.is_natural:
-                self.is_integer = True
-        if base.is_natural:
-            if exp.is_integer:
-                self.is_rational = True
-            if exp.is_natural:
+            if self.base.is_integer and self.exp.is_even:
                 self.is_natural = True
-            if exp.is_rational:
-                self.is_real = True
+            if self.base.is_integer and self.exp.is_natural:
+                self.is_integer = True
+            if self.base.is_rational and self.exp.is_integer:
+                self.is_rational = True
+            if self.base.is_natural and self.exp.is_natural:
+                self.is_natural = True
 
     def evaluate(self) -> Pow:
         from pylogic.sympy_helpers import sympy_to_pylogic

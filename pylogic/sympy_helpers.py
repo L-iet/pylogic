@@ -4,7 +4,7 @@ from fractions import Fraction
 from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 import sympy as sp
-from sympy.series.sequences import SeqFormula, SeqPer
+from sympy.series.sequences import SeqBase, SeqFormula, SeqPer
 
 from pylogic.constant import Constant
 from pylogic.expressions.abs import Abs
@@ -33,6 +33,66 @@ class PylSympySymbol(sp.Symbol):
         _pyl_init_kwargs: dict[str, Any] | None = None,
         **kwargs,
     ) -> PylSympySymbol:
+        val = super().__new__(cls, *args, **kwargs)
+        val._pyl_class = _pyl_class
+        val._pyl_init_args = _pyl_init_args or ()
+        val._pyl_init_kwargs = _pyl_init_kwargs or {}
+        return val
+
+
+class PylSympySet(sp.Set):
+    _pyl_init_args: tuple[Any, ...]
+    _pyl_init_kwargs: dict[str, Any]
+    _pyl_class: str | None
+
+    def __new__(
+        cls,
+        *args,
+        _pyl_class: str | None = None,
+        _pyl_init_args: tuple | None = None,
+        _pyl_init_kwargs: dict[str, Any] | None = None,
+        **kwargs,
+    ) -> PylSympySet:
+        val = super().__new__(cls, *args, **kwargs)
+        val._pyl_class = _pyl_class
+        val._pyl_init_args = _pyl_init_args or ()
+        val._pyl_init_kwargs = _pyl_init_kwargs or {}
+        return val
+
+
+class PylSympySeqBase(SeqBase):
+    _pyl_init_args: tuple[Any, ...]
+    _pyl_init_kwargs: dict[str, Any]
+    _pyl_class: str | None
+
+    def __new__(
+        cls,
+        *args,
+        _pyl_class: str | None = None,
+        _pyl_init_args: tuple | None = None,
+        _pyl_init_kwargs: dict[str, Any] | None = None,
+        **kwargs,
+    ) -> PylSympySeqBase:
+        val = super().__new__(cls, *args, **kwargs)
+        val._pyl_class = _pyl_class
+        val._pyl_init_args = _pyl_init_args or ()
+        val._pyl_init_kwargs = _pyl_init_kwargs or {}
+        return val
+
+
+class PylSympySeqFormula(SeqFormula):
+    _pyl_init_args: tuple[Any, ...]
+    _pyl_init_kwargs: dict[str, Any]
+    _pyl_class: str | None
+
+    def __new__(
+        cls,
+        *args,
+        _pyl_class: str | None = None,
+        _pyl_init_args: tuple | None = None,
+        _pyl_init_kwargs: dict[str, Any] | None = None,
+        **kwargs,
+    ) -> PylSympySeqFormula:
         val = super().__new__(cls, *args, **kwargs)
         val._pyl_class = _pyl_class
         val._pyl_init_args = _pyl_init_args or ()

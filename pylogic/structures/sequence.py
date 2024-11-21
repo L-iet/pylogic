@@ -8,6 +8,8 @@ from pylogic import Term
 from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
 
 if TYPE_CHECKING:
+    from sympy.series.sequences import SeqBase, SeqFormula, SeqPer
+
     from pylogic.constant import Constant
     from pylogic.expressions.sequence_term import SequenceTerm
     from pylogic.proposition.proposition import Proposition
@@ -63,6 +65,13 @@ class Sequence(Generic[T]):
         self._predicate: Callable[[Term], Proposition] | None = predicate
         self._predicate_uses_self = predicate is not None
         self.size = Abs(self)
+
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "initial_terms": initial_terms,
+            "nth_term": nth_term,
+            "predicate": predicate,
+        }
 
     def __repr__(self) -> str:
         return f"Sequence({self.name})"
@@ -156,6 +165,7 @@ class Sequence(Generic[T]):
         """
         from pylogic.helpers import python_to_pylogic
         from pylogic.inference import Inference
+        from pylogic.variable import Variable
 
         expr = python_to_pylogic(expr)
         assert expr.is_natural, "The argument must be a natural number"
@@ -172,6 +182,27 @@ class Sequence(Generic[T]):
         res.deduced_from = Inference(None, rule="by_predicate")
         return res
 
+    def to_sympy(self) -> SeqBase | SeqFormula:
+        from sympy import oo
+
+        from pylogic.sympy_helpers import PylSympySeqBase, PylSympySeqFormula
+
+        if self.nth_term is not None:
+            n = Variable("n")
+            return PylSympySeqFormula(
+                self.nth_term(n).to_sympy(),
+                (n.to_sympy(), 0, oo),
+                _pyl_class="Sequence",
+                _pyl_init_args=self._init_args,
+                _pyl_init_kwargs=self._init_kwargs,
+            )
+        return PylSympySeqBase(
+            self.name,
+            _pyl_class="Sequence",
+            _pyl_init_args=self._init_args,
+            _pyl_init_kwargs=self._init_kwargs,
+        )
+
 
 class PeriodicSequence(Sequence[T]):
     """
@@ -183,17 +214,49 @@ class PeriodicSequence(Sequence[T]):
         self,
         name: str,
         initial_terms: TSequence[T] | None = None,
-        period: int | Constant[int] | None = None,
+        period: int | Constant[int] | T | None = None,
         **kwargs,
     ) -> None:
         super().__init__(name, initial_terms, **kwargs)
-        self.is_infinite = True
-        self.period = period  # TODO: or infinite when None
+        from pylogic.helpers import python_to_pylogic
 
-    def __getitem__(self, index: int) -> SequenceTerm[T]:
-        if self.period is not None:
+        self.is_infinite = True
+        self.period = python_to_pylogic(period)  # TODO: or infinite when None
+
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "initial_terms": initial_terms,
+            "period": period,
+            **kwargs,
+        }
+
+    def __getitem__(self, index: Term) -> SequenceTerm[T]:
+        from pylogic.helpers import is_integer_numeric
+
+        if (
+            self.period is not None
+            and is_integer_numeric(self.period)
+            and is_integer_numeric(index)
+        ):
+            index = int(index)
             index %= int(self.period)
         return super().__getitem__(index)
+
+    def to_sympy(self) -> SeqBase | SeqPer:
+        from sympy.series.sequences import SeqPer
+
+        from pylogic.sympy_helpers import PylSympySeqBase
+
+        if self.initial_terms is not None and self.period == len(self.initial_terms):
+            return SeqPer(
+                [term.to_sympy() for term in self.initial_terms],
+            )
+        return PylSympySeqBase(
+            self.name,
+            _pyl_class="PeriodicSequence",
+            _pyl_init_args=self._init_args,
+            _pyl_init_kwargs=self._init_kwargs,
+        )
 
 
 class FiniteSequence(Sequence[T]):
@@ -240,6 +303,30 @@ class FiniteSequence(Sequence[T]):
             _inference=Inference(None, rule="by_definition"),
         )
 
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "initial_terms": initial_terms,
+            "size": size,
+            **kwargs,
+        }
+
+    def to_sympy(self) -> SeqBase | SeqPer:
+        from sympy.series.sequences import SeqPer
+
+        from pylogic.sympy_helpers import PylSympySeqBase
+
+        if self.initial_terms is not None:
+            return SeqPer(
+                [term.to_sympy() for term in self.initial_terms],
+                (0, len(self.initial_terms) - 1),
+            )
+        return PylSympySeqBase(
+            self.name,
+            _pyl_class="FiniteSequence",
+            _pyl_init_args=self._init_args,
+            _pyl_init_kwargs=self._init_kwargs,
+        )
+
 
 class Pair(FiniteSequence[T]):
     """
@@ -250,6 +337,9 @@ class Pair(FiniteSequence[T]):
         super().__init__(name, [first, second], size=2)
         self.first = first
         self.second = second
+
+        self._init_args = (name, first, second)
+        self._init_kwargs = {}
 
     def __repr__(self) -> str:
         return f"Pair({self.first}, {self.second})"
@@ -268,6 +358,9 @@ class Triple(FiniteSequence[T]):
         self.first = first
         self.second = second
         self.third = third
+
+        self._init_args = (name, first, second, third)
+        self._init_kwargs = {}
 
     def __repr__(self) -> str:
         return f"Triple({self.first}, {self.second}, {self.third})"

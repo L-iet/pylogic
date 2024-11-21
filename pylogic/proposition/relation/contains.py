@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Self, TypedDict, TypeVar
 
 from pylogic import Term
-from pylogic.expressions.expr import to_sympy
 from pylogic.inference import Inference
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 
@@ -157,13 +156,17 @@ class IsContainedIn(BinaryRelation[T, U]):
             raise ValueError(f"Cannot prove that {self.right} contains {self.left}")
 
     def by_inspection(self) -> Self:
-        """Logical inference rule. Use the set's containment function and sympy set to
+        """Logical inference rule. Use the set's containment function to
         prove that it contains the element.
         """
         from pylogic.helpers import getkey
 
         if self in self.left.knowledge_base:
             return getkey(self.left.knowledge_base, self)  # type: ignore
+        return self.by_containment_func()
+
+    def by_definition(self) -> Self:
+        """Logical inference rule. Prove that the element is in the set by definition."""
         return self.by_containment_func()
 
     def thus_predicate(self) -> Proposition:

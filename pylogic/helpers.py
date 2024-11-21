@@ -416,3 +416,39 @@ def getkey(keyed: Container, key: T, default=RAISES) -> T:
     if default is RAISES:
         raise KeyError(key)
     return default  # type: ignore
+
+
+@overload
+def ternary_not(val: bool) -> bool: ...
+@overload
+def ternary_not(val: None) -> None: ...
+def ternary_not(val: bool | None) -> bool | None:
+    return not val if val is not None else None
+
+
+@overload
+def ternary_or(val1: bool, val2: bool) -> bool: ...
+@overload
+def ternary_or(val1: None, val2: None) -> None: ...
+@overload
+def ternary_or(val1: bool | None, val2: bool | None) -> bool | None: ...
+def ternary_or(val1: bool | None, val2: bool | None) -> bool | None:
+    if val1 is None:
+        if val2 is True:
+            return True
+        return None
+    return val1 or val2
+
+
+@overload
+def ternary_and(val1: bool, val2: bool) -> bool: ...
+@overload
+def ternary_and(val1: None, val2: None) -> None: ...
+@overload
+def ternary_and(val1: bool | None, val2: bool | None) -> bool | None: ...
+def ternary_and(val1: bool | None, val2: bool | None) -> bool | None:
+    if val1 is None:
+        if val2 is False:
+            return False
+        return None
+    return val1 and val2

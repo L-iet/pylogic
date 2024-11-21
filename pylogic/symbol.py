@@ -42,6 +42,7 @@ class Symbol:
         self._is_rational: bool = kwargs.get("rational", None)
         self._is_integer: bool = kwargs.get("integer", None)
         self._is_natural: bool = kwargs.get("natural", None)
+
         self.is_set_: bool = kwargs.get("set_", None)
         self.is_set: bool = self.is_set_
         self.is_graph: bool = not self.is_set and kwargs.get("graph", None)
@@ -49,9 +50,52 @@ class Symbol:
         self.is_list_: bool = self.is_pair or kwargs.get("list_", None)
         self.is_list: bool = self.is_list_
         self.is_sequence: bool = self.is_list or kwargs.get("sequence", None)
-        self._is_nonzero: bool | None = kwargs.get("nonzero", None)
-        self._is_positive: bool | None = kwargs.get("positive", None)
-        self._is_negative: bool | None = kwargs.get("negative", None)
+
+        self._is_zero: bool | None = kwargs.get("zero", None)
+        self._is_nonpositive: bool | None = kwargs.get("nonpositive", None)
+        self._is_nonnegative: bool | None = kwargs.get("nonnegative", None)
+        self._is_even: bool | None = kwargs.get("even", None)
+        if self._is_zero or self._is_nonpositive or self._is_nonnegative:
+            if self._is_real in [None, True]:
+                self._is_real = True
+            else:
+                raise ValueError(
+                    "Contradictory assumptions: A number cannot be both non-real and zero/nonpositive/nonnegative"
+                )
+        if self._is_even:
+            if self._is_integer in [None, True]:
+                self._is_integer = True
+            else:
+                raise ValueError(
+                    "Contradictory assumptions: A number cannot be both non-integer and even"
+                )
+        if kwargs.get("positive", None):
+            self._is_real = True
+            self._is_nonnegative = True
+            if self._is_zero in [None, False]:
+                self._is_zero = False
+            else:
+                raise ValueError(
+                    "Contradictory assumptions: A positive number cannot be zero"
+                )
+        if kwargs.get("negative", None):
+            self._is_real = True
+            self._is_nonpositive = True
+            if self._is_zero in [None, False]:
+                self._is_zero = False
+            else:
+                raise ValueError(
+                    "Contradictory assumptions: A negative number cannot be zero"
+                )
+        if kwargs.get("odd", None):
+            self._is_integer = True
+            if self._is_even in [None, False]:
+                self._is_even = False
+            else:
+                raise ValueError(
+                    "Contradictory assumptions: An odd number cannot be even"
+                )
+
         self._init_args = args
         self._init_kwargs = kwargs
         self._from_existential_instance = kwargs.get(
@@ -63,6 +107,118 @@ class Symbol:
         self.depends_on: tuple[Symbol, ...] = kwargs.get("depends_on", ())
         self.independent_dependencies = self.get_independent_dependencies()
         self.sets_contained_in: set[Set] = kwargs.get("sets_contained_in", set())
+
+        # TODO: needs to be tested properly, somewhat hacky but
+        # the most straightforward way to add assumptions on Symbols
+        # due to cyclic dependencies
+        # this needs to be done after the all above attributes are set (dependencies, etc)
+        # this order is important; add the set assumptions first before the others
+        for attr in [
+            "real",
+            "rational",
+            "integer",
+            "natural",
+            "zero",
+            "nonpositive",
+            "nonnegative",
+            "even",
+        ]:
+            if getattr(self, f"_is_{attr}") is not None:
+                self._add_assumptions(attr, getattr(self, f"_is_{attr}"))
+
+    def _add_assumptions(self, attr: str, value: bool):
+        # TODO: needs to be tested properly, somewhat hacky but
+        # the most straightforward way to add assumptions on Symbols
+        # due to cyclic dependencies
+
+        import importlib
+
+        from pylogic.assumptions_context import assumptions_contexts
+        from pylogic.inference import Inference
+        from pylogic.proposition.not_ import Not
+        from pylogic.proposition.relation.contains import IsContainedIn
+
+        set_modules = {
+            "real": "pylogic.theories.real_analysis",
+            "rational": "pylogic.theories.rational_numbers",
+            "integer": "pylogic.theories.integers",
+            "natural": "pylogic.theories.natural_numbers",
+        }
+        set_names = {
+            "real": "Reals",
+            "rational": "Rationals",
+            "integer": "Integers",
+            "natural": "Naturals",
+        }
+
+        if attr in set_modules:
+            mod = importlib.import_module(set_modules[attr])
+            mod_set = getattr(mod, set_names[attr])
+            positive_prop = IsContainedIn(
+                self,
+                mod_set,
+                _is_proven=True,
+                _assumptions=set(),
+                _inference=Inference(None, rule="by_definition"),
+            )
+        elif attr == "zero":
+            from pylogic.proposition.relation.equals import Equals
+
+            positive_prop = Equals(
+                self,
+                0,
+                _is_proven=True,
+                _assumptions=set(),
+                _inference=Inference(None, rule="by_definition"),
+            )
+        elif attr == "nonpositive":
+            from pylogic.proposition.ordering.lessorequal import LessOrEqual
+
+            positive_prop = LessOrEqual(
+                self,
+                0,
+                _is_proven=True,
+                _assumptions=set(),
+                _inference=Inference(None, rule="by_definition"),
+            )
+        elif attr == "nonnegative":
+            from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
+
+            positive_prop = GreaterOrEqual(
+                self,
+                0,
+                _is_proven=True,
+                _assumptions=set(),
+                _inference=Inference(None, rule="by_definition"),
+            )
+        elif attr == "even":
+            # TODO: change to Integers where appropriate
+            from pylogic.theories.natural_numbers import Naturals
+
+            # if self._is_natural is True: ... # use Naturals.even
+            # else: ... # use Integers.even
+
+            positive_prop = Naturals.even(
+                self,
+                _is_proven=True,
+                _assumptions=set(),
+                _inference=Inference(None, rule="by_definition"),
+            )
+
+        if value:
+            prop = positive_prop
+        else:
+            positive_prop._set_is_proven(False)
+            positive_prop.deduced_from = None
+            prop = Not(
+                positive_prop,
+                _is_proven=True,
+                _assumptions=set(),
+                _inference=Inference(None, rule="by_definition"),
+            )
+        self.knowledge_base.add(prop)
+        if assumptions_contexts[-1] is not None:
+            assumptions_contexts[-1].assumptions.append(prop)
 
     @property
     def is_natural(self) -> bool | None:
@@ -81,30 +237,44 @@ class Symbol:
         return self._is_real or self.is_rational
 
     @property
+    def is_zero(self) -> bool | None:
+        return self._is_zero
+
+    @property
     def is_nonzero(self) -> bool | None:
-        return self._is_nonzero or self._is_positive or self._is_negative
+        from pylogic.helpers import ternary_not
+
+        return ternary_not(self.is_zero)
+
+    @property
+    def is_even(self) -> bool | None:
+        return self._is_even
+
+    @property
+    def is_odd(self) -> bool | None:
+        from pylogic.helpers import ternary_not
+
+        return ternary_not(self.is_even)
 
     @property
     def is_positive(self) -> bool | None:
-        return self._is_positive or (
-            self._is_nonzero
-            and (None if self._is_negative is None else not self._is_negative)
-        )
+        from pylogic.helpers import ternary_and
+
+        return ternary_and(self.is_nonnegative, self.is_nonzero)
 
     @property
     def is_negative(self) -> bool | None:
-        return self._is_negative or (
-            self._is_nonzero
-            and (None if self._is_positive is None else not self._is_positive)
-        )
+        from pylogic.helpers import ternary_and
+
+        return ternary_and(self.is_nonpositive, self.is_nonzero)
 
     @property
     def is_nonpositive(self) -> bool | None:
-        return (not self.is_positive) if self.is_positive is not None else None
+        return self._is_nonpositive
 
     @property
     def is_nonnegative(self) -> bool | None:
-        return not self.is_negative if self.is_negative is not None else None
+        return self._is_nonnegative
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.name}, deps={self.depends_on})"
@@ -126,7 +296,7 @@ class Symbol:
     def __mul__(self, other: Symbol | PythonNumeric | Expr) -> Mul:
         return Mul(self, other)
 
-    def __truediv__(self, other: Symbol | PythonNumeric | Expr) -> Mul:
+    def __truediv__(self, other: Symbol | PythonNumeric | Expr) -> Pow | Mul:
         if self == 1:
             return Pow(other, -1)
         return Mul(self, Pow(other, -1))

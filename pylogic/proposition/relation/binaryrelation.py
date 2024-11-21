@@ -67,24 +67,17 @@ class BinaryRelation(Relation, Generic[T, U]):
 
     def _set_is_proven(self, value: bool) -> None:
         super()._set_is_proven(value)
-        if value:
-            self._set_is_inferred(True)
-        elif not (self.is_axiom or self.is_assumption):
+        if (not value) and not (self.is_axiom or self.is_assumption):
             self._set_is_inferred(False)
 
     def _set_is_assumption(self, value: bool) -> None:
         super()._set_is_assumption(value)
-        if value:
-            self._set_is_inferred(True)
-        else:
-            if not (self._is_proven or self.is_axiom):
-                self._set_is_inferred(False)
+        if (not value) and not (self._is_proven or self.is_axiom):
+            self._set_is_inferred(False)
 
     def _set_is_axiom(self, value: bool) -> None:
         super()._set_is_axiom(value)
-        if value:
-            self._set_is_inferred(True)
-        elif not (self._is_proven or self.is_assumption):
+        if (not value) and not (self._is_proven or self.is_assumption):
             self._set_is_inferred(False)
 
     def copy(self) -> Self:

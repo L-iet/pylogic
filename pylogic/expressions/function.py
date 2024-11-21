@@ -452,7 +452,7 @@ class CalledFunction(Expr):
         if self.function.definition is None:
             return self.function.to_sympy()(*[arg.to_sympy() for arg in self.arguments])  # type: ignore
 
-        # could recurse forever
+        # could recurse forever if replace gives the same CalledFunction
         return self.function.definition.replace(self.replace_dict).to_sympy()
         # TODO: fix and test this to enable conversion back if needed
 

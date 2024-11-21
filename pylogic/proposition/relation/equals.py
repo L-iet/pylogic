@@ -40,8 +40,6 @@ class Equals(BinaryRelation[T, U]):
             description=description,
             **kwargs,
         )
-        self.left: T = left
-        self.right: U = right
 
     def get(self, side: Side | str) -> Term:
         if side in ["left", Side.LEFT]:
@@ -50,6 +48,13 @@ class Equals(BinaryRelation[T, U]):
             return self.right
         else:
             raise ValueError(f"Invalid side: {side}")
+
+    def _set_is_inferred(self, value: bool) -> None:
+        super()._set_is_inferred(value)
+        from pylogic.constant import Constant
+
+        if self.right == Constant(0):
+            self.left._is_zero = True if value else None
 
     def _check_provable_by_simplification(
         self, _checking_side: Side, _doit_results: dict[Side, Term]

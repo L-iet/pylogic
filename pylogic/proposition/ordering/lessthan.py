@@ -38,6 +38,9 @@ class LessThan(StrictTotalOrder[T, U], _Ordering):
             **kwargs,
         )
 
+    # TODO: in _set_is_inferred, I need to set the appropriate attributes _is_nonnegative, _is_positive, etc.
+    # for self.left or self.rightfor other classes as well
+
     def to_positive_inequality(self):
         """If self is of the form a < b, returns an inequality of the form b - a > 0"""
         from pylogic.inference import Inference
@@ -155,6 +158,23 @@ class LessThan(StrictTotalOrder[T, U], _Ordering):
         Logical inference rule. Determine if the proposition is true by inspection.
         """
         raise NotImplementedError
+
+    def by_definition(self) -> LessThan:
+        """
+        Logical inference rule. Determine if the proposition is true by definition.
+        """
+        from pylogic.inference import Inference
+
+        if self.right == Constant(0):
+            if self.left.is_negative:
+                new_p = self.copy()
+                new_p._is_proven = True
+                new_p.deduced_from = Inference(self, rule="by_definition")
+                new_p.from_assumptions = set()
+                self.left.knowledge_base.add(new_p)
+                return new_p
+            else:
+                raise ValueError(f"{self} is not true by definition")
 
     def __mul__(self, other: int | float) -> LessThan:
         return super()._mul(self, other)

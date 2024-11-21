@@ -148,10 +148,10 @@ class Not(Proposition, Generic[TProposition]):
                         self.negated.left.knowledge_base.discard(self)
                 elif r == Constant(0):
                     if value:
-                        self.negated.left.is_nonzero = True
+                        self.negated.left._is_zero = False
                         self.negated.left.knowledge_base.add(self)
                     else:
-                        self.negated.left.is_nonzero = None
+                        self.negated.left.is_zero = None
                         self.negated.left.knowledge_base.discard(self)
             case BinaryRelation():
                 if value:
@@ -161,23 +161,17 @@ class Not(Proposition, Generic[TProposition]):
 
     def _set_is_proven(self, value: bool) -> None:
         super()._set_is_proven(value)
-        if value:
-            self._set_is_inferred(True)
-        elif not (self.is_axiom or self.is_assumption):
+        if (not value) and not (self.is_axiom or self.is_assumption):
             self._set_is_inferred(False)
 
     def _set_is_assumption(self, value: bool) -> None:
         super()._set_is_assumption(value)
-        if value:
-            self._set_is_inferred(True)
-        elif not (self._is_proven or self.is_axiom):
+        if (not value) and not (self._is_proven or self.is_axiom):
             self._set_is_inferred(False)
 
     def _set_is_axiom(self, value: bool) -> None:
         super()._set_is_axiom(value)
-        if value:
-            self._set_is_inferred(True)
-        elif not (self._is_proven or self.is_assumption):
+        if (not value) and not (self._is_proven or self.is_assumption):
             self._set_is_inferred(False)
 
     def copy(self) -> Self:
