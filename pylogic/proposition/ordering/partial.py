@@ -2,12 +2,26 @@ from __future__ import annotations
 
 from typing import TypeVar
 
+from sympy.core.relational import (
+    GreaterThan,
+    LessThan,
+    StrictGreaterThan,
+    StrictLessThan,
+)
+
 from pylogic import Term
 from pylogic.proposition.ordering.ordering import _Ordering
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
 
 T = TypeVar("T", bound=Term)
 U = TypeVar("U", bound=Term)
+
+pyl_to_sp_classes = {
+    "LessThan": StrictLessThan,
+    "GreaterThan": StrictGreaterThan,
+    "LessOrEqual": LessThan,
+    "GreaterOrEqual": GreaterThan,
+}
 
 
 class PartialOrder(BinaryRelation[T, U], _Ordering):
@@ -49,6 +63,11 @@ class PartialOrder(BinaryRelation[T, U], _Ordering):
         )
         self.name = name
 
+    def to_sympy(self):
+        return pyl_to_sp_classes[self.__class__.__name__](
+            self.left.to_sympy(), self.right.to_sympy()
+        )
+
 
 class StrictPartialOrder(BinaryRelation[T, U], _Ordering):
     """
@@ -88,3 +107,8 @@ class StrictPartialOrder(BinaryRelation[T, U], _Ordering):
             **kwargs,
         )
         self.name = name
+
+    def to_sympy(self):
+        return pyl_to_sp_classes[self.__class__.__name__](
+            self.left.to_sympy(), self.right.to_sympy()
+        )

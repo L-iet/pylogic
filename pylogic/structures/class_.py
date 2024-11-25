@@ -52,6 +52,17 @@ def class_n_hash(self) -> int:
     return hash((self.__class__.__name__, self.name, self.containment_function))
 
 
+def to_sympy(self):
+    from pylogic.sympy_helpers import PylSympySet
+
+    return PylSympySet(
+        self.name,
+        _pyl_class=self.__class__,
+        _pyl_init_args=self._init_args,
+        _pyl_init_kwargs=self._init_kwargs,
+    )
+
+
 def contains(self, other: Any, is_assumption: bool = False, **kwargs) -> IsContainedIn:
     from pylogic.proposition.relation.contains import IsContainedIn
 
@@ -251,12 +262,13 @@ def class_(n: int) -> Collection[Class[int]]:
     elif n in _all_classes:
         return _all_classes[n]
     c = Collection(
-        f"Collection{n}",
+        f"Class{n}",
         (),
         {
             "__init__": class_n_init,
             "__repr__": class_n_repr,
             "__hash__": class_n_hash,
+            "to_sympy": to_sympy,
             "level": n,
             "contains": contains,
             "equals": equals,

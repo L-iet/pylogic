@@ -427,28 +427,176 @@ def ternary_not(val: bool | None) -> bool | None:
 
 
 @overload
-def ternary_or(val1: bool, val2: bool) -> bool: ...
+def ternary_or(*vals: bool) -> bool: ...
 @overload
-def ternary_or(val1: None, val2: None) -> None: ...
+def ternary_or(*vals: None) -> None: ...
 @overload
-def ternary_or(val1: bool | None, val2: bool | None) -> bool | None: ...
-def ternary_or(val1: bool | None, val2: bool | None) -> bool | None:
-    if val1 is None:
-        if val2 is True:
+def ternary_or(*vals: bool | None) -> bool | None: ...
+def ternary_or(*val1: bool | None) -> bool | None:
+    none_count = 0
+    for val in val1:
+        if val is True:
             return True
+        none_count += val is None
+    if none_count > 0:
         return None
-    return val1 or val2
+    return False
 
 
 @overload
-def ternary_and(val1: bool, val2: bool) -> bool: ...
+def ternary_and(*vals: bool) -> bool: ...
 @overload
-def ternary_and(val1: None, val2: None) -> None: ...
+def ternary_and(*vals: None) -> None: ...
 @overload
-def ternary_and(val1: bool | None, val2: bool | None) -> bool | None: ...
-def ternary_and(val1: bool | None, val2: bool | None) -> bool | None:
-    if val1 is None:
-        if val2 is False:
+def ternary_and(*vals: bool | None) -> bool | None: ...
+def ternary_and(*vals: bool | None) -> bool | None:
+    none_count = 0
+    for val in vals:
+        if val is False:
             return False
+        none_count += val is None
+    if none_count > 0:
         return None
-    return val1 and val2
+    return True
+
+
+def _add_assumptions(term: Term, attr: str, value: bool) -> Proposition:
+    """
+    Add propositions to the term's knowledge base and assumptions_context based
+    on the assumptions.
+    """
+    # TODO: needs to be tested properly, somewhat hacky but
+    # the most straightforward way to add assumptions on Symbols/Sequence
+    # due to cyclic dependencies
+
+    import importlib
+
+    from pylogic.inference import Inference
+    from pylogic.proposition.not_ import Not
+    from pylogic.proposition.relation.contains import IsContainedIn
+
+    set_modules = {
+        "real": "pylogic.theories.real_analysis",
+        "rational": "pylogic.theories.rational_numbers",
+        "integer": "pylogic.theories.integers",
+        "natural": "pylogic.theories.natural_numbers",
+    }
+    set_names = {
+        "real": "Reals",
+        "rational": "Rationals",
+        "integer": "Integers",
+        "natural": "Naturals",
+    }
+
+    if attr in set_modules:
+        mod = importlib.import_module(set_modules[attr])
+        mod_set = getattr(mod, set_names[attr])
+        positive_prop = IsContainedIn(
+            term,
+            mod_set,
+            _is_proven=True,
+            _assumptions=set(),
+            _inference=Inference(None, rule="by_definition"),
+        )
+    elif attr == "zero":
+        from pylogic.proposition.relation.equals import Equals
+
+        positive_prop = Equals(
+            term,
+            0,
+            _is_proven=True,
+            _assumptions=set(),
+            _inference=Inference(None, rule="by_definition"),
+        )
+    elif attr == "nonpositive":
+        from pylogic.proposition.ordering.lessorequal import LessOrEqual
+
+        positive_prop = LessOrEqual(
+            term,
+            0,
+            _is_proven=True,
+            _assumptions=set(),
+            _inference=Inference(None, rule="by_definition"),
+        )
+    elif attr == "nonnegative":
+        from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
+
+        positive_prop = GreaterOrEqual(
+            term,
+            0,
+            _is_proven=True,
+            _assumptions=set(),
+            _inference=Inference(None, rule="by_definition"),
+        )
+    elif attr == "even":
+        # TODO: change to Integers where appropriate
+        from pylogic.theories.natural_numbers import Naturals
+
+        # if term._is_natural is True: ... # use Naturals.even
+        # else: ... # use Integers.even
+
+        positive_prop = Naturals.even(
+            term,
+            _is_proven=True,
+            _assumptions=set(),
+            _inference=Inference(None, rule="by_definition"),
+        )
+
+    if value:
+        prop = positive_prop
+    else:
+        positive_prop._set_is_proven(False)
+        positive_prop.deduced_from = None
+        prop = Not(
+            positive_prop,
+            _is_proven=True,
+            _assumptions=set(),
+            _inference=Inference(None, rule="by_definition"),
+        )
+    return prop
+
+
+def _add_assumption_attributes(term: Symbol | Sequence, kwargs) -> None:
+    """
+    Add attributes to the term based on the assumptions.
+    Check for contradictions and raise ValueError if found.
+    To be used with Symbol and Sequence.
+    """
+    if term._is_zero or term._is_nonpositive or term._is_nonnegative:
+        if term._is_real in [None, True]:
+            term._is_real = True
+        else:
+            raise ValueError(
+                "Contradictory assumptions: A number cannot be both non-real and zero/nonpositive/nonnegative"
+            )
+    if term._is_even:
+        if term._is_integer in [None, True]:
+            term._is_integer = True
+        else:
+            raise ValueError(
+                "Contradictory assumptions: A number cannot be both non-integer and even"
+            )
+    if kwargs.get("positive", None):
+        term._is_real = True
+        term._is_nonnegative = True
+        if term._is_zero in [None, False]:
+            term._is_zero = False
+        else:
+            raise ValueError(
+                "Contradictory assumptions: A positive number cannot be zero"
+            )
+    if kwargs.get("negative", None):
+        term._is_real = True
+        term._is_nonpositive = True
+        if term._is_zero in [None, False]:
+            term._is_zero = False
+        else:
+            raise ValueError(
+                "Contradictory assumptions: A negative number cannot be zero"
+            )
+    if kwargs.get("odd", None):
+        term._is_integer = True
+        if term._is_even in [None, False]:
+            term._is_even = False
+        else:
+            raise ValueError("Contradictory assumptions: An odd number cannot be even")

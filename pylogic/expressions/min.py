@@ -46,8 +46,16 @@ class MinElement(Expr):
                 return min_
         return self
 
-    def to_sympy(self) -> sp.Basic:
-        raise NotImplementedError
+    def to_sympy(self) -> sp.Expr:
+        from pylogic.sympy_helpers import PylSympyExpr
+
+        return PylSympyExpr(
+            "MinElement",
+            self.expr.to_sympy(),
+            _pyl_class=self.__class__,
+            _pyl_init_args=self._init_args,
+            _pyl_init_kwargs=self._init_kwargs,
+        )
 
     def _latex(self) -> str:
         return rf"\text{{MinElement}}\left({self.expr._latex()}\right)"

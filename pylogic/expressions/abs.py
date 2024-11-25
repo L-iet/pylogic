@@ -13,6 +13,10 @@ if TYPE_CHECKING:
 
 
 class Abs(Expr):
+    """
+    A nonnegative real number representing the size of some object.
+    """
+
     # order of operations for expressions (0-indexed)
     # Function MinElement Abs SequenceTerm Pow Prod Mul Sum Add Binary_Expr
     # Custom_Expr Piecewise Relation(eg <, subset)
@@ -21,8 +25,18 @@ class Abs(Expr):
     _is_wrapped = True
 
     def __init__(self, expr: Term) -> None:
-        self.expr = expr
+        from pylogic.helpers import ternary_or
+
         super().__init__(expr)
+        self.expr = expr
+        self._is_real = True
+        self._is_rational = expr.is_rational
+        self._is_integer = expr.is_integer
+        self._is_natural = ternary_or(expr.is_natural, expr.is_integer)
+        self._is_zero = True if expr.is_zero else None
+        self._is_even = expr.is_even
+        self._is_nonnegative = True
+        self._is_nonpositive = self.is_zero
 
     def evaluate(self) -> Abs | Constant:
         from pylogic.helpers import is_python_numeric

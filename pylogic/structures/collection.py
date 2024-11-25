@@ -25,7 +25,7 @@ class Collection(type, Generic[N]):
     """
 
     def __new__(cls, name, bases, dct):
-        if name == "Collection0":
+        if name == "Class0":
             from pylogic.structures.set_ import Set
 
             return Set

@@ -11,6 +11,8 @@ from pylogic.proposition.not_ import neg
 from pylogic.proposition.proposition import Proposition, get_assumptions
 
 if TYPE_CHECKING:
+    from sympy.logic.boolalg import Equivalent
+
     from pylogic.proposition.and_ import And
     from pylogic.proposition.not_ import Not
     from pylogic.structures.class_ import Class
@@ -231,3 +233,8 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
             lambda p: p.has_as_subproposition(other), [self.left, self.right]
         )
         return first_other_occurs_in is not None
+
+    def to_sympy(self) -> Equivalent:
+        from sympy.logic.boolalg import Equivalent
+
+        return Equivalent(self.left.to_sympy(), self.right.to_sympy())

@@ -1,0 +1,2425 @@
+warning: in the working copy of '_session.json', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'pylogic/__init__.py', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'pylogic/enviroment_settings/settings.py', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'pylogic/expressions/function.py', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'pylogic/expressions/limit.py', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'pylogic/expressions/min.py', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'pylogic/expressions/piecewise.py', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'pylogic/expressions/prod.py', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'pylogic/expressions/sequence_term.py', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'pylogic/expressions/sum.py', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'pylogic/proposition/iff.py', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'pylogic/proposition/ordering/partial.py', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'pylogic/structures/class_.py', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'pylogic/structures/collection.py', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'pylogic/structures/sequence.py', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'pylogic/sympy_helpers.py', CRLF will be replaced by LF the next time Git touches it
+[1mdiff --git a/_session.json b/_session.json[m
+[1mindex a5bc587..df80d46 100644[m
+[1m--- a/_session.json[m
+[1m+++ b/_session.json[m
+[36m@@ -41,4 +41,8 @@[m
+ ,{"start_time": "2024-11-19T13:26:41.615520-08:00", "end_time": "2024-11-19T13:32:44.220261-08:00", "start_message": "Begin session.", "end_message": "End session.\nbreak session.", "messages": [{"time": "2024-11-19T13:26:41.615520-08:00", "msg": "Begin session."}, {"time": "2024-11-19T13:32:44.220261-08:00", "msg": "End session.\nbreak session."}]}[m
+ ,{"start_time": "2024-11-19T14:35:12.427016-08:00", "end_time": "2024-11-19T16:58:11.773822-08:00", "start_message": "Begin session.", "end_message": "End session.\nbreak session. Need to continue by_definition tactic on remaining inequality propositions.", "messages": [{"time": "2024-11-19T14:35:12.427016-08:00", "msg": "Begin session."}, {"time": "2024-11-19T16:39:15.194446-08:00", "msg": "I'm thinking about how to avoid importError when I save\nthe attributes as proven props on symbols and assumptionsContexts.\n\nFor instance,\n\n```python\nx = Variable(\"x\", real=True)\n# need to save x in Reals above\n```\n\nsince `Group` imports Variable and creates instances, I cannot import\n`Reals` in `Symbol.__init`. \n\nOne solution would be to use a new argument when creating `Symbol`s internally, to check if I need to import `Reals` or not, but it feels hacky."}, {"time": "2024-11-19T16:57:33.170873-08:00", "msg": "last stop: lessthan.py line 159. I need to continue `by_definition` for the\nother inequality propositions; ideally factor `by_definition` to a common\nsuperclass.\n\n`by_definition` here is meant to translate the `is_` attributes eg\n`x.is_positive` means `x > 0` by definition\n\nThen for `is_even`, we add by_definition on `ExistsInSet`."}, {"time": "2024-11-19T16:58:11.773822-08:00", "msg": "End session.\nbreak session. Need to continue by_definition tactic on remaining inequality propositions."}]}[m
+ ,{"start_time": "2024-11-20T20:19:47.128932-08:00", "end_time": "2024-11-20T23:53:56.214319-08:00", "start_message": "Begin session.", "end_message": "End session.\nbreak session. Trying to convert sequence to&from sympy", "messages": [{"time": "2024-11-20T20:19:47.128932-08:00", "msg": "Begin session."}, {"time": "2024-11-20T23:53:56.214319-08:00", "msg": "End session.\nbreak session. Trying to convert sequence to&from sympy"}]}[m
+[32m+[m[32m,{"start_time": "2024-11-21T00:48:29.156054-08:00", "end_time": "2024-11-21T01:33:33.990804-08:00", "start_message": "Begin session.", "end_message": "End session.\nAdded to_sympy for sequence; need to add for Set, Classn, Symbol. Then We'll complete from sympy for those.", "messages": [{"time": "2024-11-21T00:48:29.156054-08:00", "msg": "Begin session."}, {"time": "2024-11-21T00:50:37.483704-08:00", "msg": "Session started like 5 mins after last end.\n\nI've been working on converting sequence.\n\nAlso note that, to preserve non-commutative operations,\nbefore evaluating expressions like `Mul`, `Add`, etc,\nI should check if all the args are from built-in sets i.e.\ncheck `is_real` for all args before converting to sympy and back\nelse return self."}, {"time": "2024-11-21T01:33:33.990804-08:00", "msg": "End session.\nAdded to_sympy for sequence; need to add for Set, Classn, Symbol. Then We'll complete from sympy for those."}]}[m
+[32m+[m[32m,{"start_time": "2024-11-21T15:24:45.583048-08:00", "end_time": "2024-11-21T17:43:17.803602-08:00", "start_message": "Begin session.", "end_message": "End session.\nCurrently working on to_sympy for Piecewise. Will need to add default to_sympy for propositions as well.", "messages": [{"time": "2024-11-21T15:24:45.583048-08:00", "msg": "Begin session."}, {"time": "2024-11-21T15:26:40.712816-08:00", "msg": "started session since ended meeting by 2:30. Working on cleaning up sequence, set and symbol conversion."}, {"time": "2024-11-21T17:43:17.803602-08:00", "msg": "End session.\nCurrently working on to_sympy for Piecewise. Will need to add default to_sympy for propositions as well."}]}[m
+[32m+[m[32m,{"start_time": "2024-11-23T20:06:59.794711-08:00", "end_time": "2024-11-23T20:42:25.762892-08:00", "start_message": "Begin session.", "end_message": "End session.\nWondering how best to convert And to sympy: should we preserve init args and kwargs? break session.", "messages": [{"time": "2024-11-23T20:06:59.794711-08:00", "msg": "Begin session."}, {"time": "2024-11-23T20:42:25.762892-08:00", "msg": "End session.\nWondering how best to convert And to sympy: should we preserve init args and kwargs? break session."}]}[m
+[32m+[m[32m,{"start_time": "2024-11-23T21:42:48.908412-08:00", "end_time": "2024-11-24T00:09:20.086844-08:00", "start_message": "Begin session.", "end_message": "End session.\nend session. I finished to_sympy for expressions and props, I believe. Working on from_sympy for Pieceiwise, Sum and Prod.", "messages": [{"time": "2024-11-23T21:42:48.908412-08:00", "msg": "Begin session."}, {"time": "2024-11-24T00:08:31.835049-08:00", "msg": "What's left: convert from sympy for Picewise (sp.Piecewise, ExprCondPair, And, Not, Eq etc), Prod and Sum."}, {"time": "2024-11-24T00:09:20.086844-08:00", "msg": "End session.\nend session. I finished to_sympy for expressions and props, I believe. Working on from_sympy for Pieceiwise, Sum and Prod."}]}[m
+ ]}[m
+\ No newline at end of file[m
+[1mdiff --git a/nested_interval.ipynb b/nested_interval.ipynb[m
+[1mindex 6a6b846..0cf266e 100644[m
+[1m--- a/nested_interval.ipynb[m
+[1m+++ b/nested_interval.ipynb[m
+[36m@@ -2,7 +2,7 @@[m
+  "cells": [[m
+   {[m
+    "cell_type": "code",[m
+[31m-   "execution_count": 1,[m
+[32m+[m[32m   "execution_count": null,[m
+    "metadata": {},[m
+    "outputs": [],[m
+    "source": [[m
+[36m@@ -16,6 +16,8 @@[m
+     "from pylogic.theories.natural_numbers import Naturals, one, zero\n",[m
+     "from pylogic.theories.real_analysis import Interval, Reals\n",[m
+     "from pylogic.variable import Variable\n",[m
+[32m+[m[32m    "from pylogic.enviroment_settings.settings import  settings\n",[m
+[32m+[m[32m    "\n",[m
+     "\n",[m
+     "a = Sequence(\"a\")\n",[m
+     "a.define_predicate(\n",[m
+[36m@@ -67,16 +69,29 @@[m
+   },[m
+   {[m
+    "cell_type": "code",[m
+[31m-   "execution_count": 3,[m
+[32m+[m[32m   "execution_count": 11,[m
+    "metadata": {},[m
+    "outputs": [[m
+     {[m
+      "name": "stderr",[m
+      "output_type": "stream",[m
+      "text": [[m
+[31m-      "d:\\Minerva\\courses\\CP\\pylogic\\pylogic\\proposition\\proposition.py:227: UserWarning: forall k0 in Naturals: forall k1 in Naturals: (k0 <= k1 -> a_(k0) <= a_(k1) /\\ b_(k1) <= b_(k0)) is marked as TODO\n",[m
+[32m+[m[32m      "d:\\Minerva\\courses\\CP\\pylogic\\pylogic\\proposition\\proposition.py:237: UserWarning: forall k0 in Naturals: forall k1 in Naturals: (k0 <= k1 -> a_(k0) <= a_(k1) /\\ b_(k1) <= b_(k0)) is marked as TODO\n",[m
+       "  warnings.warn(\n"[m
+      ][m
+[32m+[m[32m    },[m
+[32m+[m[32m    {[m
+[32m+[m[32m     "data": {[m
+[32m+[m[32m      "text/latex": [[m
+[32m+[m[32m       "$$\\forall k0 \\in \\mathbb{N}: \\forall k1 \\in \\mathbb{N}: \\left(k0 \\leq k1 \\rightarrow {a}_{k0} \\leq {a}_{k1}\\wedge {b}_{k1} \\leq {b}_{k0}\\right)$$"[m
+[32m+[m[32m      ],[m
+[32m+[m[32m      "text/plain": [[m
+[32m+[m[32m       "ForallInSet(Variable(k0, deps=()), Set_Naturals, ForallInSet(Variable(k1, deps=()), Set_Naturals, Implies(LessOrEqual(k0, k1), And(LessOrEqual(a_(k0), a_(k1)), LessOrEqual(b_(k1), b_(k0))))))"[m
+[32m+[m[32m      ][m
+[32m+[m[32m     },[m
+[32m+[m[32m     "execution_count": 11,[m
+[32m+[m[32m     "metadata": {},[m
+[32m+[m[32m     "output_type": "execute_result"[m
+     }[m
+    ],[m
+    "source": [[m
+[36m@@ -92,6 +107,8 @@[m
+     "        ),\n",[m
+     "    ),\n",[m
+     ").todo()\n",[m
+[32m+[m[32m    "\n",[m
+[32m+[m[32m    "forall_k_and_n_in_N_k_leq_n_implies_ak_leq_an_and_bn_leq_bk\n",[m
+     "\n"[m
+    ][m
+   },[m
+[1mdiff --git a/pylogic/__init__.py b/pylogic/__init__.py[m
+[1mindex 80bc492..922f184 100644[m
+[1m--- a/pylogic/__init__.py[m
+[1m+++ b/pylogic/__init__.py[m
+[36m@@ -23,9 +23,9 @@[m [mif TYPE_CHECKING:[m
+     from pylogic.variable import Variable[m
+ [m
+     PythonNumeric = Fraction | int | float | complex | Decimal[m
+[31m-    PBasic = Symbol | PythonNumeric[m
+[32m+[m[32m    PBasic = Symbol | Sequence | Set[m
+     Unevaluated = Symbol | Sequence | Set | Expr[m
+[31m-    Term = Unevaluated | PythonNumeric[m
+[32m+[m[32m    Term = Unevaluated[m
+     Unification = dict[Variable, Term][m
+ else:[m
+     Term = Any[m
+[1mdiff --git a/pylogic/constant.py b/pylogic/constant.py[m
+[1mindex 7084998..9e23aa5 100644[m
+[1m--- a/pylogic/constant.py[m
+[1m+++ b/pylogic/constant.py[m
+[36m@@ -170,3 +170,6 @@[m [mclass Constant(Symbol, Generic[T]):[m
+ [m
+ def Rational(numerator: int, denominator: int) -> Constant[Fraction]:[m
+     return Constant(Fraction(numerator, denominator))[m
+[32m+[m
+[32m+[m
+[32m+[m[32moo = Infinity = Constant(float("inf"))[m
+[1mdiff --git a/pylogic/enviroment_settings/settings.py b/pylogic/enviroment_settings/settings.py[m
+[1mindex 1e2ee6f..e97d401 100644[m
+[1m--- a/pylogic/enviroment_settings/settings.py[m
+[1m+++ b/pylogic/enviroment_settings/settings.py[m
+[36m@@ -1,7 +1,19 @@[m
+[31m-settings = dict([m
+[31m-    SHOW_VARIABLE_DEPS=False,  # whether to show the dependencies of a variable in the string representation of a formula (True) or not (False)[m
+[31m-    SHOW_ALL_PARENTHESES=False,  # whether to show all parentheses in the string representation of a formula (True) or only the necessary ones (False)[m
+[31m-    # whether python operators <, <=, >, >=, >>, &, |, ^, in, ~, should return propositions (True) or boolean values if implemented (False)[m
+[31m-    PYTHON_OPS_RETURN_PROPS=False,  # == always returns a bool because it is called by set.__contains__[m
+[31m-    USE_CLASSICAL_LOGIC=True,  # whether to use classical logic (True) or intuitionistic logic (False)[m
+[32m+[m[32mfrom typing import TypedDict[m
+[32m+[m
+[32m+[m[32mSettings = TypedDict([m
+[32m+[m[32m    "Settings",[m
+[32m+[m[32m    {[m
+[32m+[m[32m        "SHOW_VARIABLE_DEPS": bool,[m
+[32m+[m[32m        "SHOW_ALL_PARENTHESES": bool,[m
+[32m+[m[32m        "PYTHON_OPS_RETURN_PROPS": bool,[m
+[32m+[m[32m        "USE_CLASSICAL_LOGIC": bool,[m
+[32m+[m[32m    },[m
+ )[m
+[32m+[m
+[32m+[m[32msettings: Settings = {[m
+[32m+[m[32m    "SHOW_VARIABLE_DEPS": False,  # whether to show the dependencies of a variable in the string representation of a formula (True) or not (False)[m
+[32m+[m[32m    "SHOW_ALL_PARENTHESES": False,  # whether to show all parentheses in the string representation of a formula (True) or only the necessary ones (False)[m
+[32m+[m[32m    # whether python operators <, <=, >, >=, >>, &, |, ^, in, ~, should return propositions (True) or boolean values if implemented (False)[m
+[32m+[m[32m    "PYTHON_OPS_RETURN_PROPS": False,  # == always returns a bool because it is called by set.__contains__[m
+[32m+[m[32m    "USE_CLASSICAL_LOGIC": True,  # whether to use classical logic (True) or intuitionistic logic (False)[m
+[32m+[m[32m}[m
+[1mdiff --git a/pylogic/expressions/abs.py b/pylogic/expressions/abs.py[m
+[1mindex 5b271bb..92e2dbd 100644[m
+[1m--- a/pylogic/expressions/abs.py[m
+[1m+++ b/pylogic/expressions/abs.py[m
+[36m@@ -13,6 +13,10 @@[m [mif TYPE_CHECKING:[m
+ [m
+ [m
+ class Abs(Expr):[m
+[32m+[m[32m    """[m
+[32m+[m[32m    A nonnegative real number representing the size of some object.[m
+[32m+[m[32m    """[m
+[32m+[m
+     # order of operations for expressions (0-indexed)[m
+     # Function MinElement Abs SequenceTerm Pow Prod Mul Sum Add Binary_Expr[m
+     # Custom_Expr Piecewise Relation(eg <, subset)[m
+[36m@@ -21,8 +25,18 @@[m [mclass Abs(Expr):[m
+     _is_wrapped = True[m
+ [m
+     def __init__(self, expr: Term) -> None:[m
+[31m-        self.expr = expr[m
+[32m+[m[32m        from pylogic.helpers import ternary_or[m
+[32m+[m
+         super().__init__(expr)[m
+[32m+[m[32m        self.expr = expr[m
+[32m+[m[32m        self._is_real = True[m
+[32m+[m[32m        self._is_rational = expr.is_rational[m
+[32m+[m[32m        self._is_integer = expr.is_integer[m
+[32m+[m[32m        self._is_natural = ternary_or(expr.is_natural, expr.is_integer)[m
+[32m+[m[32m        self._is_zero = True if expr.is_zero else None[m
+[32m+[m[32m        self._is_even = expr.is_even[m
+[32m+[m[32m        self._is_nonnegative = True[m
+[32m+[m[32m        self._is_nonpositive = self.is_zero[m
+ [m
+     def evaluate(self) -> Abs | Constant:[m
+         from pylogic.helpers import is_python_numeric[m
+[1mdiff --git a/pylogic/expressions/expr.py b/pylogic/expressions/expr.py[m
+[1mindex f51d17a..619667c 100644[m
+[1m--- a/pylogic/expressions/expr.py[m
+[1m+++ b/pylogic/expressions/expr.py[m
+[36m@@ -15,7 +15,7 @@[m [mfrom typing import ([m
+ [m
+ import sympy as sp[m
+ [m
+[31m-from pylogic import PBasic, Term, Unification[m
+[32m+[m[32mfrom pylogic import PBasic, PythonNumeric, Term, Unification[m
+ from pylogic.enviroment_settings.settings import settings[m
+ [m
+ if TYPE_CHECKING:[m
+[36m@@ -32,7 +32,6 @@[m [mif TYPE_CHECKING:[m
+     from pylogic.structures.sequence import Sequence[m
+     from pylogic.structures.set_ import Set[m
+     from pylogic.symbol import Symbol[m
+[31m-    from pylogic.sympy_helpers import PylSympySymbol[m
+     from pylogic.variable import Variable[m
+ else:[m
+     Symbol = Any[m
+[36m@@ -44,7 +43,9 @@[m [mclass Expr(ABC):[m
+     _is_wrapped = False[m
+ [m
+     def __init__([m
+[31m-        self, *args: Proposition | PBasic | Set | Sequence | Expr, **kwargs: Any[m
+[32m+[m[32m        self,[m
+[32m+[m[32m        *args: Proposition | PBasic | PythonNumeric | Set | Sequence | Expr,[m
+[32m+[m[32m        **kwargs: Any,[m
+     ):[m
+         from pylogic.helpers import python_to_pylogic[m
+ [m
+[36m@@ -54,14 +55,47 @@[m [mclass Expr(ABC):[m
+         self._init_args = args[m
+         self._init_kwargs = kwargs[m
+         self.knowledge_base: set[Proposition] = set()[m
+[31m-        self.is_real: bool | None = None[m
+[31m-        self.is_rational: bool | None = None[m
+[31m-        self.is_integer: bool | None = None[m
+[31m-        self.is_natural: bool | None = None[m
+[31m-        self.is_zero: bool | None = None[m
+[31m-        self.is_nonpositive: bool | None = None[m
+[31m-        self.is_nonnegative: bool | None = None[m
+[31m-        self.is_even: bool | None = None[m
+[32m+[m
+[32m+[m[32m        self._is_real: bool | None = None[m
+[32m+[m[32m        self._is_rational: bool | None = None[m
+[32m+[m[32m        self._is_integer: bool | None = None[m
+[32m+[m[32m        self._is_natural: bool | None = None[m
+[32m+[m[32m        self._is_zero: bool | None = None[m
+[32m+[m[32m        self._is_nonpositive: bool | None = None[m
+[32m+[m[32m        self._is_nonnegative: bool | None = None[m
+[32m+[m[32m        self._is_even: bool | None = None[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_real(self) -> bool | None:[m
+[32m+[m[32m        return self._is_real[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_rational(self) -> bool | None:[m
+[32m+[m[32m        return self._is_rational[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_integer(self) -> bool | None:[m
+[32m+[m[32m        return self._is_integer[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_natural(self) -> bool | None:[m
+[32m+[m[32m        return self._is_natural[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_zero(self) -> bool | None:[m
+[32m+[m[32m        return self._is_zero[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_nonpositive(self) -> bool | None:[m
+[32m+[m[32m        return self._is_nonpositive[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_nonnegative(self) -> bool | None:[m
+[32m+[m[32m        return self._is_nonnegative[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_even(self) -> bool | None:[m
+[32m+[m[32m        return self._is_even[m
+ [m
+     @property[m
+     def is_positive(self) -> bool | None:[m
+[36m@@ -135,7 +169,10 @@[m [mclass Expr(ABC):[m
+         return self.symbols.union(self.sets).union(self.class_ns)[m
+ [m
+     @abstractmethod[m
+[31m-    def evaluate(self) -> Expr:[m
+[32m+[m[32m    def evaluate(self, **kwargs) -> Expr:[m
+[32m+[m[32m        """Evaluate the expression.[m
+[32m+[m[32m        Keyword arguments are used for passing additional information to the evaluation function.[m
+[32m+[m[32m        """[m
+         pass[m
+ [m
+     @abstractmethod[m
+[36m@@ -351,7 +388,7 @@[m [mclass CustomExpr(Expr, Generic[U]):[m
+     def __init__([m
+         self,[m
+         name: str,[m
+[31m-        *args: PBasic | Expr,[m
+[32m+[m[32m        *args: Proposition | PBasic | PythonNumeric | Expr,[m
+         eval_func: Callable[..., U | None] | None = None,[m
+         latex_func: Callable[..., str] | None = None,[m
+     ):[m
+[36m@@ -379,9 +416,18 @@[m [mclass CustomExpr(Expr, Generic[U]):[m
+         return NotImplemented[m
+ [m
+     def to_sympy(self) -> sp.Expr:[m
+[31m-        return sp.Expr(*[to_sympy(arg) for arg in self.args])[m
+[32m+[m[32m        from pylogic.sympy_helpers import PylSympyExpr[m
+[32m+[m
+[32m+[m[32m        new_args = [to_sympy(arg) for arg in self.args][m
+[32m+[m[32m        return PylSympyExpr([m
+[32m+[m[32m            self.name,[m
+[32m+[m[32m            *new_args,[m
+[32m+[m[32m            _pyl_class=self.__class__,[m
+[32m+[m[32m            _pyl_init_args=self._init_args,[m
+[32m+[m[32m            _pyl_init_kwargs=self._init_kwargs,[m
+[32m+[m[32m        )[m
+ [m
+[31m-    def evaluate(self) -> Self | U:[m
+[32m+[m[32m    def evaluate(self, **kwargs) -> Self | U:[m
+         """[m
+         Calls the evaluation function with the arguments.[m
+         """[m
+[36m@@ -432,8 +478,8 @@[m [mclass BinaryExpression(CustomExpr[U]):[m
+         self,[m
+         name: str,[m
+         symbol: str,[m
+[31m-        left: PBasic | Expr,[m
+[31m-        right: PBasic | Expr,[m
+[32m+[m[32m        left: PBasic | PythonNumeric | Expr,[m
+[32m+[m[32m        right: PBasic | PythonNumeric | Expr,[m
+         eval_func: Callable[[U, U], U | None] | None = None,[m
+         latex_func: Callable[[str, str], str] | None = None,[m
+     ):[m
+[36m@@ -459,7 +505,7 @@[m [mclass Add(Expr):[m
+     # Custom_Expr Piecewise Relation(eg <, subset)[m
+     _precedence = 8[m
+ [m
+[31m-    def __init__(self, *args: Expr | PBasic):[m
+[32m+[m[32m    def __init__(self, *args: Expr | PBasic | PythonNumeric):[m
+         from pylogic.helpers import ternary_or[m
+ [m
+         super().__init__(*args)[m
+[36m@@ -501,28 +547,36 @@[m [mclass Add(Expr):[m
+                 exists_positive = True[m
+             if arg.is_negative:[m
+                 exists_negative = True[m
+[31m-        self.is_real = ternary_or(all_real, None)[m
+[31m-        self.is_rational = ternary_or(all_rational, None)[m
+[31m-        self.is_integer = ternary_or(all_integer, None)[m
+[31m-        self.is_natural = ternary_or(all_natural, None)[m
+[31m-        self.is_nonnegative = ternary_or(all_nonnegative, None)[m
+[31m-        self.is_zero = ternary_or(all_zero, None)[m
+[31m-        self.is_nonpositive = ternary_or(all_nonpositive, None)[m
+[31m-        self.is_even = ternary_or(all_even, None)[m
+[32m+[m[32m        self._is_real = ternary_or(all_real, None)[m
+[32m+[m[32m        self._is_rational = ternary_or(all_rational, None)[m
+[32m+[m[32m        self._is_integer = ternary_or(all_integer, None)[m
+[32m+[m[32m        self._is_natural = ternary_or(all_natural, None)[m
+[32m+[m[32m        self._is_nonnegative = ternary_or(all_nonnegative, None)[m
+[32m+[m[32m        self._is_zero = ternary_or(all_zero, None)[m
+[32m+[m[32m        self._is_nonpositive = ternary_or(all_nonpositive, None)[m
+[32m+[m[32m        self._is_even = ternary_or(all_even, None)[m
+ [m
+         if all_nonnegative and exists_positive:[m
+[31m-            self.is_zero = False[m
+[32m+[m[32m            self._is_zero = False[m
+         if all_nonpositive and exists_negative:[m
+[31m-            self.is_zero = False[m
+[32m+[m[32m            self._is_zero = False[m
+         if count_odd % 2 == 0 and count_even == total_args - count_odd:[m
+[31m-            self.is_even = True[m
+[32m+[m[32m            self._is_even = True[m
+         elif count_odd % 2 == 1 and count_even == total_args - count_odd:[m
+[31m-            self.is_even = False[m
+[32m+[m[32m            self._is_even = False[m
+ [m
+[31m-    def evaluate(self) -> Add:[m
+[31m-        from pylogic.sympy_helpers import sympy_to_pylogic[m
+[32m+[m[32m    def evaluate(self, **kwargs) -> Add:[m
+[32m+[m[32m        from pylogic.sympy_helpers import FromSympyError, sympy_to_pylogic[m
+ [m
+[31m-        return sympy_to_pylogic(self.to_sympy())[m
+[32m+[m[32m        # we are only sure that reals commute under addition[m
+[32m+[m[32m        # sympy mixes things around[m
+[32m+[m[32m        if all(arg.is_real for arg in self.args):[m
+[32m+[m[32m            new_add = Add(*[arg.evaluate(**kwargs) for arg in self.args])[m
+[32m+[m[32m            try:[m
+[32m+[m[32m                return sympy_to_pylogic(new_add.to_sympy())[m
+[32m+[m[32m            except FromSympyError:[m
+[32m+[m[32m                return new_add[m
+[32m+[m[32m        return self[m
+ [m
+     def to_sympy(self) -> sp.Add:[m
+         return sp.Add(*[to_sympy(arg) for arg in self.args])[m
+[36m@@ -554,7 +608,7 @@[m [mclass Mul(Expr):[m
+     # Custom_Expr Piecewise Relation(eg <, subset)[m
+     _precedence = 6[m
+ [m
+[31m-    def __init__(self, *args: PBasic | Expr):[m
+[32m+[m[32m    def __init__(self, *args: PBasic | Expr | PythonNumeric):[m
+         from pylogic.helpers import ternary_or[m
+ [m
+         super().__init__(*args)[m
+[36m@@ -594,33 +648,40 @@[m [mclass Mul(Expr):[m
+                 count_nonnegative += 1[m
+ [m
+         if all_real:[m
+[31m-            self.is_real = True[m
+[32m+[m[32m            self._is_real = True[m
+             if exists_zero:[m
+[31m-                self.is_zero = True[m
+[32m+[m[32m                self._is_zero = True[m
+             elif all_nonzero:[m
+[31m-                self.is_zero = False[m
+[31m-        self.is_rational = ternary_or(all_rational, None)[m
+[31m-        self.is_integer = ternary_or(all_integer, None)[m
+[31m-        self.is_natural = ternary_or(all_natural, None)[m
+[32m+[m[32m                self._is_zero = False[m
+[32m+[m[32m        self._is_rational = ternary_or(all_rational, None)[m
+[32m+[m[32m        self._is_integer = ternary_or(all_integer, None)[m
+[32m+[m[32m        self._is_natural = ternary_or(all_natural, None)[m
+         if ([m
+             count_nonpositive % 2 == 0[m
+             and count_nonnegative == total_args - count_nonpositive[m
+         ):[m
+[31m-            self.is_nonnegative = True[m
+[32m+[m[32m            self._is_nonnegative = True[m
+         if ([m
+             count_nonpositive % 2 == 1[m
+             and count_nonnegative == total_args - count_nonpositive[m
+         ):[m
+[31m-            self.is_nonpositive = True[m
+[32m+[m[32m            self._is_nonpositive = True[m
+         if count_even > 0 and count_even + count_odd == total_args:[m
+[31m-            self.is_even = True[m
+[32m+[m[32m            self._is_even = True[m
+         if count_odd == total_args:[m
+[31m-            self.is_even = False[m
+[32m+[m[32m            self._is_even = False[m
+ [m
+     def evaluate(self) -> Mul:[m
+[31m-        from pylogic.sympy_helpers import sympy_to_pylogic[m
+[32m+[m[32m        from pylogic.sympy_helpers import FromSympyError, sympy_to_pylogic[m
+ [m
+[31m-        return sympy_to_pylogic(self.to_sympy())[m
+[32m+[m[32m        # see Add.evaluate[m
+[32m+[m[32m        if all(arg.is_real for arg in self.args):[m
+[32m+[m[32m            new_mul = Mul(*[arg.evaluate() for arg in self.args])[m
+[32m+[m[32m            try:[m
+[32m+[m[32m                return sympy_to_pylogic(new_mul.to_sympy())[m
+[32m+[m[32m            except FromSympyError:[m
+[32m+[m[32m                return new_mul[m
+[32m+[m[32m        return self[m
+ [m
+     def to_sympy(self) -> sp.Mul:[m
+         return sp.Mul(*[to_sympy(arg) for arg in self.args])[m
+[36m@@ -682,47 +743,56 @@[m [mclass Pow(Expr):[m
+     # Custom_Expr Piecewise Relation(eg <, subset)[m
+     _precedence = 4[m
+ [m
+[31m-    def __init__(self, base: PBasic | Expr, exp: PBasic | Expr):[m
+[32m+[m[32m    def __init__([m
+[32m+[m[32m        self, base: PBasic | PythonNumeric | Expr, exp: PBasic | PythonNumeric | Expr[m
+[32m+[m[32m    ):[m
+         super().__init__(base, exp)[m
+         self.base = self.args[0][m
+         self.exp = self.args[1][m
+ [m
+         if self.base.is_zero and self.exp.is_positive:[m
+[31m-            self.is_zero = True[m
+[32m+[m[32m            self._is_zero = True[m
+         if self.base.is_nonnegative and self.exp.is_nonnegative:[m
+[31m-            self.is_nonnegative = True[m
+[32m+[m[32m            self._is_nonnegative = True[m
+         if self.base.is_positive and (self.exp.is_even is False):[m
+[31m-            self.is_zero = False[m
+[31m-            self.is_nonnegative = True[m
+[32m+[m[32m            self._is_zero = False[m
+[32m+[m[32m            self._is_nonnegative = True[m
+         if self.base.is_nonpositive and self.exp.is_even:[m
+[31m-            self.is_nonnegative = True[m
+[32m+[m[32m            self._is_nonnegative = True[m
+         if self.base.is_negative and (self.exp.is_even is False):[m
+[31m-            self.is_zero = False[m
+[31m-            self.is_nonpositive = True[m
+[32m+[m[32m            self._is_zero = False[m
+[32m+[m[32m            self._is_nonpositive = True[m
+ [m
+         if self.base.is_real and self.exp.is_positive:[m
+[31m-            self.is_real = True[m
+[32m+[m[32m            self._is_real = True[m
+ [m
+         if self.base.is_zero is False:[m
+             if self.exp.is_even:[m
+[31m-                self.is_zero = False[m
+[31m-                self.is_nonnegative = True[m
+[32m+[m[32m                self._is_zero = False[m
+[32m+[m[32m                self._is_nonnegative = True[m
+ [m
+             if self.base.is_real and self.exp.is_integer:[m
+[31m-                self.is_real = True[m
+[32m+[m[32m                self._is_real = True[m
+             if self.base.is_integer and self.exp.is_even:[m
+[31m-                self.is_natural = True[m
+[32m+[m[32m                self._is_natural = True[m
+             if self.base.is_integer and self.exp.is_natural:[m
+[31m-                self.is_integer = True[m
+[32m+[m[32m                self._is_integer = True[m
+             if self.base.is_rational and self.exp.is_integer:[m
+[31m-                self.is_rational = True[m
+[32m+[m[32m                self._is_rational = True[m
+             if self.base.is_natural and self.exp.is_natural:[m
+[31m-                self.is_natural = True[m
+[32m+[m[32m                self._is_natural = True[m
+ [m
+     def evaluate(self) -> Pow:[m
+[31m-        from pylogic.sympy_helpers import sympy_to_pylogic[m
+[32m+[m[32m        from pylogic.sympy_helpers import FromSympyError, sympy_to_pylogic[m
+ [m
+[31m-        return sympy_to_pylogic(self.to_sympy())[m
+[32m+[m[32m        # see Add.evaluate[m
+[32m+[m[32m        if all(arg.is_real for arg in self.args):[m
+[32m+[m[32m            new_pow = Pow(*[arg.evaluate() for arg in self.args])[m
+[32m+[m[32m            try:[m
+[32m+[m[32m                return sympy_to_pylogic(new_pow.to_sympy())[m
+[32m+[m[32m            except FromSympyError:[m
+[32m+[m[32m                return new_pow[m
+[32m+[m[32m        return self[m
+ [m
+     def to_sympy(self) -> sp.Pow:[m
+         return sp.Pow(to_sympy(self.base), to_sympy(self.exp))[m
+[36m@@ -790,41 +860,42 @@[m [mdef to_sympy(expr: Fraction) -> sp.Rational: ...[m
+ @overload[m
+ def to_sympy(expr: Expr) -> sp.Basic: ...[m
+ @overload[m
+[31m-def to_sympy(expr: Symbol) -> PylSympySymbol: ...[m
+[32m+[m[32mdef to_sympy(expr: Symbol) -> sp.Symbol: ...[m
+ @overload[m
+ def to_sympy(expr: Set) -> sp.Set: ...[m
+[31m-def to_sympy(expr: PBasic | Expr | Set) -> sp.Basic:[m
+[32m+[m[32mdef to_sympy(expr: PBasic | PythonNumeric | Expr) -> sp.Basic:[m
+[32m+[m[32m    from pylogic.structures.sequence import Sequence[m
+     from pylogic.structures.set_ import Set[m
+     from pylogic.symbol import Symbol[m
+ [m
+[31m-    # TODO: add sequence and other types[m
+[31m-[m
+     if isinstance(expr, int):[m
+         return sp.Integer(expr)[m
+     if isinstance(expr, float):[m
+         return sp.Float(expr)[m
+     if isinstance(expr, Fraction):[m
+         return sp.Rational(expr)[m
+[31m-    if isinstance(expr, (Expr, Symbol, Set)):[m
+[32m+[m[32m    if expr.__class__.__name__.startswith("Class"):[m
+         return expr.to_sympy()[m
+[31m-    return expr[m
+[32m+[m[32m    if isinstance(expr, (Expr, Symbol, Set, Sequence)):[m
+[32m+[m[32m        return expr.to_sympy()[m
+[32m+[m[32m    return sp.sympify(expr)[m
+ [m
+ [m
+[31m-def sqrt(expr: PBasic | Expr) -> Pow:[m
+[32m+[m[32mdef sqrt(expr: PBasic | PythonNumeric | Expr) -> Pow:[m
+     return Pow(expr, Fraction(1, 2))[m
+ [m
+ [m
+[31m-def mul(*args: PBasic | Expr) -> Mul:[m
+[32m+[m[32mdef mul(*args: PBasic | PythonNumeric | Expr) -> Mul:[m
+     return Mul(*args)[m
+ [m
+ [m
+[31m-def add(*args: PBasic | Expr) -> Add:[m
+[32m+[m[32mdef add(*args: PBasic | PythonNumeric | Expr) -> Add:[m
+     return Add(*args)[m
+ [m
+ [m
+[31m-def sub(a: PBasic | Expr, b: PBasic | Expr) -> Add:[m
+[32m+[m[32mdef sub(a: PBasic | PythonNumeric | Expr, b: PBasic | PythonNumeric | Expr) -> Add:[m
+     return Add(a, -b)[m
+ [m
+ [m
+[31m-def div(a: PBasic | Expr, b: PBasic | Expr) -> Mul:[m
+[32m+[m[32mdef div(a: PBasic | PythonNumeric | Expr, b: PBasic | PythonNumeric | Expr) -> Mul:[m
+     return Mul(a, Pow(b, -1))[m
+[1mdiff --git a/pylogic/expressions/function.py b/pylogic/expressions/function.py[m
+[1mindex de5c2d5..cf2f9d4 100644[m
+[1m--- a/pylogic/expressions/function.py[m
+[1m+++ b/pylogic/expressions/function.py[m
+[36m@@ -8,6 +8,8 @@[m [mfrom pylogic import Term[m
+ from pylogic.expressions.expr import Expr, to_sympy[m
+ [m
+ if TYPE_CHECKING:[m
+[32m+[m[32m    from sympy.core.function import UndefinedFunction[m
+[32m+[m
+     from pylogic.proposition.proposition import Proposition[m
+     from pylogic.structures.collection import Class[m
+     from pylogic.structures.set_ import Set[m
+[36m@@ -38,17 +40,21 @@[m [mT = TypeVar("T", bound=Term)[m
+ [m
+ class SelfFunc(Expr):[m
+     def __init__(self, *args: Term) -> None:[m
+[31m-        self.args = args[m
+[31m-        self.name: str | None = None  # to be modified by local context[m
+         super().__init__(*args)[m
+[32m+[m[32m        self.name: str | None = None  # to be modified by local context[m
+ [m
+     def evaluate(self) -> Self:[m
+         return self[m
+ [m
+[31m-    def to_sympy(self) -> sp.Basic:[m
+[31m-        # TODO: fix this to enable conversion back[m
+[31m-        name = self.name or "self"[m
+[31m-        return sp.Function(name)(*[to_sympy(arg) for arg in self.args])[m
+[32m+[m[32m    def to_sympy(self) -> UndefinedFunction:[m
+[32m+[m[32m        from pylogic.sympy_helpers import PylSympyFunction[m
+[32m+[m
+[32m+[m[32m        return PylSympyFunction([m
+[32m+[m[32m            "SelfFunc",[m
+[32m+[m[32m            _pyl_class=self.__class__,[m
+[32m+[m[32m            _pyl_init_args=self._init_args,[m
+[32m+[m[32m            _pyl_init_kwargs=self._init_kwargs,[m
+[32m+[m[32m        )[m
+ [m
+     def _latex(self) -> str:[m
+         name = self.name or "self"[m
+[36m@@ -121,6 +127,8 @@[m [mclass Function(Expr):[m
+         )[m
+         from pylogic.variable import Variable[m
+ [m
+[32m+[m[32m        super().__init__(self.domain, self.codomain)[m
+[32m+[m
+         self.name = name[m
+         self.codomain: Set | Variable | Class = codomain or get_universe()[m
+         self.definition: Expr | None = None[m
+[36m@@ -161,7 +169,6 @@[m [mclass Function(Expr):[m
+                     self.domain = FiniteCartesProduct(sets=individual_sets).evaluate()[m
+         else:[m
+             self.domain = get_universe()[m
+[31m-        super().__init__(self.domain, self.codomain)[m
+ [m
+         # construct the proposition forall(x, f(x) in codomain)[m
+         if self.codomain != UniversalSet:[m
+[36m@@ -262,9 +269,15 @@[m [mclass Function(Expr):[m
+     def evaluate(self) -> Self:[m
+         return self[m
+ [m
+[31m-    def to_sympy(self) -> sp.Function:[m
+[31m-        # TODO: fix this to enable conversion back[m
+[31m-        return sp.Function(self.name)[m
+[32m+[m[32m    def to_sympy(self) -> UndefinedFunction:[m
+[32m+[m[32m        from pylogic.sympy_helpers import PylSympyFunction[m
+[32m+[m
+[32m+[m[32m        return PylSympyFunction([m
+[32m+[m[32m            self.name,[m
+[32m+[m[32m            _pyl_class=self.__class__,[m
+[32m+[m[32m            _pyl_init_args=self._init_args,[m
+[32m+[m[32m            _pyl_init_kwargs=self._init_kwargs,[m
+[32m+[m[32m        )[m
+ [m
+     def _latex(self) -> str:[m
+         return rf"{self.name}: {self.domain._latex()} \to {self.codomain._latex()}"[m
+[36m@@ -449,12 +462,7 @@[m [mclass CalledFunction(Expr):[m
+         return res[m
+ [m
+     def to_sympy(self) -> sp.Basic:[m
+[31m-        if self.function.definition is None:[m
+[31m-            return self.function.to_sympy()(*[arg.to_sympy() for arg in self.arguments])  # type: ignore[m
+[31m-[m
+[31m-        # could recurse forever if replace gives the same CalledFunction[m
+[31m-        return self.function.definition.replace(self.replace_dict).to_sympy()[m
+[31m-        # TODO: fix and test this to enable conversion back if needed[m
+[32m+[m[32m        return self.function.to_sympy()(*[arg.to_sympy() for arg in self.arguments])  # type: ignore[m
+ [m
+     def _latex(self) -> str:[m
+         return rf"{self.function.name}\left({', '.join(arg._latex() for arg in self.arguments)}\right)"[m
+[36m@@ -476,3 +484,6 @@[m [mclass CalledFunction(Expr):[m
+                 *self.arguments,[m
+             )[m
+         )[m
+[32m+[m
+[32m+[m
+[32m+[m[32mself = SelfFunc()[m
+[1mdiff --git a/pylogic/expressions/limit.py b/pylogic/expressions/limit.py[m
+[1mindex 3a2e974..4e10bee 100644[m
+[1m--- a/pylogic/expressions/limit.py[m
+[1m+++ b/pylogic/expressions/limit.py[m
+[36m@@ -81,10 +81,22 @@[m [mclass Limit(Expr):[m
+         self.knowledge_base.add(self.epsilon_N_definition)[m
+ [m
+     def evaluate(self) -> Limit | Constant:[m
+[32m+[m[32m        n = Variable("n")[m
+[32m+[m[32m        n_sympy = n.to_sympy()[m
+[32m+[m[32m        if self.sequence.nth_term is not None:[m
+[32m+[m[32m            return sp.limit(self.sequence.nth_term(n).to_sympy(), n_sympy, sp.oo)[m
+         return self[m
+ [m
+[31m-    def to_sympy(self) -> sp.Basic:[m
+[31m-        raise NotImplementedError[m
+[32m+[m[32m    def to_sympy(self) -> sp.Expr:[m
+[32m+[m[32m        from pylogic.sympy_helpers import PylSympyExpr[m
+[32m+[m
+[32m+[m[32m        return PylSympyExpr([m
+[32m+[m[32m            "Limit",[m
+[32m+[m[32m            self.sequence.to_sympy(),[m
+[32m+[m[32m            _pyl_class=self.__class__,[m
+[32m+[m[32m            _pyl_init_args=self._init_args,[m
+[32m+[m[32m            _pyl_init_kwargs=self._init_kwargs,[m
+[32m+[m[32m        )[m
+ [m
+     def _latex(self) -> str:[m
+         return f"\\lim {self.sequence}"[m
+[1mdiff --git a/pylogic/expressions/min.py b/pylogic/expressions/min.py[m
+[1mindex 751fa30..9427295 100644[m
+[1m--- a/pylogic/expressions/min.py[m
+[1m+++ b/pylogic/expressions/min.py[m
+[36m@@ -46,8 +46,16 @@[m [mclass MinElement(Expr):[m
+                 return min_[m
+         return self[m
+ [m
+[31m-    def to_sympy(self) -> sp.Basic:[m
+[31m-        raise NotImplementedError[m
+[32m+[m[32m    def to_sympy(self) -> sp.Expr:[m
+[32m+[m[32m        from pylogic.sympy_helpers import PylSympyExpr[m
+[32m+[m
+[32m+[m[32m        return PylSympyExpr([m
+[32m+[m[32m            "MinElement",[m
+[32m+[m[32m            self.expr.to_sympy(),[m
+[32m+[m[32m            _pyl_class=self.__class__,[m
+[32m+[m[32m            _pyl_init_args=self._init_args,[m
+[32m+[m[32m            _pyl_init_kwargs=self._init_kwargs,[m
+[32m+[m[32m        )[m
+ [m
+     def _latex(self) -> str:[m
+         return rf"\text{{MinElement}}\left({self.expr._latex()}\right)"[m
+[1mdiff --git a/pylogic/expressions/piecewise.py b/pylogic/expressions/piecewise.py[m
+[1mindex 4dc3317..305ae35 100644[m
+[1m--- a/pylogic/expressions/piecewise.py[m
+[1m+++ b/pylogic/expressions/piecewise.py[m
+[36m@@ -3,6 +3,7 @@[m [mfrom __future__ import annotations[m
+ from typing import TYPE_CHECKING, Generic, TypeVar, TypeVarTuple[m
+ [m
+ import sympy as sp[m
+[32m+[m[32mfrom sympy.functions.elementary.piecewise import ExprCondPair[m
+ [m
+ from pylogic import Term[m
+ from pylogic.expressions.expr import Expr[m
+[36m@@ -25,9 +26,8 @@[m [mclass PiecewiseExpr(Expr, Generic[*Ps]):[m
+     # Custom_Expr Piecewise Relation(eg <, subset)[m
+     _precedence = 11[m
+ [m
+[31m-    def __init__([m
+[31m-        self, *branches: *Ps, otherwise: Expr | None = None, name: str | None = None[m
+[31m-    ) -> None:[m
+[32m+[m[32m    def __init__(self, *branches: *Ps, otherwise: Expr | None = None) -> None:[m
+[32m+[m[32m        from pylogic.helpers import ternary_and[m
+         from pylogic.proposition.and_ import And[m
+         from pylogic.proposition.exor import ExOr[m
+         from pylogic.proposition.not_ import neg[m
+[36m@@ -35,7 +35,6 @@[m [mclass PiecewiseExpr(Expr, Generic[*Ps]):[m
+ [m
+         self.branches = None  # type: ignore[m
+ [m
+[31m-        self.name = name[m
+         super().__init__(*branches)  # type: ignore[m
+         self.otherwise_branch: OtherwiseBranch | None = None[m
+         for branch in branches:[m
+[36m@@ -68,8 +67,24 @@[m [mclass PiecewiseExpr(Expr, Generic[*Ps]):[m
+         self.knowledge_base.update({exor, disj})[m
+         if self.branches is None:[m
+             self.branches: tuple[*Ps] = branches[m
+[32m+[m
+[32m+[m[32m        self.is_real = ternary_and(*[branch.is_real for branch in self.branches])[m
+[32m+[m[32m        self.is_rational = ternary_and([m
+[32m+[m[32m            *[branch.is_rational for branch in self.branches][m
+[32m+[m[32m        )[m
+[32m+[m[32m        self.is_integer = ternary_and(*[branch.is_integer for branch in self.branches])[m
+[32m+[m[32m        self.is_natural = ternary_and(*[branch.is_natural for branch in self.branches])[m
+[32m+[m[32m        self.is_zero = ternary_and(*[branch.is_zero for branch in self.branches])[m
+[32m+[m[32m        self.is_nonpositive = ternary_and([m
+[32m+[m[32m            *[branch.is_nonpositive for branch in self.branches][m
+[32m+[m[32m        )[m
+[32m+[m[32m        self.is_nonnegative = ternary_and([m
+[32m+[m[32m            *[branch.is_nonnegative for branch in self.branches][m
+[32m+[m[32m        )[m
+[32m+[m[32m        self.is_even = ternary_and(*[branch.is_even for branch in self.branches])[m
+[32m+[m
+         self._init_args = branches[m
+[31m-        self._init_kwargs = {"otherwise": otherwise, "name": name}[m
+[32m+[m[32m        self._init_kwargs = {"otherwise": otherwise}[m
+ [m
+     def evaluate(self, knowledge_base: set[Proposition] | None = None) -> Term:[m
+         """[m
+[36m@@ -105,12 +120,7 @@[m [mclass PiecewiseExpr(Expr, Generic[*Ps]):[m
+ [m
+     def to_sympy(self) -> sp.Basic:[m
+         # TODO: add from_sympy Piecewise[m
+[31m-        return sp.Piecewise([m
+[31m-            *[[m
+[31m-                (branch.then.to_sympy(), branch.condition.to_sympy())[m
+[31m-                for branch in self.branches[m
+[31m-            ][m
+[31m-        )[m
+[32m+[m[32m        return sp.Piecewise(*[branch.to_sympy() for branch in self.branches])[m
+ [m
+     def _latex(self) -> str:[m
+         start = r"\begin{cases}"[m
+[36m@@ -136,6 +146,15 @@[m [mclass PiecewiseBranch(Expr, Generic[P]):[m
+         super().__init__(condition, then)[m
+         self.condition: P = condition[m
+         self.then: Term = then[m
+[32m+[m[32m        self._is_real = then.is_real[m
+[32m+[m[32m        self._is_rational = then.is_rational[m
+[32m+[m[32m        self._is_integer = then.is_integer[m
+[32m+[m[32m        self._is_natural = then.is_natural[m
+[32m+[m[32m        self._is_zero = then.is_zero[m
+[32m+[m[32m        self._is_nonpositive = then.is_nonpositive[m
+[32m+[m[32m        self._is_nonnegative = then.is_nonnegative[m
+[32m+[m[32m        self._is_even = then.is_even[m
+[32m+[m
+         self._init_args = (condition, then)[m
+         self._init_kwargs = {}[m
+ [m
+[36m@@ -143,10 +162,7 @@[m [mclass PiecewiseBranch(Expr, Generic[P]):[m
+         return self[m
+ [m
+     def to_sympy(self) -> sp.Basic:[m
+[31m-        # TODO: add from sympy PiecewiseBranch[m
+[31m-        return sp.functions.elementary.piecewise.ExprCondPair([m
+[31m-            self.then.to_sympy(), self.condition.to_sympy()[m
+[31m-        )[m
+[32m+[m[32m        return ExprCondPair(self.then.to_sympy(), self.condition.to_sympy())[m
+ [m
+     def _latex(self) -> str:[m
+         return ([m
+[36m@@ -159,16 +175,25 @@[m [mclass PiecewiseBranch(Expr, Generic[P]):[m
+ [m
+ class OtherwiseBranch(Expr):[m
+     def __init__(self, then: Term) -> None:[m
+[31m-        self.then: Term = then[m
+         super().__init__(then)[m
+[32m+[m[32m        self.then: Term = then[m
+[32m+[m[32m        self._is_real = then.is_real[m
+[32m+[m[32m        self._is_rational = then.is_rational[m
+[32m+[m[32m        self._is_integer = then.is_integer[m
+[32m+[m[32m        self._is_natural = then.is_natural[m
+[32m+[m[32m        self._is_zero = then.is_zero[m
+[32m+[m[32m        self._is_nonpositive = then.is_nonpositive[m
+[32m+[m[32m        self._is_nonnegative = then.is_nonnegative[m
+[32m+[m[32m        self._is_even = then.is_even[m
+[32m+[m
+         self._init_args = (then,)[m
+         self._init_kwargs = {}[m
+ [m
+     def evaluate(self) -> Term:[m
+         return self[m
+ [m
+[31m-    def to_sympy(self) -> sp.Basic:[m
+[31m-        sp.functions.elementary.piecewise.ExprCondPair(self.then.to_sympy(), True)[m
+[32m+[m[32m    def to_sympy(self) -> ExprCondPair:[m
+[32m+[m[32m        return ExprCondPair(self.then.to_sympy(), True)[m
+ [m
+     def _latex(self) -> str:[m
+         return rf"\text{{otherwise}} {self.then._latex()}"[m
+[1mdiff --git a/pylogic/expressions/prod.py b/pylogic/expressions/prod.py[m
+[1mindex 037e565..9ed2d50 100644[m
+[1m--- a/pylogic/expressions/prod.py[m
+[1m+++ b/pylogic/expressions/prod.py[m
+[36m@@ -1,17 +1,13 @@[m
+ from __future__ import annotations[m
+ [m
+[31m-from typing import TYPE_CHECKING[m
+[32m+[m[32mfrom sympy.concrete.products import Product[m
+[32m+[m[32mfrom sympy.core.mul import Mul[m
+ [m
+[31m-from pylogic.expressions.expr import Expr[m
+[32m+[m[32mfrom pylogic.expressions.sum import _Aggregate[m
+[32m+[m[32mfrom pylogic.structures.sequence import Sequence[m
+ [m
+[31m-if TYPE_CHECKING:[m
+[31m-    import sympy as sp[m
+ [m
+[31m-    from pylogic.constant import Constant[m
+[31m-    from pylogic.structures.sequence import Sequence[m
+[31m-[m
+[31m-[m
+[31m-class Prod(Expr):[m
+[32m+[m[32mclass Prod(_Aggregate):[m
+     """[m
+     Represents a product of a sequence of non-set terms.[m
+     For products of sets, see pylogic.structures.set_.CartesProduct[m
+[36m@@ -24,15 +20,28 @@[m [mclass Prod(Expr):[m
+     _is_wrapped = True[m
+ [m
+     def __init__(self, sequence: Sequence) -> None:[m
+[31m-        self.sequence = sequence[m
+[31m-        super().__init__(sequence)[m
+[32m+[m[32m        from pylogic.helpers import ternary_and, ternary_or[m
+[32m+[m[32m        from pylogic.structures.sequence import FiniteSequence[m
+ [m
+[31m-    def evaluate(self) -> Prod | Constant:[m
+[31m-        # TODO[m
+[31m-        return self[m
+[31m-[m
+[31m-    def to_sympy(self) -> sp.Basic:[m
+[31m-        raise NotImplementedError[m
+[32m+[m[32m        super().__init__(sequence)[m
+[32m+[m[32m        self._is_nonnegative = ternary_or([m
+[32m+[m[32m            sequence.is_nonnegative,[m
+[32m+[m[32m            ternary_and([m
+[32m+[m[32m                isinstance(self.sequence, FiniteSequence),[m
+[32m+[m[32m                True if self.sequence.length is not None else None,[m
+[32m+[m[32m                self.sequence.length.is_even,[m
+[32m+[m[32m                sequence.is_nonpositive,[m
+[32m+[m[32m            ),[m
+[32m+[m[32m        )[m
+[32m+[m[32m        self._is_nonpositive = ternary_and([m
+[32m+[m[32m            isinstance(self.sequence, FiniteSequence),[m
+[32m+[m[32m            True if self.sequence.length is not None else None,[m
+[32m+[m[32m            self.sequence.length.is_odd,[m
+[32m+[m[32m            sequence.is_nonpositive,[m
+[32m+[m[32m        )[m
+[32m+[m
+[32m+[m[32m    def to_sympy(self) -> Product | Mul:[m
+[32m+[m[32m        return super().to_sympy(_finite_class=Mul, _infinite_class=Product)  # type: ignore[m
+ [m
+     def _latex(self) -> str:[m
+         return rf"\prod {self.sequence._latex()}"[m
+[1mdiff --git a/pylogic/expressions/sequence_term.py b/pylogic/expressions/sequence_term.py[m
+[1mindex e375399..6fe14ca 100644[m
+[1m--- a/pylogic/expressions/sequence_term.py[m
+[1m+++ b/pylogic/expressions/sequence_term.py[m
+[36m@@ -6,6 +6,8 @@[m [mfrom pylogic import Term[m
+ from pylogic.expressions.expr import Expr[m
+ [m
+ if TYPE_CHECKING:[m
+[32m+[m[32m    import sympy as sp[m
+[32m+[m
+     from pylogic.proposition.relation.contains import IsContainedIn[m
+     from pylogic.structures.sequence import Sequence[m
+     from pylogic.sympy_helpers import PylSympySymbol[m
+[36m@@ -38,6 +40,15 @@[m [mclass SequenceTerm(Expr, Generic[T]):[m
+         self.is_set_ = None[m
+         self.is_union: bool | None = None[m
+ [m
+[32m+[m[32m        self._is_real = self.sequence.is_real[m
+[32m+[m[32m        self._is_rational = self.sequence.is_rational[m
+[32m+[m[32m        self._is_integer = self.sequence.is_integer[m
+[32m+[m[32m        self._is_natural = self.sequence.is_natural[m
+[32m+[m[32m        self._is_zero = self.sequence.is_zero[m
+[32m+[m[32m        self._is_even = self.sequence.is_even[m
+[32m+[m[32m        self._is_nonnegative = self.sequence.is_nonnegative[m
+[32m+[m[32m        self._is_nonpositive = self.sequence.is_nonpositive[m
+[32m+[m
+     def predicate(self, term: Term) -> IsContainedIn:[m
+         """[m
+         For sequences of sets.[m
+[36m@@ -83,15 +94,16 @@[m [mclass SequenceTerm(Expr, Generic[T]):[m
+ [m
+         return SequenceTerm(self.sequence, indx)[m
+ [m
+[31m-    def to_sympy(self) -> PylSympySymbol:[m
+[31m-        from pylogic.sympy_helpers import PylSympySymbol[m
+[32m+[m[32m    def to_sympy(self) -> sp.Expr:[m
+[32m+[m[32m        from pylogic.sympy_helpers import PylSympyExpr[m
+ [m
+[31m-        return PylSympySymbol([m
+[31m-            *self._init_args,[m
+[31m-            _pyl_class=self.__class__.__name__,[m
+[32m+[m[32m        return PylSympyExpr([m
+[32m+[m[32m            "SequenceTerm",[m
+[32m+[m[32m            self.sequence.to_sympy(),[m
+[32m+[m[32m            self.index.to_sympy(),[m
+[32m+[m[32m            _pyl_class=self.__class__,[m
+             _pyl_init_args=self._init_args,[m
+             _pyl_init_kwargs=self._init_kwargs,[m
+[31m-            **self._init_kwargs,[m
+         )[m
+ [m
+     def _latex(self) -> str:[m
+[1mdiff --git a/pylogic/expressions/sum.py b/pylogic/expressions/sum.py[m
+[1mindex fd9a54a..087d8f2 100644[m
+[1m--- a/pylogic/expressions/sum.py[m
+[1m+++ b/pylogic/expressions/sum.py[m
+[36m@@ -2,16 +2,71 @@[m [mfrom __future__ import annotations[m
+ [m
+ from typing import TYPE_CHECKING[m
+ [m
+[32m+[m[32mimport sympy as sp[m
+[32m+[m
+[32m+[m[32mfrom pylogic import Term[m
+ from pylogic.expressions.expr import Expr[m
+ [m
+ if TYPE_CHECKING:[m
+[31m-    import sympy as sp[m
+[31m-[m
+[31m-    from pylogic.constant import Constant[m
+     from pylogic.structures.sequence import Sequence[m
+ [m
+ [m
+[31m-class Sum(Expr):[m
+[32m+[m[32mclass _Aggregate(Expr):[m
+[32m+[m[32m    """[m
+[32m+[m[32m    Represents an aggregate of a sequence of non-set terms eg Sum, Product.[m
+[32m+[m[32m    """[m
+[32m+[m
+[32m+[m[32m    def __init__(self, sequence: Sequence) -> None:[m
+[32m+[m[32m        super().__init__(sequence)[m
+[32m+[m[32m        self.sequence = sequence[m
+[32m+[m[32m        self._is_real = sequence.is_real[m
+[32m+[m[32m        self._is_rational = sequence.is_rational[m
+[32m+[m[32m        self._is_integer = sequence.is_integer[m
+[32m+[m[32m        self._is_natural = sequence.is_natural[m
+[32m+[m[32m        self._is_zero = sequence.is_zero[m
+[32m+[m[32m        self._is_even = sequence.is_even[m
+[32m+[m
+[32m+[m[32m    def evaluate(self) -> Term:[m
+[32m+[m[32m        from pylogic.sympy_helpers import sympy_to_pylogic[m
+[32m+[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            return sympy_to_pylogic(self.to_sympy().doit())[m
+[32m+[m[32m        except ValueError:[m
+[32m+[m[32m            return self[m
+[32m+[m
+[32m+[m[32m    def to_sympy(self, _finite_class=sp.Add, _infinite_class=sp.Sum) -> sp.Basic:[m
+[32m+[m[32m        from pylogic.structures.sequence import FiniteSequence[m
+[32m+[m[32m        from pylogic.variable import Variable[m
+[32m+[m
+[32m+[m[32m        if not self.sequence.is_real:[m
+[32m+[m[32m            raise ValueError([m
+[32m+[m[32m                "Cannot convert to sympy object: The sequence must be real."[m
+[32m+[m[32m            )[m
+[32m+[m[32m        if ([m
+[32m+[m[32m            isinstance(self.sequence, FiniteSequence)[m
+[32m+[m[32m            and self.sequence.length is not None[m
+[32m+[m[32m        ):[m
+[32m+[m[32m            # if has an nth term, return a sympy aggregate[m
+[32m+[m[32m            if self.sequence.nth_term is not None:[m
+[32m+[m[32m                n = Variable("n")[m
+[32m+[m[32m                return _infinite_class([m
+[32m+[m[32m                    self.sequence.nth_term(n).to_sympy(),[m
+[32m+[m[32m                    (n.to_sympy(), 1, self.sequence.length.to_sympy()),[m
+[32m+[m[32m                )[m
+[32m+[m[32m            elif self.sequence.length == len(self.sequence.initial_terms):[m
+[32m+[m[32m                # if length is int numeric and does not have an nth term, but length of initial terms matches length,[m
+[32m+[m[32m                # return a sympy finite aggregate[m
+[32m+[m[32m                return _finite_class([m
+[32m+[m[32m                    *[term.to_sympy() for term in self.sequence.initial_terms][m
+[32m+[m[32m                )[m
+[32m+[m
+[32m+[m[32m        # otherwise, raise an error[m
+[32m+[m[32m        raise ValueError([m
+[32m+[m[32m            "Cannot convert to sympy object: The sequence must have a finite length and nth term."[m
+[32m+[m[32m        )[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass Sum(_Aggregate):[m
+     """[m
+     Represents a sum of a sequence of non-set terms.[m
+     For unions of sets, see pylogic.structures.set_.Union[m
+[36m@@ -24,18 +79,15 @@[m [mclass Sum(Expr):[m
+     _is_wrapped = True[m
+ [m
+     def __init__(self, sequence: Sequence) -> None:[m
+[31m-        self.sequence = sequence[m
+         super().__init__(sequence)[m
+[31m-[m
+[31m-    def evaluate(self) -> Sum | Constant:[m
+[31m-        # TODO[m
+[31m-        return self[m
+[31m-[m
+[31m-    def to_sympy(self) -> sp.Basic:[m
+[31m-        raise NotImplementedError[m
+[32m+[m[32m        self._is_nonnegative = sequence.is_nonnegative[m
+[32m+[m[32m        self._is_nonpositive = sequence.is_nonpositive[m
+ [m
+     def _latex(self) -> str:[m
+         return rf"\sum {self.sequence._latex()}"[m
+ [m
+[32m+[m[32m    def to_sympy(self) -> sp.Sum | sp.Add:[m
+[32m+[m[32m        return super().to_sympy(_finite_class=sp.Add, _infinite_class=sp.Sum)  # type: ignore[m
+[32m+[m
+     def __str__(self) -> str:[m
+         return f"Sum({self.sequence})"[m
+[1mdiff --git a/pylogic/helpers.py b/pylogic/helpers.py[m
+[1mindex 23ee89a..56242da 100644[m
+[1m--- a/pylogic/helpers.py[m
+[1m+++ b/pylogic/helpers.py[m
+[36m@@ -427,28 +427,176 @@[m [mdef ternary_not(val: bool | None) -> bool | None:[m
+ [m
+ [m
+ @overload[m
+[31m-def ternary_or(val1: bool, val2: bool) -> bool: ...[m
+[32m+[m[32mdef ternary_or(*vals: bool) -> bool: ...[m
+ @overload[m
+[31m-def ternary_or(val1: None, val2: None) -> None: ...[m
+[32m+[m[32mdef ternary_or(*vals: None) -> None: ...[m
+ @overload[m
+[31m-def ternary_or(val1: bool | None, val2: bool | None) -> bool | None: ...[m
+[31m-def ternary_or(val1: bool | None, val2: bool | None) -> bool | None:[m
+[31m-    if val1 is None:[m
+[31m-        if val2 is True:[m
+[32m+[m[32mdef ternary_or(*vals: bool | None) -> bool | None: ...[m
+[32m+[m[32mdef ternary_or(*val1: bool | None) -> bool | None:[m
+[32m+[m[32m    none_count = 0[m
+[32m+[m[32m    for val in val1:[m
+[32m+[m[32m        if val is True:[m
+             return True[m
+[32m+[m[32m        none_count += val is None[m
+[32m+[m[32m    if none_count > 0:[m
+         return None[m
+[31m-    return val1 or val2[m
+[32m+[m[32m    return False[m
+ [m
+ [m
+ @overload[m
+[31m-def ternary_and(val1: bool, val2: bool) -> bool: ...[m
+[32m+[m[32mdef ternary_and(*vals: bool) -> bool: ...[m
+ @overload[m
+[31m-def ternary_and(val1: None, val2: None) -> None: ...[m
+[32m+[m[32mdef ternary_and(*vals: None) -> None: ...[m
+ @overload[m
+[31m-def ternary_and(val1: bool | None, val2: bool | None) -> bool | None: ...[m
+[31m-def ternary_and(val1: bool | None, val2: bool | None) -> bool | None:[m
+[31m-    if val1 is None:[m
+[31m-        if val2 is False:[m
+[32m+[m[32mdef ternary_and(*vals: bool | None) -> bool | None: ...[m
+[32m+[m[32mdef ternary_and(*vals: bool | None) -> bool | None:[m
+[32m+[m[32m    none_count = 0[m
+[32m+[m[32m    for val in vals:[m
+[32m+[m[32m        if val is False:[m
+             return False[m
+[32m+[m[32m        none_count += val is None[m
+[32m+[m[32m    if none_count > 0:[m
+         return None[m
+[31m-    return val1 and val2[m
+[32m+[m[32m    return True[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef _add_assumptions(term: Term, attr: str, value: bool) -> Proposition:[m
+[32m+[m[32m    """[m
+[32m+[m[32m    Add propositions to the term's knowledge base and assumptions_context based[m
+[32m+[m[32m    on the assumptions.[m
+[32m+[m[32m    """[m
+[32m+[m[32m    # TODO: needs to be tested properly, somewhat hacky but[m
+[32m+[m[32m    # the most straightforward way to add assumptions on Symbols/Sequence[m
+[32m+[m[32m    # due to cyclic dependencies[m
+[32m+[m
+[32m+[m[32m    import importlib[m
+[32m+[m
+[32m+[m[32m    from pylogic.inference import Inference[m
+[32m+[m[32m    from pylogic.proposition.not_ import Not[m
+[32m+[m[32m    from pylogic.proposition.relation.contains import IsContainedIn[m
+[32m+[m
+[32m+[m[32m    set_modules = {[m
+[32m+[m[32m        "real": "pylogic.theories.real_analysis",[m
+[32m+[m[32m        "rational": "pylogic.theories.rational_numbers",[m
+[32m+[m[32m        "integer": "pylogic.theories.integers",[m
+[32m+[m[32m        "natural": "pylogic.theories.natural_numbers",[m
+[32m+[m[32m    }[m
+[32m+[m[32m    set_names = {[m
+[32m+[m[32m        "real": "Reals",[m
+[32m+[m[32m        "rational": "Rationals",[m
+[32m+[m[32m        "integer": "Integers",[m
+[32m+[m[32m        "natural": "Naturals",[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    if attr in set_modules:[m
+[32m+[m[32m        mod = importlib.import_module(set_modules[attr])[m
+[32m+[m[32m        mod_set = getattr(mod, set_names[attr])[m
+[32m+[m[32m        positive_prop = IsContainedIn([m
+[32m+[m[32m            term,[m
+[32m+[m[32m            mod_set,[m
+[32m+[m[32m            _is_proven=True,[m
+[32m+[m[32m            _assumptions=set(),[m
+[32m+[m[32m            _inference=Inference(None, rule="by_definition"),[m
+[32m+[m[32m        )[m
+[32m+[m[32m    elif attr == "zero":[m
+[32m+[m[32m        from pylogic.proposition.relation.equals import Equals[m
+[32m+[m
+[32m+[m[32m        positive_prop = Equals([m
+[32m+[m[32m            term,[m
+[32m+[m[32m            0,[m
+[32m+[m[32m            _is_proven=True,[m
+[32m+[m[32m            _assumptions=set(),[m
+[32m+[m[32m            _inference=Inference(None, rule="by_definition"),[m
+[32m+[m[32m        )[m
+[32m+[m[32m    elif attr == "nonpositive":[m
+[32m+[m[32m        from pylogic.proposition.ordering.lessorequal import LessOrEqual[m
+[32m+[m
+[32m+[m[32m        positive_prop = LessOrEqual([m
+[32m+[m[32m            term,[m
+[32m+[m[32m            0,[m
+[32m+[m[32m            _is_proven=True,[m
+[32m+[m[32m            _assumptions=set(),[m
+[32m+[m[32m            _inference=Inference(None, rule="by_definition"),[m
+[32m+[m[32m        )[m
+[32m+[m[32m    elif attr == "nonnegative":[m
+[32m+[m[32m        from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual[m
+[32m+[m
+[32m+[m[32m        positive_prop = GreaterOrEqual([m
+[32m+[m[32m            term,[m
+[32m+[m[32m            0,[m
+[32m+[m[32m            _is_proven=True,[m
+[32m+[m[32m            _assumptions=set(),[m
+[32m+[m[32m            _inference=Inference(None, rule="by_definition"),[m
+[32m+[m[32m        )[m
+[32m+[m[32m    elif attr == "even":[m
+[32m+[m[32m        # TODO: change to Integers where appropriate[m
+[32m+[m[32m        from pylogic.theories.natural_numbers import Naturals[m
+[32m+[m
+[32m+[m[32m        # if term._is_natural is True: ... # use Naturals.even[m
+[32m+[m[32m        # else: ... # use Integers.even[m
+[32m+[m
+[32m+[m[32m        positive_prop = Naturals.even([m
+[32m+[m[32m            term,[m
+[32m+[m[32m            _is_proven=True,[m
+[32m+[m[32m            _assumptions=set(),[m
+[32m+[m[32m            _inference=Inference(None, rule="by_definition"),[m
+[32m+[m[32m        )[m
+[32m+[m
+[32m+[m[32m    if value:[m
+[32m+[m[32m        prop = positive_prop[m
+[32m+[m[32m    else:[m
+[32m+[m[32m        positive_prop._set_is_proven(False)[m
+[32m+[m[32m        positive_prop.deduced_from = None[m
+[32m+[m[32m        prop = Not([m
+[32m+[m[32m            positive_prop,[m
+[32m+[m[32m            _is_proven=True,[m
+[32m+[m[32m            _assumptions=set(),[m
+[32m+[m[32m            _inference=Inference(None, rule="by_definition"),[m
+[32m+[m[32m        )[m
+[32m+[m[32m    return prop[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef _add_assumption_attributes(term: Symbol | Sequence, kwargs) -> None:[m
+[32m+[m[32m    """[m
+[32m+[m[32m    Add attributes to the term based on the assumptions.[m
+[32m+[m[32m    Check for contradictions and raise ValueError if found.[m
+[32m+[m[32m    To be used with Symbol and Sequence.[m
+[32m+[m[32m    """[m
+[32m+[m[32m    if term._is_zero or term._is_nonpositive or term._is_nonnegative:[m
+[32m+[m[32m        if term._is_real in [None, True]:[m
+[32m+[m[32m            term._is_real = True[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            raise ValueError([m
+[32m+[m[32m                "Contradictory assumptions: A number cannot be both non-real and zero/nonpositive/nonnegative"[m
+[32m+[m[32m            )[m
+[32m+[m[32m    if term._is_even:[m
+[32m+[m[32m        if term._is_integer in [None, True]:[m
+[32m+[m[32m            term._is_integer = True[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            raise ValueError([m
+[32m+[m[32m                "Contradictory assumptions: A number cannot be both non-integer and even"[m
+[32m+[m[32m            )[m
+[32m+[m[32m    if kwargs.get("positive", None):[m
+[32m+[m[32m        term._is_real = True[m
+[32m+[m[32m        term._is_nonnegative = True[m
+[32m+[m[32m        if term._is_zero in [None, False]:[m
+[32m+[m[32m            term._is_zero = False[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            raise ValueError([m
+[32m+[m[32m                "Contradictory assumptions: A positive number cannot be zero"[m
+[32m+[m[32m            )[m
+[32m+[m[32m    if kwargs.get("negative", None):[m
+[32m+[m[32m        term._is_real = True[m
+[32m+[m[32m        term._is_nonpositive = True[m
+[32m+[m[32m        if term._is_zero in [None, False]:[m
+[32m+[m[32m            term._is_zero = False[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            raise ValueError([m
+[32m+[m[32m                "Contradictory assumptions: A negative number cannot be zero"[m
+[32m+[m[32m            )[m
+[32m+[m[32m    if kwargs.get("odd", None):[m
+[32m+[m[32m        term._is_integer = True[m
+[32m+[m[32m        if term._is_even in [None, False]:[m
+[32m+[m[32m            term._is_even = False[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            raise ValueError("Contradictory assumptions: An odd number cannot be even")[m
+[1mdiff --git a/pylogic/proposition/and_.py b/pylogic/proposition/and_.py[m
+[1mindex 2888eb8..8086ceb 100644[m
+[1m--- a/pylogic/proposition/and_.py[m
+[1m+++ b/pylogic/proposition/and_.py[m
+[36m@@ -7,6 +7,8 @@[m [mfrom pylogic.proposition._junction import _Junction[m
+ from pylogic.proposition.proposition import Proposition, get_assumptions[m
+ [m
+ if TYPE_CHECKING:[m
+[32m+[m[32m    from sympy.logic.boolalg import And as SpAnd[m
+[32m+[m
+     from pylogic.proposition.exor import ExOr[m
+     from pylogic.proposition.implies import Implies[m
+     from pylogic.proposition.not_ import Not[m
+[36m@@ -194,3 +196,8 @@[m [mclass And(_Junction[*Ps]):[m
+             _assumptions=self.from_assumptions,[m
+             _inference=Inference(self, rule="to_exor"),[m
+         )[m
+[32m+[m
+[32m+[m[32m    def to_sympy(self) -> SpAnd:[m
+[32m+[m[32m        from sympy.logic.boolalg import And as SpAnd[m
+[32m+[m
+[32m+[m[32m        return SpAnd(*[p.to_sympy() for p in self.propositions])[m
+[1mdiff --git a/pylogic/proposition/iff.py b/pylogic/proposition/iff.py[m
+[1mindex 21ea5c7..b229cae 100644[m
+[1m--- a/pylogic/proposition/iff.py[m
+[1m+++ b/pylogic/proposition/iff.py[m
+[36m@@ -11,6 +11,8 @@[m [mfrom pylogic.proposition.not_ import neg[m
+ from pylogic.proposition.proposition import Proposition, get_assumptions[m
+ [m
+ if TYPE_CHECKING:[m
+[32m+[m[32m    from sympy.logic.boolalg import Equivalent[m
+[32m+[m
+     from pylogic.proposition.and_ import And[m
+     from pylogic.proposition.not_ import Not[m
+     from pylogic.structures.class_ import Class[m
+[36m@@ -231,3 +233,8 @@[m [mclass Iff(Proposition, Generic[TProposition, UProposition]):[m
+             lambda p: p.has_as_subproposition(other), [self.left, self.right][m
+         )[m
+         return first_other_occurs_in is not None[m
+[32m+[m
+[32m+[m[32m    def to_sympy(self) -> Equivalent:[m
+[32m+[m[32m        from sympy.logic.boolalg import Equivalent[m
+[32m+[m
+[32m+[m[32m        return Equivalent(self.left.to_sympy(), self.right.to_sympy())[m
+[1mdiff --git a/pylogic/proposition/implies.py b/pylogic/proposition/implies.py[m
+[1mindex 8d87ec6..c91b6dc 100644[m
+[1m--- a/pylogic/proposition/implies.py[m
+[1m+++ b/pylogic/proposition/implies.py[m
+[36m@@ -10,6 +10,8 @@[m [mfrom pylogic.proposition.not_ import neg[m
+ from pylogic.proposition.proposition import Proposition, get_assumptions[m
+ [m
+ if TYPE_CHECKING:[m
+[32m+[m[32m    from sympy.logic.boolalg import Implies as SpImplies[m
+[32m+[m
+     from pylogic.proposition.and_ import And[m
+     from pylogic.proposition.or_ import Or[m
+     from pylogic.structures.class_ import Class[m
+[36m@@ -366,3 +368,8 @@[m [mOccured when trying to unify `{self}` and `{other}`"[m
+             lambda p: p.has_as_subproposition(other), [self.antecedent, self.consequent][m
+         )[m
+         return first_other_occurs_in is not None[m
+[32m+[m
+[32m+[m[32m    def to_sympy(self) -> SpImplies:[m
+[32m+[m[32m        from sympy.logic.boolalg import Implies as SpImplies[m
+[32m+[m
+[32m+[m[32m        return SpImplies(self.antecedent.to_sympy(), self.consequent.to_sympy())[m
+[1mdiff --git a/pylogic/proposition/not_.py b/pylogic/proposition/not_.py[m
+[1mindex 9c0e710..8373026 100644[m
+[1m--- a/pylogic/proposition/not_.py[m
+[1m+++ b/pylogic/proposition/not_.py[m
+[36m@@ -16,6 +16,8 @@[m [mfrom pylogic.enviroment_settings.settings import settings[m
+ from pylogic.proposition.proposition import Proposition, get_assumptions[m
+ [m
+ if TYPE_CHECKING:[m
+[32m+[m[32m    from sympy.logic.boolalg import Not as SpNot[m
+[32m+[m
+     from pylogic.proposition.implies import Implies[m
+     from pylogic.proposition.relation.binaryrelation import BinaryRelation[m
+ [m
+[36m@@ -339,3 +341,8 @@[m [mOccured when trying to unify `{self}` and `{other}`"[m
+             _assumptions=get_assumptions(self),[m
+             _inference=Inference(self, rule="symmetric"),[m
+         )[m
+[32m+[m
+[32m+[m[32m    def to_sympy(self) -> SpNot:[m
+[32m+[m[32m        from sympy.logic.boolalg import Not as SpNot[m
+[32m+[m
+[32m+[m[32m        return SpNot(self.negated.to_sympy())[m
+[1mdiff --git a/pylogic/proposition/or_.py b/pylogic/proposition/or_.py[m
+[1mindex a224389..2411d06 100644[m
+[1m--- a/pylogic/proposition/or_.py[m
+[1m+++ b/pylogic/proposition/or_.py[m
+[36m@@ -7,7 +7,8 @@[m [mfrom pylogic.proposition._junction import _Junction[m
+ from pylogic.proposition.proposition import Proposition, get_assumptions[m
+ [m
+ if TYPE_CHECKING:[m
+[31m-    pass[m
+[32m+[m[32m    from sympy.logic.boolalg import Or as SpOr[m
+[32m+[m
+ [m
+ Ps = TypeVarTuple("Ps")[m
+ InferenceRule = TypedDict("InferenceRule", {"name": str, "arguments": list[str]})[m
+[36m@@ -112,3 +113,8 @@[m [mclass Or(_Junction[*Ps]):[m
+             _assumptions=get_assumptions(self),[m
+             _inference=Inference(self, rule="de_morgan"),[m
+         )[m
+[32m+[m
+[32m+[m[32m    def to_sympy(self) -> SpOr:[m
+[32m+[m[32m        from sympy.logic.boolalg import Or as SpOr[m
+[32m+[m
+[32m+[m[32m        return SpOr(*[p.to_sympy() for p in self.propositions])[m
+[1mdiff --git a/pylogic/proposition/ordering/partial.py b/pylogic/proposition/ordering/partial.py[m
+[1mindex 337fcc9..b2fee74 100644[m
+[1m--- a/pylogic/proposition/ordering/partial.py[m
+[1m+++ b/pylogic/proposition/ordering/partial.py[m
+[36m@@ -2,6 +2,13 @@[m [mfrom __future__ import annotations[m
+ [m
+ from typing import TypeVar[m
+ [m
+[32m+[m[32mfrom sympy.core.relational import ([m
+[32m+[m[32m    GreaterThan,[m
+[32m+[m[32m    LessThan,[m
+[32m+[m[32m    StrictGreaterThan,[m
+[32m+[m[32m    StrictLessThan,[m
+[32m+[m[32m)[m
+[32m+[m
+ from pylogic import Term[m
+ from pylogic.proposition.ordering.ordering import _Ordering[m
+ from pylogic.proposition.relation.binaryrelation import BinaryRelation[m
+[36m@@ -9,6 +16,13 @@[m [mfrom pylogic.proposition.relation.binaryrelation import BinaryRelation[m
+ T = TypeVar("T", bound=Term)[m
+ U = TypeVar("U", bound=Term)[m
+ [m
+[32m+[m[32mpyl_to_sp_classes = {[m
+[32m+[m[32m    "LessThan": StrictLessThan,[m
+[32m+[m[32m    "GreaterThan": StrictGreaterThan,[m
+[32m+[m[32m    "LessOrEqual": LessThan,[m
+[32m+[m[32m    "GreaterOrEqual": GreaterThan,[m
+[32m+[m[32m}[m
+[32m+[m
+ [m
+ class PartialOrder(BinaryRelation[T, U], _Ordering):[m
+     """[m
+[36m@@ -49,6 +63,11 @@[m [mclass PartialOrder(BinaryRelation[T, U], _Ordering):[m
+         )[m
+         self.name = name[m
+ [m
+[32m+[m[32m    def to_sympy(self):[m
+[32m+[m[32m        return pyl_to_sp_classes[self.__class__.__name__]([m
+[32m+[m[32m            self.left.to_sympy(), self.right.to_sympy()[m
+[32m+[m[32m        )[m
+[32m+[m
+ [m
+ class StrictPartialOrder(BinaryRelation[T, U], _Ordering):[m
+     """[m
+[36m@@ -88,3 +107,8 @@[m [mclass StrictPartialOrder(BinaryRelation[T, U], _Ordering):[m
+             **kwargs,[m
+         )[m
+         self.name = name[m
+[32m+[m
+[32m+[m[32m    def to_sympy(self):[m
+[32m+[m[32m        return pyl_to_sp_classes[self.__class__.__name__]([m
+[32m+[m[32m            self.left.to_sympy(), self.right.to_sympy()[m
+[32m+[m[32m        )[m
+[1mdiff --git a/pylogic/proposition/relation/equals.py b/pylogic/proposition/relation/equals.py[m
+[1mindex b0feb1c..512259f 100644[m
+[1m--- a/pylogic/proposition/relation/equals.py[m
+[1m+++ b/pylogic/proposition/relation/equals.py[m
+[36m@@ -1,6 +1,6 @@[m
+ from __future__ import annotations[m
+ [m
+[31m-from typing import Callable, Self, TypeVar[m
+[32m+[m[32mfrom typing import TYPE_CHECKING, Callable, Self, TypeVar[m
+ [m
+ from sympy import Basic, Integer[m
+ [m
+[36m@@ -12,6 +12,9 @@[m [mfrom pylogic.inference import Inference[m
+ from pylogic.proposition.proposition import Proposition, get_assumptions[m
+ from pylogic.proposition.relation.binaryrelation import BinaryRelation[m
+ [m
+[32m+[m[32mif TYPE_CHECKING:[m
+[32m+[m[32m    from sympy.core.relational import Equality[m
+[32m+[m
+ T = TypeVar("T", bound=Term)[m
+ U = TypeVar("U", bound=Term)[m
+ TProposition = TypeVar("TProposition", bound="Proposition")[m
+[36m@@ -73,14 +76,10 @@[m [mclass Equals(BinaryRelation[T, U]):[m
+         if self.left == self.right:[m
+             proven = True[m
+         elif isinstance(self.get(_checking_side), (Basic, Expr)):[m
+[31m-            try:[m
+[31m-                if self.get(_checking_side).equals(self.get(other_side)):  # type: ignore[m
+[31m-                    proven = True[m
+[31m-                elif self.get(_checking_side) == self.get(other_side):  # type: ignore[m
+[31m-                    proven = True[m
+[31m-            except ValueError:  # TODO: Basic.equals sometimes raises ValueError[m
+[31m-                if _doit_results[_checking_side] == _doit_results[other_side]:[m
+[31m-                    proven = True[m
+[32m+[m[32m            if self.get(_checking_side) == self.get(other_side):  # type: ignore[m
+[32m+[m[32m                proven = True[m
+[32m+[m[32m            elif _doit_results[_checking_side] == _doit_results[other_side]:[m
+[32m+[m[32m                proven = True[m
+ [m
+         return proven[m
+ [m
+[36m@@ -204,3 +203,8 @@[m [mclass Equals(BinaryRelation[T, U]):[m
+ [m
+     def symmetric(self) -> Equals[U, T]:[m
+         return super().symmetric()  # type: ignore[m
+[32m+[m
+[32m+[m[32m    def to_sympy(self) -> Equality:[m
+[32m+[m[32m        from sympy import Eq[m
+[32m+[m
+[32m+[m[32m        return Eq(self.left.to_sympy(), self.right.to_sympy())[m
+[1mdiff --git a/pylogic/structures/class_.py b/pylogic/structures/class_.py[m
+[1mindex 28b1030..5aed3b4 100644[m
+[1m--- a/pylogic/structures/class_.py[m
+[1m+++ b/pylogic/structures/class_.py[m
+[36m@@ -52,6 +52,17 @@[m [mdef class_n_hash(self) -> int:[m
+     return hash((self.__class__.__name__, self.name, self.containment_function))[m
+ [m
+ [m
+[32m+[m[32mdef to_sympy(self):[m
+[32m+[m[32m    from pylogic.sympy_helpers import PylSympySet[m
+[32m+[m
+[32m+[m[32m    return PylSympySet([m
+[32m+[m[32m        self.name,[m
+[32m+[m[32m        _pyl_class=self.__class__,[m
+[32m+[m[32m        _pyl_init_args=self._init_args,[m
+[32m+[m[32m        _pyl_init_kwargs=self._init_kwargs,[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m
+ def contains(self, other: Any, is_assumption: bool = False, **kwargs) -> IsContainedIn:[m
+     from pylogic.proposition.relation.contains import IsContainedIn[m
+ [m
+[36m@@ -251,12 +262,13 @@[m [mdef class_(n: int) -> Collection[Class[int]]:[m
+     elif n in _all_classes:[m
+         return _all_classes[n][m
+     c = Collection([m
+[31m-        f"Collection{n}",[m
+[32m+[m[32m        f"Class{n}",[m
+         (),[m
+         {[m
+             "__init__": class_n_init,[m
+             "__repr__": class_n_repr,[m
+             "__hash__": class_n_hash,[m
+[32m+[m[32m            "to_sympy": to_sympy,[m
+             "level": n,[m
+             "contains": contains,[m
+             "equals": equals,[m
+[1mdiff --git a/pylogic/structures/collection.py b/pylogic/structures/collection.py[m
+[1mindex 1854096..cef8d86 100644[m
+[1m--- a/pylogic/structures/collection.py[m
+[1m+++ b/pylogic/structures/collection.py[m
+[36m@@ -25,7 +25,7 @@[m [mclass Collection(type, Generic[N]):[m
+     """[m
+ [m
+     def __new__(cls, name, bases, dct):[m
+[31m-        if name == "Collection0":[m
+[32m+[m[32m        if name == "Class0":[m
+             from pylogic.structures.set_ import Set[m
+ [m
+             return Set[m
+[1mdiff --git a/pylogic/structures/sequence.py b/pylogic/structures/sequence.py[m
+[1mindex 3fbbd5c..8675491 100644[m
+[1m--- a/pylogic/structures/sequence.py[m
+[1m+++ b/pylogic/structures/sequence.py[m
+[36m@@ -4,7 +4,7 @@[m [mfrom typing import TYPE_CHECKING, Callable, Generic, Self[m
+ from typing import Sequence as TSequence[m
+ from typing import TypeVar, cast[m
+ [m
+[31m-from pylogic import Term[m
+[32m+[m[32mfrom pylogic import PythonNumeric, Term[m
+ from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual[m
+ [m
+ if TYPE_CHECKING:[m
+[36m@@ -49,15 +49,24 @@[m [mclass Sequence(Generic[T]):[m
+         initial_terms: TSequence[T] | None = None,[m
+         nth_term: Callable[[int], T] | None = None,[m
+         predicate: Callable[[Term], Proposition] | None = None,[m
+[32m+[m[32m        real: bool | None = None,[m
+[32m+[m[32m        **kwargs,[m
+     ) -> None:[m
+[32m+[m[32m        from pylogic.assumptions_context import assumptions_contexts[m
+         from pylogic.constant import Constant[m
+         from pylogic.expressions.abs import Abs[m
+[32m+[m[32m        from pylogic.helpers import _add_assumption_attributes, _add_assumptions[m
+[32m+[m[32m        from pylogic.inference import Inference[m
+[32m+[m[32m        from pylogic.proposition.quantified.forall import ForallInSet[m
+[32m+[m[32m        from pylogic.theories.natural_numbers import Naturals[m
+[32m+[m[32m        from pylogic.variable import Variable[m
+ [m
+         init_inds = ([m
+             list(map(Constant, range(len(initial_terms)))) if initial_terms else [][m
+         )[m
+ [m
+         self.name: str = name[m
+[32m+[m[32m        self.knowledge_base: set[Proposition] = set()[m
+         self.initial_terms: list[T] = list(initial_terms) if initial_terms else [][m
+         self.terms: dict[Constant[int], T] = dict(zip(init_inds, self.initial_terms))[m
+         self.nth_term: Callable[[Term], T] | None = nth_term[m
+[36m@@ -66,13 +75,121 @@[m [mclass Sequence(Generic[T]):[m
+         self._predicate_uses_self = predicate is not None[m
+         self.size = Abs(self)[m
+ [m
+[32m+[m[32m        self._is_real: bool | None = real[m
+[32m+[m[32m        self._is_rational: bool | None = kwargs.get("rational", None)[m
+[32m+[m[32m        self._is_integer: bool | None = kwargs.get("integer", None)[m
+[32m+[m[32m        self._is_natural: bool | None = kwargs.get("natural", None)[m
+[32m+[m
+[32m+[m[32m        self.is_set_: bool | None = kwargs.get("set_", None)[m
+[32m+[m[32m        self.is_set: bool | None = self.is_set_[m
+[32m+[m[32m        self.is_graph: bool | None = not self.is_set and kwargs.get("graph", None)[m
+[32m+[m[32m        self.is_pair: bool | None = self.is_graph or kwargs.get("pair", None)[m
+[32m+[m[32m        self.is_list_: bool | None = self.is_pair or kwargs.get("list_", None)[m
+[32m+[m[32m        self.is_list: bool | None = self.is_list_[m
+[32m+[m[32m        self.is_sequence: bool | None = self.is_list or kwargs.get("sequence", None)[m
+[32m+[m
+[32m+[m[32m        self._is_zero: bool | None = kwargs.get("zero", None)[m
+[32m+[m[32m        self._is_nonpositive: bool | None = kwargs.get("nonpositive", None)[m
+[32m+[m[32m        self._is_nonnegative: bool | None = kwargs.get("nonnegative", None)[m
+[32m+[m[32m        self._is_even: bool | None = kwargs.get("even", None)[m
+[32m+[m
+[32m+[m[32m        _add_assumption_attributes(self, kwargs)[m
+[32m+[m
+[32m+[m[32m        self.properties_of_each_term: list[Proposition] = [][m
+[32m+[m
+[32m+[m[32m        # TODO: See Symbol.__init__[m
+[32m+[m[32m        for attr in [[m
+[32m+[m[32m            "real",[m
+[32m+[m[32m            "rational",[m
+[32m+[m[32m            "integer",[m
+[32m+[m[32m            "natural",[m
+[32m+[m[32m            "zero",[m
+[32m+[m[32m            "nonpositive",[m
+[32m+[m[32m            "nonnegative",[m
+[32m+[m[32m            "even",[m
+[32m+[m[32m        ]:[m
+[32m+[m[32m            if getattr(self, f"_is_{attr}") is not None:[m
+[32m+[m[32m                n = Variable("n")[m
+[32m+[m[32m                self_n = self[n][m
+[32m+[m[32m                prop = _add_assumptions(self_n, attr, getattr(self, f"_is_{attr}"))[m
+[32m+[m[32m                prop = ForallInSet([m
+[32m+[m[32m                    n,[m
+[32m+[m[32m                    Naturals,[m
+[32m+[m[32m                    prop,[m
+[32m+[m[32m                    _is_proven=True,[m
+[32m+[m[32m                    _assumptions=set(),[m
+[32m+[m[32m                    _inference=Inference(None, rule="by_definition"),[m
+[32m+[m[32m                )[m
+[32m+[m[32m                self.knowledge_base.add(prop)[m
+[32m+[m[32m                self.properties_of_each_term.append(prop)[m
+[32m+[m[32m                if assumptions_contexts[-1] is not None:[m
+[32m+[m[32m                    assumptions_contexts[-1].assumptions.append(prop)[m
+[32m+[m
+         self._init_args = (name,)[m
+         self._init_kwargs = {[m
+             "initial_terms": initial_terms,[m
+             "nth_term": nth_term,[m
+             "predicate": predicate,[m
+[32m+[m[32m            "real": real,[m
+[32m+[m[32m            **kwargs,[m
+         }[m
+ [m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_natural(self) -> bool | None:[m
+[32m+[m[32m        return self._is_natural[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_integer(self) -> bool | None:[m
+[32m+[m[32m        return self._is_integer or self.is_natural[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_rational(self) -> bool | None:[m
+[32m+[m[32m        return self._is_rational or self.is_integer[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_real(self) -> bool | None:[m
+[32m+[m[32m        return self._is_real or self.is_rational[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_zero(self) -> bool | None:[m
+[32m+[m[32m        return self._is_zero[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_nonzero(self) -> bool | None:[m
+[32m+[m[32m        from pylogic.helpers import ternary_not[m
+[32m+[m
+[32m+[m[32m        return ternary_not(self.is_zero)[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_even(self) -> bool | None:[m
+[32m+[m[32m        return self._is_even[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_odd(self) -> bool | None:[m
+[32m+[m[32m        from pylogic.helpers import ternary_not[m
+[32m+[m
+[32m+[m[32m        return ternary_not(self.is_even)[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_positive(self) -> bool | None:[m
+[32m+[m[32m        from pylogic.helpers import ternary_and[m
+[32m+[m
+[32m+[m[32m        return ternary_and(self.is_nonnegative, self.is_nonzero)[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_negative(self) -> bool | None:[m
+[32m+[m[32m        from pylogic.helpers import ternary_and[m
+[32m+[m
+[32m+[m[32m        return ternary_and(self.is_nonpositive, self.is_nonzero)[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_nonpositive(self) -> bool | None:[m
+[32m+[m[32m        return self._is_nonpositive[m
+[32m+[m
+[32m+[m[32m    @property[m
+[32m+[m[32m    def is_nonnegative(self) -> bool | None:[m
+[32m+[m[32m        return self._is_nonnegative[m
+[32m+[m
+     def __repr__(self) -> str:[m
+         return f"Sequence({self.name})"[m
+ [m
+[36m@@ -192,13 +309,13 @@[m [mclass Sequence(Generic[T]):[m
+             return PylSympySeqFormula([m
+                 self.nth_term(n).to_sympy(),[m
+                 (n.to_sympy(), 0, oo),[m
+[31m-                _pyl_class="Sequence",[m
+[32m+[m[32m                _pyl_class=self.__class__,[m
+                 _pyl_init_args=self._init_args,[m
+                 _pyl_init_kwargs=self._init_kwargs,[m
+             )[m
+         return PylSympySeqBase([m
+             self.name,[m
+[31m-            _pyl_class="Sequence",[m
+[32m+[m[32m            _pyl_class=self.__class__,[m
+             _pyl_init_args=self._init_args,[m
+             _pyl_init_kwargs=self._init_kwargs,[m
+         )[m
+[36m@@ -220,7 +337,7 @@[m [mclass PeriodicSequence(Sequence[T]):[m
+         super().__init__(name, initial_terms, **kwargs)[m
+         from pylogic.helpers import python_to_pylogic[m
+ [m
+[31m-        self.is_infinite = True[m
+[32m+[m[32m        self.is_finite = False[m
+         self.period = python_to_pylogic(period)  # TODO: or infinite when None[m
+ [m
+         self._init_args = (name,)[m
+[36m@@ -253,7 +370,7 @@[m [mclass PeriodicSequence(Sequence[T]):[m
+             )[m
+         return PylSympySeqBase([m
+             self.name,[m
+[31m-            _pyl_class="PeriodicSequence",[m
+[32m+[m[32m            _pyl_class=self.__class__,[m
+             _pyl_init_args=self._init_args,[m
+             _pyl_init_kwargs=self._init_kwargs,[m
+         )[m
+[36m@@ -268,7 +385,7 @@[m [mclass FiniteSequence(Sequence[T]):[m
+         self,[m
+         name: str,[m
+         initial_terms: TSequence[T] | None = None,[m
+[31m-        size: Term | None = None,[m
+[32m+[m[32m        length: Term | PythonNumeric | None = None,[m
+         **kwargs,[m
+     ) -> None:[m
+         from pylogic.constant import Constant[m
+[36m@@ -278,22 +395,33 @@[m [mclass FiniteSequence(Sequence[T]):[m
+         from pylogic.variable import Variable[m
+ [m
+         type_check([m
+[31m-            size, Variable, Constant, int, type(None), context="FiniteSequence.__init__"[m
+[32m+[m[32m            length,[m
+[32m+[m[32m            Variable,[m
+[32m+[m[32m            Constant,[m
+[32m+[m[32m            int,[m
+[32m+[m[32m            type(None),[m
+[32m+[m[32m            context="FiniteSequence.__init__",[m
+         )[m
+[31m-        size = cast(Variable | Constant | int | None, size)[m
+[31m-        if isinstance(size, int):[m
+[31m-            size = Constant(size)[m
+         if ([m
+[31m-            isinstance(size, Constant)[m
+[31m-            and isinstance(size.value, int)[m
+[31m-            and size.value < (len(initial_terms) if initial_terms else 0)[m
+[32m+[m[32m            isinstance(length, Constant)[m
+[32m+[m[32m            and isinstance(length.value, float)[m
+[32m+[m[32m            and length.value != float("inf")[m
+[32m+[m[32m        ):[m
+[32m+[m[32m            raise ValueError("The length of a sequence must be an integer")[m
+[32m+[m[32m        _length = cast(Term | None, length)[m
+[32m+[m[32m        if isinstance(length, int):[m
+[32m+[m[32m            _length = Constant(length)[m
+[32m+[m[32m        if ([m
+[32m+[m[32m            isinstance(_length, Constant)[m
+[32m+[m[32m            and isinstance(_length.value, int)[m
+[32m+[m[32m            and _length.value < (len(initial_terms) if initial_terms else 0)[m
+         ):[m
+             raise ValueError([m
+[31m-                "The size of the sequence must be at least the number of initial terms"[m
+[32m+[m[32m                "The length of the sequence must be at least the number of initial terms"[m
+             )[m
+         super().__init__(name, initial_terms, **kwargs)[m
+[31m-        self.is_infinite = False[m
+[31m-        self.size = Abs(self) if size is None else size[m
+[32m+[m[32m        self.is_finite = True[m
+[32m+[m[32m        self.length = _length[m
+         # TODO self.size_is_finite = self.size.is_in(Naturals0, _is_proven=True)[m
+         self.size_at_least = GreaterOrEqual([m
+             self.size,[m
+[36m@@ -302,11 +430,18 @@[m [mclass FiniteSequence(Sequence[T]):[m
+             _assumptions=set(),[m
+             _inference=Inference(None, rule="by_definition"),[m
+         )[m
+[32m+[m[32m        if _length is not None:[m
+[32m+[m[32m            self.size_at_least = self.size_at_least.and_([m
+[32m+[m[32m                self.size.equals(_length),[m
+[32m+[m[32m                _is_proven=True,[m
+[32m+[m[32m                _assumptions=set(),[m
+[32m+[m[32m                _inference=Inference(None, rule="by_definition"),[m
+[32m+[m[32m            )[m
+ [m
+         self._init_args = (name,)[m
+         self._init_kwargs = {[m
+             "initial_terms": initial_terms,[m
+[31m-            "size": size,[m
+[32m+[m[32m            "length": length,[m
+             **kwargs,[m
+         }[m
+ [m
+[36m@@ -322,7 +457,7 @@[m [mclass FiniteSequence(Sequence[T]):[m
+             )[m
+         return PylSympySeqBase([m
+             self.name,[m
+[31m-            _pyl_class="FiniteSequence",[m
+[32m+[m[32m            _pyl_class=self.__class__,[m
+             _pyl_init_args=self._init_args,[m
+             _pyl_init_kwargs=self._init_kwargs,[m
+         )[m
+[36m@@ -334,7 +469,14 @@[m [mclass Pair(FiniteSequence[T]):[m
+     """[m
+ [m
+     def __init__(self, name: str, first: T, second: T) -> None:[m
+[31m-        super().__init__(name, [first, second], size=2)[m
+[32m+[m[32m        from pylogic.helpers import ternary_and[m
+[32m+[m
+[32m+[m[32m        super().__init__([m
+[32m+[m[32m            name,[m
+[32m+[m[32m            [first, second],[m
+[32m+[m[32m            size=2,[m
+[32m+[m[32m            real=ternary_and(first.is_real, second.is_real),[m
+[32m+[m[32m        )[m
+         self.first = first[m
+         self.second = second[m
+ [m
+[36m@@ -354,7 +496,14 @@[m [mclass Triple(FiniteSequence[T]):[m
+     """[m
+ [m
+     def __init__(self, name: str, first: T, second: T, third: T) -> None:[m
+[31m-        super().__init__(name, [first, second, third], size=3)[m
+[32m+[m[32m        from pylogic.helpers import ternary_and[m
+[32m+[m
+[32m+[m[32m        super().__init__([m
+[32m+[m[32m            name,[m
+[32m+[m[32m            [first, second, third],[m
+[32m+[m[32m            size=3,[m
+[32m+[m[32m            real=ternary_and(first.is_real, second.is_real, third.is_real),[m
+[32m+[m[32m        )[m
+         self.first = first[m
+         self.second = second[m
+         self.third = third[m
+[1mdiff --git a/pylogic/structures/set_.py b/pylogic/structures/set_.py[m
+[1mindex ddfa5ff..2864911 100644[m
+[1m--- a/pylogic/structures/set_.py[m
+[1m+++ b/pylogic/structures/set_.py[m
+[36m@@ -208,11 +208,9 @@[m [mSee https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New[m
+             return False[m
+ [m
+     def eval_same(self, other: object) -> bool:[m
+[31m-        if isinstance(other, sp.Set):[m
+[31m-            return self.sympy_set == other[m
+[31m-        elif not isinstance(other, Set):[m
+[31m-            return False[m
+[31m-        return self.sympy_set == other.sympy_set[m
+[32m+[m[32m        if isinstance(other, Set):[m
+[32m+[m[32m            return self.evaluate() == other.evaluate()[m
+[32m+[m[32m        return self.evaluate() == other[m
+ [m
+     def __eq__(self, other: Set) -> bool:[m
+         """[m
+[36m@@ -224,6 +222,8 @@[m [mSee https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New[m
+         return self.name == other.name[m
+ [m
+     def __contains__(self, item: Any) -> bool:[m
+[32m+[m[32m        from pylogic.enviroment_settings.settings import settings[m
+[32m+[m
+         if settings["PYTHON_OPS_RETURN_PROPS"]:[m
+             return self.contains(item)[m
+         return self.containment_function(item)[m
+[36m@@ -281,7 +281,14 @@[m [mSee https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New[m
+         return self[m
+ [m
+     def to_sympy(self) -> sp.Set:[m
+[31m-        return self.sympy_set[m
+[32m+[m[32m        from pylogic.sympy_helpers import PylSympySet[m
+[32m+[m
+[32m+[m[32m        return PylSympySet([m
+[32m+[m[32m            self.name,[m
+[32m+[m[32m            _pyl_class=self.__class__,[m
+[32m+[m[32m            _pyl_init_args=self._init_args,[m
+[32m+[m[32m            _pyl_init_kwargs=self._init_kwargs,[m
+[32m+[m[32m        )[m
+ [m
+     def containment_function(self, x: Term) -> bool:[m
+         if x in self.elements:[m
+[1mdiff --git a/pylogic/symbol.py b/pylogic/symbol.py[m
+[1mindex 2d27a79..b694f9f 100644[m
+[1m--- a/pylogic/symbol.py[m
+[1m+++ b/pylogic/symbol.py[m
+[36m@@ -35,9 +35,15 @@[m [mclass Symbol:[m
+     is_atomic = True[m
+ [m
+     def __init__(self, *args, **kwargs) -> None:[m
+[32m+[m[32m        """[m
+[32m+[m[32m        Represents a symbolic object. Can be a Variable or a Constant.[m
+[32m+[m[32m        """[m
+[32m+[m[32m        from pylogic.assumptions_context import assumptions_contexts[m
+[32m+[m[32m        from pylogic.helpers import _add_assumption_attributes, _add_assumptions[m
+[32m+[m
+         assert isinstance(args[0], str), "The first argument must be a string"[m
+         self.knowledge_base: set[Proposition] = set()[m
+[31m-        self.name: str = args[0][m
+[32m+[m[32m        self.name: str = str(args[0])[m
+         self._is_real: bool = kwargs.get("real", None)[m
+         self._is_rational: bool = kwargs.get("rational", None)[m
+         self._is_integer: bool = kwargs.get("integer", None)[m
+[36m@@ -55,46 +61,8 @@[m [mclass Symbol:[m
+         self._is_nonpositive: bool | None = kwargs.get("nonpositive", None)[m
+         self._is_nonnegative: bool | None = kwargs.get("nonnegative", None)[m
+         self._is_even: bool | None = kwargs.get("even", None)[m
+[31m-        if self._is_zero or self._is_nonpositive or self._is_nonnegative:[m
+[31m-            if self._is_real in [None, True]:[m
+[31m-                self._is_real = True[m
+[31m-            else:[m
+[31m-                raise ValueError([m
+[31m-                    "Contradictory assumptions: A number cannot be both non-real and zero/nonpositive/nonnegative"[m
+[31m-                )[m
+[31m-        if self._is_even:[m
+[31m-            if self._is_integer in [None, True]:[m
+[31m-                self._is_integer = True[m
+[31m-            else:[m
+[31m-                raise ValueError([m
+[31m-                    "Contradictory assumptions: A number cannot be both non-integer and even"[m
+[31m-                )[m
+[31m-        if kwargs.get("positive", None):[m
+[31m-            self._is_real = True[m
+[31m-            self._is_nonnegative = True[m
+[31m-            if self._is_zero in [None, False]:[m
+[31m-                self._is_zero = False[m
+[31m-            else:[m
+[31m-                raise ValueError([m
+[31m-                    "Contradictory assumptions: A positive number cannot be zero"[m
+[31m-                )[m
+[31m-        if kwargs.get("negative", None):[m
+[31m-            self._is_real = True[m
+[31m-            self._is_nonpositive = True[m
+[31m-            if self._is_zero in [None, False]:[m
+[31m-                self._is_zero = False[m
+[31m-            else:[m
+[31m-                raise ValueError([m
+[31m-                    "Contradictory assumptions: A negative number cannot be zero"[m
+[31m-                )[m
+[31m-        if kwargs.get("odd", None):[m
+[31m-            self._is_integer = True[m
+[31m-            if self._is_even in [None, False]:[m
+[31m-                self._is_even = False[m
+[31m-            else:[m
+[31m-                raise ValueError([m
+[31m-                    "Contradictory assumptions: An odd number cannot be even"[m
+[31m-                )[m
+[32m+[m
+[32m+[m[32m        _add_assumption_attributes(self, kwargs)[m
+ [m
+         self._init_args = args[m
+         self._init_kwargs = kwargs[m
+[36m@@ -124,101 +92,10 @@[m [mclass Symbol:[m
+             "even",[m
+         ]:[m
+             if getattr(self, f"_is_{attr}") is not None:[m
+[31m-                self._add_assumptions(attr, getattr(self, f"_is_{attr}"))[m
+[31m-[m
+[31m-    def _add_assumptions(self, attr: str, value: bool):[m
+[31m-        # TODO: needs to be tested properly, somewhat hacky but[m
+[31m-        # the most straightforward way to add assumptions on Symbols[m
+[31m-        # due to cyclic dependencies[m
+[31m-[m
+[31m-        import importlib[m
+[31m-[m
+[31m-        from pylogic.assumptions_context import assumptions_contexts[m
+[31m-        from pylogic.inference import Inference[m
+[31m-        from pylogic.proposition.not_ import Not[m
+[31m-        from pylogic.proposition.relation.contains import IsContainedIn[m
+[31m-[m
+[31m-        set_modules = {[m
+[31m-            "real": "pylogic.theories.real_analysis",[m
+[31m-            "rational": "pylogic.theories.rational_numbers",[m
+[31m-            "integer": "pylogic.theories.integers",[m
+[31m-            "natural": "pylogic.theories.natural_numbers",[m
+[31m-        }[m
+[31m-        set_names = {[m
+[31m-            "real": "Reals",[m
+[31m-            "rational": "Rationals",[m
+[31m-            "integer": "Integers",[m
+[31m-            "natural": "Naturals",[m
+[31m-        }[m
+[31m-[m
+[31m-        if attr in set_modules:[m
+[31m-            mod = importlib.import_module(set_modules[attr])[m
+[31m-            mod_set = getattr(mod, set_names[attr])[m
+[31m-            positive_prop = IsContainedIn([m
+[31m-                self,[m
+[31m-                mod_set,[m
+[31m-                _is_proven=True,[m
+[31m-                _assumptions=set(),[m
+[31m-                _inference=Inference(None, rule="by_definition"),[m
+[31m-            )[m
+[31m-        elif attr == "zero":[m
+[31m-            from pylogic.proposition.relation.equals import Equals[m
+[31m-[m
+[31m-            positive_prop = Equals([m
+[31m-                self,[m
+[31m-                0,[m
+[31m-                _is_proven=True,[m
+[31m-                _assumptions=set(),[m
+[31m-                _inference=Inference(None, rule="by_definition"),[m
+[31m-            )[m
+[31m-        elif attr == "nonpositive":[m
+[31m-            from pylogic.proposition.ordering.lessorequal import LessOrEqual[m
+[31m-[m
+[31m-            positive_prop = LessOrEqual([m
+[31m-                self,[m
+[31m-                0,[m
+[31m-                _is_proven=True,[m
+[31m-                _assumptions=set(),[m
+[31m-                _inference=Inference(None, rule="by_definition"),[m
+[31m-            )[m
+[31m-        elif attr == "nonnegative":[m
+[31m-            from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual[m
+[31m-[m
+[31m-            positive_prop = GreaterOrEqual([m
+[31m-                self,[m
+[31m-                0,[m
+[31m-                _is_proven=True,[m
+[31m-                _assumptions=set(),[m
+[31m-                _inference=Inference(None, rule="by_definition"),[m
+[31m-            )[m
+[31m-        elif attr == "even":[m
+[31m-            # TODO: change to Integers where appropriate[m
+[31m-            from pylogic.theories.natural_numbers import Naturals[m
+[31m-[m
+[31m-            # if self._is_natural is True: ... # use Naturals.even[m
+[31m-            # else: ... # use Integers.even[m
+[31m-[m
+[31m-            positive_prop = Naturals.even([m
+[31m-                self,[m
+[31m-                _is_proven=True,[m
+[31m-                _assumptions=set(),[m
+[31m-                _inference=Inference(None, rule="by_definition"),[m
+[31m-            )[m
+[31m-[m
+[31m-        if value:[m
+[31m-            prop = positive_prop[m
+[31m-        else:[m
+[31m-            positive_prop._set_is_proven(False)[m
+[31m-            positive_prop.deduced_from = None[m
+[31m-            prop = Not([m
+[31m-                positive_prop,[m
+[31m-                _is_proven=True,[m
+[31m-                _assumptions=set(),[m
+[31m-                _inference=Inference(None, rule="by_definition"),[m
+[31m-            )[m
+[31m-        self.knowledge_base.add(prop)[m
+[31m-        if assumptions_contexts[-1] is not None:[m
+[31m-            assumptions_contexts[-1].assumptions.append(prop)[m
+[32m+[m[32m                prop = _add_assumptions(self, attr, getattr(self, f"_is_{attr}"))[m
+[32m+[m[32m                self.knowledge_base.add(prop)[m
+[32m+[m[32m                if assumptions_contexts[-1] is not None:[m
+[32m+[m[32m                    assumptions_contexts[-1].assumptions.append(prop)[m
+ [m
+     @property[m
+     def is_natural(self) -> bool | None:[m
+[36m@@ -439,7 +316,7 @@[m [mclass Symbol:[m
+ [m
+         return PylSympySymbol([m
+             *self._init_args,[m
+[31m-            _pyl_class=self.__class__.__name__,[m
+[32m+[m[32m            _pyl_class=self.__class__,[m
+             _pyl_init_args=self._init_args,[m
+             _pyl_init_kwargs=self._init_kwargs,[m
+             **self._init_kwargs,[m
+[1mdiff --git a/pylogic/sympy_helpers.py b/pylogic/sympy_helpers.py[m
+[1mindex 055a3a2..d720571 100644[m
+[1m--- a/pylogic/sympy_helpers.py[m
+[1m+++ b/pylogic/sympy_helpers.py[m
+[36m@@ -4,100 +4,93 @@[m [mfrom fractions import Fraction[m
+ from typing import TYPE_CHECKING, Any, TypeVar, overload[m
+ [m
+ import sympy as sp[m
+[32m+[m[32mfrom sympy.core.function import UndefinedFunction[m
+[32m+[m[32mfrom sympy.functions.elementary.piecewise import ExprCondPair, Piecewise[m
+[32m+[m[32mfrom sympy.logic.boolalg import And as SpAnd[m
+[32m+[m[32mfrom sympy.logic.boolalg import Not as SpNot[m
+[32m+[m[32mfrom sympy.logic.boolalg import Or as SpOr[m
+ from sympy.series.sequences import SeqBase, SeqFormula, SeqPer[m
+ [m
+[31m-from pylogic.constant import Constant[m
+[32m+[m[32mfrom pylogic.constant import Constant, Infinity[m
+ from pylogic.expressions.abs import Abs[m
+ from pylogic.expressions.expr import Add, CustomExpr, Expr, Mul, Pow[m
+[32m+[m[32mfrom pylogic.expressions.function import CalledFunction[m
+[32m+[m[32mfrom pylogic.expressions.piecewise import ([m
+[32m+[m[32m    OtherwiseBranch,[m
+[32m+[m[32m    PiecewiseBranch,[m
+[32m+[m[32m    PiecewiseExpr,[m
+[32m+[m[32m)[m
+[32m+[m[32mfrom pylogic.expressions.prod import Prod[m
+ from pylogic.expressions.sequence_term import SequenceTerm[m
+[32m+[m[32mfrom pylogic.expressions.sum import Sum[m
+[32m+[m[32mfrom pylogic.proposition.and_ import And[m
+[32m+[m[32mfrom pylogic.proposition.iff import Iff[m
+[32m+[m[32mfrom pylogic.proposition.implies import Implies[m
+[32m+[m[32mfrom pylogic.proposition.not_ import Not[m
+[32m+[m[32mfrom pylogic.proposition.or_ import Or[m
+[32m+[m[32mfrom pylogic.proposition.ordering.greaterorequal import GreaterOrEqual[m
+[32m+[m[32mfrom pylogic.proposition.ordering.greaterthan import GreaterThan[m
+[32m+[m[32mfrom pylogic.proposition.ordering.lessorequal import LessOrEqual[m
+[32m+[m[32mfrom pylogic.proposition.ordering.lessthan import LessThan[m
+[32m+[m[32mfrom pylogic.proposition.relation.equals import Equals[m
+[32m+[m[32mfrom pylogic.structures.sequence import ([m
+[32m+[m[32m    FiniteSequence,[m
+[32m+[m[32m    Pair,[m
+[32m+[m[32m    PeriodicSequence,[m
+[32m+[m[32m    Sequence,[m
+[32m+[m[32m    Triple,[m
+[32m+[m[32m)[m
+[32m+[m[32mfrom pylogic.structures.set_ import Set[m
+ from pylogic.symbol import Symbol[m
+ from pylogic.variable import Variable[m
+ [m
+[31m-B = TypeVar("B", bound=sp.Basic)[m
+[31m-[m
+ if TYPE_CHECKING:[m
+[31m-    from pylogic.structures.sequence import PeriodicSequence, Sequence[m
+[31m-    from pylogic.structures.set_ import Set[m
+ [m
+[32m+[m[32m    class Basic(sp.Basic):[m
+[32m+[m[32m        _pyl_init_args: tuple[Any, ...][m
+[32m+[m[32m        _pyl_init_kwargs: dict[str, Any][m
+[32m+[m[32m        _pyl_class: type | None[m
+ [m
+[31m-class PylSympySymbol(sp.Symbol):[m
+[31m-    _pyl_init_args: tuple[Any, ...][m
+[31m-    _pyl_init_kwargs: dict[str, Any][m
+[31m-    _pyl_class: str | None[m
+[32m+[m[32m    B = TypeVar("B", bound=Basic)[m
+[32m+[m[32m    tB = TypeVar("tB", bound=type[Basic])[m
+[32m+[m[32melse:[m
+[32m+[m[32m    B = TypeVar("B")[m
+[32m+[m[32m    tB = TypeVar("tB")[m
+ [m
+[31m-    def __new__([m
+[31m-        cls,[m
+[31m-        *args,[m
+[31m-        _pyl_class: str | None = None,[m
+[31m-        _pyl_init_args: tuple | None = None,[m
+[31m-        _pyl_init_kwargs: dict[str, Any] | None = None,[m
+[31m-        **kwargs,[m
+[31m-    ) -> PylSympySymbol:[m
+[31m-        val = super().__new__(cls, *args, **kwargs)[m
+[31m-        val._pyl_class = _pyl_class[m
+[31m-        val._pyl_init_args = _pyl_init_args or ()[m
+[31m-        val._pyl_init_kwargs = _pyl_init_kwargs or {}[m
+[31m-        return val[m
+ [m
+[31m-[m
+[31m-class PylSympySet(sp.Set):[m
+[31m-    _pyl_init_args: tuple[Any, ...][m
+[31m-    _pyl_init_kwargs: dict[str, Any][m
+[31m-    _pyl_class: str | None[m
+[31m-[m
+[31m-    def __new__([m
+[32m+[m[32mdef _create_sympy_class(name: str, base: tB) -> tB:[m
+[32m+[m[32m    def _new([m
+         cls,[m
+         *args,[m
+[31m-        _pyl_class: str | None = None,[m
+[32m+[m[32m        _pyl_class: type | None = None,[m
+         _pyl_init_args: tuple | None = None,[m
+         _pyl_init_kwargs: dict[str, Any] | None = None,[m
+         **kwargs,[m
+[31m-    ) -> PylSympySet:[m
+[31m-        val = super().__new__(cls, *args, **kwargs)[m
+[32m+[m[32m    ):[m
+[32m+[m[32m        val = base.__new__(cls, *args, **kwargs)[m
+         val._pyl_class = _pyl_class[m
+         val._pyl_init_args = _pyl_init_args or ()[m
+         val._pyl_init_kwargs = _pyl_init_kwargs or {}[m
+         return val[m
+ [m
+[32m+[m[32m    return type(name, (base,), {"__new__": _new})  # type: ignore[m
+ [m
+[31m-class PylSympySeqBase(SeqBase):[m
+[31m-    _pyl_init_args: tuple[Any, ...][m
+[31m-    _pyl_init_kwargs: dict[str, Any][m
+[31m-    _pyl_class: str | None[m
+ [m
+[31m-    def __new__([m
+[31m-        cls,[m
+[31m-        *args,[m
+[31m-        _pyl_class: str | None = None,[m
+[31m-        _pyl_init_args: tuple | None = None,[m
+[31m-        _pyl_init_kwargs: dict[str, Any] | None = None,[m
+[31m-        **kwargs,[m
+[31m-    ) -> PylSympySeqBase:[m
+[31m-        val = super().__new__(cls, *args, **kwargs)[m
+[31m-        val._pyl_class = _pyl_class[m
+[31m-        val._pyl_init_args = _pyl_init_args or ()[m
+[31m-        val._pyl_init_kwargs = _pyl_init_kwargs or {}[m
+[31m-        return val[m
+[32m+[m[32mPylSympySymbol = _create_sympy_class("PylSympySymbol", sp.Symbol)[m
+[32m+[m[32mPylSympySet = _create_sympy_class("PylSympySet", sp.Set)[m
+[32m+[m[32mPylSympySeqBase = _create_sympy_class("PylSympySeqBase", SeqBase)[m
+[32m+[m[32mPylSympySeqFormula = _create_sympy_class("PylSympySeqFormula", SeqFormula)[m
+[32m+[m[32mPylSympyExpr = _create_sympy_class("PylSympyExpr", sp.Expr)[m
+[32m+[m[32mPylSympyFunction = _create_sympy_class("PylSympyFunction", UndefinedFunction)[m
+[32m+[m[32mPylSympyExprCondPair = _create_sympy_class("PylSympyExprCondPair", ExprCondPair)[m
+ [m
+ [m
+[31m-class PylSympySeqFormula(SeqFormula):[m
+[31m-    _pyl_init_args: tuple[Any, ...][m
+[31m-    _pyl_init_kwargs: dict[str, Any][m
+[31m-    _pyl_class: str | None[m
+[32m+[m[32mclass ToSympyError(ValueError):[m
+[32m+[m[32m    pass[m
+ [m
+[31m-    def __new__([m
+[31m-        cls,[m
+[31m-        *args,[m
+[31m-        _pyl_class: str | None = None,[m
+[31m-        _pyl_init_args: tuple | None = None,[m
+[31m-        _pyl_init_kwargs: dict[str, Any] | None = None,[m
+[31m-        **kwargs,[m
+[31m-    ) -> PylSympySeqFormula:[m
+[31m-        val = super().__new__(cls, *args, **kwargs)[m
+[31m-        val._pyl_class = _pyl_class[m
+[31m-        val._pyl_init_args = _pyl_init_args or ()[m
+[31m-        val._pyl_init_kwargs = _pyl_init_kwargs or {}[m
+[31m-        return val[m
+[32m+[m
+[32m+[m[32mclass FromSympyError(ValueError):[m
+[32m+[m[32m    pass[m
+ [m
+ [m
+ @overload[m
+[36m@@ -121,7 +114,7 @@[m [mdef sympy_to_pylogic(expr: SeqPer) -> PeriodicSequence: ...[m
+ @overload[m
+ def sympy_to_pylogic(expr: sp.Set) -> Set: ...[m
+ @overload[m
+[31m-def sympy_to_pylogic(expr: PylSympySymbol) -> Symbol: ...[m
+[32m+[m[32mdef sympy_to_pylogic(expr: sp.Symbol) -> Symbol: ...[m
+ @overload[m
+ def sympy_to_pylogic(expr: sp.Expr) -> CustomExpr: ...[m
+ def sympy_to_pylogic(expr: sp.Basic) -> Set | Sequence | Expr | Symbol:[m
+[36m@@ -133,6 +126,8 @@[m [mdef sympy_to_pylogic(expr: sp.Basic) -> Set | Sequence | Expr | Symbol:[m
+ [m
+     # TODO: Add support for more expressions[m
+     match expr:[m
+[32m+[m[32m        case sp.oo:[m
+[32m+[m[32m            return Infinity[m
+         case sp.Integer():[m
+             return Constant(int(expr))[m
+         case sp.Float():[m
+[36m@@ -147,6 +142,61 @@[m [mdef sympy_to_pylogic(expr: sp.Basic) -> Set | Sequence | Expr | Symbol:[m
+             return Pow(*[sympy_to_pylogic(arg) for arg in expr.args])[m
+         case sp.Abs():[m
+             return Abs(sympy_to_pylogic(expr.args[0]))[m
+[32m+[m[32m        case ([m
+[32m+[m[32m            PylSympySet()[m
+[32m+[m[32m            | PylSympySymbol()[m
+[32m+[m[32m            | PylSympySeqBase()[m
+[32m+[m[32m            | PylSympySeqFormula()[m
+[32m+[m[32m            | PylSympyExpr()[m
+[32m+[m[32m            | PylSympyFunction()[m
+[32m+[m[32m        ):[m
+[32m+[m[32m            return expr._pyl_class(*expr._pyl_init_args, **expr._pyl_init_kwargs)[m
+[32m+[m[32m        case ExprCondPair():[m
+[32m+[m[32m            if expr[1] == True:[m
+[32m+[m[32m                return OtherwiseBranch(sympy_to_pylogic(expr[0]))[m
+[32m+[m[32m            return PiecewiseBranch(sympy_to_pylogic(expr[1]), sympy_to_pylogic(expr[0]))[m
+[32m+[m[32m        case Piecewise():[m
+[32m+[m[32m            return PiecewiseExpr(*[sympy_to_pylogic(branch) for branch in expr.args])[m
+[32m+[m[32m        case sp.Product() | sp.Sum():[m
+[32m+[m[32m            nth_term, limits = expr.args[m
+[32m+[m[32m            nth_term_ = sympy_to_pylogic(nth_term)[m
+[32m+[m[32m            var, start, end = map(sympy_to_pylogic, limits[0])[m
+[32m+[m[32m            if start == 1:[m
+[32m+[m[32m                nth_term = lambda n: nth_term_.replace({var: n})[m
+[32m+[m[32m            else:[m
+[32m+[m[32m                nth_term = lambda n: nth_term_.replace({var: n + start - 1})[m
+[32m+[m[32m            if end == Infinity:[m
+[32m+[m[32m                seq = Sequence("sp", nth_term=nth_term, real=True)[m
+[32m+[m[32m            else:[m
+[32m+[m[32m                size = (end - start + 1).evaluate()[m
+[32m+[m[32m                seq = FiniteSequence("sp", nth_term=nth_term, size=size)[m
+[32m+[m[32m            return Prod(seq) if isinstance(expr, sp.Product) else Sum(seq)[m
+[32m+[m[32m        case sp.LessThan():[m
+[32m+[m[32m            return LessOrEqual(sympy_to_pylogic(expr.lhs), sympy_to_pylogic(expr.rhs))[m
+[32m+[m[32m        case sp.StrictLessThan():[m
+[32m+[m[32m            return LessThan(sympy_to_pylogic(expr.lhs), sympy_to_pylogic(expr.rhs))[m
+[32m+[m[32m        case sp.GreaterThan():[m
+[32m+[m[32m            return GreaterOrEqual([m
+[32m+[m[32m                sympy_to_pylogic(expr.lhs), sympy_to_pylogic(expr.rhs)[m
+[32m+[m[32m            )[m
+[32m+[m[32m        case sp.StrictGreaterThan():[m
+[32m+[m[32m            return GreaterThan(sympy_to_pylogic(expr.lhs), sympy_to_pylogic(expr.rhs))[m
+[32m+[m[32m        case SpAnd():[m
+[32m+[m[32m            return And(*[sympy_to_pylogic(arg) for arg in expr.args])[m
+[32m+[m[32m        case SpOr():[m
+[32m+[m[32m            return Or(*[sympy_to_pylogic(arg) for arg in expr.args])[m
+[32m+[m[32m        case SpNot():[m
+[32m+[m[32m            return Not(sympy_to_pylogic(expr.args[0]))[m
+[32m+[m[32m        case sp.Eq():[m
+[32m+[m[32m            return Equals(sympy_to_pylogic(expr.lhs), sympy_to_pylogic(expr.rhs))[m
+[32m+[m[32m        case sp.Unequality():[m
+[32m+[m[32m            return Not(Equals(sympy_to_pylogic(expr.lhs), sympy_to_pylogic(expr.rhs)))[m
+[32m+[m[32m        case sp.Implies():[m
+[32m+[m[32m            return Implies([m
+[32m+[m[32m                sympy_to_pylogic(expr.args[0]), sympy_to_pylogic(expr.args[1])[m
+[32m+[m[32m            )[m
+[32m+[m[32m        case sp.Equivalent():[m
+[32m+[m[32m            return Iff(sympy_to_pylogic(expr.args[0]), sympy_to_pylogic(expr.args[1]))[m
+         case SeqFormula():[m
+             if isinstance(expr.interval, sp.FiniteSet):[m
+                 ind = list(expr.interval)[0][m
+[36m@@ -168,25 +218,22 @@[m [mdef sympy_to_pylogic(expr: sp.Basic) -> Set | Sequence | Expr | Symbol:[m
+                 initial_terms=list(map(int, expr.periodical)),  # type: ignore[m
+                 period=int(expr.period),[m
+             )[m
+[31m-        case sp.Set():[m
+[31m-            return Set(repr(expr))[m
+[31m-        case PylSympySymbol():[m
+[31m-            if expr._pyl_class == "Variable":[m
+[31m-                return Variable([m
+[31m-                    expr.name, *expr._pyl_init_args, **expr._pyl_init_kwargs[m
+[31m-                )[m
+[31m-            elif expr._pyl_class == "Constant":[m
+[31m-                return Constant([m
+[31m-                    expr.name, *expr._pyl_init_args, **expr._pyl_init_kwargs[m
+[31m-                )[m
+[31m-            elif expr._pyl_class == "SequenceTerm":[m
+[31m-                return SequenceTerm(*expr._pyl_init_args, **expr._pyl_init_kwargs)[m
+[31m-            else:[m
+[31m-                raise ValueError(f"Unsupported _pyl_class: {expr._pyl_class}")[m
+         case sp.Expr():[m
+             return CustomExpr([m
+                 "SympyCustomExpr",[m
+                 *[sympy_to_pylogic(arg) for arg in expr.args],  # type: ignore[m
+             )[m
+[32m+[m[32m        case sp.Basic():[m
+[32m+[m[32m            # check for UndefinedFunction instance instance[m
+[32m+[m[32m            # the hierarchy in this case is[m
+[32m+[m[32m            # expr: expr.__class__: UndefinedFunction: type[m
+[32m+[m[32m            # where expr.__class__ was dynamically created and inherits from Basic[m
+[32m+[m[32m            if isinstance(expr.__class__, PylSympyFunction):[m
+[32m+[m[32m                return CalledFunction([m
+[32m+[m[32m                    sympy_to_pylogic(expr.__class__),[m
+[32m+[m[32m                    *[sympy_to_pylogic(arg) for arg in expr.args],[m
+[32m+[m[32m                )[m
+[32m+[m[32m            raise FromSympyError(f"Unsupported sympy expression: {expr}")[m
+[32m+[m
+         case _:[m
+[31m-            raise ValueError(f"Unsupported sympy expression: {expr}")[m
+[32m+[m[32m            raise FromSympyError(f"Unsupported sympy expression: {expr}")[m
+[1mdiff --git a/pylogic_demo.ipynb b/pylogic_demo.ipynb[m
+[1mindex 65e81fa..9bb2b1b 100644[m
+[1m--- a/pylogic_demo.ipynb[m
+[1m+++ b/pylogic_demo.ipynb[m
+[36m@@ -10,7 +10,7 @@[m
+   },[m
+   {[m
+    "cell_type": "code",[m
+[31m-   "execution_count": 1,[m
+[32m+[m[32m   "execution_count": 3,[m
+    "id": "24587504",[m
+    "metadata": {},[m
+    "outputs": [],[m
+[36m@@ -25,17 +25,51 @@[m
+   },[m
+   {[m
+    "cell_type": "code",[m
+[31m-   "execution_count": 2,[m
+[32m+[m[32m   "execution_count": null,[m
+    "id": "49f33764",[m
+    "metadata": {},[m
+[31m-   "outputs": [],[m
+[32m+[m[32m   "outputs": [[m
+[32m+[m[32m    {[m
+[32m+[m[32m     "data": {[m
+[32m+[m[32m      "text/latex": [[m
+[32m+[m[32m       "$$r \\in \\mathbb{R} \\rightarrow r = 0$$"[m
+[32m+[m[32m      ],[m
+[32m+[m[32m      "text/plain": [[m
+[32m+[m[32m       "Implies(IsContainedIn(r, Reals), Equals(r, 0))"[m
+[32m+[m[32m      ][m
+[32m+[m[32m     },[m
+[32m+[m[32m     "execution_count": 9,[m
+[32m+[m[32m     "metadata": {},[m
+[32m+[m[32m     "output_type": "execute_result"[m
+[32m+[m[32m    }[m
+[32m+[m[32m   ],[m
+    "source": [[m
+     "r = Variable(\"r\")\n",[m
+     "z = Constant(\"z\")\n",[m
+[31m-    "p0 = assume( r.is_in(Reals) )\n",[m
+[32m+[m[32m    "\n",[m
+[32m+[m[32m    "p0 = r.is_in(Reals)\n",[m
+[32m+[m[32m    "\n",[m
+[32m+[m[32m    "p1 = r.equals(0)\n",[m
+[32m+[m[32m    "\n",[m
+[32m+[m[32m    "p0_implies_p1 = assume(p0.implies(p1))\n",[m
+[32m+[m[32m    "\n",[m
+[32m+[m[32m    "p0_implies_p1.is_proven\n",[m
+[32m+[m[32m    "\n",[m
+[32m+[m[32m    "p0_implies_p1\n",[m
+[32m+[m[32m    "\n"[m
+[32m+[m[32m   ][m
+[32m+[m[32m  },[m
+[32m+[m[32m  {[m
+[32m+[m[32m   "cell_type": "code",[m
+[32m+[m[32m   "execution_count": null,[m
+[32m+[m[32m   "id": "05ff3d5e",[m
+[32m+[m[32m   "metadata": {},[m
+[32m+[m[32m   "outputs": [],[m
+[32m+[m[32m   "source": [[m
+[32m+[m[32m    "\n",[m
+     "p_ = assume(Not(r.equals(0)))\n",[m
+     "p1 = assume( z.is_in(Reals) )\n",[m
+[31m-    "p2 = assume((r + z).equals(r))\n"[m
+[32m+[m[32m    "p2 = assume((r + z).equals(r))"[m
+    ][m
+   },[m
+   {[m

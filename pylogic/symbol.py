@@ -35,9 +35,15 @@ class Symbol:
     is_atomic = True
 
     def __init__(self, *args, **kwargs) -> None:
+        """
+        Represents a symbolic object. Can be a Variable or a Constant.
+        """
+        from pylogic.assumptions_context import assumptions_contexts
+        from pylogic.helpers import _add_assumption_attributes, _add_assumptions
+
         assert isinstance(args[0], str), "The first argument must be a string"
         self.knowledge_base: set[Proposition] = set()
-        self.name: str = args[0]
+        self.name: str = str(args[0])
         self._is_real: bool = kwargs.get("real", None)
         self._is_rational: bool = kwargs.get("rational", None)
         self._is_integer: bool = kwargs.get("integer", None)
@@ -55,46 +61,8 @@ class Symbol:
         self._is_nonpositive: bool | None = kwargs.get("nonpositive", None)
         self._is_nonnegative: bool | None = kwargs.get("nonnegative", None)
         self._is_even: bool | None = kwargs.get("even", None)
-        if self._is_zero or self._is_nonpositive or self._is_nonnegative:
-            if self._is_real in [None, True]:
-                self._is_real = True
-            else:
-                raise ValueError(
-                    "Contradictory assumptions: A number cannot be both non-real and zero/nonpositive/nonnegative"
-                )
-        if self._is_even:
-            if self._is_integer in [None, True]:
-                self._is_integer = True
-            else:
-                raise ValueError(
-                    "Contradictory assumptions: A number cannot be both non-integer and even"
-                )
-        if kwargs.get("positive", None):
-            self._is_real = True
-            self._is_nonnegative = True
-            if self._is_zero in [None, False]:
-                self._is_zero = False
-            else:
-                raise ValueError(
-                    "Contradictory assumptions: A positive number cannot be zero"
-                )
-        if kwargs.get("negative", None):
-            self._is_real = True
-            self._is_nonpositive = True
-            if self._is_zero in [None, False]:
-                self._is_zero = False
-            else:
-                raise ValueError(
-                    "Contradictory assumptions: A negative number cannot be zero"
-                )
-        if kwargs.get("odd", None):
-            self._is_integer = True
-            if self._is_even in [None, False]:
-                self._is_even = False
-            else:
-                raise ValueError(
-                    "Contradictory assumptions: An odd number cannot be even"
-                )
+
+        _add_assumption_attributes(self, kwargs)
 
         self._init_args = args
         self._init_kwargs = kwargs
@@ -124,101 +92,10 @@ class Symbol:
             "even",
         ]:
             if getattr(self, f"_is_{attr}") is not None:
-                self._add_assumptions(attr, getattr(self, f"_is_{attr}"))
-
-    def _add_assumptions(self, attr: str, value: bool):
-        # TODO: needs to be tested properly, somewhat hacky but
-        # the most straightforward way to add assumptions on Symbols
-        # due to cyclic dependencies
-
-        import importlib
-
-        from pylogic.assumptions_context import assumptions_contexts
-        from pylogic.inference import Inference
-        from pylogic.proposition.not_ import Not
-        from pylogic.proposition.relation.contains import IsContainedIn
-
-        set_modules = {
-            "real": "pylogic.theories.real_analysis",
-            "rational": "pylogic.theories.rational_numbers",
-            "integer": "pylogic.theories.integers",
-            "natural": "pylogic.theories.natural_numbers",
-        }
-        set_names = {
-            "real": "Reals",
-            "rational": "Rationals",
-            "integer": "Integers",
-            "natural": "Naturals",
-        }
-
-        if attr in set_modules:
-            mod = importlib.import_module(set_modules[attr])
-            mod_set = getattr(mod, set_names[attr])
-            positive_prop = IsContainedIn(
-                self,
-                mod_set,
-                _is_proven=True,
-                _assumptions=set(),
-                _inference=Inference(None, rule="by_definition"),
-            )
-        elif attr == "zero":
-            from pylogic.proposition.relation.equals import Equals
-
-            positive_prop = Equals(
-                self,
-                0,
-                _is_proven=True,
-                _assumptions=set(),
-                _inference=Inference(None, rule="by_definition"),
-            )
-        elif attr == "nonpositive":
-            from pylogic.proposition.ordering.lessorequal import LessOrEqual
-
-            positive_prop = LessOrEqual(
-                self,
-                0,
-                _is_proven=True,
-                _assumptions=set(),
-                _inference=Inference(None, rule="by_definition"),
-            )
-        elif attr == "nonnegative":
-            from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
-
-            positive_prop = GreaterOrEqual(
-                self,
-                0,
-                _is_proven=True,
-                _assumptions=set(),
-                _inference=Inference(None, rule="by_definition"),
-            )
-        elif attr == "even":
-            # TODO: change to Integers where appropriate
-            from pylogic.theories.natural_numbers import Naturals
-
-            # if self._is_natural is True: ... # use Naturals.even
-            # else: ... # use Integers.even
-
-            positive_prop = Naturals.even(
-                self,
-                _is_proven=True,
-                _assumptions=set(),
-                _inference=Inference(None, rule="by_definition"),
-            )
-
-        if value:
-            prop = positive_prop
-        else:
-            positive_prop._set_is_proven(False)
-            positive_prop.deduced_from = None
-            prop = Not(
-                positive_prop,
-                _is_proven=True,
-                _assumptions=set(),
-                _inference=Inference(None, rule="by_definition"),
-            )
-        self.knowledge_base.add(prop)
-        if assumptions_contexts[-1] is not None:
-            assumptions_contexts[-1].assumptions.append(prop)
+                prop = _add_assumptions(self, attr, getattr(self, f"_is_{attr}"))
+                self.knowledge_base.add(prop)
+                if assumptions_contexts[-1] is not None:
+                    assumptions_contexts[-1].assumptions.append(prop)
 
     @property
     def is_natural(self) -> bool | None:
@@ -439,7 +316,7 @@ class Symbol:
 
         return PylSympySymbol(
             *self._init_args,
-            _pyl_class=self.__class__.__name__,
+            _pyl_class=self.__class__,
             _pyl_init_args=self._init_args,
             _pyl_init_kwargs=self._init_kwargs,
             **self._init_kwargs,

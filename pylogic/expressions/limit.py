@@ -81,10 +81,22 @@ class Limit(Expr):
         self.knowledge_base.add(self.epsilon_N_definition)
 
     def evaluate(self) -> Limit | Constant:
+        n = Variable("n")
+        n_sympy = n.to_sympy()
+        if self.sequence.nth_term is not None:
+            return sp.limit(self.sequence.nth_term(n).to_sympy(), n_sympy, sp.oo)
         return self
 
-    def to_sympy(self) -> sp.Basic:
-        raise NotImplementedError
+    def to_sympy(self) -> sp.Expr:
+        from pylogic.sympy_helpers import PylSympyExpr
+
+        return PylSympyExpr(
+            "Limit",
+            self.sequence.to_sympy(),
+            _pyl_class=self.__class__,
+            _pyl_init_args=self._init_args,
+            _pyl_init_kwargs=self._init_kwargs,
+        )
 
     def _latex(self) -> str:
         return f"\\lim {self.sequence}"

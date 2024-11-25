@@ -8,6 +8,8 @@ from pylogic import Term
 from pylogic.expressions.expr import Expr, to_sympy
 
 if TYPE_CHECKING:
+    from sympy.core.function import UndefinedFunction
+
     from pylogic.proposition.proposition import Proposition
     from pylogic.structures.collection import Class
     from pylogic.structures.set_ import Set
@@ -38,17 +40,21 @@ T = TypeVar("T", bound=Term)
 
 class SelfFunc(Expr):
     def __init__(self, *args: Term) -> None:
-        self.args = args
-        self.name: str | None = None  # to be modified by local context
         super().__init__(*args)
+        self.name: str | None = None  # to be modified by local context
 
     def evaluate(self) -> Self:
         return self
 
-    def to_sympy(self) -> sp.Basic:
-        # TODO: fix this to enable conversion back
-        name = self.name or "self"
-        return sp.Function(name)(*[to_sympy(arg) for arg in self.args])
+    def to_sympy(self) -> UndefinedFunction:
+        from pylogic.sympy_helpers import PylSympyFunction
+
+        return PylSympyFunction(
+            "SelfFunc",
+            _pyl_class=self.__class__,
+            _pyl_init_args=self._init_args,
+            _pyl_init_kwargs=self._init_kwargs,
+        )
 
     def _latex(self) -> str:
         name = self.name or "self"
@@ -121,6 +127,8 @@ class Function(Expr):
         )
         from pylogic.variable import Variable
 
+        super().__init__(self.domain, self.codomain)
+
         self.name = name
         self.codomain: Set | Variable | Class = codomain or get_universe()
         self.definition: Expr | None = None
@@ -161,7 +169,6 @@ class Function(Expr):
                     self.domain = FiniteCartesProduct(sets=individual_sets).evaluate()
         else:
             self.domain = get_universe()
-        super().__init__(self.domain, self.codomain)
 
         # construct the proposition forall(x, f(x) in codomain)
         if self.codomain != UniversalSet:
@@ -262,9 +269,15 @@ class Function(Expr):
     def evaluate(self) -> Self:
         return self
 
-    def to_sympy(self) -> sp.Function:
-        # TODO: fix this to enable conversion back
-        return sp.Function(self.name)
+    def to_sympy(self) -> UndefinedFunction:
+        from pylogic.sympy_helpers import PylSympyFunction
+
+        return PylSympyFunction(
+            self.name,
+            _pyl_class=self.__class__,
+            _pyl_init_args=self._init_args,
+            _pyl_init_kwargs=self._init_kwargs,
+        )
 
     def _latex(self) -> str:
         return rf"{self.name}: {self.domain._latex()} \to {self.codomain._latex()}"
@@ -449,12 +462,7 @@ class CalledFunction(Expr):
         return res
 
     def to_sympy(self) -> sp.Basic:
-        if self.function.definition is None:
-            return self.function.to_sympy()(*[arg.to_sympy() for arg in self.arguments])  # type: ignore
-
-        # could recurse forever if replace gives the same CalledFunction
-        return self.function.definition.replace(self.replace_dict).to_sympy()
-        # TODO: fix and test this to enable conversion back if needed
+        return self.function.to_sympy()(*[arg.to_sympy() for arg in self.arguments])  # type: ignore
 
     def _latex(self) -> str:
         return rf"{self.function.name}\left({', '.join(arg._latex() for arg in self.arguments)}\right)"
@@ -476,3 +484,6 @@ class CalledFunction(Expr):
                 *self.arguments,
             )
         )
+
+
+self = SelfFunc()

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Generic, TypeVar, TypeVarTuple
 
 import sympy as sp
+from sympy.functions.elementary.piecewise import ExprCondPair
 
 from pylogic import Term
 from pylogic.expressions.expr import Expr
@@ -25,9 +26,8 @@ class PiecewiseExpr(Expr, Generic[*Ps]):
     # Custom_Expr Piecewise Relation(eg <, subset)
     _precedence = 11
 
-    def __init__(
-        self, *branches: *Ps, otherwise: Expr | None = None, name: str | None = None
-    ) -> None:
+    def __init__(self, *branches: *Ps, otherwise: Expr | None = None) -> None:
+        from pylogic.helpers import ternary_and
         from pylogic.proposition.and_ import And
         from pylogic.proposition.exor import ExOr
         from pylogic.proposition.not_ import neg
@@ -35,7 +35,6 @@ class PiecewiseExpr(Expr, Generic[*Ps]):
 
         self.branches = None  # type: ignore
 
-        self.name = name
         super().__init__(*branches)  # type: ignore
         self.otherwise_branch: OtherwiseBranch | None = None
         for branch in branches:
@@ -68,8 +67,24 @@ class PiecewiseExpr(Expr, Generic[*Ps]):
         self.knowledge_base.update({exor, disj})
         if self.branches is None:
             self.branches: tuple[*Ps] = branches
+
+        self.is_real = ternary_and(*[branch.is_real for branch in self.branches])
+        self.is_rational = ternary_and(
+            *[branch.is_rational for branch in self.branches]
+        )
+        self.is_integer = ternary_and(*[branch.is_integer for branch in self.branches])
+        self.is_natural = ternary_and(*[branch.is_natural for branch in self.branches])
+        self.is_zero = ternary_and(*[branch.is_zero for branch in self.branches])
+        self.is_nonpositive = ternary_and(
+            *[branch.is_nonpositive for branch in self.branches]
+        )
+        self.is_nonnegative = ternary_and(
+            *[branch.is_nonnegative for branch in self.branches]
+        )
+        self.is_even = ternary_and(*[branch.is_even for branch in self.branches])
+
         self._init_args = branches
-        self._init_kwargs = {"otherwise": otherwise, "name": name}
+        self._init_kwargs = {"otherwise": otherwise}
 
     def evaluate(self, knowledge_base: set[Proposition] | None = None) -> Term:
         """
@@ -105,12 +120,7 @@ class PiecewiseExpr(Expr, Generic[*Ps]):
 
     def to_sympy(self) -> sp.Basic:
         # TODO: add from_sympy Piecewise
-        return sp.Piecewise(
-            *[
-                (branch.then.to_sympy(), branch.condition.to_sympy())
-                for branch in self.branches
-            ]
-        )
+        return sp.Piecewise(*[branch.to_sympy() for branch in self.branches])
 
     def _latex(self) -> str:
         start = r"\begin{cases}"
@@ -136,6 +146,15 @@ class PiecewiseBranch(Expr, Generic[P]):
         super().__init__(condition, then)
         self.condition: P = condition
         self.then: Term = then
+        self._is_real = then.is_real
+        self._is_rational = then.is_rational
+        self._is_integer = then.is_integer
+        self._is_natural = then.is_natural
+        self._is_zero = then.is_zero
+        self._is_nonpositive = then.is_nonpositive
+        self._is_nonnegative = then.is_nonnegative
+        self._is_even = then.is_even
+
         self._init_args = (condition, then)
         self._init_kwargs = {}
 
@@ -143,10 +162,7 @@ class PiecewiseBranch(Expr, Generic[P]):
         return self
 
     def to_sympy(self) -> sp.Basic:
-        # TODO: add from sympy PiecewiseBranch
-        return sp.functions.elementary.piecewise.ExprCondPair(
-            self.then.to_sympy(), self.condition.to_sympy()
-        )
+        return ExprCondPair(self.then.to_sympy(), self.condition.to_sympy())
 
     def _latex(self) -> str:
         return (
@@ -159,16 +175,25 @@ class PiecewiseBranch(Expr, Generic[P]):
 
 class OtherwiseBranch(Expr):
     def __init__(self, then: Term) -> None:
-        self.then: Term = then
         super().__init__(then)
+        self.then: Term = then
+        self._is_real = then.is_real
+        self._is_rational = then.is_rational
+        self._is_integer = then.is_integer
+        self._is_natural = then.is_natural
+        self._is_zero = then.is_zero
+        self._is_nonpositive = then.is_nonpositive
+        self._is_nonnegative = then.is_nonnegative
+        self._is_even = then.is_even
+
         self._init_args = (then,)
         self._init_kwargs = {}
 
     def evaluate(self) -> Term:
         return self
 
-    def to_sympy(self) -> sp.Basic:
-        sp.functions.elementary.piecewise.ExprCondPair(self.then.to_sympy(), True)
+    def to_sympy(self) -> ExprCondPair:
+        return ExprCondPair(self.then.to_sympy(), True)
 
     def _latex(self) -> str:
         return rf"\text{{otherwise}} {self.then._latex()}"

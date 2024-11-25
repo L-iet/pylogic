@@ -6,6 +6,8 @@ from pylogic import Term
 from pylogic.expressions.expr import Expr
 
 if TYPE_CHECKING:
+    import sympy as sp
+
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.structures.sequence import Sequence
     from pylogic.sympy_helpers import PylSympySymbol
@@ -37,6 +39,15 @@ class SequenceTerm(Expr, Generic[T]):
         self.is_set = None
         self.is_set_ = None
         self.is_union: bool | None = None
+
+        self._is_real = self.sequence.is_real
+        self._is_rational = self.sequence.is_rational
+        self._is_integer = self.sequence.is_integer
+        self._is_natural = self.sequence.is_natural
+        self._is_zero = self.sequence.is_zero
+        self._is_even = self.sequence.is_even
+        self._is_nonnegative = self.sequence.is_nonnegative
+        self._is_nonpositive = self.sequence.is_nonpositive
 
     def predicate(self, term: Term) -> IsContainedIn:
         """
@@ -83,15 +94,16 @@ class SequenceTerm(Expr, Generic[T]):
 
         return SequenceTerm(self.sequence, indx)
 
-    def to_sympy(self) -> PylSympySymbol:
-        from pylogic.sympy_helpers import PylSympySymbol
+    def to_sympy(self) -> sp.Expr:
+        from pylogic.sympy_helpers import PylSympyExpr
 
-        return PylSympySymbol(
-            *self._init_args,
-            _pyl_class=self.__class__.__name__,
+        return PylSympyExpr(
+            "SequenceTerm",
+            self.sequence.to_sympy(),
+            self.index.to_sympy(),
+            _pyl_class=self.__class__,
             _pyl_init_args=self._init_args,
             _pyl_init_kwargs=self._init_kwargs,
-            **self._init_kwargs,
         )
 
     def _latex(self) -> str:

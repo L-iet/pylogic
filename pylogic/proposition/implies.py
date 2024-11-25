@@ -10,6 +10,8 @@ from pylogic.proposition.not_ import neg
 from pylogic.proposition.proposition import Proposition, get_assumptions
 
 if TYPE_CHECKING:
+    from sympy.logic.boolalg import Implies as SpImplies
+
     from pylogic.proposition.and_ import And
     from pylogic.proposition.or_ import Or
     from pylogic.structures.class_ import Class
@@ -366,3 +368,8 @@ Occured when trying to unify `{self}` and `{other}`"
             lambda p: p.has_as_subproposition(other), [self.antecedent, self.consequent]
         )
         return first_other_occurs_in is not None
+
+    def to_sympy(self) -> SpImplies:
+        from sympy.logic.boolalg import Implies as SpImplies
+
+        return SpImplies(self.antecedent.to_sympy(), self.consequent.to_sympy())

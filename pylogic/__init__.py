@@ -23,9 +23,9 @@ if TYPE_CHECKING:
     from pylogic.variable import Variable
 
     PythonNumeric = Fraction | int | float | complex | Decimal
-    PBasic = Symbol | PythonNumeric
+    PBasic = Symbol | Sequence | Set
     Unevaluated = Symbol | Sequence | Set | Expr
-    Term = Unevaluated | PythonNumeric
+    Term = Unevaluated
     Unification = dict[Variable, Term]
 else:
     Term = Any

@@ -7,6 +7,8 @@ from pylogic.proposition._junction import _Junction
 from pylogic.proposition.proposition import Proposition, get_assumptions
 
 if TYPE_CHECKING:
+    from sympy.logic.boolalg import And as SpAnd
+
     from pylogic.proposition.exor import ExOr
     from pylogic.proposition.implies import Implies
     from pylogic.proposition.not_ import Not
@@ -194,3 +196,8 @@ class And(_Junction[*Ps]):
             _assumptions=self.from_assumptions,
             _inference=Inference(self, rule="to_exor"),
         )
+
+    def to_sympy(self) -> SpAnd:
+        from sympy.logic.boolalg import And as SpAnd
+
+        return SpAnd(*[p.to_sympy() for p in self.propositions])

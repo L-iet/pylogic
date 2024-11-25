@@ -170,3 +170,6 @@ class Constant(Symbol, Generic[T]):
 
 def Rational(numerator: int, denominator: int) -> Constant[Fraction]:
     return Constant(Fraction(numerator, denominator))
+
+
+oo = Infinity = Constant(float("inf"))

@@ -7,7 +7,8 @@ from pylogic.proposition._junction import _Junction
 from pylogic.proposition.proposition import Proposition, get_assumptions
 
 if TYPE_CHECKING:
-    pass
+    from sympy.logic.boolalg import Or as SpOr
+
 
 Ps = TypeVarTuple("Ps")
 InferenceRule = TypedDict("InferenceRule", {"name": str, "arguments": list[str]})
@@ -112,3 +113,8 @@ class Or(_Junction[*Ps]):
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="de_morgan"),
         )
+
+    def to_sympy(self) -> SpOr:
+        from sympy.logic.boolalg import Or as SpOr
+
+        return SpOr(*[p.to_sympy() for p in self.propositions])

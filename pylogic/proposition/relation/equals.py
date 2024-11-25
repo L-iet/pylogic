@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Self, TypeVar
+from typing import TYPE_CHECKING, Callable, Self, TypeVar
 
 from sympy import Basic, Integer
 
@@ -11,6 +11,9 @@ from pylogic.helpers import Side
 from pylogic.inference import Inference
 from pylogic.proposition.proposition import Proposition, get_assumptions
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
+
+if TYPE_CHECKING:
+    from sympy.core.relational import Equality
 
 T = TypeVar("T", bound=Term)
 U = TypeVar("U", bound=Term)
@@ -73,14 +76,10 @@ class Equals(BinaryRelation[T, U]):
         if self.left == self.right:
             proven = True
         elif isinstance(self.get(_checking_side), (Basic, Expr)):
-            try:
-                if self.get(_checking_side).equals(self.get(other_side)):  # type: ignore
-                    proven = True
-                elif self.get(_checking_side) == self.get(other_side):  # type: ignore
-                    proven = True
-            except ValueError:  # TODO: Basic.equals sometimes raises ValueError
-                if _doit_results[_checking_side] == _doit_results[other_side]:
-                    proven = True
+            if self.get(_checking_side) == self.get(other_side):  # type: ignore
+                proven = True
+            elif _doit_results[_checking_side] == _doit_results[other_side]:
+                proven = True
 
         return proven
 
@@ -204,3 +203,8 @@ class Equals(BinaryRelation[T, U]):
 
     def symmetric(self) -> Equals[U, T]:
         return super().symmetric()  # type: ignore
+
+    def to_sympy(self) -> Equality:
+        from sympy import Eq
+
+        return Eq(self.left.to_sympy(), self.right.to_sympy())

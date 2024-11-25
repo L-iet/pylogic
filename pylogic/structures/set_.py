@@ -208,11 +208,9 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
             return False
 
     def eval_same(self, other: object) -> bool:
-        if isinstance(other, sp.Set):
-            return self.sympy_set == other
-        elif not isinstance(other, Set):
-            return False
-        return self.sympy_set == other.sympy_set
+        if isinstance(other, Set):
+            return self.evaluate() == other.evaluate()
+        return self.evaluate() == other
 
     def __eq__(self, other: Set) -> bool:
         """
@@ -224,6 +222,8 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
         return self.name == other.name
 
     def __contains__(self, item: Any) -> bool:
+        from pylogic.enviroment_settings.settings import settings
+
         if settings["PYTHON_OPS_RETURN_PROPS"]:
             return self.contains(item)
         return self.containment_function(item)
@@ -281,7 +281,14 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
         return self
 
     def to_sympy(self) -> sp.Set:
-        return self.sympy_set
+        from pylogic.sympy_helpers import PylSympySet
+
+        return PylSympySet(
+            self.name,
+            _pyl_class=self.__class__,
+            _pyl_init_args=self._init_args,
+            _pyl_init_kwargs=self._init_kwargs,
+        )
 
     def containment_function(self, x: Term) -> bool:
         if x in self.elements:

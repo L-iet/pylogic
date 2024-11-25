@@ -1,17 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from sympy.concrete.products import Product
+from sympy.core.mul import Mul
 
-from pylogic.expressions.expr import Expr
-
-if TYPE_CHECKING:
-    import sympy as sp
-
-    from pylogic.constant import Constant
-    from pylogic.structures.sequence import Sequence
+from pylogic.expressions.sum import _Aggregate
+from pylogic.structures.sequence import Sequence
 
 
-class Prod(Expr):
+class Prod(_Aggregate):
     """
     Represents a product of a sequence of non-set terms.
     For products of sets, see pylogic.structures.set_.CartesProduct
@@ -24,15 +20,28 @@ class Prod(Expr):
     _is_wrapped = True
 
     def __init__(self, sequence: Sequence) -> None:
-        self.sequence = sequence
+        from pylogic.helpers import ternary_and, ternary_or
+        from pylogic.structures.sequence import FiniteSequence
+
         super().__init__(sequence)
+        self._is_nonnegative = ternary_or(
+            sequence.is_nonnegative,
+            ternary_and(
+                isinstance(self.sequence, FiniteSequence),
+                True if self.sequence.length is not None else None,
+                self.sequence.length.is_even,
+                sequence.is_nonpositive,
+            ),
+        )
+        self._is_nonpositive = ternary_and(
+            isinstance(self.sequence, FiniteSequence),
+            True if self.sequence.length is not None else None,
+            self.sequence.length.is_odd,
+            sequence.is_nonpositive,
+        )
 
-    def evaluate(self) -> Prod | Constant:
-        # TODO
-        return self
-
-    def to_sympy(self) -> sp.Basic:
-        raise NotImplementedError
+    def to_sympy(self) -> Product | Mul:
+        return super().to_sympy(_finite_class=Mul, _infinite_class=Product)  # type: ignore
 
     def _latex(self) -> str:
         return rf"\prod {self.sequence._latex()}"

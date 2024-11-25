@@ -16,6 +16,8 @@ from pylogic.enviroment_settings.settings import settings
 from pylogic.proposition.proposition import Proposition, get_assumptions
 
 if TYPE_CHECKING:
+    from sympy.logic.boolalg import Not as SpNot
+
     from pylogic.proposition.implies import Implies
     from pylogic.proposition.relation.binaryrelation import BinaryRelation
 
@@ -339,3 +341,8 @@ Occured when trying to unify `{self}` and `{other}`"
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="symmetric"),
         )
+
+    def to_sympy(self) -> SpNot:
+        from sympy.logic.boolalg import Not as SpNot
+
+        return SpNot(self.negated.to_sympy())

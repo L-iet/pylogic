@@ -15,7 +15,7 @@ from typing import (
 
 import sympy as sp
 
-from pylogic import PBasic, Term, Unification
+from pylogic import PBasic, PythonNumeric, Term, Unification
 from pylogic.enviroment_settings.settings import settings
 
 if TYPE_CHECKING:
@@ -32,7 +32,6 @@ if TYPE_CHECKING:
     from pylogic.structures.sequence import Sequence
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
-    from pylogic.sympy_helpers import PylSympySymbol
     from pylogic.variable import Variable
 else:
     Symbol = Any
@@ -44,7 +43,9 @@ class Expr(ABC):
     _is_wrapped = False
 
     def __init__(
-        self, *args: Proposition | PBasic | Set | Sequence | Expr, **kwargs: Any
+        self,
+        *args: Proposition | PBasic | PythonNumeric | Set | Sequence | Expr,
+        **kwargs: Any,
     ):
         from pylogic.helpers import python_to_pylogic
 
@@ -54,14 +55,47 @@ class Expr(ABC):
         self._init_args = args
         self._init_kwargs = kwargs
         self.knowledge_base: set[Proposition] = set()
-        self.is_real: bool | None = None
-        self.is_rational: bool | None = None
-        self.is_integer: bool | None = None
-        self.is_natural: bool | None = None
-        self.is_zero: bool | None = None
-        self.is_nonpositive: bool | None = None
-        self.is_nonnegative: bool | None = None
-        self.is_even: bool | None = None
+
+        self._is_real: bool | None = None
+        self._is_rational: bool | None = None
+        self._is_integer: bool | None = None
+        self._is_natural: bool | None = None
+        self._is_zero: bool | None = None
+        self._is_nonpositive: bool | None = None
+        self._is_nonnegative: bool | None = None
+        self._is_even: bool | None = None
+
+    @property
+    def is_real(self) -> bool | None:
+        return self._is_real
+
+    @property
+    def is_rational(self) -> bool | None:
+        return self._is_rational
+
+    @property
+    def is_integer(self) -> bool | None:
+        return self._is_integer
+
+    @property
+    def is_natural(self) -> bool | None:
+        return self._is_natural
+
+    @property
+    def is_zero(self) -> bool | None:
+        return self._is_zero
+
+    @property
+    def is_nonpositive(self) -> bool | None:
+        return self._is_nonpositive
+
+    @property
+    def is_nonnegative(self) -> bool | None:
+        return self._is_nonnegative
+
+    @property
+    def is_even(self) -> bool | None:
+        return self._is_even
 
     @property
     def is_positive(self) -> bool | None:
@@ -135,7 +169,10 @@ class Expr(ABC):
         return self.symbols.union(self.sets).union(self.class_ns)
 
     @abstractmethod
-    def evaluate(self) -> Expr:
+    def evaluate(self, **kwargs) -> Expr:
+        """Evaluate the expression.
+        Keyword arguments are used for passing additional information to the evaluation function.
+        """
         pass
 
     @abstractmethod
@@ -351,7 +388,7 @@ class CustomExpr(Expr, Generic[U]):
     def __init__(
         self,
         name: str,
-        *args: PBasic | Expr,
+        *args: Proposition | PBasic | PythonNumeric | Expr,
         eval_func: Callable[..., U | None] | None = None,
         latex_func: Callable[..., str] | None = None,
     ):
@@ -379,9 +416,18 @@ class CustomExpr(Expr, Generic[U]):
         return NotImplemented
 
     def to_sympy(self) -> sp.Expr:
-        return sp.Expr(*[to_sympy(arg) for arg in self.args])
+        from pylogic.sympy_helpers import PylSympyExpr
 
-    def evaluate(self) -> Self | U:
+        new_args = [to_sympy(arg) for arg in self.args]
+        return PylSympyExpr(
+            self.name,
+            *new_args,
+            _pyl_class=self.__class__,
+            _pyl_init_args=self._init_args,
+            _pyl_init_kwargs=self._init_kwargs,
+        )
+
+    def evaluate(self, **kwargs) -> Self | U:
         """
         Calls the evaluation function with the arguments.
         """
@@ -432,8 +478,8 @@ class BinaryExpression(CustomExpr[U]):
         self,
         name: str,
         symbol: str,
-        left: PBasic | Expr,
-        right: PBasic | Expr,
+        left: PBasic | PythonNumeric | Expr,
+        right: PBasic | PythonNumeric | Expr,
         eval_func: Callable[[U, U], U | None] | None = None,
         latex_func: Callable[[str, str], str] | None = None,
     ):
@@ -459,7 +505,7 @@ class Add(Expr):
     # Custom_Expr Piecewise Relation(eg <, subset)
     _precedence = 8
 
-    def __init__(self, *args: Expr | PBasic):
+    def __init__(self, *args: Expr | PBasic | PythonNumeric):
         from pylogic.helpers import ternary_or
 
         super().__init__(*args)
@@ -501,28 +547,36 @@ class Add(Expr):
                 exists_positive = True
             if arg.is_negative:
                 exists_negative = True
-        self.is_real = ternary_or(all_real, None)
-        self.is_rational = ternary_or(all_rational, None)
-        self.is_integer = ternary_or(all_integer, None)
-        self.is_natural = ternary_or(all_natural, None)
-        self.is_nonnegative = ternary_or(all_nonnegative, None)
-        self.is_zero = ternary_or(all_zero, None)
-        self.is_nonpositive = ternary_or(all_nonpositive, None)
-        self.is_even = ternary_or(all_even, None)
+        self._is_real = ternary_or(all_real, None)
+        self._is_rational = ternary_or(all_rational, None)
+        self._is_integer = ternary_or(all_integer, None)
+        self._is_natural = ternary_or(all_natural, None)
+        self._is_nonnegative = ternary_or(all_nonnegative, None)
+        self._is_zero = ternary_or(all_zero, None)
+        self._is_nonpositive = ternary_or(all_nonpositive, None)
+        self._is_even = ternary_or(all_even, None)
 
         if all_nonnegative and exists_positive:
-            self.is_zero = False
+            self._is_zero = False
         if all_nonpositive and exists_negative:
-            self.is_zero = False
+            self._is_zero = False
         if count_odd % 2 == 0 and count_even == total_args - count_odd:
-            self.is_even = True
+            self._is_even = True
         elif count_odd % 2 == 1 and count_even == total_args - count_odd:
-            self.is_even = False
+            self._is_even = False
 
-    def evaluate(self) -> Add:
-        from pylogic.sympy_helpers import sympy_to_pylogic
+    def evaluate(self, **kwargs) -> Add:
+        from pylogic.sympy_helpers import FromSympyError, sympy_to_pylogic
 
-        return sympy_to_pylogic(self.to_sympy())
+        # we are only sure that reals commute under addition
+        # sympy mixes things around
+        if all(arg.is_real for arg in self.args):
+            new_add = Add(*[arg.evaluate(**kwargs) for arg in self.args])
+            try:
+                return sympy_to_pylogic(new_add.to_sympy())
+            except FromSympyError:
+                return new_add
+        return self
 
     def to_sympy(self) -> sp.Add:
         return sp.Add(*[to_sympy(arg) for arg in self.args])
@@ -554,7 +608,7 @@ class Mul(Expr):
     # Custom_Expr Piecewise Relation(eg <, subset)
     _precedence = 6
 
-    def __init__(self, *args: PBasic | Expr):
+    def __init__(self, *args: PBasic | Expr | PythonNumeric):
         from pylogic.helpers import ternary_or
 
         super().__init__(*args)
@@ -594,33 +648,40 @@ class Mul(Expr):
                 count_nonnegative += 1
 
         if all_real:
-            self.is_real = True
+            self._is_real = True
             if exists_zero:
-                self.is_zero = True
+                self._is_zero = True
             elif all_nonzero:
-                self.is_zero = False
-        self.is_rational = ternary_or(all_rational, None)
-        self.is_integer = ternary_or(all_integer, None)
-        self.is_natural = ternary_or(all_natural, None)
+                self._is_zero = False
+        self._is_rational = ternary_or(all_rational, None)
+        self._is_integer = ternary_or(all_integer, None)
+        self._is_natural = ternary_or(all_natural, None)
         if (
             count_nonpositive % 2 == 0
             and count_nonnegative == total_args - count_nonpositive
         ):
-            self.is_nonnegative = True
+            self._is_nonnegative = True
         if (
             count_nonpositive % 2 == 1
             and count_nonnegative == total_args - count_nonpositive
         ):
-            self.is_nonpositive = True
+            self._is_nonpositive = True
         if count_even > 0 and count_even + count_odd == total_args:
-            self.is_even = True
+            self._is_even = True
         if count_odd == total_args:
-            self.is_even = False
+            self._is_even = False
 
     def evaluate(self) -> Mul:
-        from pylogic.sympy_helpers import sympy_to_pylogic
+        from pylogic.sympy_helpers import FromSympyError, sympy_to_pylogic
 
-        return sympy_to_pylogic(self.to_sympy())
+        # see Add.evaluate
+        if all(arg.is_real for arg in self.args):
+            new_mul = Mul(*[arg.evaluate() for arg in self.args])
+            try:
+                return sympy_to_pylogic(new_mul.to_sympy())
+            except FromSympyError:
+                return new_mul
+        return self
 
     def to_sympy(self) -> sp.Mul:
         return sp.Mul(*[to_sympy(arg) for arg in self.args])
@@ -682,47 +743,56 @@ class Pow(Expr):
     # Custom_Expr Piecewise Relation(eg <, subset)
     _precedence = 4
 
-    def __init__(self, base: PBasic | Expr, exp: PBasic | Expr):
+    def __init__(
+        self, base: PBasic | PythonNumeric | Expr, exp: PBasic | PythonNumeric | Expr
+    ):
         super().__init__(base, exp)
         self.base = self.args[0]
         self.exp = self.args[1]
 
         if self.base.is_zero and self.exp.is_positive:
-            self.is_zero = True
+            self._is_zero = True
         if self.base.is_nonnegative and self.exp.is_nonnegative:
-            self.is_nonnegative = True
+            self._is_nonnegative = True
         if self.base.is_positive and (self.exp.is_even is False):
-            self.is_zero = False
-            self.is_nonnegative = True
+            self._is_zero = False
+            self._is_nonnegative = True
         if self.base.is_nonpositive and self.exp.is_even:
-            self.is_nonnegative = True
+            self._is_nonnegative = True
         if self.base.is_negative and (self.exp.is_even is False):
-            self.is_zero = False
-            self.is_nonpositive = True
+            self._is_zero = False
+            self._is_nonpositive = True
 
         if self.base.is_real and self.exp.is_positive:
-            self.is_real = True
+            self._is_real = True
 
         if self.base.is_zero is False:
             if self.exp.is_even:
-                self.is_zero = False
-                self.is_nonnegative = True
+                self._is_zero = False
+                self._is_nonnegative = True
 
             if self.base.is_real and self.exp.is_integer:
-                self.is_real = True
+                self._is_real = True
             if self.base.is_integer and self.exp.is_even:
-                self.is_natural = True
+                self._is_natural = True
             if self.base.is_integer and self.exp.is_natural:
-                self.is_integer = True
+                self._is_integer = True
             if self.base.is_rational and self.exp.is_integer:
-                self.is_rational = True
+                self._is_rational = True
             if self.base.is_natural and self.exp.is_natural:
-                self.is_natural = True
+                self._is_natural = True
 
     def evaluate(self) -> Pow:
-        from pylogic.sympy_helpers import sympy_to_pylogic
+        from pylogic.sympy_helpers import FromSympyError, sympy_to_pylogic
 
-        return sympy_to_pylogic(self.to_sympy())
+        # see Add.evaluate
+        if all(arg.is_real for arg in self.args):
+            new_pow = Pow(*[arg.evaluate() for arg in self.args])
+            try:
+                return sympy_to_pylogic(new_pow.to_sympy())
+            except FromSympyError:
+                return new_pow
+        return self
 
     def to_sympy(self) -> sp.Pow:
         return sp.Pow(to_sympy(self.base), to_sympy(self.exp))
@@ -790,14 +860,13 @@ def to_sympy(expr: Fraction) -> sp.Rational: ...
 @overload
 def to_sympy(expr: Expr) -> sp.Basic: ...
 @overload
-def to_sympy(expr: Symbol) -> PylSympySymbol: ...
+def to_sympy(expr: Symbol) -> sp.Symbol: ...
 @overload
 def to_sympy(expr: Set) -> sp.Set: ...
-def to_sympy(expr: PBasic | Expr | Set) -> sp.Basic:
+def to_sympy(expr: PBasic | PythonNumeric | Expr) -> sp.Basic:
+    from pylogic.structures.sequence import Sequence
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
-
-    # TODO: add sequence and other types
 
     if isinstance(expr, int):
         return sp.Integer(expr)
@@ -805,26 +874,28 @@ def to_sympy(expr: PBasic | Expr | Set) -> sp.Basic:
         return sp.Float(expr)
     if isinstance(expr, Fraction):
         return sp.Rational(expr)
-    if isinstance(expr, (Expr, Symbol, Set)):
+    if expr.__class__.__name__.startswith("Class"):
         return expr.to_sympy()
-    return expr
+    if isinstance(expr, (Expr, Symbol, Set, Sequence)):
+        return expr.to_sympy()
+    return sp.sympify(expr)
 
 
-def sqrt(expr: PBasic | Expr) -> Pow:
+def sqrt(expr: PBasic | PythonNumeric | Expr) -> Pow:
     return Pow(expr, Fraction(1, 2))
 
 
-def mul(*args: PBasic | Expr) -> Mul:
+def mul(*args: PBasic | PythonNumeric | Expr) -> Mul:
     return Mul(*args)
 
 
-def add(*args: PBasic | Expr) -> Add:
+def add(*args: PBasic | PythonNumeric | Expr) -> Add:
     return Add(*args)
 
 
-def sub(a: PBasic | Expr, b: PBasic | Expr) -> Add:
+def sub(a: PBasic | PythonNumeric | Expr, b: PBasic | PythonNumeric | Expr) -> Add:
     return Add(a, -b)
 
 
-def div(a: PBasic | Expr, b: PBasic | Expr) -> Mul:
+def div(a: PBasic | PythonNumeric | Expr, b: PBasic | PythonNumeric | Expr) -> Mul:
     return Mul(a, Pow(b, -1))
