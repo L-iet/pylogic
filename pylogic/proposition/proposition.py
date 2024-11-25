@@ -227,16 +227,20 @@ class Proposition:
         if value:
             self._set_is_inferred(True)
 
-    def todo(self) -> Self:
+    def todo(self, **kwargs) -> Self:
         """
         Mark the proposition as proven, but not yet implemented.
         """
         from pylogic.inference import Inference
+        from pylogic.warn import PylogicInternalWarning
+
+        internal = kwargs.get("_internal", False)
+        warning_cls = PylogicInternalWarning if internal else UserWarning
 
         self.is_todo = True
         warnings.warn(
             f"{self} is marked as TODO",
-            UserWarning,
+            warning_cls,
         )
         self._set_is_proven(True)
         self.from_assumptions = set()
