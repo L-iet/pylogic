@@ -483,7 +483,7 @@ def _add_assumptions(term: Term, attr: str, value: bool) -> Proposition:
     from pylogic.proposition.relation.contains import IsContainedIn
 
     set_modules = {
-        "real": "pylogic.theories.real_analysis",
+        "real": "pylogic.theories.real_numbers",
         "rational": "pylogic.theories.rational_numbers",
         "integer": "pylogic.theories.integers",
         "natural": "pylogic.theories.natural_numbers",

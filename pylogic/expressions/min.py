@@ -23,7 +23,7 @@ class MinElement(Expr):
         from pylogic.proposition.relation.subsets import IsSubsetOf
         from pylogic.structures.set_ import EmptySet, Set
         from pylogic.theories.natural_numbers import Naturals
-        from pylogic.theories.real_analysis import Interval
+        from pylogic.theories.real_numbers import Interval
         from pylogic.variable import Variable
 
         # check if it is an interval of reals closed below

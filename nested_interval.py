@@ -6,7 +6,7 @@ from pylogic.proposition.relation.equals import Equals
 from pylogic.structures.sequence import Sequence
 from pylogic.structures.set_ import EmptySet, Intersection, Set
 from pylogic.theories.natural_numbers import Naturals, one, zero
-from pylogic.theories.real_analysis import Interval, Reals
+from pylogic.theories.real_numbers import Interval, Reals
 from pylogic.variable import Variable
 
 a = Sequence("a")
