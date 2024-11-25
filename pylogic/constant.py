@@ -5,7 +5,7 @@ from fractions import Fraction
 from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar, cast, overload
 
 from pylogic.enviroment_settings.settings import settings
-from pylogic.helpers import is_python_numeric, type_check
+from pylogic.helpers import is_python_numeric, is_python_real_numeric, type_check
 from pylogic.symbol import Symbol
 
 if TYPE_CHECKING:
@@ -37,8 +37,8 @@ class Constant(Symbol, Generic[T]):
         )
         if isinstance(value, Constant):
             value = value.value
-        self.value: T = cast(T, value)
         super().__init__(str(value), *args, **kwargs)
+        self.value: T = cast(T, value)
         # if the constant is created from a proven existential statement
         # it won't be equal to any other constant
         self._from_existential_instance = kwargs.get(
@@ -58,8 +58,21 @@ class Constant(Symbol, Generic[T]):
                     self._is_natural = True
                 else:
                     self._is_natural = False
+            else:
+                self._is_integer = False
         elif isinstance(value, (Decimal, float)):
             self._is_real = True
+        if is_python_real_numeric(value):
+            if value >= 0:
+                self._is_nonnegative = True
+            if value <= 0:
+                self._is_nonpositive = True
+            if value == 0:
+                self._is_zero = True
+            if value % 2 == 0:
+                self._is_even = True
+            else:
+                self._is_even = False
 
     def __eq__(self, other: Any) -> bool:
         """

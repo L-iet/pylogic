@@ -203,6 +203,13 @@ def is_python_numeric(*args: Any) -> bool:
     )
 
 
+def is_python_real_numeric(*args: Any) -> bool:
+    """
+    Check if the arguments are of Python real numeric types.
+    """
+    return all(isinstance(arg, (int, float, Fraction, Decimal)) for arg in args)
+
+
 def is_integer_numeric(*args: Any) -> bool:
     """
     Check if the arguments are of integer numeric types.
