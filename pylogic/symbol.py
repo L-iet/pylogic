@@ -62,6 +62,9 @@ class Symbol:
         self._is_nonnegative: bool | None = kwargs.get("nonnegative", None)
         self._is_even: bool | None = kwargs.get("even", None)
 
+        # for variable sequences
+        self.properties_of_each_term: list[Proposition] = []
+
         _add_assumption_attributes(self, kwargs)
 
         self._init_args = args
@@ -92,7 +95,26 @@ class Symbol:
             "even",
         ]:
             if getattr(self, f"_is_{attr}") is not None:
-                prop = _add_assumptions(self, attr, getattr(self, f"_is_{attr}"))
+                if self.is_sequence:
+                    from pylogic.inference import Inference
+                    from pylogic.proposition.quantified.forall import ForallInSet
+                    from pylogic.theories.natural_numbers import Naturals
+                    from pylogic.variable import Variable
+
+                    n = Variable("n")
+                    self_n = self[n]  # defined for Variable only
+                    prop = _add_assumptions(self_n, attr, getattr(self, f"_is_{attr}"))
+                    prop = ForallInSet(
+                        n,
+                        Naturals,
+                        prop,
+                        _is_proven=True,
+                        _assumptions=set(),
+                        _inference=Inference(None, rule="by_definition"),
+                    )
+                    self.properties_of_each_term.append(prop)
+                else:
+                    prop = _add_assumptions(self, attr, getattr(self, f"_is_{attr}"))
                 self.knowledge_base.add(prop)
                 if assumptions_contexts[-1] is not None:
                     assumptions_contexts[-1].assumptions.append(prop)
