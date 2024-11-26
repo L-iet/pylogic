@@ -24,7 +24,7 @@ class BinaryRelation(Relation, Generic[T, U]):
     is_strongly_connected: bool = False  # forall a, b in S, a R b or b R a
     name: str = "BR"
     infix_symbol: str = "BR"
-    infix_symbol_latex: str = "BR"
+    infix_symbol_latex: str = "BR "
 
     def __init__(
         self,

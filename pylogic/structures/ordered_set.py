@@ -424,7 +424,11 @@ class OrderedSet(Set):
         )
         self.strict_order_definition._set_is_axiom(True)
 
-        a, b, c = Variable("a"), Variable("b"), Variable("c")
+        a, b, c = (
+            Variable("a"),
+            Variable("b"),
+            Variable("c"),
+        )
         a_in_self = a.is_in(self, is_assumption=True)
         b_in_self = b.is_in(self, is_assumption=True)
         c_in_self = c.is_in(self, is_assumption=True)

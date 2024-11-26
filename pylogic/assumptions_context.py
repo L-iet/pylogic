@@ -16,6 +16,17 @@ class AssumptionsContext:
         self.exited = False
         assumptions_contexts.append(self)
 
+    def variable(self, *args, **kwargs) -> Variable:
+        from pylogic.variable import Variable
+
+        return Variable(*args, context=self, **kwargs)
+
+    def var(self, *args, **kwargs) -> Variable:
+        return self.variable(*args, **kwargs)
+
+    def variables(self, *names: str, **kwargs) -> list[Variable]:
+        return [self.variable(name, **kwargs) for name in names]
+
     def _build_proven(self, conclusion: Proposition) -> Proposition:
         """
         Build the proven implication or Forall proposition that is proven by closing
@@ -35,7 +46,8 @@ class AssumptionsContext:
         """
         from pylogic.inference import Inference
         from pylogic.proposition.and_ import And
-        from pylogic.proposition.implies import Implies
+        from pylogic.proposition.contradiction import Contradiction
+        from pylogic.proposition.not_ import neg
         from pylogic.proposition.proposition import Proposition, get_assumptions
         from pylogic.proposition.quantified.forall import Forall, ForallInSet
         from pylogic.proposition.relation.contains import IsContainedIn
@@ -69,10 +81,16 @@ class AssumptionsContext:
                     current_ante.append(self.assumptions[j])  # type: ignore
                     j += 1
                 if len(current_ante) == 1:
-                    cons = current_ante[0].implies(cons)
+                    if isinstance(cons, Contradiction):
+                        cons = neg(current_ante[0])
+                    else:
+                        cons = current_ante[0].implies(cons)
                 else:
                     current_ante.reverse()
-                    cons = And(*current_ante).implies(cons)
+                    if isinstance(cons, Contradiction):
+                        cons = neg(And(*current_ante))
+                    else:
+                        cons = And(*current_ante).implies(cons)
                 current_ante = []
                 i = j
             else:

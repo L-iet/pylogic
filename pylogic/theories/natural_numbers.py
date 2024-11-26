@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from pylogic.expressions.expr import BinaryExpression, Expr
     from pylogic.proposition.ordering.total import StrictTotalOrder, TotalOrder
     from pylogic.proposition.relation.contains import IsContainedIn
+    from pylogic.proposition.relation.divides import Divides
 
     T = TypeVar("T", bound=Term)
     E = TypeVar("E", bound=Expr)
@@ -415,7 +416,9 @@ You may have dangling assumptions whose scopes are not properly closed."
         )
 
     def divides(self, a: Term, b: Term, **kwargs) -> Divides:
-        return Divides(a, b, **kwargs)
+        from pylogic.proposition.relation.divides import Divides
+
+        return Divides(a, b, self, **kwargs)
 
     def prime(self, n: Term, **kwargs) -> Prime:
         return Prime(n, **kwargs)
@@ -503,111 +506,13 @@ Naturals = NaturalsSemiring(
 )
 
 
-class Divides(Proposition):
-    is_atomic = True
-
-    def __init__(
-        self,
-        a: Term,
-        b: Term,
-        is_assumption: bool = False,
-        description: str = "",
-        **kwargs,
-    ) -> None:
-        super().__init__(
-            "NatDivides",
-            is_assumption=is_assumption,
-            description=description,
-            args=[a, b],
-            **kwargs,
-        )
-
-        a, b = self.args
-
-        q = Variable("q")
-        self._definition = ExistsInSet(
-            q,
-            Naturals,
-            b.equals(a * q),
-            is_assumption=is_assumption,
-            description=description or f"{a} divides {b}",
-            **kwargs,
-        )
-
-        self.a = a
-        self.b = b
-        self._q_var = q
-
-        if (
-            kwargs.get("_is_proven")
-            or kwargs.get("is_assumption")
-            or kwargs.get("is_axiom")
-        ):
-            self._set_is_inferred(True)
-
-    def _set_is_inferred(self, value: bool) -> None:
-        # We are only adding to a's KB
-        super()._set_is_inferred(value)
-        if value:
-            self.a.knowledge_base.add(self)
-        else:
-            self.a.knowledge_base.discard(self)
-
-    def __str__(self) -> str:
-        return f"{self.a} | {self.b}"
-
-    def __repr__(self) -> str:
-        return f"Divides({self.a}, {self.b})"
-
-    def _latex(self) -> str:
-        return f"{self.a._latex()} \\mid {self.b._latex()}"
-
-    def by_inspection_check(self) -> bool | None:
-        from pylogic.helpers import is_python_real_numeric
-
-        if isinstance(self.a, Constant) and isinstance(self.b, Constant):
-            if is_python_real_numeric(self.a.value) and is_python_real_numeric(
-                self.b.value
-            ):
-                return self.b.value % self.a.value == 0
-        return None
-
-    def to_exists_in_set(self, **kwargs) -> ExistsInSet:
-        return self.definition
-
-    @property
-    def definition(self) -> ExistsInSet:
-        return self._definition
-
-    def copy(self) -> Self:
-        return self.__class__(
-            self.a,
-            self.b,
-            is_assumption=self.is_assumption,
-            is_axiom=self.is_axiom,
-            description=self.description,
-            _is_proven=self._is_proven,
-            _inference=self.deduced_from,
-            _assumptions=self.from_assumptions,
-        )
-
-    def deepcopy(self) -> Self:
-        return self.__class__(
-            self.a.deepcopy(),
-            self.b.deepcopy(),
-            is_assumption=self.is_assumption,
-            is_axiom=self.is_axiom,
-            description=self.description,
-            _is_proven=self._is_proven,
-            _inference=self.deduced_from,
-            _assumptions=self.from_assumptions,
-        )
-
-
 class Prime(Proposition):
     """
     Represents a number being prime.
     """
+
+    _repr_uses_is = True
+    _repr_after_is = "prime"
 
     def __init__(self, n: Term, description: str = "", **kwargs) -> None:
         super().__init__("Prime", args=[n], **kwargs)

@@ -21,6 +21,7 @@ one = Constant(1)
 if TYPE_CHECKING:
     from pylogic.expressions.expr import BinaryExpression, Expr
     from pylogic.proposition.ordering.total import StrictTotalOrder, TotalOrder
+    from pylogic.proposition.relation.divides import Divides
 
     T = TypeVar("T", bound=Term)
     E = TypeVar("E", bound=Expr)
@@ -115,7 +116,9 @@ class IntegersRing(RIng[Z], OrderedSet):
         )
 
     def divides(self, a: Z, b: Z, **kwargs) -> Divides:
-        return Divides(a, b, **kwargs)
+        from pylogic.proposition.relation.divides import Divides
+
+        return Divides(a, b, self, **kwargs)
 
 
 Integers = IntegersRing(
@@ -131,137 +134,3 @@ Integers = IntegersRing(
     strict_total_order=LessThan,
     latex_name="\\mathbb{Z}",
 )
-
-
-class Divides(Proposition):
-    is_atomic = True
-
-    def __init__(
-        self,
-        a: Term,
-        b: Term,
-        is_assumption: bool = False,
-        description: str = "",
-        **kwargs,
-    ) -> None:
-        super().__init__(
-            "IntDivides",
-            is_assumption=is_assumption,
-            description=description,
-            args=[a, b],
-            **kwargs,
-        )
-
-        a, b = self.args
-        q = Variable("q")
-        self._definition = ExistsInSet(
-            q,
-            Integers,
-            b.equals(a * q),
-            is_assumption=is_assumption,
-            description=description or f"{a} divides {b}",
-            **kwargs,
-        )
-        self.a = a
-        self.b = b
-        self._q_var = q
-
-    def __str__(self) -> str:
-        return f"{self.a} | {self.b}"
-
-    def __repr__(self) -> str:
-        return f"Divides({self.a}, {self.b})"
-
-    def _latex(self) -> str:
-        return f"{self.a._latex()} \\mid {self.b._latex()}"
-
-    def _set_is_inferred(self, value: bool) -> None:
-        super()._set_is_inferred(value)
-        if value:
-            self.a.knowledge_base.add(self)
-        else:
-            self.a.knowledge_base.discard(self)
-        self._definition._set_is_inferred(value)
-
-    def _set_is_proven(self, value: bool) -> None:
-        super()._set_is_proven(value)
-        self._definition._set_is_proven(value)
-        if value:
-            from pylogic.inference import Inference
-            from pylogic.proposition.proposition import get_assumptions
-
-            self._definition.from_assumptions = get_assumptions(self)
-            self._definition.deduced_from = Inference(self, rule="by_definition")
-
-    def _set_is_assumption(self, value: bool) -> None:
-        super()._set_is_assumption(value)
-        self._definition._set_is_assumption(value)
-
-    def _set_is_axiom(self, value: bool) -> None:
-        super()._set_is_axiom(value)
-        self._definition._set_is_axiom(value)
-
-    def replace(
-        self,
-        replace_dict: dict[Term, Term],
-        positions: list[list[int]] | None = None,
-        equal_check: Callable[[Term, Term], bool] | None = None,
-    ) -> Self:
-        if positions is not None:
-            left_positions = [p[1:] for p in positions if p[0] == 0]
-            right_positions = [p[1:] for p in positions if p[0] == 1]
-            return self.__class__(
-                self.a.replace(replace_dict, left_positions, equal_check),
-                self.b.replace(replace_dict, right_positions, equal_check),
-                is_assumption=self.is_assumption,
-                is_axiom=self.is_axiom,
-                description=self.description,
-            )
-        return self.__class__(
-            self.a.replace(replace_dict, equal_check=equal_check),
-            self.b.replace(replace_dict, equal_check=equal_check),
-            is_assumption=self.is_assumption,
-            is_axiom=self.is_axiom,
-            description=self.description,
-        )
-
-    def by_inspection_check(self) -> bool | None:
-        from pylogic.helpers import is_python_real_numeric
-
-        if isinstance(self.a, Constant) and isinstance(self.b, Constant):
-            if is_python_real_numeric(self.a.value) and is_python_real_numeric(
-                self.b.value
-            ):
-                return self.b.value % self.a.value == 0
-        return None
-
-    @property
-    def definition(self) -> ExistsInSet:
-        return self._definition
-
-    def to_exists_in_set(self, **kwargs) -> ExistsInSet:
-        return self.definition
-
-    def copy(self) -> Self:
-        return self.__class__(
-            self.a,
-            self.b,
-            is_assumption=self.is_assumption,
-            is_axiom=self.is_axiom,
-            description=self.description,
-            _is_proven=self._is_proven,
-            _inference=self.deduced_from,
-            _assumptions=self.from_assumptions,
-        )
-
-    def deepcopy(self) -> Self:
-        return self.__class__(
-            self.a.deepcopy(),
-            self.b.deepcopy(),
-            is_assumption=self.is_assumption,
-            is_axiom=self.is_axiom,
-            description=self.description,
-            _is_proven=self._is_proven,
-            _inference=self.deduced_from,
-            _assumptions=self.from_assumptions,
-        )

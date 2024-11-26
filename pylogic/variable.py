@@ -1,19 +1,25 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from pylogic import Term
 from pylogic.symbol import Symbol
 
 if TYPE_CHECKING:
+    from pylogic.assumptions_context import AssumptionsContext
     from pylogic.expressions.sequence_term import SequenceTerm
     from pylogic.proposition.quantified.exists import Exists
     from pylogic.proposition.relation.contains import IsContainedIn
+else:
+    AssumptionsContext = Any
+    Exists = Any
+    IsContainedIn = Any
 
 
 class Variable(Symbol):
     def __init__(self, *args, depends_on: tuple[Variable, ...] = (), **kwargs) -> None:
         super().__init__(*args, depends_on=depends_on, **kwargs)
+        context = cast(AssumptionsContext | None, kwargs.get("context", None))
         self.is_bound: bool = False
         # if the variable is created from a proven existential statement
         # it won't be equal to any other constant
@@ -29,10 +35,8 @@ class Variable(Symbol):
         self.is_intersection: bool | None = None
         self.is_union: bool | None = None
 
-        from pylogic.assumptions_context import assumptions_contexts
-
-        if assumptions_contexts[-1] is not None and len(self.depends_on) == 0:
-            assumptions_contexts[-1].assumptions.append(self)
+        if context is not None:
+            context.assumptions.append(self)
 
     def __contains__(self, item: Any) -> bool:
         """
@@ -62,7 +66,7 @@ class Variable(Symbol):
 
     def countable(self, is_assumption: bool = False, **kwargs) -> Exists:
         # for variable sets
-        # TODO: make this  ExissInSet where set is the class of
+        # TODO: make this  ExistsInSet where set is the class of
         # all sequences
         from pylogic.proposition.quantified.exists import Exists
         from pylogic.structures.set_ import SeqSet
@@ -93,11 +97,6 @@ def unbind(*variables: Variable) -> None:
     """
     for variable in variables:
         variable.unbind()
-
-
-def variables(*names: str, **kwargs) -> list[Variable]:
-    """Creates a list of variables with the given names."""
-    return [Variable(name, **kwargs) for name in names]
 
 
 Var = Variable

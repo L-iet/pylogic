@@ -110,6 +110,20 @@ class Not(Proposition, Generic[TProposition]):
 
     def _latex(self, printer=None) -> str:
         from pylogic.proposition.quantified.quantified import _Quantified
+        from pylogic.proposition.relation.binaryrelation import BinaryRelation
+        from pylogic.proposition.relation.divides import Divides
+
+        if isinstance(self.negated, Divides):
+            p = self.negated
+            if (
+                p.quotient_set.name == "Integers"
+                and p.quotient_set.__class__.__name__ == "IntegersRing"
+            ):
+                return rf"\left. {p.a._latex()} \not\mid {p.b._latex()} \right."
+            return rf"\frac{{{p.b._latex()}}}{{{p.a._latex()}}} \not\in {p.quotient_set._latex()}"
+        elif isinstance(self.negated, BinaryRelation):
+            p = self.negated
+            return rf"{p.left._latex()} \not {p.infix_symbol_latex} {p.right._latex()}"
 
         # only wrap the innermost proposition in parentheses if it is not atomic
         # and not a quantified proposition
@@ -257,9 +271,6 @@ class Not(Proposition, Generic[TProposition]):
             OtherProposition -> ~self
         """
         return super().modus_tollens(other)  # type: ignore
-
-    def _latex(self, printer=None) -> str:
-        return rf"\neg{{{self.negated._latex()}}}"
 
     def de_morgan(self) -> Proposition:
         """

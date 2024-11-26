@@ -75,7 +75,10 @@ class Exists(_Quantified[TProposition]):
 
         Other keyword arguments are passed to the variable.
         """
-        variable = Variable(existential_var_name, latex_name=latex_name, **kwargs)
+        context = kwargs.pop("context", None)
+        variable = Variable(
+            existential_var_name, latex_name=latex_name, context=context, **kwargs
+        )
         if expression_to_replace is not None:
             inner_proposition = inner_proposition.replace(
                 {expression_to_replace: variable},
@@ -356,7 +359,10 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
             exists q: (forall x: (p1 q -> p2 x) /\ (p3 x) /\ (p4 q)) -> (p5 q)
         Other keyword arguments are passed to the variable.
         """
-        variable = Variable(existential_var_name, latex_name=latex_name, **kwargs)
+        context = kwargs.pop("context", None)
+        variable = Variable(
+            existential_var_name, latex_name=latex_name, context=context, **kwargs
+        )
         if expression_to_replace is not None:
             assert (
                 expression_to_replace in set_

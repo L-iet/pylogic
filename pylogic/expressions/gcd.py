@@ -27,7 +27,7 @@ class Gcd(Expr):
     def __init__(self, *args: Expr | PBasic | PythonNumeric) -> None:
         from pylogic.helpers import ternary_and
         from pylogic.inference import Inference
-        from pylogic.theories.integers import Divides
+        from pylogic.theories.integers import Integers
 
         super().__init__(*args)
         self._is_real = ternary_and(*[expr.is_integer for expr in self.args])
@@ -37,7 +37,7 @@ class Gcd(Expr):
 
         for arg in self.args:
             self.knowledge_base.add(
-                Divides(
+                Integers.divides(
                     self,
                     arg,
                     _is_proven=True,
