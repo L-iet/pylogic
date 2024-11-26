@@ -24,10 +24,6 @@ class Contradiction(Proposition):
     """
 
     def __init__(self, **kwargs) -> None:
-        if "_is_proven" in kwargs:
-            assert (
-                len(kwargs.get("_assumptions", [])) > 0
-            ), "A proven contradiction must have an assumption"
         super().__init__(
             "contradiction",
             description="contradiction",
@@ -46,44 +42,44 @@ class Contradiction(Proposition):
     def copy(self) -> Self:
         return self.__class__()
 
-    def thus_assumptions_cannot_all_hold(
-        self,
-    ) -> Or[Proposition, ...] | Not[Proposition]:
-        """
-        Logical inference rule. Given a contradiction, return the proposition
-        that not all of the assumptions can hold at the same time.
+    # def thus_assumptions_cannot_all_hold(
+    #     self,
+    # ) -> Or[Proposition, ...] | Not[Proposition]:
+    #     """
+    #     Logical inference rule. Given a contradiction, return the proposition
+    #     that not all of the assumptions can hold at the same time.
 
-        In classical logic, this is the same as the disjunction of the negations of the
-        assumptions.
+    #     In classical logic, this is the same as the disjunction of the negations of the
+    #     assumptions.
 
-        In intuitionistic logic, this is the negation of the conjunction of the assumptions.
-        """
-        from pylogic.enviroment_settings.settings import settings
-        from pylogic.proposition.and_ import And
-        from pylogic.proposition.not_ import Not, neg
-        from pylogic.proposition.or_ import Or
+    #     In intuitionistic logic, this is the negation of the conjunction of the assumptions.
+    #     """
+    #     from pylogic.enviroment_settings.settings import settings
+    #     from pylogic.proposition.and_ import And
+    #     from pylogic.proposition.not_ import Not, neg
+    #     from pylogic.proposition.or_ import Or
 
-        assert self.is_proven, "This contradiction is not proven"
-        if len(self.from_assumptions) == 1:
-            return neg(
-                self.from_assumptions.pop(),
-                description="",
-                _is_proven=True,
-                _assumptions=self.from_assumptions,
-                _inference=Inference(self, rule="thus_assumptions_cannot_all_hold"),
-            )
-        if settings["USE_CLASSICAL_LOGIC"]:
-            return Or(
-                *[neg(a) for a in self.from_assumptions],  # type: ignore
-                description="",
-                _is_proven=True,
-                _assumptions=self.from_assumptions,
-                _inference=Inference(self, rule="thus_assumptions_cannot_all_hold"),
-            )
-        return Not(
-            And(*self.from_assumptions),  # type: ignore
-            description="",
-            _is_proven=True,
-            _assumptions=self.from_assumptions,
-            _inference=Inference(self, rule="thus_assumptions_cannot_all_hold"),
-        )
+    #     assert self.is_proven, "This contradiction is not proven"
+    #     if len(self.from_assumptions) == 1:
+    #         return neg(
+    #             self.from_assumptions.pop(),
+    #             description="",
+    #             _is_proven=True,
+    #             _assumptions=self.from_assumptions,
+    #             _inference=Inference(self, rule="thus_assumptions_cannot_all_hold"),
+    #         )
+    #     if settings["USE_CLASSICAL_LOGIC"]:
+    #         return Or(
+    #             *[neg(a) for a in self.from_assumptions],  # type: ignore
+    #             description="",
+    #             _is_proven=True,
+    #             _assumptions=self.from_assumptions,
+    #             _inference=Inference(self, rule="thus_assumptions_cannot_all_hold"),
+    #         )
+    #     return Not(
+    #         And(*self.from_assumptions),  # type: ignore
+    #         description="",
+    #         _is_proven=True,
+    #         _assumptions=self.from_assumptions,
+    #         _inference=Inference(self, rule="thus_assumptions_cannot_all_hold"),
+    #     )

@@ -765,6 +765,16 @@ class Pow(Expr):
 
         if self.base.is_real and self.exp.is_positive:
             self._is_real = True
+            if self.exp.is_even:
+                self._is_nonnegative = True
+            if self.base.is_integer and self.exp.is_even:
+                self._is_natural = True
+            if self.base.is_integer and self.exp.is_natural:
+                self._is_integer = True
+            if self.base.is_rational and self.exp.is_integer:
+                self._is_rational = True
+            if self.base.is_natural and self.exp.is_natural:
+                self._is_natural = True
 
         if self.base.is_zero is False:
             if self.exp.is_even:
@@ -805,7 +815,7 @@ class Pow(Expr):
         ):
             base_latex = self.base._latex()
         else:
-            base_latex = rf"\left({latex(self.base)}\right)"
+            base_latex = rf"\left({self.base._latex()}\right)"
         exp_latex = self.exp._latex()
         return f"{base_latex}^{{{exp_latex}}}"
 

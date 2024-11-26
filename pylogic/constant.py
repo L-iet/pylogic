@@ -74,6 +74,8 @@ class Constant(Symbol, Generic[T]):
                 self._is_nonpositive = True
             if value == 0:
                 self._is_zero = True
+            else:
+                self._is_zero = False
             if value % 2 == 0:
                 self._is_even = True
             else:

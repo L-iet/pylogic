@@ -175,6 +175,56 @@ class Divides(Proposition):
     def _latex(self) -> str:
         return f"{self.a._latex()} \\mid {self.b._latex()}"
 
+    def _set_is_inferred(self, value: bool) -> None:
+        super()._set_is_inferred(value)
+        if value:
+            self.a.knowledge_base.add(self)
+        else:
+            self.a.knowledge_base.discard(self)
+        self._definition._set_is_inferred(value)
+
+    def _set_is_proven(self, value: bool) -> None:
+        super()._set_is_proven(value)
+        self._definition._set_is_proven(value)
+        if value:
+            from pylogic.inference import Inference
+            from pylogic.proposition.proposition import get_assumptions
+
+            self._definition.from_assumptions = get_assumptions(self)
+            self._definition.deduced_from = Inference(self, rule="by_definition")
+
+    def _set_is_assumption(self, value: bool) -> None:
+        super()._set_is_assumption(value)
+        self._definition._set_is_assumption(value)
+
+    def _set_is_axiom(self, value: bool) -> None:
+        super()._set_is_axiom(value)
+        self._definition._set_is_axiom(value)
+
+    def replace(
+        self,
+        replace_dict: dict[Term, Term],
+        positions: list[list[int]] | None = None,
+        equal_check: Callable[[Term, Term], bool] | None = None,
+    ) -> Self:
+        if positions is not None:
+            left_positions = [p[1:] for p in positions if p[0] == 0]
+            right_positions = [p[1:] for p in positions if p[0] == 1]
+            return self.__class__(
+                self.a.replace(replace_dict, left_positions, equal_check),
+                self.b.replace(replace_dict, right_positions, equal_check),
+                is_assumption=self.is_assumption,
+                is_axiom=self.is_axiom,
+                description=self.description,
+            )
+        return self.__class__(
+            self.a.replace(replace_dict, equal_check=equal_check),
+            self.b.replace(replace_dict, equal_check=equal_check),
+            is_assumption=self.is_assumption,
+            is_axiom=self.is_axiom,
+            description=self.description,
+        )
+
     def by_inspection_check(self) -> bool | None:
         from pylogic.helpers import is_python_real_numeric
 

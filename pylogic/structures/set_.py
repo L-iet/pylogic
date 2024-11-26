@@ -323,6 +323,19 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
     def deepcopy(self) -> Self:
         return self.__class__(*self._init_args, **self._init_kwargs)
 
+    def replace(
+        self,
+        replace_dict: dict[Term, Term],
+        positions: list[list[int]] | None = None,
+        equal_check: Callable[[Term, Term], bool] | None = None,
+    ) -> Term:
+        if equal_check is None:
+            return self
+        for k in replace_dict:
+            if equal_check(self, k):
+                return replace_dict[k]
+        return self
+
 
 EmptySet = Set(
     "EmptySet",

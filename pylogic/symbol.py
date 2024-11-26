@@ -328,9 +328,9 @@ class Symbol:
         arguments and returns True if they are equal.
         """
         equal_check = equal_check or (lambda x, y: x == y)
-        old, new = replace_dict.popitem()
-        if equal_check(old, self):
-            return new
+        for old, new in replace_dict.items():
+            if equal_check(old, self):
+                return new
         return self
 
     def to_sympy(self) -> PylSympySymbol:
