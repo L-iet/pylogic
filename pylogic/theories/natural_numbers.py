@@ -609,7 +609,7 @@ class Prime(Proposition):
     Represents a number being prime.
     """
 
-    def __init__(self, n: Term, **kwargs) -> None:
+    def __init__(self, n: Term, description: str = "", **kwargs) -> None:
         super().__init__("Prime", args=[n], **kwargs)
 
         n = self.args[0]
@@ -624,7 +624,7 @@ class Prime(Proposition):
                     b, Naturals, n.equals(a * b).implies(a.equals(1).xor(b.equals(1)))
                 ),
             ),
-            description=f"{n} is prime",
+            description=description or f"{n} is prime",
             **kwargs,
         )
         self.n = n

@@ -490,7 +490,6 @@ def is_prime(num: int | Fraction | Constant[int] | Constant[Fraction]) -> bool:
 
     i = 3
     while i < num**0.5 + 1:
-        print(i, num)
         if num % i == 0:
             return False
         i += 2
