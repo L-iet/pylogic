@@ -24,7 +24,8 @@ from pylogic.proposition.quantified.exists import ExistsInSet, ExistsUniqueInSet
 from pylogic.proposition.quantified.forall import ForallInSet, ForallSubsets
 from pylogic.proposition.relation.equals import Equals
 from pylogic.proposition.relation.subsets import IsSubsetOf
-from pylogic.structures.ringlike.ordered_field import OrderedField
+from pylogic.structures.ordered_set import OrderedSet
+from pylogic.structures.ringlike.field import Field
 from pylogic.structures.set_ import Set
 from pylogic.variable import Variable
 
@@ -66,7 +67,7 @@ else:
     StrictTotalOrderOp = Any
 
 
-class RealsField(OrderedField):
+class RealsField(Field[Z], OrderedSet):
 
     bounded_above_has_lub: ForallSubsets[
         Implies[
@@ -112,7 +113,9 @@ class RealsField(OrderedField):
         strict_total_order: StrictTotalOrderOp | None = None,
         **kwargs,
     ):
-        super().__init__(
+        # explicitly call __init__ of both superclasses due to mro
+        Field.__init__(
+            self,
             name=name,
             elements=elements,
             containment_function=containment_function,
@@ -122,10 +125,33 @@ class RealsField(OrderedField):
             times_operation=times_operation,
             times_operation_symbol=times_operation_symbol,
             one=one,
+            **kwargs,
+        )
+        OrderedSet.__init__(
+            self,
+            name=name,
+            elements=elements,
+            containment_function=containment_function,  # type: ignore
             total_order=total_order,
             strict_total_order=strict_total_order,
             **kwargs,
         )
+
+        self._init_args = (name,)
+        self._init_kwargs = {
+            "elements": elements,
+            "containment_function": containment_function,
+            "plus_operation": plus_operation,
+            "plus_operation_symbol": plus_operation_symbol,
+            "zero": zero,
+            "times_operation": times_operation,
+            "times_operation_symbol": times_operation_symbol,
+            "one": one,
+            "total_order": total_order,
+            "strict_total_order": strict_total_order,
+            **kwargs,
+        }
+
         self.bounded_above_has_lub = RealsField.property_bounded_above_has_lub(self)
         self.bounded_above_has_lub._set_is_axiom(True)
         self.less_than = LessThan

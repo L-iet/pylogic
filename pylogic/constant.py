@@ -5,7 +5,12 @@ from fractions import Fraction
 from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar, cast, overload
 
 from pylogic.enviroment_settings.settings import settings
-from pylogic.helpers import is_python_numeric, is_python_real_numeric, type_check
+from pylogic.helpers import (
+    is_prime,
+    is_python_numeric,
+    is_python_real_numeric,
+    type_check,
+)
 from pylogic.symbol import Symbol
 
 if TYPE_CHECKING:
@@ -73,6 +78,21 @@ class Constant(Symbol, Generic[T]):
                 self._is_even = True
             else:
                 self._is_even = False
+
+        # Warning: this will raise an error if a Constant prime number is created
+        # in an initializer that runs in the call stack to create Naturals
+        if is_prime(value):
+            from pylogic.inference import Inference
+            from pylogic.theories.natural_numbers import Naturals
+
+            self.knowledge_base.add(
+                Naturals.prime(
+                    self,
+                    _is_proven=True,
+                    _assumptions=set(),
+                    _inference=Inference(None, rule="by_definition"),
+                )
+            )
 
     def __eq__(self, other: Any) -> bool:
         """

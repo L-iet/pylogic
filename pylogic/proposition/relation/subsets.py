@@ -111,25 +111,23 @@ right: {right}, right.is_set: {right.is_set}"
         new_p.deduced_from = Inference(self, rule="by_empty")
         return new_p
 
-    def by_inspection(self) -> Self:
+    def by_inspection_check(self) -> bool | None:
         """
-        Logical inference rule. If self is already proven, self is `A issubset A`,
-        or the predicate of self.left logically implies that any variable x in self.left is in self.right,
-        return self but proven.
+        Check if self is provable by inspection.
+        Returns True if self is provable by inspection, False if
+        its negation is provable by inspection, and None if neither is provable.
         """
-        from pylogic.helpers import getkey
-        from pylogic.inference import Inference
         from pylogic.proposition.and_ import And
         from pylogic.proposition.relation.contains import IsContainedIn
         from pylogic.variable import Variable
 
-        proven = False
+        proven = None
 
         # already proven
         if self in self.left.knowledge_base:
-            return getkey(self.left.knowledge_base, self)
+            return True
         if self.left == self.right:
-            proven = True
+            return True
 
         # seeing if we can derive x in right from assuming x in left
         if hasattr(self.left, "predicate"):
@@ -143,10 +141,12 @@ right: {right}, right.is_set: {right.is_set}"
                     proven = True
                 case And(propositions=props) if IsContainedIn(x, self.right) in props:
                     proven = True
-        if proven:
-            new_p = self.copy()
-            new_p._set_is_proven(True)
-            new_p.from_assumptions = set()
-            new_p.deduced_from = Inference(self, rule="by_inspection")
-            return new_p
-        raise ValueError(f"Cannot prove that {self.left} is a subset of {self.right}")
+        return proven
+
+    def by_inspection(self) -> Self:
+        """
+        Logical inference rule. If self is already proven, self is `A issubset A`,
+        or the predicate of self.left logically implies that any variable x in self.left is in self.right,
+        return self but proven.
+        """
+        return super().by_inspection()

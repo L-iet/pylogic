@@ -40,6 +40,12 @@ class Variable(Symbol):
         """
         return item in self.elements
 
+    def containment_function(self, x: Term) -> bool:
+        """
+        For variable sets.
+        """
+        return x in self.elements
+
     def predicate(self, x: Term) -> IsContainedIn:
         """
         For variable sets.

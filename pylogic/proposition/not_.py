@@ -342,6 +342,16 @@ Occured when trying to unify `{self}` and `{other}`"
             _inference=Inference(self, rule="symmetric"),
         )
 
+    def by_inspection_check(self) -> bool | None:
+        """
+        Check if self is provable by inspection.
+        Returns True if self.negated.by_inspection() returns False,
+        False if self.negated.by_inspection() returns True, and None if neither is provable.
+        """
+        from pylogic.helpers import ternary_not
+
+        return ternary_not(self.negated.by_inspection_check())
+
     def to_sympy(self) -> SpNot:
         from sympy.logic.boolalg import Not as SpNot
 

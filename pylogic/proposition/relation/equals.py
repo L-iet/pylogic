@@ -111,16 +111,13 @@ class Equals(BinaryRelation[T, U]):
         else:
             raise ValueError(f"{self} cannot be proven by simplification")
 
-    def by_inspection(self) -> Self:
-        """Logical inference rule."""
-        if self.left == self.right:
-            new_p = self.copy()
-            new_p._set_is_proven(True)
-            new_p.from_assumptions = set()
-            new_p.deduced_from = Inference(self, rule="by_inspection")
-            return new_p
-        else:
-            raise ValueError(f"{self} cannot be proven by inspection")
+    def by_inspection_check(self) -> bool | None:
+        """
+        Check if self is provable by inspection.
+        Returns True if self is provable by inspection, False if
+        its negation is provable by inspection, and None if neither is provable.
+        """
+        return True if self.left == self.right else None
 
     def substitute_into(
         self, side: Side | str, other_prop: TProposition, **kwargs

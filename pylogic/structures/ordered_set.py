@@ -72,6 +72,15 @@ class OrderedSet(Set):
     product_of_nonnegatives_is_nonnegative: ForallInSet[
         ForallInSet[Implies[And[TotalOrder, TotalOrder], TotalOrder]]
     ]
+
+    # axioms of ordered sets that have operations
+    add_to_both_sides_of_inequality: ForallInSet[
+        ForallInSet[ForallInSet[Implies[TotalOrder, TotalOrder]]]
+    ]
+    product_of_nonnegatives_is_nonnegative: ForallInSet[
+        ForallInSet[Implies[And[TotalOrder, TotalOrder], TotalOrder]]
+    ]
+
     strict_total_order: StrictTotalOrderOp
     total_order: TotalOrderOp
 
@@ -518,6 +527,21 @@ class OrderedSet(Set):
             .thus_forall(b_in_self)
             .thus_forall(a_in_self)
         )  # type: ignore
+
+        # axioms of ordered sets that have operations
+        self.add_to_both_sides_of_inequality = (
+            OrderedSet.property_add_to_both_sides_of_inequality(
+                self, self.total_order, self.plus_operation
+            )
+        )
+        self.add_to_both_sides_of_inequality._set_is_axiom(True)
+
+        self.product_of_nonnegatives_is_nonnegative = (
+            OrderedSet.property_product_of_nonnegatives_is_nonnegative(
+                self, self.total_order, self.times_operation
+            )
+        )
+        self.product_of_nonnegatives_is_nonnegative._set_is_axiom(True)
 
         # TODO proving a <= 0 implies -a >= 0 (can use add -a to both sides)
         ...

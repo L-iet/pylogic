@@ -3,6 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 from enum import Enum
 from fractions import Fraction
+from types import SimpleNamespace
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -465,6 +466,62 @@ def ternary_and(*vals: bool | None) -> bool | None:
     if none_count > 0:
         return None
     return True
+
+
+def is_prime(num: int | Fraction | Constant[int] | Constant[Fraction]) -> bool:
+    from pylogic.constant import Constant
+
+    if isinstance(num, Constant):
+        num = num.value
+    if isinstance(num, Fraction):
+        if num.denominator == 1:
+            num = int(num.numerator)
+        else:
+            return False
+    if not isinstance(num, int):
+        return False
+
+    if num <= 1:
+        return False
+    if num == 2:
+        return True
+    if num % 2 == 0:
+        return False
+
+    i = 3
+    while i < num**0.5 + 1:
+        print(i, num)
+        if num % i == 0:
+            return False
+        i += 2
+    return True
+
+
+class Namespace(SimpleNamespace):
+    """
+    An immutable namespace object.
+    Attributes can be accessed using dot notation or dictionary subscript notation.
+    """
+
+    def __init__(self, dict_: dict[str, Any] | None = None, **kwargs: Any):
+        dict_ = dict_ or {}
+        dict_.update(kwargs)
+        for key, value in dict_.items():
+            if isinstance(value, dict):
+                setattr(self, key, Namespace(value))
+            else:
+                setattr(self, key, value)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if hasattr(self, name):
+            raise TypeError("Namespace object is immutable")
+        return super().__setattr__(name, value)
+
+    def __delattr__(self, name: str) -> None:
+        raise TypeError("Namespace object is immutable")
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
 
 
 def _add_assumptions(term: Term, attr: str, value: bool) -> Proposition:

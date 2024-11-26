@@ -127,8 +127,6 @@ class Function(Expr):
         )
         from pylogic.variable import Variable
 
-        super().__init__(self.domain, self.codomain)
-
         self.name = name
         self.codomain: Set | Variable | Class = codomain or get_universe()
         self.definition: Expr | None = None
@@ -169,6 +167,8 @@ class Function(Expr):
                     self.domain = FiniteCartesProduct(sets=individual_sets).evaluate()
         else:
             self.domain = get_universe()
+
+        super().__init__(self.domain, self.codomain)
 
         # construct the proposition forall(x, f(x) in codomain)
         if self.codomain != UniversalSet:
@@ -318,7 +318,7 @@ class Function(Expr):
         args = tuple(map(python_to_pylogic, args))
 
         if len(args) == 1:
-            if isinstance(args[0], (tuple)):
+            if isinstance(args[0], tuple):
                 args = args[0]
             elif isinstance(args[0], FiniteSequence):
                 args = tuple(args[0].initial_terms)  # type: ignore
@@ -486,4 +486,4 @@ class CalledFunction(Expr):
         )
 
 
-self = SelfFunc()
+self = SelfFunc

@@ -58,7 +58,6 @@ class Sequence(Generic[T]):
         from pylogic.helpers import _add_assumption_attributes, _add_assumptions
         from pylogic.inference import Inference
         from pylogic.proposition.quantified.forall import ForallInSet
-        from pylogic.theories.natural_numbers import Naturals
         from pylogic.variable import Variable
 
         init_inds = (
@@ -73,7 +72,6 @@ class Sequence(Generic[T]):
         self.is_finite: bool | None = None
         self._predicate: Callable[[Term], Proposition] | None = predicate
         self._predicate_uses_self = predicate is not None
-        self.size = Abs(self)
 
         self._is_real: bool | None = real
         self._is_rational: bool | None = kwargs.get("rational", None)
@@ -109,6 +107,8 @@ class Sequence(Generic[T]):
             "even",
         ]:
             if getattr(self, f"_is_{attr}") is not None:
+                from pylogic.theories.natural_numbers import Naturals
+
                 n = Variable("n")
                 self_n = self[n]
                 prop = _add_assumptions(self_n, attr, getattr(self, f"_is_{attr}"))
@@ -124,6 +124,9 @@ class Sequence(Generic[T]):
                 self.properties_of_each_term.append(prop)
                 if assumptions_contexts[-1] is not None:
                     assumptions_contexts[-1].assumptions.append(prop)
+
+        # needs to be here, after setting all above attributes
+        self.size = Abs(self)
 
         self._init_args = (name,)
         self._init_kwargs = {

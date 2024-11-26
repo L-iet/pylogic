@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fractions import Fraction
-from typing import TYPE_CHECKING, Any, Callable, Iterable, TypeAlias, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Self, TypeAlias, TypeVar
 
 from pylogic import Term, Unevaluated
 from pylogic.constant import Constant
@@ -10,8 +10,11 @@ from pylogic.expressions.function import Function
 from pylogic.proposition.and_ import And
 from pylogic.proposition.implies import Implies
 from pylogic.proposition.not_ import Not
+from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
+from pylogic.proposition.ordering.greaterthan import GreaterThan
 from pylogic.proposition.ordering.lessorequal import LessOrEqual
 from pylogic.proposition.ordering.lessthan import LessThan
+from pylogic.proposition.proposition import Proposition
 from pylogic.proposition.quantified.exists import ExistsInSet
 from pylogic.proposition.quantified.forall import ForallInSet, ForallSubsets
 from pylogic.proposition.relation.equals import Equals
@@ -23,7 +26,6 @@ from pylogic.variable import Variable
 if TYPE_CHECKING:
     from pylogic.expressions.expr import BinaryExpression, Expr
     from pylogic.proposition.ordering.total import StrictTotalOrder, TotalOrder
-    from pylogic.proposition.proposition import Proposition
     from pylogic.proposition.relation.contains import IsContainedIn
 
     T = TypeVar("T", bound=Term)
@@ -79,6 +81,8 @@ class NaturalsSemiring(SemirIng, OrderedSet):
         successor: Function,
         **kwargs,
     ) -> ForallInSet[IsContainedIn]:
+        from pylogic.proposition.relation.contains import IsContainedIn
+
         x = Variable("x")
         return ForallInSet(
             x,
@@ -251,19 +255,30 @@ class NaturalsSemiring(SemirIng, OrderedSet):
             "strict_total_order": strict_total_order,
         }
         self._init_kwargs.update(kwargs)
-        self.successor = Function("Naturals.successor", self, self)
+
+        x = Variable("x")
+        self.successor = Function(
+            "Naturals.successor", self, self, parameters=(x,), definition=x + 1
+        )
+        self.closed_under_successor = NaturalsSemiring.property_closed_under_successor(
+            self, self.successor
+        )
+        self.closed_under_successor._set_is_axiom(True)
+
         self.well_ordering_set = NaturalsSemiring.property_well_ordering_set(
             self, self.total_order
         )
         self.well_ordering_set._set_is_axiom(True)
         self.less_or_equal = LessOrEqual
         self.less_than = LessThan
+        self.greater_than = GreaterThan
+        self.greater_or_equal = GreaterOrEqual
 
         # TODO: this should be a theorem
         self.zero_is_min_nat = NaturalsSemiring.property_zero_is_min_nat(
             self, self.total_order, zero
         )
-        self.zero_is_min_nat._set_is_axiom(True)
+        self.zero_is_min_nat.todo(_internal=True)
 
     def strong_induction(
         self,
@@ -399,23 +414,11 @@ You may have dangling assumptions whose scopes are not properly closed."
             **kwargs,
         )
 
-    def divides(self, a: Term, b: Term, **kwargs) -> ExistsInSet[Equals]:
-        from pylogic.helpers import python_to_pylogic
+    def divides(self, a: Term, b: Term, **kwargs) -> Divides:
+        return Divides(a, b, **kwargs)
 
-        a = python_to_pylogic(a)
-        b = python_to_pylogic(b)
-        k = Variable("k")
-        return ExistsInSet(
-            k,
-            self,
-            Equals(a * k, b),
-            description=f"{a} divides {b}",
-            **kwargs,
-        )
-
-    def prime(self, n: Term, **kwargs) -> ...:
-        # TODO: implement
-        from pylogic.helpers import python_to_pylogic
+    def prime(self, n: Term, **kwargs) -> Prime:
+        return Prime(n, **kwargs)
 
     def well_ordering(
         self, prop: Proposition, argument: Term | None = None
@@ -498,3 +501,186 @@ Naturals = NaturalsSemiring(
     strict_total_order=LessThan,
     latex_name="\\mathbb{N}",
 )
+
+
+class Divides(Proposition):
+    is_atomic = True
+
+    def __init__(
+        self,
+        a: Term,
+        b: Term,
+        is_assumption: bool = False,
+        description: str = "",
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            "NatDivides",
+            is_assumption=is_assumption,
+            description=description,
+            args=[a, b],
+            **kwargs,
+        )
+
+        a, b = self.args
+
+        q = Variable("q")
+        self._definition = ExistsInSet(
+            q,
+            Naturals,
+            b.equals(a * q),
+            is_assumption=is_assumption,
+            description=description or f"{a} divides {b}",
+            **kwargs,
+        )
+
+        self.a = a
+        self.b = b
+        self._q_var = q
+
+        if (
+            kwargs.get("_is_proven")
+            or kwargs.get("is_assumption")
+            or kwargs.get("is_axiom")
+        ):
+            self._set_is_inferred(True)
+
+    def _set_is_inferred(self, value: bool) -> None:
+        # We are only adding to a's KB
+        super()._set_is_inferred(value)
+        if value:
+            self.a.knowledge_base.add(self)
+        else:
+            self.a.knowledge_base.discard(self)
+
+    def __str__(self) -> str:
+        return f"{self.a} | {self.b}"
+
+    def __repr__(self) -> str:
+        return f"Divides({self.a}, {self.b})"
+
+    def _latex(self) -> str:
+        return f"{self.a._latex()} \\mid {self.b._latex()}"
+
+    def by_inspection_check(self) -> bool | None:
+        from pylogic.helpers import is_python_real_numeric
+
+        if isinstance(self.a, Constant) and isinstance(self.b, Constant):
+            if is_python_real_numeric(self.a.value) and is_python_real_numeric(
+                self.b.value
+            ):
+                return self.b.value % self.a.value == 0
+        return None
+
+    def to_exists_in_set(self, **kwargs) -> ExistsInSet:
+        return self.definition
+
+    @property
+    def definition(self) -> ExistsInSet:
+        return self._definition
+
+    def copy(self) -> Self:
+        return self.__class__(
+            self.a,
+            self.b,
+            is_assumption=self.is_assumption,
+            is_axiom=self.is_axiom,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _inference=self.deduced_from,
+            _assumptions=self.from_assumptions,
+        )
+
+    def deepcopy(self) -> Self:
+        return self.__class__(
+            self.a.deepcopy(),
+            self.b.deepcopy(),
+            is_assumption=self.is_assumption,
+            is_axiom=self.is_axiom,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _inference=self.deduced_from,
+            _assumptions=self.from_assumptions,
+        )
+
+
+class Prime(Proposition):
+    """
+    Represents a number being prime.
+    """
+
+    def __init__(self, n: Term, **kwargs) -> None:
+        super().__init__("Prime", args=[n], **kwargs)
+
+        n = self.args[0]
+        a = Variable("a")
+        b = Variable("b")
+        self._definition = And(
+            Naturals.greater_than(n, 1),
+            ForallInSet(
+                a,
+                Naturals,
+                ForallInSet(
+                    b, Naturals, n.equals(a * b).implies(a.equals(1).xor(b.equals(1)))
+                ),
+            ),
+            description=f"{n} is prime",
+            **kwargs,
+        )
+        self.n = n
+
+        if (
+            kwargs.get("_is_proven")
+            or kwargs.get("is_assumption")
+            or kwargs.get("is_axiom")
+        ):
+            self._set_is_inferred(True)
+
+    @property
+    def definition(self) -> ExistsInSet:
+        return self._definition
+
+    def __str__(self) -> str:
+        return f"{self.n} is prime"
+
+    def __repr__(self) -> str:
+        return f"Prime({self.n})"
+
+    def _latex(self) -> str:
+        return f"{self.n._latex()} \\text{{ is prime }}"
+
+    def by_inspection_check(self) -> bool | None:
+        from pylogic.helpers import is_prime, is_python_real_numeric
+
+        if isinstance(self.n, Constant) and is_python_real_numeric(self.n.value):
+            return is_prime(self.n.value)
+        return None
+
+    def _set_is_inferred(self, value: bool) -> None:
+        super()._set_is_inferred(value)
+        if value:
+            self.n.knowledge_base.add(self)
+        else:
+            self.n.knowledge_base.discard(self)
+
+    def copy(self) -> Self:
+        return self.__class__(
+            self.n,
+            is_assumption=self.is_assumption,
+            is_axiom=self.is_axiom,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _inference=self.deduced_from,
+            _assumptions=self.from_assumptions,
+        )
+
+    def deepcopy(self) -> Self:
+        return self.__class__(
+            self.n.deepcopy(),
+            is_assumption=self.is_assumption,
+            is_axiom=self.is_axiom,
+            description=self.description,
+            _is_proven=self._is_proven,
+            _inference=self.deduced_from,
+            _assumptions=self.from_assumptions,
+        )

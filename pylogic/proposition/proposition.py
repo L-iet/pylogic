@@ -195,6 +195,13 @@ class Proposition:
     def inference_rules(self) -> list[str]:
         return [r["name"] for r in self._inference_rules]
 
+    @property
+    def definition(self) -> Proposition:
+        """
+        A(n expanded) definition of the proposition.
+        """
+        return self
+
     def _set_is_inferred(self, value: bool) -> None:
         """
         Used in some subclasses like IsContainedIn for custom behaviour when a proof is made
@@ -370,6 +377,7 @@ class Proposition:
         return self.__class__(
             self.name,
             is_assumption=self.is_assumption,
+            is_axiom=self.is_axiom,
             description=self.description,
             args=self.args,
             _is_proven=self._is_proven,
@@ -386,6 +394,7 @@ class Proposition:
         return self.__class__(
             self.name,
             is_assumption=self.is_assumption,
+            is_axiom=self.is_axiom,
             description=self.description,
             args=[a.deepcopy() if not is_python_numeric(a) else a for a in self.args],  # type: ignore
             _is_proven=self._is_proven,
@@ -492,6 +501,27 @@ class Proposition:
             _assumptions=get_assumptions(self).union(get_assumptions(equality)),
         )
         return new_p
+
+    def by_inspection_check(self) -> bool | None:
+        """
+        Check if self is provable by inspection.
+        Returns True if self is provable by inspection, False if
+        its negation is provable by inspection, and None if neither is provable.
+        """
+        return None
+
+    def by_inspection(self) -> Self:
+        """Logical inference rule."""
+        from pylogic.inference import Inference
+
+        if self.by_inspection_check():
+            new_p = self.copy()
+            new_p._set_is_proven(True)
+            new_p.from_assumptions = set()
+            new_p.deduced_from = Inference(self, rule="by_inspection")
+            return new_p
+        else:
+            raise ValueError(f"{self} cannot be proven by inspection")
 
     @overload
     def implies(
