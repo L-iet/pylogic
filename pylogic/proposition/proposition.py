@@ -119,6 +119,7 @@ class Proposition:
         args: list[Term] | None
             The arguments of the proposition. If None, we assume the proposition has no arguments.
         """
+        from pylogic.assumptions_context import assumptions_contexts
         from pylogic.helpers import (
             get_class_ns,
             get_consts,
@@ -138,7 +139,12 @@ class Proposition:
         name = name.strip()
         assert set(name.split("_")) != {""}, "Proposition name cannot be empty"
         self.name: str = name
+        # cannot call _set_is_assumption because _is_proven and is_axiom are not set yet
         self.is_assumption: bool = is_assumption
+        context = assumptions_contexts[-1]
+        if context is not None and is_assumption:
+            context.assumptions.append(self)
+
         self.is_axiom: bool = is_axiom
         self.args: list[Set | Term] = list(map(python_to_pylogic, args or []))
         self.arity: int = len(self.args)

@@ -57,6 +57,28 @@ class Set(metaclass=Collection):
 
     level = 0  # level of the set in the hierarchy of Classes
 
+    # see Symbol class, not include parent_exprs
+    mutable_attrs_to_copy = [
+        "sympy_set",
+        "is_finite",
+        "is_union",
+        "is_intersection",
+        "is_cartes_product",
+        "is_cartes_power",
+        "is_real",
+        "is_set_",
+        "is_empty",
+    ]
+    kwargs = {
+        "name": "name",
+        "elements": "elements",
+        "containment_function": "_containment_function",
+        "predicate": "_predicate",
+        "illegal_occur_check": "dummy",
+        "latex_name": "latex_name",
+        "knowledge_base": "knowledge_base",
+    }
+
     @overload
     def __new__(cls) -> Set: ...
     @overload
@@ -67,7 +89,23 @@ class Set(metaclass=Collection):
             return EmptySet
         return object.__new__(cls)
 
-    def __init__(
+    def __init__(self, *args, **kwargs):
+        # TODO: need to change __init__
+        # to __new_init__ and __copy_init__
+        # in all set classes
+        _is_copy = kwargs.get("_is_copy", False)
+        if _is_copy:
+            self.__copy_init__(**kwargs)
+        else:
+            self.__new_init__(*args, **kwargs)
+
+    def __copy_init__(self, *args, **kwargs):
+        # name must be in kwargs
+        self.__dict__.update(kwargs)
+        self._init_args = args
+        self._init_kwargs = kwargs
+
+    def __new_init__(
         self,
         name: str | None = None,
         elements: Iterable[Term] | None = None,
@@ -75,6 +113,8 @@ class Set(metaclass=Collection):
         predicate: Callable[[Term], Proposition] | None = None,
         illegal_occur_check: bool = True,
         latex_name: str | None = None,
+        knowledge_base: set[Proposition] | None = None,
+        **kwargs,
     ):
         from pylogic.helpers import python_to_pylogic
 
@@ -102,8 +142,9 @@ class Set(metaclass=Collection):
         self.is_cartes_product: bool | None = None
         self.is_cartes_power: bool | None = None
         self.is_real = False
-        self.is_set = True
         self.is_set_ = True
+        self.is_empty: bool | None = None
+
         self._init_args = ()
         self._init_kwargs = {
             "name": name,
@@ -111,10 +152,23 @@ class Set(metaclass=Collection):
             "containment_function": containment_function,
             "predicate": predicate,
             "illegal_occur_check": illegal_occur_check,
+            "latex_name": latex_name,
+            "knowledge_base": knowledge_base,
+            **kwargs,
         }
-        self.knowledge_base: set[Proposition] = set()
-        self.is_empty: bool | None = None
+        self.knowledge_base: set[Proposition] = knowledge_base or set()
+
         self.latex_name = latex_name or rf"\text{{{self.name}}}"
+
+        # expressions that contain this set
+        # not copied (See Symbol class)
+        self.parent_exprs: list[Expr] = []
+
+        self._is_copy = False
+
+    @property
+    def is_set(self) -> bool:
+        return True
 
     def illegal_occur_check(
         self,
@@ -318,9 +372,11 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
         return f"$${self._latex()}$$"
 
     def copy(self) -> Self:
+        # TODO: modify this; see Symbol.copy
         return self.__class__(*self._init_args, **self._init_kwargs)
 
     def deepcopy(self) -> Self:
+        # TODO: modify this; see Symbol.copy
         return self.__class__(*self._init_args, **self._init_kwargs)
 
     def replace(

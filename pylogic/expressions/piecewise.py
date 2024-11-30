@@ -26,8 +26,15 @@ class PiecewiseExpr(Expr, Generic[*Ps]):
     # Custom_Expr Piecewise Relation(eg <, subset)
     _precedence = 11
 
-    def __init__(self, *branches: *Ps, otherwise: Expr | None = None) -> None:
-        from pylogic.helpers import ternary_and
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.mutable_attrs_to_copy = self.mutable_attrs_to_copy + [
+            "branches",
+            "pw_branches",
+        ]
+        self.kwargs = self.kwargs + [("otherwise_branch", "otherwise_branch")]
+
+    def __new_init__(self, *branches: *Ps, otherwise: Expr | None = None) -> None:
         from pylogic.proposition.and_ import And
         from pylogic.proposition.exor import ExOr
         from pylogic.proposition.not_ import neg
@@ -68,6 +75,12 @@ class PiecewiseExpr(Expr, Generic[*Ps]):
         if self.branches is None:
             self.branches: tuple[*Ps] = branches
 
+        self._init_args = branches
+        self._init_kwargs = {"otherwise": otherwise}
+
+    def update_properties(self) -> None:
+        from pylogic.helpers import ternary_and
+
         self.is_real = ternary_and(*[branch.is_real for branch in self.branches])
         self.is_rational = ternary_and(
             *[branch.is_rational for branch in self.branches]
@@ -82,9 +95,6 @@ class PiecewiseExpr(Expr, Generic[*Ps]):
             *[branch.is_nonnegative for branch in self.branches]
         )
         self.is_even = ternary_and(*[branch.is_even for branch in self.branches])
-
-        self._init_args = branches
-        self._init_kwargs = {"otherwise": otherwise}
 
     def evaluate(self, knowledge_base: set[Proposition] | None = None) -> Term:
         """
@@ -142,21 +152,28 @@ class PiecewiseBranch(Expr, Generic[P]):
     but only as part of a PiecewiseExpr.
     """
 
-    def __init__(self, condition: P, then: Term) -> None:
-        super().__init__(condition, then)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.mutable_attrs_to_copy = self.mutable_attrs_to_copy + ["condition", "then"]
+
+    def __new_init__(self, condition: P, then: Term) -> None:
+        super().__new_init__(condition, then)
         self.condition: P = condition
         self.then: Term = then
-        self._is_real = then.is_real
-        self._is_rational = then.is_rational
-        self._is_integer = then.is_integer
-        self._is_natural = then.is_natural
-        self._is_zero = then.is_zero
-        self._is_nonpositive = then.is_nonpositive
-        self._is_nonnegative = then.is_nonnegative
-        self._is_even = then.is_even
 
         self._init_args = (condition, then)
         self._init_kwargs = {}
+
+    def update_properties(self) -> None:
+        then = self.args[1]
+        self.is_real = then.is_real
+        self.is_rational = then.is_rational
+        self.is_integer = then.is_integer
+        self.is_natural = then.is_natural
+        self.is_zero = then.is_zero
+        self.is_nonpositive = then.is_nonpositive
+        self.is_nonnegative = then.is_nonnegative
+        self.is_even = then.is_even
 
     def evaluate(self) -> Term:
         return self
@@ -176,18 +193,21 @@ class PiecewiseBranch(Expr, Generic[P]):
 class OtherwiseBranch(Expr):
     def __init__(self, then: Term) -> None:
         super().__init__(then)
-        self.then: Term = then
-        self._is_real = then.is_real
-        self._is_rational = then.is_rational
-        self._is_integer = then.is_integer
-        self._is_natural = then.is_natural
-        self._is_zero = then.is_zero
-        self._is_nonpositive = then.is_nonpositive
-        self._is_nonnegative = then.is_nonnegative
-        self._is_even = then.is_even
+        self.then: Term = self.args[0]
 
         self._init_args = (then,)
         self._init_kwargs = {}
+
+    def update_properties(self) -> None:
+        then = self.args[0]
+        self.is_real = then.is_real
+        self.is_rational = then.is_rational
+        self.is_integer = then.is_integer
+        self.is_natural = then.is_natural
+        self.is_zero = then.is_zero
+        self.is_nonpositive = then.is_nonpositive
+        self.is_nonnegative = then.is_nonnegative
+        self.is_even = then.is_even
 
     def evaluate(self) -> Term:
         return self

@@ -9,6 +9,11 @@ class InvalidRuleError(Exception):
 
 
 rules: set[str] = {
+    "__add__",
+    "__mul__",
+    "__neg__",
+    "__pow__",
+    "__truediv__",
     "absolute_value_nonnegative_f",
     "all_proven",
     "apply",
@@ -25,6 +30,7 @@ rules: set[str] = {
     "de_morgan",
     "de_nest",
     "definite_clause_resolve",
+    "evaluate",
     "exists_modus_ponens",
     "extract",
     "first_unit_definite_clause_resolve",

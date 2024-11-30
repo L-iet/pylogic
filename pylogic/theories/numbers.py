@@ -1,6 +1,7 @@
 from pylogic.expressions.gcd import Gcd
 from pylogic.helpers import Namespace
 from pylogic.inference import Inference
+from pylogic.proposition.not_ import neg
 from pylogic.proposition.quantified.exists import ExistsInSet
 from pylogic.proposition.quantified.forall import ForallInSet
 from pylogic.theories.integers import Integers
@@ -45,7 +46,13 @@ Rationals.theorems.ratio_of_integers_lowest_terms = ForallInSet(
     r,
     Rationals,
     ExistsInSet(
-        p, Integers, ExistsInSet(q, Integers, r.equals(p / q).and_(Gcd(p, q).equals(1)))
+        p,
+        Integers,
+        ExistsInSet(
+            q,
+            Integers,
+            neg(q.equals(0)).and_(r.equals(p / q), Gcd(p, q).equals(1)),
+        ),
     ),
 ).todo(_internal=True)
 

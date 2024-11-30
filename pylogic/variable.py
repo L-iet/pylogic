@@ -19,6 +19,22 @@ else:
 class Variable(Symbol):
     def __init__(self, *args, depends_on: tuple[Variable, ...] = (), **kwargs) -> None:
         super().__init__(*args, depends_on=depends_on, **kwargs)
+        self.kwargs = self.kwargs + [
+            ("bound", "is_bound"),
+            ("elements", "elements"),
+            ("empty", "is_empty"),
+            ("cartes_power", "is_cartes_power"),
+            ("cartes_product", "is_cartes_product"),
+            ("finite", "is_finite"),
+            ("intersection", "is_intersection"),
+            ("union", "is_union"),
+            ("context", "dummy"),
+        ]
+
+    def __new_init__(
+        self, *args, depends_on: tuple[Variable, ...] = (), **kwargs
+    ) -> None:
+        super().__new_init__(*args, depends_on=depends_on, **kwargs)
         context = cast(AssumptionsContext | None, kwargs.get("context", None))
         self.is_bound: bool = False
         # if the variable is created from a proven existential statement

@@ -72,14 +72,14 @@ class IsContainedIn(BinaryRelation[T, U]):
             # TODO: add more here
             if self.right.name in {"Naturals", "Integers", "Rationals", "Reals"}:
                 substr = self.right.name[:-1].lower()
-                setattr(self.left, f"_is_{substr}", True)
+                setattr(self.left, f"is_{substr}", True)
             self.left.knowledge_base.add(self)
             self.left.sets_contained_in.add(self.right)
             self.right.elements.add(self.left)
         else:
             if self.right.name in {"Naturals", "Integers", "Rationals", "Reals"}:
                 substr = self.right.name[:-1].lower()
-                setattr(self.left, f"_is_{substr}", None)
+                setattr(self.left, f"is_{substr}", None)
             self.left.knowledge_base.discard(self)
             self.left.sets_contained_in.discard(self.right)
             self.right.elements.discard(self.left)

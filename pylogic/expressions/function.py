@@ -64,6 +64,9 @@ class SelfFunc(Expr):
         name = self.name or "self"
         return f"{name}({', '.join(str(arg) for arg in self.args)})"
 
+    def update_properties(self) -> None:
+        return
+
 
 def contains_self(expr: Expr) -> bool:
     """
@@ -110,7 +113,17 @@ class Function(Expr):
     _precedence = 0
     _is_wrapped = True
 
-    def __init__(
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.kwargs = self.kwargs + [
+            ("name", "name"),
+            ("domain", "domain"),
+            ("codomain", "codomain"),
+            ("parameters", "parameters"),
+            ("definition", "definition"),
+        ]
+
+    def __new_init__(
         self,
         name: str,
         domain: Set | Variable | Class | None = None,
@@ -168,7 +181,7 @@ class Function(Expr):
         else:
             self.domain = get_universe()
 
-        super().__init__(self.domain, self.codomain)
+        super().__new_init__(self.domain, self.codomain)
 
         # construct the proposition forall(x, f(x) in codomain)
         if self.codomain != UniversalSet:
@@ -342,6 +355,9 @@ class Function(Expr):
         # because we should be able to do sth like x = Variable("x"); ForallInSet(x, domain, f(x) == y)
         return CalledFunction(self, args)
 
+    def update_properties(self) -> None:
+        return
+
 
 class CalledFunction(Expr):
     _is_wrapped = True
@@ -484,6 +500,9 @@ class CalledFunction(Expr):
                 *self.arguments,
             )
         )
+
+    def update_properties(self) -> None:
+        return
 
 
 self = SelfFunc

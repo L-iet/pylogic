@@ -146,6 +146,8 @@ class AssumptionsContext:
 
 def conclude(conclusion: Proposition) -> Proposition:
     """
+    Used inside a context.
+
     Tell pylogic that you are interested in proving an implication
     or a Forall statement incolving this conclusion when the context is closed.
     """

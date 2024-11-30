@@ -119,7 +119,7 @@ class Not(Proposition, Generic[TProposition]):
                 p.quotient_set.name == "Integers"
                 and p.quotient_set.__class__.__name__ == "IntegersRing"
             ):
-                return rf"\left. {p.a._latex()} \not\mid {p.b._latex()} \right."
+                return rf"\left. {p.a._latex()} \nmid {p.b._latex()} \right."
             return rf"\frac{{{p.b._latex()}}}{{{p.a._latex()}}} \not\in {p.quotient_set._latex()}"
         elif isinstance(self.negated, BinaryRelation):
             p = self.negated
@@ -164,7 +164,7 @@ class Not(Proposition, Generic[TProposition]):
                         self.negated.left.knowledge_base.discard(self)
                 elif r == Constant(0):
                     if value:
-                        self.negated.left._is_zero = False
+                        self.negated.left.is_zero = False
                         self.negated.left.knowledge_base.add(self)
                     else:
                         self.negated.left.is_zero = None

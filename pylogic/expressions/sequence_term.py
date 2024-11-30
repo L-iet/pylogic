@@ -40,14 +40,15 @@ class SequenceTerm(Expr, Generic[T]):
         self.is_set_ = None
         self.is_union: bool | None = None
 
-        self._is_real = self.sequence.is_real
-        self._is_rational = self.sequence.is_rational
-        self._is_integer = self.sequence.is_integer
-        self._is_natural = self.sequence.is_natural
-        self._is_zero = self.sequence.is_zero
-        self._is_even = self.sequence.is_even
-        self._is_nonnegative = self.sequence.is_nonnegative
-        self._is_nonpositive = self.sequence.is_nonpositive
+    def update_properties(self) -> None:
+        self.is_real = self.sequence.is_real
+        self.is_rational = self.sequence.is_rational
+        self.is_integer = self.sequence.is_integer
+        self.is_natural = self.sequence.is_natural
+        self.is_zero = self.sequence.is_zero
+        self.is_even = self.sequence.is_even
+        self.is_nonnegative = self.sequence.is_nonnegative
+        self.is_nonpositive = self.sequence.is_nonpositive
 
     def predicate(self, term: Term) -> IsContainedIn:
         """

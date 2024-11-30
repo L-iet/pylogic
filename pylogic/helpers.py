@@ -534,7 +534,6 @@ def _add_assumptions(term: Term, attr: str, value: bool) -> Proposition:
 
     import importlib
 
-    from pylogic.inference import Inference
     from pylogic.proposition.not_ import Not
     from pylogic.proposition.relation.contains import IsContainedIn
 
@@ -554,43 +553,19 @@ def _add_assumptions(term: Term, attr: str, value: bool) -> Proposition:
     if attr in set_modules:
         mod = importlib.import_module(set_modules[attr])
         mod_set = getattr(mod, set_names[attr])
-        positive_prop = IsContainedIn(
-            term,
-            mod_set,
-            _is_proven=True,
-            _assumptions=set(),
-            _inference=Inference(None, rule="by_definition"),
-        )
+        positive_prop = IsContainedIn(term, mod_set, is_assumption=True)
     elif attr == "zero":
         from pylogic.proposition.relation.equals import Equals
 
-        positive_prop = Equals(
-            term,
-            0,
-            _is_proven=True,
-            _assumptions=set(),
-            _inference=Inference(None, rule="by_definition"),
-        )
+        positive_prop = Equals(term, 0, is_assumption=True)
     elif attr == "nonpositive":
         from pylogic.proposition.ordering.lessorequal import LessOrEqual
 
-        positive_prop = LessOrEqual(
-            term,
-            0,
-            _is_proven=True,
-            _assumptions=set(),
-            _inference=Inference(None, rule="by_definition"),
-        )
+        positive_prop = LessOrEqual(term, 0, is_assumption=True)
     elif attr == "nonnegative":
         from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
 
-        positive_prop = GreaterOrEqual(
-            term,
-            0,
-            _is_proven=True,
-            _assumptions=set(),
-            _inference=Inference(None, rule="by_definition"),
-        )
+        positive_prop = GreaterOrEqual(term, 0, is_assumption=True)
     elif attr == "even":
         # TODO: change to Integers where appropriate
         from pylogic.theories.natural_numbers import Naturals
@@ -598,24 +573,13 @@ def _add_assumptions(term: Term, attr: str, value: bool) -> Proposition:
         # if term._is_natural is True: ... # use Naturals.even
         # else: ... # use Integers.even
 
-        positive_prop = Naturals.even(
-            term,
-            _is_proven=True,
-            _assumptions=set(),
-            _inference=Inference(None, rule="by_definition"),
-        )
+        positive_prop = Naturals.even(term, is_assumption=True)
 
     if value:
         prop = positive_prop
     else:
-        positive_prop._set_is_proven(False)
-        positive_prop.deduced_from = None
-        prop = Not(
-            positive_prop,
-            _is_proven=True,
-            _assumptions=set(),
-            _inference=Inference(None, rule="by_definition"),
-        )
+        positive_prop._set_is_assumption(False)
+        prop = Not(positive_prop, is_assumption=True)
     return prop
 
 
@@ -625,41 +589,65 @@ def _add_assumption_attributes(term: Symbol | Sequence, kwargs) -> None:
     Check for contradictions and raise ValueError if found.
     To be used with Symbol and Sequence.
     """
-    if term._is_zero or term._is_nonpositive or term._is_nonnegative:
-        if term._is_real in [None, True]:
-            term._is_real = True
-        else:
-            raise ValueError(
-                "Contradictory assumptions: A number cannot be both non-real and zero/nonpositive/nonnegative"
-            )
-    if term._is_even:
-        if term._is_integer in [None, True]:
-            term._is_integer = True
-        else:
-            raise ValueError(
-                "Contradictory assumptions: A number cannot be both non-integer and even"
-            )
     if kwargs.get("positive", None):
-        term._is_real = True
-        term._is_nonnegative = True
-        if term._is_zero in [None, False]:
-            term._is_zero = False
-        else:
+        term.is_real = True
+        term.is_nonnegative = True
+        if term._is_zero is None:
+            term.is_zero = False
+        elif term._is_zero is True:
             raise ValueError(
                 "Contradictory assumptions: A positive number cannot be zero"
             )
     if kwargs.get("negative", None):
-        term._is_real = True
-        term._is_nonpositive = True
-        if term._is_zero in [None, False]:
-            term._is_zero = False
-        else:
+        term.is_real = True
+        term.is_nonpositive = True
+        if term._is_zero is None:
+            term.is_zero = False
+        elif term._is_zero is True:
             raise ValueError(
                 "Contradictory assumptions: A negative number cannot be zero"
             )
     if kwargs.get("odd", None):
-        term._is_integer = True
-        if term._is_even in [None, False]:
-            term._is_even = False
-        else:
+        term.is_integer = True
+        if term._is_even is None:
+            term.is_even = False
+        elif term._is_even is True:
             raise ValueError("Contradictory assumptions: An odd number cannot be even")
+
+    if term._is_zero or term._is_nonpositive or term._is_nonnegative:
+        if term._is_real is None:
+            term.is_real = True
+        elif term._is_real is False:
+            raise ValueError(
+                "Contradictory assumptions: A number cannot be both non-real and zero/nonpositive/nonnegative"
+            )
+    if term._is_zero:
+        if term._is_even is None:
+            term.is_even = True
+        elif term._is_even is False:
+            raise ValueError(
+                "Contradictory assumptions: A number cannot be both zero and odd"
+            )
+        if (term._is_nonnegative is False) or term._is_nonpositive is False:
+            raise ValueError(
+                "Contradictory assumptions: A number cannot be both zero and negative/positive"
+            )
+        else:
+            if term._is_nonnegative is None:
+                term.is_nonnegative = True
+            if term._is_nonpositive is None:
+                term.is_nonpositive = True
+    if term._is_nonnegative and term._is_nonpositive:
+        if term._is_zero is None:
+            term.is_zero = True
+        elif term._is_zero is False:
+            raise ValueError(
+                "Contradictory assumptions: A number cannot be nonnegative, nonpositive and nonzero"
+            )
+    if term._is_even:
+        if term._is_integer is None:
+            term.is_integer = True
+        elif term._is_integer is False:
+            raise ValueError(
+                "Contradictory assumptions: A number cannot be both non-integer and even"
+            )

@@ -16,15 +16,22 @@ class _Aggregate(Expr):
     Represents an aggregate of a sequence of non-set terms eg Sum, Product.
     """
 
-    def __init__(self, sequence: Sequence) -> None:
-        super().__init__(sequence)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.mutable_attrs_to_copy = self.mutable_attrs_to_copy + ["sequence"]
+
+    def __new_init__(self, sequence: Sequence) -> None:
+        super().__new_init__(sequence)
         self.sequence = sequence
-        self._is_real = sequence.is_real
-        self._is_rational = sequence.is_rational
-        self._is_integer = sequence.is_integer
-        self._is_natural = sequence.is_natural
-        self._is_zero = sequence.is_zero
-        self._is_even = sequence.is_even
+
+    def update_properties(self) -> None:
+        sequence = self.args[0]
+        self.is_real = sequence.is_real
+        self.is_rational = sequence.is_rational
+        self.is_integer = sequence.is_integer
+        self.is_natural = sequence.is_natural
+        self.is_zero = sequence.is_zero
+        self.is_even = sequence.is_even
 
     def evaluate(self) -> Term:
         from pylogic.sympy_helpers import sympy_to_pylogic
@@ -61,6 +68,7 @@ class _Aggregate(Expr):
                 )
 
         # otherwise, raise an error
+        # TODO: change this: sequence need not have finite length
         raise ValueError(
             "Cannot convert to sympy object: The sequence must have a finite length and nth term."
         )
@@ -78,8 +86,12 @@ class Sum(_Aggregate):
     _precedence = 7
     _is_wrapped = True
 
-    def __init__(self, sequence: Sequence) -> None:
-        super().__init__(sequence)
+    def __new_init__(self, sequence: Sequence) -> None:
+        super().__new_init__(sequence)
+
+    def update_properties(self) -> None:
+        sequence = self.args[0]
+        super().update_properties()
         self._is_nonnegative = sequence.is_nonnegative
         self._is_nonpositive = sequence.is_nonpositive
 

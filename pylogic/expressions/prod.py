@@ -19,24 +19,28 @@ class Prod(_Aggregate):
     _precedence = 5
     _is_wrapped = True
 
-    def __init__(self, sequence: Sequence) -> None:
+    def __new_init__(self, sequence: Sequence) -> None:
+        super().__new_init__(sequence)
+
+    def update_properties(self) -> None:
         from pylogic.helpers import ternary_and, ternary_or
         from pylogic.structures.sequence import FiniteSequence
 
-        super().__init__(sequence)
+        sequence = self.args[0]
+        super().update_properties()
         self._is_nonnegative = ternary_or(
             sequence.is_nonnegative,
             ternary_and(
-                isinstance(self.sequence, FiniteSequence),
-                True if self.sequence.length is not None else None,
-                self.sequence.length.is_even,
+                isinstance(sequence, FiniteSequence),
+                True if sequence.length is not None else None,
+                sequence.length.is_even,
                 sequence.is_nonpositive,
             ),
         )
         self._is_nonpositive = ternary_and(
-            isinstance(self.sequence, FiniteSequence),
-            True if self.sequence.length is not None else None,
-            self.sequence.length.is_odd,
+            isinstance(sequence, FiniteSequence),
+            True if sequence.length is not None else None,
+            sequence.length.is_odd,
             sequence.is_nonpositive,
         )
 

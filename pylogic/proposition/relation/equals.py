@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Callable, Self, TypeVar
 
 from sympy import Basic, Integer
 
-from pylogic import Term
+from pylogic import PythonNumeric, Term
 from pylogic.expressions.abs import Abs
 from pylogic.expressions.expr import Expr
 from pylogic.helpers import Side
@@ -44,6 +44,149 @@ class Equals(BinaryRelation[T, U]):
             **kwargs,
         )
 
+    def __add__(self, other: Term | PythonNumeric | Equals) -> Equals:
+        if isinstance(other, Equals):
+            both_proven = self.is_proven and other.is_proven
+            return Equals(
+                self.left + other.left,
+                self.right + other.right,
+                _is_proven=both_proven,
+                _assumptions=(
+                    get_assumptions(self).union(get_assumptions(other))
+                    if both_proven
+                    else set()
+                ),
+                _inference=(
+                    Inference(self, other, rule="__add__") if both_proven else None
+                ),
+            )
+        else:
+            return Equals(
+                self.left + other,
+                self.right + other,
+                _is_proven=self.is_proven,
+                _assumptions=get_assumptions(self) if self.is_proven else set(),
+                _inference=Inference(self, rule="__add__") if self.is_proven else None,
+            )
+
+    def __sub__(self, other: Term | PythonNumeric | Equals) -> Equals:
+        return self.__add__(-other)
+
+    def __mul__(self, other: Term | PythonNumeric | Equals) -> Equals:
+        if isinstance(other, Equals):
+            both_proven = self.is_proven and other.is_proven
+            return Equals(
+                self.left * other.left,
+                self.right * other.right,
+                _is_proven=both_proven,
+                _assumptions=(
+                    get_assumptions(self).union(get_assumptions(other))
+                    if both_proven
+                    else set()
+                ),
+                _inference=(
+                    Inference(self, other, rule="__mul__") if both_proven else None
+                ),
+            )
+        else:
+            return Equals(
+                self.left * other,
+                self.right * other,
+                _is_proven=self.is_proven,
+                _assumptions=get_assumptions(self) if self.is_proven else set(),
+                _inference=Inference(self, rule="__mul__") if self.is_proven else None,
+            )
+
+    def __truediv__(self, other: Term | PythonNumeric | Equals) -> Equals:
+        if isinstance(other, Equals):
+            both_proven = self.is_proven and other.is_proven
+            return Equals(
+                self.left / other.left,
+                self.right / other.right,
+                _is_proven=both_proven,
+                _assumptions=(
+                    get_assumptions(self).union(get_assumptions(other))
+                    if both_proven
+                    else set()
+                ),
+                _inference=(
+                    Inference(self, other, rule="__truediv__") if both_proven else None
+                ),
+            )
+        else:
+            return Equals(
+                self.left / other,
+                self.right / other,
+                _is_proven=self.is_proven,
+                _assumptions=get_assumptions(self) if self.is_proven else set(),
+                _inference=(
+                    Inference(self, rule="__truediv__") if self.is_proven else None
+                ),
+            )
+
+    def __neg__(self) -> Equals:
+        return Equals(
+            -self.left,
+            -self.right,
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self) if self.is_proven else set(),
+            _inference=Inference(self, rule="__neg__") if self.is_proven else None,
+        )
+
+    def __pow__(self, other: Term | PythonNumeric | Equals) -> Equals:
+        if isinstance(other, Equals):
+            both_proven = self.is_proven and other.is_proven
+            return Equals(
+                self.left**other.left,
+                self.right**other.right,
+                _is_proven=both_proven,
+                _assumptions=(
+                    get_assumptions(self).union(get_assumptions(other))
+                    if both_proven
+                    else set()
+                ),
+                _inference=(
+                    Inference(self, other, rule="__pow__") if both_proven else None
+                ),
+            )
+        else:
+            return Equals(
+                self.left**other,
+                self.right**other,
+                _is_proven=self.is_proven,
+                _assumptions=get_assumptions(self) if self.is_proven else set(),
+                _inference=Inference(self, rule="__pow__") if self.is_proven else None,
+            )
+
+    def __radd__(self, other: Term | PythonNumeric) -> Equals:
+        eq = Equals.reflexive(other)
+        return eq.__add__(other)
+
+    def __rsub__(self, other: Term | PythonNumeric) -> Equals:
+        eq = Equals.reflexive(other)
+        return eq.__sub__(other)
+
+    def __rmul__(self, other: Term | PythonNumeric) -> Equals:
+        eq = Equals.reflexive(other)
+        return eq.__mul__(other)
+
+    def __rtruediv__(self, other: Term | PythonNumeric) -> Equals:
+        eq = Equals.reflexive(other)
+        return eq.__truediv__(other)
+
+    def __rpow__(self, other: Term | PythonNumeric) -> Equals:
+        eq = Equals.reflexive(other)
+        return eq.__pow__(other)
+
+    def __abs__(self) -> Equals:
+        return Equals(
+            abs(self.left),
+            abs(self.right),
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self) if self.is_proven else set(),
+            _inference=Inference(self, rule="__abs__") if self.is_proven else None,
+        )
+
     def get(self, side: Side | str) -> Term:
         if side in ["left", Side.LEFT]:
             return self.left
@@ -57,7 +200,7 @@ class Equals(BinaryRelation[T, U]):
         from pylogic.constant import Constant
 
         if self.right == Constant(0):
-            self.left._is_zero = True if value else None
+            self.left.is_zero = True if value else None
 
     def _check_provable_by_simplification(
         self, _checking_side: Side, _doit_results: dict[Side, Term]
@@ -118,6 +261,18 @@ class Equals(BinaryRelation[T, U]):
         its negation is provable by inspection, and None if neither is provable.
         """
         return True if self.left == self.right else None
+
+    def evaluate(self) -> Equals:
+        """
+        Evaluate the equality.
+        """
+        return Equals(
+            self.left.evaluate(),
+            self.right.evaluate(),
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self) if self.is_proven else set(),
+            _inference=Inference(self, rule="evaluate") if self.is_proven else None,
+        )
 
     def substitute_into(
         self, side: Side | str, other_prop: TProposition, **kwargs

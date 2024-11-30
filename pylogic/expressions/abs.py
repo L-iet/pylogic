@@ -24,19 +24,25 @@ class Abs(Expr):
 
     _is_wrapped = True
 
-    def __init__(self, expr: Term) -> None:
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.mutable_attrs_to_copy = self.mutable_attrs_to_copy + ["expr"]
+
+    def __new_init__(self, expr: Term) -> None:
+        super().__new_init__(expr)
+        self.expr = self.args[0]
+
+    def update_properties(self) -> None:
         from pylogic.helpers import ternary_or
 
-        super().__init__(expr)
-        self.expr = expr
-        self._is_real = True
-        self._is_rational = expr.is_rational
-        self._is_integer = expr.is_integer
-        self._is_natural = ternary_or(expr.is_natural, expr.is_integer)
-        self._is_zero = True if expr.is_zero else None
-        self._is_even = expr.is_even
-        self._is_nonnegative = True
-        self._is_nonpositive = self.is_zero
+        self.is_real = True
+        self.is_rational = self.args[0].is_rational
+        self.is_integer = self.args[0].is_integer
+        self.is_natural = ternary_or(self.args[0].is_natural, self.args[0].is_integer)
+        self.is_zero = True if self.args[0].is_zero else None
+        self.is_even = self.args[0].is_even
+        self.is_nonnegative = True
+        self.is_nonpositive = self.is_zero
 
     def evaluate(self) -> Abs | Constant:
         from pylogic.helpers import is_python_numeric

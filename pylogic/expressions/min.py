@@ -13,9 +13,13 @@ class MinElement(Expr):
     _precedence = 1
     _is_wrapped = True
 
-    def __init__(self, expr: Term) -> None:
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.mutable_attrs_to_copy = self.mutable_attrs_to_copy + ["expr"]
+
+    def __new_init__(self, expr: Term) -> None:
         self.expr = expr
-        super().__init__(expr)
+        super().__new_init__(expr)
 
     def evaluate(self) -> MinElement | Term:
         from pylogic.helpers import getkey
@@ -46,19 +50,11 @@ class MinElement(Expr):
                 return min_
         return self
 
-    def to_sympy(self) -> sp.Expr:
-        from pylogic.sympy_helpers import PylSympyExpr
-
-        return PylSympyExpr(
-            "MinElement",
-            self.expr.to_sympy(),
-            _pyl_class=self.__class__,
-            _pyl_init_args=self._init_args,
-            _pyl_init_kwargs=self._init_kwargs,
-        )
-
     def _latex(self) -> str:
         return rf"\text{{MinElement}}\left({self.expr._latex()}\right)"
 
     def __str__(self) -> str:
         return f"MinElement({self.expr})"
+
+    def update_properties(self) -> None:
+        return

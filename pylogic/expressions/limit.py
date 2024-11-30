@@ -65,8 +65,15 @@ class Limit(Expr):
             **kwargs,
         )
 
-    def __init__(self, sequence: Sequence | Variable) -> None:
-        super().__init__(sequence)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.mutable_attrs_to_copy = self.mutable_attrs_to_copy + [
+            "sequence",
+            "epsilon_N_definition",
+        ]
+
+    def __new_init__(self, sequence: Sequence | Variable) -> None:
+        super().__new_init__(sequence)
         from pylogic.inference import Inference
 
         self.sequence: Sequence | Variable = sequence
@@ -87,19 +94,11 @@ class Limit(Expr):
             return sp.limit(self.sequence.nth_term(n).to_sympy(), n_sympy, sp.oo)
         return self
 
-    def to_sympy(self) -> sp.Expr:
-        from pylogic.sympy_helpers import PylSympyExpr
-
-        return PylSympyExpr(
-            "Limit",
-            self.sequence.to_sympy(),
-            _pyl_class=self.__class__,
-            _pyl_init_args=self._init_args,
-            _pyl_init_kwargs=self._init_kwargs,
-        )
-
     def _latex(self) -> str:
         return f"\\lim {self.sequence}"
 
     def __str__(self) -> str:
         return f"Limit({self.sequence})"
+
+    def update_properties(self) -> None:
+        return

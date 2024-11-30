@@ -117,14 +117,14 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
         # we don't reset is_set, is_list
         # etc because those denote the type of the variable
         # rather than properties of the variable itself
-        variable._is_real = None
-        variable._is_rational = None
-        variable._is_integer = None
-        variable._is_natural = None
-        variable._is_nonnegative = None
-        variable._is_nonpositive = None
-        variable._is_even = None
-        variable._is_zero = None
+        variable.is_real = None
+        variable.is_rational = None
+        variable.is_integer = None
+        variable.is_natural = None
+        variable.is_nonnegative = None
+        variable.is_nonpositive = None
+        variable.is_even = None
+        variable.is_zero = None
         return variable
 
     def describe(self, *, _indent=0) -> str:

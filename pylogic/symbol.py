@@ -34,33 +34,86 @@ else:
 class Symbol:
     is_atomic = True
 
+    # list of attributes not listed in kwargs that can change during the
+    # lifetime of this symbol,
+    # that need to be copied when a copy is made
+    mutable_attrs_to_copy = [
+        "properties_of_each_term",
+        "independent_dependencies",
+    ]
+    # names of keyword arguments that can be passed to the constructor
+    # to attribute names
+    # "dummy" means that there is no corresponding attribute
+    kwargs = [
+        ("name", "name"),
+        ("_from_existential_instance", "_from_existential_instance"),
+        ("knowledge_base", "knowledge_base"),
+        ("real", "_is_real"),
+        ("rational", "_is_rational"),
+        ("integer", "_is_integer"),
+        ("natural", "_is_natural"),
+        ("zero", "_is_zero"),
+        ("nonpositive", "_is_nonpositive"),
+        ("nonnegative", "_is_nonnegative"),
+        ("even", "_is_even"),
+        ("positive", "dummy"),
+        ("negative", "dummy"),
+        ("set_", "is_set_"),
+        ("graph", "is_graph"),
+        ("pair", "is_pair"),
+        ("list_", "is_list_"),
+        ("sequence", "is_sequence"),
+        ("latex_name", "latex_name"),
+        ("depends_on", "depends_on"),
+        ("sets_contained_in", "sets_contained_in"),
+    ]
+
     def __init__(self, *args, **kwargs) -> None:
         """
         Represents a symbolic object. Can be a Variable or a Constant.
         """
-        from pylogic.assumptions_context import assumptions_contexts
+        # _internal only: used when copying a symbol
+        _is_copy = kwargs.get("_is_copy", False)
+        if _is_copy:
+            assert len(args) == 0, "Symbol copy should not have positional arguments"
+            self.__copy_init__(**kwargs)
+        else:
+            self.__new_init__(*args, **kwargs)
+
+    def __copy_init__(self, **kwargs) -> None:
+        # these attrs are not copied
+        self.parent_exprs = []
+
+        self.__dict__.update(kwargs)
+        self._init_args = ()
+        self._init_kwargs = kwargs
+
+    def __new_init__(self, *args, **kwargs) -> None:
         from pylogic.helpers import _add_assumption_attributes, _add_assumptions
 
-        assert isinstance(args[0], str), "The first argument must be a string"
-        self.knowledge_base: set[Proposition] = set()
-        self.name: str = str(args[0])
-        self._is_real: bool = kwargs.get("real", None)
-        self._is_rational: bool = kwargs.get("rational", None)
-        self._is_integer: bool = kwargs.get("integer", None)
-        self._is_natural: bool = kwargs.get("natural", None)
-
-        self.is_set_: bool = kwargs.get("set_", None)
-        self.is_set: bool = self.is_set_
-        self.is_graph: bool = not self.is_set and kwargs.get("graph", None)
-        self.is_pair: bool = self.is_graph or kwargs.get("pair", None)
-        self.is_list_: bool = self.is_pair or kwargs.get("list_", None)
-        self.is_list: bool = self.is_list_
-        self.is_sequence: bool = self.is_list or kwargs.get("sequence", None)
+        name = args[0]
+        assert isinstance(name, str), "The first argument must be a string"
+        self.knowledge_base: set[Proposition] = kwargs.get("knowledge_base", set())
+        self.name: str = name
+        self._is_real: bool | None = kwargs.get("real", None)
+        self._is_rational: bool | None = kwargs.get("rational", None)
+        self._is_integer: bool | None = kwargs.get("integer", None)
+        self._is_natural: bool | None = kwargs.get("natural", None)
 
         self._is_zero: bool | None = kwargs.get("zero", None)
         self._is_nonpositive: bool | None = kwargs.get("nonpositive", None)
         self._is_nonnegative: bool | None = kwargs.get("nonnegative", None)
         self._is_even: bool | None = kwargs.get("even", None)
+
+        self.is_set_: bool | None = kwargs.get("set_", None)
+        self.is_graph: bool | None = not self.is_set and kwargs.get("graph", None)
+        self.is_pair: bool | None = self.is_graph or kwargs.get("pair", None)
+        self.is_list_: bool | None = self.is_pair or kwargs.get("list_", None)
+        self.is_sequence: bool | None = self.is_list or kwargs.get("sequence", None)
+
+        # list of expressions that contain this symbol
+        # not copied
+        self.parent_exprs: list[Expr] = []
 
         # for variable sequences
         self.properties_of_each_term: list[Proposition] = []
@@ -116,28 +169,58 @@ class Symbol:
                 else:
                     prop = _add_assumptions(self, attr, getattr(self, f"_is_{attr}"))
                 self.knowledge_base.add(prop)
-                if assumptions_contexts[-1] is not None:
-                    assumptions_contexts[-1].assumptions.append(prop)
+
+        self._is_copy = False
 
     @property
     def is_natural(self) -> bool | None:
         return self._is_natural
 
+    @is_natural.setter
+    def is_natural(self, value: bool | None):
+        self._is_natural = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
     @property
     def is_integer(self) -> bool | None:
         return self._is_integer or self.is_natural
+
+    @is_integer.setter
+    def is_integer(self, value: bool | None):
+        self._is_integer = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     @property
     def is_rational(self) -> bool | None:
         return self._is_rational or self.is_integer
 
+    @is_rational.setter
+    def is_rational(self, value: bool | None):
+        self._is_rational = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
     @property
     def is_real(self) -> bool | None:
         return self._is_real or self.is_rational
 
+    @is_real.setter
+    def is_real(self, value: bool | None):
+        self._is_real = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
     @property
     def is_zero(self) -> bool | None:
         return self._is_zero
+
+    @is_zero.setter
+    def is_zero(self, value: bool | None):
+        self._is_zero = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     @property
     def is_nonzero(self) -> bool | None:
@@ -148,6 +231,12 @@ class Symbol:
     @property
     def is_even(self) -> bool | None:
         return self._is_even
+
+    @is_even.setter
+    def is_even(self, value: bool | None):
+        self._is_even = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     @property
     def is_odd(self) -> bool | None:
@@ -171,9 +260,29 @@ class Symbol:
     def is_nonpositive(self) -> bool | None:
         return self._is_nonpositive
 
+    @is_nonpositive.setter
+    def is_nonpositive(self, value: bool | None):
+        self._is_nonpositive = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
     @property
     def is_nonnegative(self) -> bool | None:
         return self._is_nonnegative
+
+    @is_nonnegative.setter
+    def is_nonnegative(self, value: bool | None):
+        self._is_nonnegative = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_set(self) -> bool | None:
+        return self.is_set_
+
+    @property
+    def is_list(self) -> bool | None:
+        return self.is_list_
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.name}, deps={self.depends_on})"
@@ -237,21 +346,18 @@ class Symbol:
             return True
         if isinstance(other, Symbol):
             return (
-                (not self._from_existential_instance)
-                and (not other._from_existential_instance)
-                and (
-                    self.name == other.name
-                    # TODO: fix replace not working well
-                    # and self.__class__ == other.__class__
-                    # and self.is_real == other.is_real
-                    # and self.is_set_ == other.is_set_
-                    # and self.is_graph == other.is_graph
-                    # and self.is_pair == other.is_pair
-                    # and self.is_list_ == other.is_list_
-                    # and self.is_sequence == other.is_sequence
-                    and self.depends_on == other.depends_on
-                )
+                self.name == other.name
+                # TODO: fix replace not working well
+                # and self.__class__ == other.__class__
+                # and self.is_real == other.is_real
+                # and self.is_set_ == other.is_set_
+                # and self.is_graph == other.is_graph
+                # and self.is_pair == other.is_pair
+                # and self.is_list_ == other.is_list_
+                # and self.is_sequence == other.is_sequence
+                and self.depends_on == other.depends_on
             )
+
         return NotImplemented
 
     def __lt__(self, other: Any) -> bool | LessThan:
@@ -316,7 +422,12 @@ class Symbol:
         return f"$${self._latex()}$$"
 
     def copy(self) -> Self:
-        return self.__class__(*self._init_args, **self._init_kwargs)
+        """
+        Create a copy of this symbol.
+        """
+        kw = {k: getattr(self, k) for k in self.mutable_attrs_to_copy}
+        kw.update({val: getattr(self, val) for _, val in self.kwargs if val != "dummy"})
+        return self.__class__(_is_copy=True, **kw)
 
     def deepcopy(self) -> Self:
         return self.copy()
@@ -333,16 +444,34 @@ class Symbol:
                 return new
         return self
 
-    def to_sympy(self) -> PylSympySymbol:
+    def to_sympy(self) -> sp.Symbol:
         from pylogic.sympy_helpers import PylSympySymbol
 
-        return PylSympySymbol(
-            *self._init_args,
-            _pyl_class=self.__class__,
-            _pyl_init_args=self._init_args,
-            _pyl_init_kwargs=self._init_kwargs,
-            **self._init_kwargs,
+        kw = {k: getattr(self, k) for k in self.mutable_attrs_to_copy}
+        kw.update({val: getattr(self, val) for _, val in self.kwargs if val != "dummy"})
+        kw["_is_copy"] = True
+
+        symbol_kwargs = (
+            self._init_kwargs
+            if not self._is_copy
+            else {
+                kwarg: getattr(self, val)
+                for kwarg, val in self.kwargs
+                if val != "dummy"
+            }
         )
+
+        return PylSympySymbol(
+            *self._init_args,  # TODO: _init_args are different for copy
+            _pyl_class=self.__class__,
+            _pyl_init_args=(),
+            _pyl_init_kwargs=kw,
+            **symbol_kwargs,
+        )
+
+    def _sympy_(self) -> sp.Symbol:
+        # for sympy internal use
+        return self.to_sympy()
 
     def evaluate(self) -> Self:
         return self
@@ -426,85 +555,6 @@ class Symbol:
                 self.is_sequence,
             )
         )
-
-
-class Function(sp.Function):
-    def __repr__(self):
-        return super().__repr__()
-
-
-class MatrixSymbol(sp.MatrixSymbol):
-    def __repr__(self):
-        return super().__repr__()
-
-    def __add__(self, other) -> MatAdd:
-        return MatAdd(self, other)  # type: ignore
-
-    def __mul__(self, other) -> MatMul:
-        return MatMul(self, other)  # type: ignore
-
-    def transpose(self):
-        return Transpose(self)
-
-    @property
-    def T(self):
-        return self.transpose()
-
-
-class MatAdd(sp.MatAdd):
-    def __repr__(self):
-        return super().__repr__()
-
-    def transpose(self, doit=False):
-        _t = Transpose(self)
-        return _t if not doit else _t.doit(deep=False)
-
-    def __getitem__(self, key):
-        return MatrixElement(self, *key)
-
-    @property
-    def T(self):
-        return self.transpose()
-
-
-class MatMul(sp.MatMul):
-    def __repr__(self):
-        return super().__repr__()
-
-    def transpose(self, doit=False):
-        _t = Transpose(self)
-        return _t if not doit else _t.doit(deep=False)
-
-    def __getitem__(self, key):
-        return MatrixElement(self, *key)
-
-    @property
-    def T(self):
-        return self.transpose()
-
-
-class MatrixElement(MatEl):
-    def __repr__(self):
-        return super().__repr__()
-
-
-class Transpose(sp.Transpose):
-    def __repr__(self):
-        return super().__repr__()
-
-    def __mul__(self, other) -> MatMul:
-        return MatMul(self, other)  # type: ignore
-
-    def __getitem__(self, key):
-        return MatrixElement(self, *key)
-
-    def transpose(self, doit=True):
-        _t = Transpose(self)
-        return _t if not doit else _t.doit(deep=False)
-
-    @property
-    def T(self):
-        return self.transpose()
 
 
 def symbols(*args, **kwargs):

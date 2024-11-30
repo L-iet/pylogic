@@ -42,7 +42,45 @@ class Expr(ABC):
     is_atomic = False
     _is_wrapped = False
 
-    def __init__(
+    mutable_attrs_to_copy = [
+        "independent_dependencies",
+        "_is_real",
+        "_is_rational",
+        "_is_integer",
+        "_is_natural",
+        "_is_zero",
+        "_is_nonpositive",
+        "_is_nonnegative",
+        "_is_even",
+        "args",
+        "variables",
+        "independent_dependencies",
+        "constants",
+        "sets",
+        "class_ns",
+        "sets_contained_in",
+    ]
+
+    kwargs = [("knowledge_base", "knowledge_base")]
+
+    def __init__(self, *args, **kwargs):
+        # _internal only: used when copying an expr
+        _is_copy = kwargs.get("_is_copy", False)
+        if _is_copy:
+            assert len(args) == 0, "Cannot provide args when copying an expression"
+            self.__copy_init__(**kwargs)
+        else:
+            self.__new_init__(*args, **kwargs)
+
+    def __copy_init__(self, **kwargs) -> None:
+        # these attrs are not copied
+        self.parent_exprs = []
+
+        self.__dict__.update(kwargs)
+        self._init_args = ()
+        self._init_kwargs = kwargs
+
+    def __new_init__(
         self,
         *args: Proposition | PBasic | PythonNumeric | Set | Sequence | Expr,
         **kwargs: Any,
@@ -54,7 +92,7 @@ class Expr(ABC):
         self._build_args_and_symbols(*args)
         self._init_args = args
         self._init_kwargs = kwargs
-        self.knowledge_base: set[Proposition] = set()
+        self.knowledge_base: set[Proposition] = kwargs.get("knowledge_base", set())
 
         self._is_real: bool | None = None
         self._is_rational: bool | None = None
@@ -65,37 +103,91 @@ class Expr(ABC):
         self._is_nonnegative: bool | None = None
         self._is_even: bool | None = None
 
+        # list of expressions that contain this expression
+        # not copied
+        self.parent_exprs: list[Expr] = []
+
+        self.update_properties()
+
     @property
     def is_real(self) -> bool | None:
         return self._is_real
+
+    @is_real.setter
+    def is_real(self, value: bool | None) -> None:
+        self._is_real = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     @property
     def is_rational(self) -> bool | None:
         return self._is_rational
 
+    @is_rational.setter
+    def is_rational(self, value: bool | None) -> None:
+        self._is_rational = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
     @property
     def is_integer(self) -> bool | None:
         return self._is_integer
+
+    @is_integer.setter
+    def is_integer(self, value: bool | None) -> None:
+        self._is_integer = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     @property
     def is_natural(self) -> bool | None:
         return self._is_natural
 
+    @is_natural.setter
+    def is_natural(self, value: bool | None) -> None:
+        self._is_natural = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
     @property
     def is_zero(self) -> bool | None:
         return self._is_zero
+
+    @is_zero.setter
+    def is_zero(self, value: bool | None) -> None:
+        self._is_zero = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     @property
     def is_nonpositive(self) -> bool | None:
         return self._is_nonpositive
 
+    @is_nonpositive.setter
+    def is_nonpositive(self, value: bool | None) -> None:
+        self._is_nonpositive = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
     @property
     def is_nonnegative(self) -> bool | None:
         return self._is_nonnegative
 
+    @is_nonnegative.setter
+    def is_nonnegative(self, value: bool | None) -> None:
+        self._is_nonnegative = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
     @property
     def is_even(self) -> bool | None:
         return self._is_even
+
+    @is_even.setter
+    def is_even(self, value: bool | None) -> None:
+        self._is_even = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     @property
     def is_positive(self) -> bool | None:
@@ -121,6 +213,16 @@ class Expr(ABC):
 
         return ternary_not(self.is_zero)
 
+    @abstractmethod
+    def update_properties(self) -> None:
+        """
+        Update the properties of the expression.
+        Properties include
+        is_real, is_rational, is_integer, is_natural, is_zero,
+        is_nonpositive, is_nonnegative, is_even.
+        """
+        pass
+
     def _build_args_and_symbols(
         self, *args: Proposition | PBasic | Set | Sequence | Expr
     ) -> None:
@@ -137,6 +239,7 @@ class Expr(ABC):
 
         # TODO: arg can be a proposition, a sequence as well
         for arg in args:
+            arg.parent_exprs.append(self)
             if isinstance(arg, Variable):
                 self.variables.add(arg)
                 if len(arg.depends_on) == 0:
@@ -154,7 +257,7 @@ class Expr(ABC):
                 self.independent_dependencies.update(arg.independent_dependencies)
             else:
                 cls = arg.__class__.__name__
-                if cls.startswith("Collection") and cls[10].isdigit():
+                if cls.startswith("Class") and cls[10].isdigit():
                     self.class_ns.add(arg)  # type: ignore
 
         self.sets_contained_in: set[Set] = set()
@@ -175,9 +278,25 @@ class Expr(ABC):
         """
         pass
 
-    @abstractmethod
     def to_sympy(self) -> sp.Basic:
-        pass
+        """
+        Convert the expression to a sympy object.
+        """
+        from pylogic.sympy_helpers import PylSympyExpr
+
+        new_args = [to_sympy(arg) for arg in self.args]
+
+        kw = {k: getattr(self, k) for k in self.mutable_attrs_to_copy}
+        kw.update({val: getattr(self, val) for _, val in self.kwargs if val != "dummy"})
+        kw["_is_copy"] = True
+
+        return PylSympyExpr(
+            getattr(self, "name", self.__class__.__name__),
+            *new_args,
+            _pyl_class=self.__class__,
+            _pyl_init_args=(),
+            _pyl_init_kwargs=kw,
+        )
 
     @abstractmethod
     def _latex(self) -> str:
@@ -336,7 +455,12 @@ class Expr(ABC):
         return new_expr
 
     def copy(self) -> Self:
-        return self.__class__(*self._init_args, **self._init_kwargs)
+        """
+        Create a copy of this expression.
+        """
+        kw = {k: getattr(self, k) for k in self.mutable_attrs_to_copy}
+        kw.update({val: getattr(self, val) for _, val in self.kwargs if val != "dummy"})
+        return self.__class__(_is_copy=True, **kw)
 
     def deepcopy(self) -> Self:
         return self.copy()
@@ -385,14 +509,25 @@ class CustomExpr(Expr, Generic[U]):
     unless it is not fully evaluated.
     """
 
-    def __init__(
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.mutable_attrs_to_copy = self.mutable_attrs_to_copy + [
+            "name",
+            "_is_wrapped",
+        ]
+        self.kwargs = self.kwargs + [
+            ("eval_func", "eval_func"),
+            ("latex_func", "latex_func"),
+        ]
+
+    def __new_init__(
         self,
         name: str,
         *args: Proposition | PBasic | PythonNumeric | Expr,
         eval_func: Callable[..., U | None] | None = None,
         latex_func: Callable[..., str] | None = None,
     ):
-        super().__init__(*args)
+        super().__new_init__(*args)
         self.name = name
         self.eval_func = eval_func
         self.latex_func = latex_func
@@ -415,18 +550,6 @@ class CustomExpr(Expr, Generic[U]):
             )
         return NotImplemented
 
-    def to_sympy(self) -> sp.Expr:
-        from pylogic.sympy_helpers import PylSympyExpr
-
-        new_args = [to_sympy(arg) for arg in self.args]
-        return PylSympyExpr(
-            self.name,
-            *new_args,
-            _pyl_class=self.__class__,
-            _pyl_init_args=self._init_args,
-            _pyl_init_kwargs=self._init_kwargs,
-        )
-
     def evaluate(self, **kwargs) -> Self | U:
         """
         Calls the evaluation function with the arguments.
@@ -442,6 +565,9 @@ class CustomExpr(Expr, Generic[U]):
         if self.latex_func is None:
             return rf"\text{{{repr(self)}}}"
         return self.latex_func(*self.args)
+
+    def update_properties(self) -> None:
+        return
 
     def __str__(self) -> str:
         return f"{self.name}({', '.join(map(str, self.args))})"
@@ -474,7 +600,15 @@ def distance(
 
 
 class BinaryExpression(CustomExpr[U]):
-    def __init__(
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.mutable_attrs_to_copy = self.mutable_attrs_to_copy + [
+            "symbol",
+            "left",
+            "right",
+        ]
+
+    def __new_init__(
         self,
         name: str,
         symbol: str,
@@ -483,10 +617,14 @@ class BinaryExpression(CustomExpr[U]):
         eval_func: Callable[[U, U], U | None] | None = None,
         latex_func: Callable[[str, str], str] | None = None,
     ):
-        super().__init__(name, left, right, eval_func=eval_func, latex_func=latex_func)
+        super().__new_init__(
+            name, left, right, eval_func=eval_func, latex_func=latex_func
+        )
         self.symbol = symbol
         self.left = left
         self.right = right
+
+        # kwargs has not changed, same in __init__
         self._init_args = (name, symbol, left, right)
 
     def __repr__(self) -> str:
@@ -505,10 +643,12 @@ class Add(Expr):
     # Custom_Expr Piecewise Relation(eg <, subset)
     _precedence = 8
 
-    def __init__(self, *args: Expr | PBasic | PythonNumeric):
+    def __new_init__(self, *args: Expr | PBasic | PythonNumeric):
+        super().__new_init__(*args)
+
+    def update_properties(self) -> None:
         from pylogic.helpers import ternary_or
 
-        super().__init__(*args)
         all_real = True
         all_rational = True
         all_integer = True
@@ -521,8 +661,8 @@ class Add(Expr):
         exists_negative = False
         count_odd = 0
         count_even = 0
-        total_args = len(self._init_args)
-        for i, arg in enumerate(self._init_args):
+        total_args = len(self.args)
+        for i, arg in enumerate(self.args):
             if not arg.is_real:
                 all_real = False
             if not arg.is_rational:
@@ -547,23 +687,23 @@ class Add(Expr):
                 exists_positive = True
             if arg.is_negative:
                 exists_negative = True
-        self._is_real = ternary_or(all_real, None)
-        self._is_rational = ternary_or(all_rational, None)
-        self._is_integer = ternary_or(all_integer, None)
-        self._is_natural = ternary_or(all_natural, None)
-        self._is_nonnegative = ternary_or(all_nonnegative, None)
-        self._is_zero = ternary_or(all_zero, None)
-        self._is_nonpositive = ternary_or(all_nonpositive, None)
-        self._is_even = ternary_or(all_even, None)
+        self.is_real = ternary_or(all_real, None)
+        self.is_rational = ternary_or(all_rational, None)
+        self.is_integer = ternary_or(all_integer, None)
+        self.is_natural = ternary_or(all_natural, None)
+        self.is_nonnegative = ternary_or(all_nonnegative, None)
+        self.is_zero = ternary_or(all_zero, None)
+        self.is_nonpositive = ternary_or(all_nonpositive, None)
+        self.is_even = ternary_or(all_even, None)
 
         if all_nonnegative and exists_positive:
-            self._is_zero = False
+            self.is_zero = False
         if all_nonpositive and exists_negative:
-            self._is_zero = False
+            self.is_zero = False
         if count_odd % 2 == 0 and count_even == total_args - count_odd:
-            self._is_even = True
+            self.is_even = True
         elif count_odd % 2 == 1 and count_even == total_args - count_odd:
-            self._is_even = False
+            self.is_even = False
 
     def evaluate(self, **kwargs) -> Add:
         from pylogic.sympy_helpers import FromSympyError, sympy_to_pylogic
@@ -573,7 +713,7 @@ class Add(Expr):
         if all(arg.is_real for arg in self.args):
             new_add = Add(*[arg.evaluate(**kwargs) for arg in self.args])
             try:
-                return sympy_to_pylogic(new_add.to_sympy())
+                return sympy_to_pylogic(new_add.to_sympy().doit())
             except FromSympyError:
                 return new_add
         return self
@@ -608,10 +748,12 @@ class Mul(Expr):
     # Custom_Expr Piecewise Relation(eg <, subset)
     _precedence = 6
 
-    def __init__(self, *args: PBasic | Expr | PythonNumeric):
+    def __new_init__(self, *args: PBasic | Expr | PythonNumeric):
+        super().__new_init__(*args)
+
+    def update_properties(self) -> None:
         from pylogic.helpers import ternary_or
 
-        super().__init__(*args)
         all_real = True
         all_rational = True
         all_integer = True
@@ -622,9 +764,9 @@ class Mul(Expr):
         exists_zero = False
         count_even = 0
         count_odd = 0
-        total_args = len(self._init_args)
+        total_args = len(self.args)
 
-        for i, arg in enumerate(self._init_args):
+        for i, arg in enumerate(self.args):
             if not arg.is_real:
                 all_real = False
             if not arg.is_rational:
@@ -648,28 +790,28 @@ class Mul(Expr):
                 count_nonnegative += 1
 
         if all_real:
-            self._is_real = True
+            self.is_real = True
             if exists_zero:
-                self._is_zero = True
+                self.is_zero = True
             elif all_nonzero:
-                self._is_zero = False
-        self._is_rational = ternary_or(all_rational, None)
-        self._is_integer = ternary_or(all_integer, None)
-        self._is_natural = ternary_or(all_natural, None)
+                self.is_zero = False
+        self.is_rational = ternary_or(all_rational, None)
+        self.is_integer = ternary_or(all_integer, None)
+        self.is_natural = ternary_or(all_natural, None)
         if (
             count_nonpositive % 2 == 0
             and count_nonnegative == total_args - count_nonpositive
         ):
-            self._is_nonnegative = True
+            self.is_nonnegative = True
         if (
             count_nonpositive % 2 == 1
             and count_nonnegative == total_args - count_nonpositive
         ):
-            self._is_nonpositive = True
+            self.is_nonpositive = True
         if count_even > 0 and count_even + count_odd == total_args:
-            self._is_even = True
+            self.is_even = True
         if count_odd == total_args:
-            self._is_even = False
+            self.is_even = False
 
     def evaluate(self) -> Mul:
         from pylogic.sympy_helpers import FromSympyError, sympy_to_pylogic
@@ -678,7 +820,7 @@ class Mul(Expr):
         if all(arg.is_real for arg in self.args):
             new_mul = Mul(*[arg.evaluate() for arg in self.args])
             try:
-                return sympy_to_pylogic(new_mul.to_sympy())
+                return sympy_to_pylogic(new_mul.to_sympy().doit())
             except FromSympyError:
                 return new_mul
         return self
@@ -743,54 +885,56 @@ class Pow(Expr):
     # Custom_Expr Piecewise Relation(eg <, subset)
     _precedence = 4
 
-    def __init__(
+    def __new_init__(
         self, base: PBasic | PythonNumeric | Expr, exp: PBasic | PythonNumeric | Expr
     ):
-        super().__init__(base, exp)
+        super().__new_init__(base, exp)
         self.base = self.args[0]
         self.exp = self.args[1]
 
-        if self.base.is_zero and self.exp.is_positive:
-            self._is_zero = True
-        if self.base.is_nonnegative and self.exp.is_nonnegative:
-            self._is_nonnegative = True
-        if self.base.is_positive and (self.exp.is_even is False):
-            self._is_zero = False
-            self._is_nonnegative = True
-        if self.base.is_nonpositive and self.exp.is_even:
-            self._is_nonnegative = True
-        if self.base.is_negative and (self.exp.is_even is False):
-            self._is_zero = False
-            self._is_nonpositive = True
+    def update_properties(self) -> None:
+        base, exp = self.args
+        if base.is_zero and exp.is_positive:
+            self.is_zero = True
+        if base.is_nonnegative and exp.is_nonnegative:
+            self.is_nonnegative = True
+        if base.is_positive and (exp.is_even is False):
+            self.is_zero = False
+            self.is_nonnegative = True
+        if base.is_nonpositive and exp.is_even:
+            self.is_nonnegative = True
+        if base.is_negative and (exp.is_even is False):
+            self.is_zero = False
+            self.is_nonpositive = True
 
-        if self.base.is_real and self.exp.is_positive:
-            self._is_real = True
-            if self.exp.is_even:
-                self._is_nonnegative = True
-            if self.base.is_integer and self.exp.is_even:
-                self._is_natural = True
-            if self.base.is_integer and self.exp.is_natural:
-                self._is_integer = True
-            if self.base.is_rational and self.exp.is_integer:
-                self._is_rational = True
-            if self.base.is_natural and self.exp.is_natural:
-                self._is_natural = True
+        if base.is_real and exp.is_positive:
+            self.is_real = True
+            if exp.is_even:
+                self.is_nonnegative = True
+            if base.is_integer and exp.is_even:
+                self.is_natural = True
+            if base.is_integer and exp.is_natural:
+                self.is_integer = True
+            if base.is_rational and exp.is_integer:
+                self.is_rational = True
+            if base.is_natural and exp.is_natural:
+                self.is_natural = True
 
-        if self.base.is_zero is False:
-            if self.exp.is_even:
-                self._is_zero = False
-                self._is_nonnegative = True
+        if base.is_zero is False:
+            if exp.is_even:
+                self.is_zero = False
+                self.is_nonnegative = True
 
-            if self.base.is_real and self.exp.is_integer:
-                self._is_real = True
-            if self.base.is_integer and self.exp.is_even:
-                self._is_natural = True
-            if self.base.is_integer and self.exp.is_natural:
-                self._is_integer = True
-            if self.base.is_rational and self.exp.is_integer:
-                self._is_rational = True
-            if self.base.is_natural and self.exp.is_natural:
-                self._is_natural = True
+            if base.is_real and exp.is_integer:
+                self.is_real = True
+            if base.is_integer and exp.is_even:
+                self.is_natural = True
+            if base.is_integer and exp.is_natural:
+                self.is_integer = True
+            if base.is_rational and exp.is_integer:
+                self.is_rational = True
+            if base.is_natural and exp.is_natural:
+                self.is_natural = True
 
     def evaluate(self) -> Pow:
         from pylogic.sympy_helpers import FromSympyError, sympy_to_pylogic
@@ -799,7 +943,7 @@ class Pow(Expr):
         if all(arg.is_real for arg in self.args):
             new_pow = Pow(*[arg.evaluate() for arg in self.args])
             try:
-                return sympy_to_pylogic(new_pow.to_sympy())
+                return sympy_to_pylogic(new_pow.to_sympy().doit())
             except FromSympyError:
                 return new_pow
         return self
@@ -808,6 +952,17 @@ class Pow(Expr):
         return sp.Pow(to_sympy(self.base), to_sympy(self.exp))
 
     def _latex(self) -> str:
+        from pylogic.constant import Constant
+
+        if (
+            isinstance(self.exp, Constant)
+            and isinstance(self.exp.value, Fraction)
+            and self.exp.value.numerator == 1
+        ):
+            if self.exp.value.denominator == 2:
+                return rf"\sqrt{{{self.base._latex()}}}"
+            return rf"\sqrt[{self.exp.value.denominator}]{{{self.base._latex()}}}"
+
         if (
             self.base.is_atomic
             or self.base._is_wrapped
@@ -838,6 +993,8 @@ def replace(
     objects are equal in order to replace.
     """
     from pylogic.proposition.proposition import Proposition
+    from pylogic.structures.sequence import Sequence
+    from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
 
     equal_check = equal_check or (lambda x, y: x == y)
@@ -852,8 +1009,7 @@ def replace(
             replace(e, replace_dict, equal_check=equal_check) for e in expr
         )
 
-    # TODO: update with more types
-    if not isinstance(expr, (Expr, Proposition, Symbol)):
+    if not isinstance(expr, (Expr, Proposition, Symbol, Sequence, Set)):
         return expr
 
     if isinstance(expr, (Expr, Proposition)):

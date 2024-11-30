@@ -24,16 +24,12 @@ class Gcd(Expr):
 
     _is_wrapped = True
 
-    def __init__(self, *args: Expr | PBasic | PythonNumeric) -> None:
-        from pylogic.helpers import ternary_and
+    def __new_init__(self, *args: Expr | PBasic | PythonNumeric) -> None:
         from pylogic.inference import Inference
         from pylogic.theories.integers import Integers
 
-        super().__init__(*args)
-        self._is_real = ternary_and(*[expr.is_integer for expr in self.args])
-        self._is_rational = self._is_real
-        self._is_integer = self._is_real
-        self._is_natural = self._is_real
+        super().__new_init__(*args)
+        self.update_properties()
 
         for arg in self.args:
             self.knowledge_base.add(
@@ -56,19 +52,16 @@ class Gcd(Expr):
         except FromSympyError:
             return self
 
-    def to_sympy(self) -> sp.Basic:
-        from pylogic.sympy_helpers import PylSympyExpr
-
-        return PylSympyExpr(
-            "Gcd",
-            *[to_sympy(expr) for expr in self.args],
-            _pyl_class=self.__class__,
-            _pyl_init_args=self._init_args,
-            _pyl_init_kwargs=self._init_kwargs,
-        )
-
     def _latex(self) -> str:
         return f"\\gcd\\left({', '.join([expr._latex() for expr in self.args])}\\right)"
 
     def __str__(self) -> str:
         return f"gcd({', '.join([str(expr) for expr in self.args])})"
+
+    def update_properties(self) -> None:
+        from pylogic.helpers import ternary_and
+
+        self.is_real = ternary_and(*[expr.is_integer for expr in self.args])
+        self.is_rational = self._is_real
+        self.is_integer = self._is_real
+        self.is_natural = self._is_real

@@ -30,6 +30,16 @@ T = TypeVar("T", bound=str | int | float | complex | Fraction | Decimal)
 
 class Constant(Symbol, Generic[T]):
     def __init__(self, value: T, *args, **kwargs) -> None:
+
+        # although value can be numeric, it gets routed back
+        # to Constant.__new_init__
+        # better to use kwarg value=value here so that
+        # value is part of kwargs in Symbol.__init__ and Symbol.__copy_init__
+        super().__init__(*args, value=value, **kwargs)  # type: ignore
+
+        self.kwargs = self.kwargs + [("value", "value")]
+
+    def __new_init__(self, value: T, *args, **kwargs) -> None:
         type_check(
             value,
             str,
@@ -42,13 +52,15 @@ class Constant(Symbol, Generic[T]):
         )
         if isinstance(value, Constant):
             value = value.value
-        super().__init__(str(value), *args, **kwargs)
+        super().__new_init__(str(value), *args, **kwargs)
         self.value: T = cast(T, value)
         # if the constant is created from a proven existential statement
         # it won't be equal to any other constant
         self._from_existential_instance = kwargs.get(
             "_from_existential_instance", False
         )
+        # since this is the __init__, we technically don't
+        # need to use the main setter methods
         if isinstance(value, int):
             self._is_integer = True
             if value >= 0:
@@ -66,12 +78,17 @@ class Constant(Symbol, Generic[T]):
             else:
                 self._is_integer = False
         elif isinstance(value, (Decimal, float)):
-            self._is_real = True
+            self.is_real = True
+
         if is_python_real_numeric(value):
             if value >= 0:
                 self._is_nonnegative = True
+            else:
+                self._is_nonnegative = False
             if value <= 0:
                 self._is_nonpositive = True
+            else:
+                self._is_nonpositive = False
             if value == 0:
                 self._is_zero = True
             else:
@@ -100,6 +117,7 @@ class Constant(Symbol, Generic[T]):
         """
         Constant(0) == 0
         """
+        from pylogic.helpers import is_python_numeric
         from pylogic.proposition.proposition import Proposition
         from pylogic.structures.sequence import Sequence
         from pylogic.structures.set_ import Set
@@ -108,13 +126,11 @@ class Constant(Symbol, Generic[T]):
         if self is other:
             return True
         if isinstance(other, Constant):
-            return (
-                (not self._from_existential_instance)
-                and (not other._from_existential_instance)
-                and self.value == other.value
-            )
+            return self.value == other.value
         if isinstance(other, (Variable, Set, Sequence, Proposition)):
             return False
+        if is_python_numeric(other):
+            return self.value == other
         return NotImplemented
 
     def __lt__(self, other: Any) -> bool | LessThan:
@@ -186,10 +202,10 @@ class Constant(Symbol, Generic[T]):
     @overload
     def to_sympy(self: Constant[Decimal]) -> sp.Float: ...
     @overload
-    def to_sympy(self: Constant[str]) -> PylSympySymbol: ...
+    def to_sympy(self: Constant[str]) -> sp.Symbol: ...
     def to_sympy(
         self,
-    ) -> PylSympySymbol | sp.Integer | sp.Float | sp.Add | sp.Rational | ImaginaryUnit:
+    ) -> sp.Symbol | sp.Integer | sp.Float | sp.Add | sp.Rational | ImaginaryUnit:
         if is_python_numeric(self.value):
             import sympy as sp
 

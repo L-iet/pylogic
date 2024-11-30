@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from sympy.series.sequences import SeqBase, SeqFormula, SeqPer
 
     from pylogic.constant import Constant
+    from pylogic.expressions.expr import Expr
     from pylogic.expressions.sequence_term import SequenceTerm
     from pylogic.proposition.proposition import Proposition
     from pylogic.proposition.relation.contains import IsContainedIn
@@ -91,6 +92,9 @@ class Sequence(Generic[T]):
         self._is_nonnegative: bool | None = kwargs.get("nonnegative", None)
         self._is_even: bool | None = kwargs.get("even", None)
 
+        # expressions that contain this sequence
+        self.parent_exprs: list[Expr] = []
+
         _add_assumption_attributes(self, kwargs)
 
         self.properties_of_each_term: list[Proposition] = []
@@ -141,21 +145,51 @@ class Sequence(Generic[T]):
     def is_natural(self) -> bool | None:
         return self._is_natural
 
+    @is_natural.setter
+    def is_natural(self, value: bool | None) -> None:
+        self._is_natural = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
     @property
     def is_integer(self) -> bool | None:
         return self._is_integer or self.is_natural
+
+    @is_integer.setter
+    def is_integer(self, value: bool | None) -> None:
+        self._is_integer = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     @property
     def is_rational(self) -> bool | None:
         return self._is_rational or self.is_integer
 
+    @is_rational.setter
+    def is_rational(self, value: bool | None) -> None:
+        self._is_rational = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
     @property
     def is_real(self) -> bool | None:
         return self._is_real or self.is_rational
 
+    @is_real.setter
+    def is_real(self, value: bool | None) -> None:
+        self._is_real = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
     @property
     def is_zero(self) -> bool | None:
         return self._is_zero
+
+    @is_zero.setter
+    def is_zero(self, value: bool | None) -> None:
+        self._is_zero = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     @property
     def is_nonzero(self) -> bool | None:
@@ -166,6 +200,12 @@ class Sequence(Generic[T]):
     @property
     def is_even(self) -> bool | None:
         return self._is_even
+
+    @is_even.setter
+    def is_even(self, value: bool | None) -> None:
+        self._is_even = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     @property
     def is_odd(self) -> bool | None:
@@ -189,9 +229,21 @@ class Sequence(Generic[T]):
     def is_nonpositive(self) -> bool | None:
         return self._is_nonpositive
 
+    @is_nonpositive.setter
+    def is_nonpositive(self, value: bool | None) -> None:
+        self._is_nonpositive = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
     @property
     def is_nonnegative(self) -> bool | None:
         return self._is_nonnegative
+
+    @is_nonnegative.setter
+    def is_nonnegative(self, value: bool | None) -> None:
+        self._is_nonnegative = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     def __repr__(self) -> str:
         return f"Sequence({self.name})"
