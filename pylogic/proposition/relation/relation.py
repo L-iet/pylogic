@@ -18,6 +18,7 @@ class Relation(Proposition):
         super().__init__(
             name, is_assumption, description=description, args=args, **kwargs
         )
+        self._set_init_inferred_attrs()
 
     def __repr__(self) -> str:
         return super().__repr__()

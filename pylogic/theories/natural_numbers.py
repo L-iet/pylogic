@@ -541,6 +541,8 @@ class Prime(Proposition):
         ):
             self._set_is_inferred(True)
 
+        self._set_init_inferred_attrs()
+
     @property
     def definition(self) -> ExistsInSet:
         return self._definition

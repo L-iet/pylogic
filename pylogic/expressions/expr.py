@@ -20,6 +20,7 @@ from pylogic.enviroment_settings.settings import settings
 
 if TYPE_CHECKING:
     from pylogic.expressions.abs import Abs
+    from pylogic.expressions.mod import Mod
     from pylogic.proposition.not_ import Not
     from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
     from pylogic.proposition.ordering.greaterthan import GreaterThan
@@ -62,6 +63,10 @@ class Expr(ABC):
     ]
 
     kwargs = [("knowledge_base", "knowledge_base")]
+
+    # order of operations for expressions (0-indexed)
+    # Function MinElement Abs/Gcd SequenceTerm Pow Mul Mod/Prod Sum Add Binary_Expr
+    # Custom_Expr Piecewise Relation(eg <, subset)
 
     def __init__(self, *args, **kwargs):
         # _internal only: used when copying an expr
@@ -141,7 +146,11 @@ class Expr(ABC):
 
     @property
     def is_natural(self) -> bool | None:
-        return self._is_natural
+        from pylogic.helpers import ternary_and, ternary_or
+
+        return ternary_or(
+            self._is_natural, ternary_and(self._is_integer, self._is_nonnegative)
+        )
 
     @is_natural.setter
     def is_natural(self, value: bool | None) -> None:
@@ -298,6 +307,10 @@ class Expr(ABC):
             _pyl_init_kwargs=kw,
         )
 
+    def _sympy_(self) -> sp.Basic:
+        # for sympy internal use
+        return self.to_sympy()
+
     @abstractmethod
     def _latex(self) -> str:
         pass
@@ -354,6 +367,16 @@ class Expr(ABC):
 
     def __rpow__(self, other: Expr | PBasic) -> Pow:
         return Pow(other, self)
+
+    def __mod__(self, modulus: Expr | PBasic) -> Mod:
+        from pylogic.expressions.mod import Mod
+
+        return Mod(self, modulus)
+
+    def __rmod__(self, modulus: Expr | PBasic) -> Mod:
+        from pylogic.expressions.mod import Mod
+
+        return Mod(modulus, self)
 
     def __eq__(self, other: Any) -> bool:
         """
@@ -638,9 +661,6 @@ class BinaryExpression(CustomExpr[U]):
 
 
 class Add(Expr):
-    # order of operations for expressions (0-indexed)
-    # Function MinElement Abs SequenceTerm Pow Prod Mul Sum Add Binary_Expr
-    # Custom_Expr Piecewise Relation(eg <, subset)
     _precedence = 8
 
     def __new_init__(self, *args: Expr | PBasic | PythonNumeric):
@@ -714,7 +734,9 @@ class Add(Expr):
             new_add = Add(*[arg.evaluate(**kwargs) for arg in self.args])
             try:
                 return sympy_to_pylogic(new_add.to_sympy().doit())
-            except FromSympyError:
+            # FromSympyError or some error associated with sympy failing to
+            # evaluate my custom expressions
+            except Exception as e:
                 return new_add
         return self
 
@@ -743,10 +765,7 @@ class Add(Expr):
 
 
 class Mul(Expr):
-    # order of operations for expressions (0-indexed)
-    # Function MinElement Abs SequenceTerm Pow Prod Mul Sum Add Binary_Expr
-    # Custom_Expr Piecewise Relation(eg <, subset)
-    _precedence = 6
+    _precedence = 5
 
     def __new_init__(self, *args: PBasic | Expr | PythonNumeric):
         super().__new_init__(*args)
@@ -820,8 +839,14 @@ class Mul(Expr):
         if all(arg.is_real for arg in self.args):
             new_mul = Mul(*[arg.evaluate() for arg in self.args])
             try:
-                return sympy_to_pylogic(new_mul.to_sympy().doit())
-            except FromSympyError:
+                new_mul_symp = new_mul.to_sympy()
+                new_mul_symp_doit = new_mul_symp.doit()
+                if new_mul_symp_doit == new_mul_symp:
+                    new_mul_symp_doit = new_mul_symp.expand()
+                return sympy_to_pylogic(new_mul_symp_doit)
+            # FromSympyError or some error associated with sympy failing to
+            # evaluate my custom expressions
+            except Exception as e:
                 return new_mul
         return self
 
@@ -943,8 +968,14 @@ class Pow(Expr):
         if all(arg.is_real for arg in self.args):
             new_pow = Pow(*[arg.evaluate() for arg in self.args])
             try:
-                return sympy_to_pylogic(new_pow.to_sympy().doit())
-            except FromSympyError:
+                new_pow_symp = new_pow.to_sympy()
+                new_pow_symp_doit = new_pow_symp.doit()
+                if new_pow_symp_doit == new_pow_symp:
+                    new_pow_symp_doit = new_pow_symp.expand()
+                return sympy_to_pylogic(new_pow_symp_doit)
+            # FromSympyError or some error associated with sympy failing to
+            # evaluate my custom expressions
+            except Exception as e:
                 return new_pow
         return self
 

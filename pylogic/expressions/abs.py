@@ -17,9 +17,6 @@ class Abs(Expr):
     A nonnegative real number representing the size of some object.
     """
 
-    # order of operations for expressions (0-indexed)
-    # Function MinElement Abs SequenceTerm Pow Prod Mul Sum Add Binary_Expr
-    # Custom_Expr Piecewise Relation(eg <, subset)
     _precedence = 2
 
     _is_wrapped = True

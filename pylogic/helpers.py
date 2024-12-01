@@ -20,14 +20,12 @@ from typing import (
 from pylogic.expressions.expr import Expr
 from pylogic.expressions.expr import replace as _replace
 from pylogic.proposition.proposition import Proposition
-from pylogic.symbol import Symbol
-from pylogic.variable import Variable
 
 T = TypeVar("T")
 U = TypeVar("U")
 P = TypeVar("P", bound=Proposition)
 E = TypeVar("E", bound=Expr)
-S = TypeVar("S", bound=Symbol)
+
 Ps = TypeVarTuple("Ps")
 TNumeric = TypeVar("TNumeric", bound=int | float | Fraction | complex | Decimal)
 
@@ -37,12 +35,16 @@ if TYPE_CHECKING:
     from pylogic.structures.class_ import Class
     from pylogic.structures.sequence import Sequence
     from pylogic.structures.set_ import Set
+    from pylogic.symbol import Symbol
+    from pylogic.variable import Variable
 
     TSet = TypeVar("TSet", bound=Set)
     TSequence = TypeVar("TSequence", bound=Sequence)
+    S = TypeVar("S", bound=Symbol)
 else:
     TSet = TypeVar("TSet")
     TSequence = TypeVar("TSequence")
+    S = TypeVar("S")
 
 
 def replace(expr, replace_dict: dict, equal_check: Callable | None = None) -> Any:
@@ -53,6 +55,8 @@ def get_vars(expr: Any) -> set[Variable]:
     """
     Get all variables in expr.
     """
+    from pylogic.variable import Variable
+
     if isinstance(expr, Variable):
         return {expr}
     return getattr(expr, "variables", set())
@@ -151,6 +155,7 @@ def eval_same(x: Any, y: Any) -> bool:
     Check if x and y evaluate to the same value.
     """
     from pylogic.structures.set_ import Set
+    from pylogic.symbol import Symbol
 
     if isinstance(x, (Symbol, Set, Expr)):
         return x.eval_same(y)
@@ -165,6 +170,8 @@ def unify(
     a: Proposition | Term, b: Proposition | Term
 ) -> Unification | Literal[True] | None:
     """Unification algorithm."""
+    from pylogic.variable import Variable
+
     # a is the variable if at least one argument is a variable
     if isinstance(b, Variable) and not isinstance(a, Variable):
         return unify(b, a)
@@ -314,6 +321,7 @@ def python_to_pylogic(arg: Any) -> Proposition | Expr | Symbol | Sequence | Set:
     from pylogic.constant import Constant
     from pylogic.structures.sequence import Pair, Sequence, Triple
     from pylogic.structures.set_ import Set
+    from pylogic.symbol import Symbol
 
     # TODO: add more types or use base class
     if isinstance(arg, (Symbol, Proposition, Expr, Set, Sequence)):
@@ -589,6 +597,12 @@ def _add_assumption_attributes(term: Symbol | Sequence, kwargs) -> None:
     Check for contradictions and raise ValueError if found.
     To be used with Symbol and Sequence.
     """
+    # no need to set natural when nonnegative and integer are True
+    # because the getter handles that
+    if kwargs.get("natural", None):
+        term.is_nonnegative = True
+        term.is_integer = True
+
     if kwargs.get("positive", None):
         term.is_real = True
         term.is_nonnegative = True

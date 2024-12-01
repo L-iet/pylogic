@@ -52,6 +52,7 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
         self.constants = inner_proposition.constants.copy()
         self.sets = inner_proposition.sets.copy()
         self.class_ns = inner_proposition.class_ns.copy()
+        self._set_init_inferred_attrs()
 
     def __str__(self) -> str:
         from pylogic.proposition.not_ import Not

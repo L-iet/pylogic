@@ -15,6 +15,7 @@ from pylogic.constant import Constant, Infinity
 from pylogic.expressions.abs import Abs
 from pylogic.expressions.expr import Add, CustomExpr, Expr, Mul, Pow
 from pylogic.expressions.function import CalledFunction
+from pylogic.expressions.mod import Mod
 from pylogic.expressions.piecewise import (
     OtherwiseBranch,
     PiecewiseBranch,
@@ -68,6 +69,10 @@ def _create_sympy_class(name: str, base: tB) -> tB:
         **kwargs,
     ):
         val = base.__new__(cls, *args, **kwargs)
+        if _pyl_class is None:
+            s = f"Must provide _pyl_class for {cls}\nbase: {base}\n"
+            s += f"args: {args}\nkwargs: {kwargs}"
+            raise ValueError(s)
         val._pyl_class = _pyl_class
         val._pyl_init_args = _pyl_init_args or ()
         val._pyl_init_kwargs = _pyl_init_kwargs or {}
@@ -80,7 +85,7 @@ PylSympySymbol = _create_sympy_class("PylSympySymbol", sp.Symbol)
 PylSympySet = _create_sympy_class("PylSympySet", sp.Set)
 PylSympySeqBase = _create_sympy_class("PylSympySeqBase", SeqBase)
 PylSympySeqFormula = _create_sympy_class("PylSympySeqFormula", SeqFormula)
-PylSympyExpr = _create_sympy_class("PylSympyExpr", sp.Expr)
+PylSympyExpr = _create_sympy_class("PylSympyExpr", sp.Function("CustomExpr"))
 PylSympyFunction = _create_sympy_class("PylSympyFunction", UndefinedFunction)
 PylSympyExprCondPair = _create_sympy_class("PylSympyExprCondPair", ExprCondPair)
 
@@ -142,6 +147,8 @@ def sympy_to_pylogic(expr: sp.Basic) -> Set | Sequence | Expr | Symbol:
             return Pow(*[sympy_to_pylogic(arg) for arg in expr.args])
         case sp.Abs():
             return Abs(sympy_to_pylogic(expr.args[0]))
+        case sp.Mod():
+            return Mod(sympy_to_pylogic(expr.args[0]), sympy_to_pylogic(expr.args[1]))
         case (
             PylSympySet()
             | PylSympySymbol()
@@ -169,7 +176,7 @@ def sympy_to_pylogic(expr: sp.Basic) -> Set | Sequence | Expr | Symbol:
                 seq = Sequence("sp", nth_term=nth_term, real=True)
             else:
                 size = (end - start + 1).evaluate()
-                seq = FiniteSequence("sp", nth_term=nth_term, size=size)
+                seq = FiniteSequence("sp", nth_term=nth_term, length=size)
             return Prod(seq) if isinstance(expr, sp.Product) else Sum(seq)
         case sp.LessThan():
             return LessOrEqual(sympy_to_pylogic(expr.lhs), sympy_to_pylogic(expr.rhs))
@@ -200,7 +207,9 @@ def sympy_to_pylogic(expr: sp.Basic) -> Set | Sequence | Expr | Symbol:
         case SeqFormula():
             if isinstance(expr.interval, sp.FiniteSet):
                 ind = list(expr.interval)[0]
-                return FiniteSequence("sp", [sympy_to_pylogic(expr.coeff(ind))], 1)
+                return FiniteSequence(
+                    "sp", length=1, initial_terms=[sympy_to_pylogic(expr.coeff(ind))]
+                )
             if expr.interval.right.is_infinite or expr.interval.left.is_infinite:  # type: ignore
                 return Sequence(
                     "sp", nth_term=lambda n: sympy_to_pylogic(expr.coeff(n))
@@ -210,7 +219,7 @@ def sympy_to_pylogic(expr: sp.Basic) -> Set | Sequence | Expr | Symbol:
                 return FiniteSequence(
                     "sp",
                     nth_term=lambda n: sympy_to_pylogic(expr.coeff(n)),
-                    size=int(expr.interval.right - expr.interval.left + 1),  # type: ignore
+                    length=int(expr.interval.right - expr.interval.left + 1),  # type: ignore
                 )
         case SeqPer():
             return PeriodicSequence(

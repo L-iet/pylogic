@@ -66,6 +66,7 @@ class _Junction(Proposition, Generic[*Ps], ABC):
             self.class_ns = self.class_ns.union(prop.class_ns)  # type: ignore
 
         self._idx = 0  # for iteration over propositions
+        self._set_init_inferred_attrs()
 
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, self.__class__):

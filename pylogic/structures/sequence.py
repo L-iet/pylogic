@@ -53,10 +53,15 @@ class Sequence(Generic[T]):
         real: bool | None = None,
         **kwargs,
     ) -> None:
+        kwargs["real"] = real
         from pylogic.assumptions_context import assumptions_contexts
-        from pylogic.constant import Constant
+        from pylogic.constant import Constant, Infinity
         from pylogic.expressions.abs import Abs
-        from pylogic.helpers import _add_assumption_attributes, _add_assumptions
+        from pylogic.helpers import (
+            _add_assumption_attributes,
+            _add_assumptions,
+            python_to_pylogic,
+        )
         from pylogic.inference import Inference
         from pylogic.proposition.quantified.forall import ForallInSet
         from pylogic.variable import Variable
@@ -67,30 +72,52 @@ class Sequence(Generic[T]):
 
         self.name: str = name
         self.knowledge_base: set[Proposition] = set()
-        self.initial_terms: list[T] = list(initial_terms) if initial_terms else []
+        self.initial_terms: list[T] = (
+            list(map(python_to_pylogic, initial_terms)) if initial_terms else []
+        )  # type: ignore
         self.terms: dict[Constant[int], T] = dict(zip(init_inds, self.initial_terms))
         self.nth_term: Callable[[Term], T] | None = nth_term
         self.is_finite: bool | None = None
         self._predicate: Callable[[Term], Proposition] | None = predicate
         self._predicate_uses_self = predicate is not None
 
-        self._is_real: bool | None = real
-        self._is_rational: bool | None = kwargs.get("rational", None)
-        self._is_integer: bool | None = kwargs.get("integer", None)
-        self._is_natural: bool | None = kwargs.get("natural", None)
+        # hack to make n a natural number & save time
+        n_ind = Variable("n")
+        n_ind._is_natural = True
+        nth_term_expr = self.nth_term(n_ind) if self.nth_term else None
 
-        self.is_set_: bool | None = kwargs.get("set_", None)
-        self.is_set: bool | None = self.is_set_
+        self._is_real: bool | None = self._get_init_assump_attr(
+            "real", kwargs, nth_term_expr
+        )
+        self._is_rational: bool | None = self._get_init_assump_attr(
+            "rational", kwargs, nth_term_expr
+        )
+        self._is_integer: bool | None = self._get_init_assump_attr(
+            "integer", kwargs, nth_term_expr
+        )
+        self._is_natural: bool | None = self._get_init_assump_attr(
+            "natural", kwargs, nth_term_expr
+        )
+
+        self.is_set_: bool | None = self._get_init_assump_attr("set_", kwargs, None)
         self.is_graph: bool | None = not self.is_set and kwargs.get("graph", None)
         self.is_pair: bool | None = self.is_graph or kwargs.get("pair", None)
         self.is_list_: bool | None = self.is_pair or kwargs.get("list_", None)
         self.is_list: bool | None = self.is_list_
-        self.is_sequence: bool | None = self.is_list or kwargs.get("sequence", None)
+        self.is_sequence = True
 
-        self._is_zero: bool | None = kwargs.get("zero", None)
-        self._is_nonpositive: bool | None = kwargs.get("nonpositive", None)
-        self._is_nonnegative: bool | None = kwargs.get("nonnegative", None)
-        self._is_even: bool | None = kwargs.get("even", None)
+        self._is_zero: bool | None = self._get_init_assump_attr(
+            "zero", kwargs, nth_term_expr
+        )
+        self._is_nonpositive: bool | None = self._get_init_assump_attr(
+            "nonpositive", kwargs, nth_term_expr
+        )
+        self._is_nonnegative: bool | None = self._get_init_assump_attr(
+            "nonnegative", kwargs, nth_term_expr
+        )
+        self._is_even: bool | None = self._get_init_assump_attr(
+            "even", kwargs, nth_term_expr
+        )
 
         # expressions that contain this sequence
         self.parent_exprs: list[Expr] = []
@@ -132,6 +159,15 @@ class Sequence(Generic[T]):
         # needs to be here, after setting all above attributes
         self.size = Abs(self)
 
+        self.size_at_least = GreaterOrEqual(
+            self.size,
+            len(self.initial_terms),
+            _is_proven=True,
+            _assumptions=set(),
+            _inference=Inference(None, rule="by_definition"),
+        )
+        self.length = kwargs.get("length", Infinity)
+
         self._init_args = (name,)
         self._init_kwargs = {
             "initial_terms": initial_terms,
@@ -141,9 +177,23 @@ class Sequence(Generic[T]):
             **kwargs,
         }
 
+    def _get_init_assump_attr(
+        self,
+        attr: str,
+        kwargs: dict[str, bool | None],
+        nth_term_expr: Term | None,
+    ) -> bool | None:
+        if (kwarg_val := kwargs.get(attr, None)) is not None:
+            return kwarg_val
+        return getattr(nth_term_expr, f"is_{attr}") if nth_term_expr else None
+
     @property
     def is_natural(self) -> bool | None:
-        return self._is_natural
+        from pylogic.helpers import ternary_and, ternary_or
+
+        return ternary_or(
+            self._is_natural, ternary_and(self._is_integer, self._is_nonnegative)
+        )
 
     @is_natural.setter
     def is_natural(self, value: bool | None) -> None:
@@ -244,6 +294,10 @@ class Sequence(Generic[T]):
         self._is_nonnegative = value
         for parent in self.parent_exprs:
             parent.update_properties()
+
+    @property
+    def is_set(self) -> bool | None:
+        return self.is_set_
 
     def __repr__(self) -> str:
         return f"Sequence({self.name})"
@@ -439,33 +493,21 @@ class FiniteSequence(Sequence[T]):
     def __init__(
         self,
         name: str,
+        length: Term,
         initial_terms: TSequence[T] | None = None,
-        length: Term | PythonNumeric | None = None,
         **kwargs,
     ) -> None:
         from pylogic.constant import Constant
         from pylogic.expressions.abs import Abs
-        from pylogic.helpers import type_check
+        from pylogic.helpers import python_to_pylogic
         from pylogic.inference import Inference
         from pylogic.variable import Variable
 
-        type_check(
-            length,
-            Variable,
-            Constant,
-            int,
-            type(None),
-            context="FiniteSequence.__init__",
-        )
-        if (
-            isinstance(length, Constant)
-            and isinstance(length.value, float)
-            and length.value != float("inf")
-        ):
-            raise ValueError("The length of a sequence must be an integer")
-        _length = cast(Term | None, length)
-        if isinstance(length, int):
-            _length = Constant(length)
+        length = python_to_pylogic(length)
+
+        if isinstance(length, Constant) and isinstance(length.value, float):
+            raise ValueError("The length of a sequence must be a natural number")
+        _length = length
         if (
             isinstance(_length, Constant)
             and isinstance(_length.value, int)
@@ -476,27 +518,19 @@ class FiniteSequence(Sequence[T]):
             )
         super().__init__(name, initial_terms, **kwargs)
         self.is_finite = True
-        self.length = _length
+        self.length: Term = _length
         # TODO self.size_is_finite = self.size.is_in(Naturals0, _is_proven=True)
-        self.size_at_least = GreaterOrEqual(
-            self.size,
-            len(self.initial_terms),
+        self.size_at_least = self.size_at_least.and_(
+            GreaterOrEqual(self.length, len(self.initial_terms)),
+            self.size.equals(_length),
             _is_proven=True,
             _assumptions=set(),
             _inference=Inference(None, rule="by_definition"),
         )
-        if _length is not None:
-            self.size_at_least = self.size_at_least.and_(
-                self.size.equals(_length),
-                _is_proven=True,
-                _assumptions=set(),
-                _inference=Inference(None, rule="by_definition"),
-            )
 
-        self._init_args = (name,)
+        self._init_args = (name, length)
         self._init_kwargs = {
             "initial_terms": initial_terms,
-            "length": length,
             **kwargs,
         }
 
@@ -505,9 +539,9 @@ class FiniteSequence(Sequence[T]):
 
         from pylogic.sympy_helpers import PylSympySeqBase
 
-        if self.initial_terms is not None:
+        if len(self.initial_terms) > 0 and self.length == len(self.initial_terms):
             return SeqPer(
-                [term.to_sympy() for term in self.initial_terms],
+                tuple(term.to_sympy() for term in self.initial_terms),
                 (0, len(self.initial_terms) - 1),
             )
         return PylSympySeqBase(
@@ -528,12 +562,21 @@ class Pair(FiniteSequence[T]):
 
         super().__init__(
             name,
-            [first, second],
             length=2,
+            initial_terms=[first, second],
             real=ternary_and(first.is_real, second.is_real),
+            rational=ternary_and(first.is_rational, second.is_rational),
+            integer=ternary_and(first.is_integer, second.is_integer),
+            natural=ternary_and(first.is_natural, second.is_natural),
+            zero=ternary_and(first.is_zero, second.is_zero),
+            nonpositive=ternary_and(first.is_nonpositive, second.is_nonpositive),
+            nonnegative=ternary_and(first.is_nonnegative, second.is_nonnegative),
+            even=ternary_and(first.is_even, second.is_even),
+            set_=ternary_and(first.is_set, second.is_set),
         )
-        self.first = first
-        self.second = second
+        self.first = self.initial_terms[0]
+        self.second = self.initial_terms[1]
+        self.is_pair = True
 
         self._init_args = (name, first, second)
         self._init_kwargs = {}
@@ -555,13 +598,29 @@ class Triple(FiniteSequence[T]):
 
         super().__init__(
             name,
-            [first, second, third],
             length=3,
+            initial_terms=[first, second, third],
             real=ternary_and(first.is_real, second.is_real, third.is_real),
+            rational=ternary_and(
+                first.is_rational, second.is_rational, third.is_rational
+            ),
+            integer=ternary_and(first.is_integer, second.is_integer, third.is_integer),
+            natural=ternary_and(first.is_natural, second.is_natural, third.is_natural),
+            zero=ternary_and(first.is_zero, second.is_zero, third.is_zero),
+            nonpositive=ternary_and(
+                first.is_nonpositive, second.is_nonpositive, third.is_nonpositive
+            ),
+            nonnegative=ternary_and(
+                first.is_nonnegative, second.is_nonnegative, third.is_nonnegative
+            ),
+            even=ternary_and(first.is_even, second.is_even, third.is_even),
+            set_=ternary_and(first.is_set, second.is_set, third.is_set),
         )
-        self.first = first
-        self.second = second
-        self.third = third
+        self.first = self.initial_terms[0]
+        self.second = self.initial_terms[1]
+        self.third = self.initial_terms[2]
+
+        self.is_pair = False
 
         self._init_args = (name, first, second, third)
         self._init_kwargs = {}

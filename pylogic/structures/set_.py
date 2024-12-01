@@ -523,7 +523,7 @@ class FiniteUnion(Union):
 
         Set.__init__(self, name=name or f"FiniteUnion({','.join(map(str, sets))})", latex_name=latex_name, **kwargs)  # type: ignore
         self.sets: set[Set | Variable] = set(sets) if sets else set()
-        self.set_sequence = FiniteSequence(self.name + "_sets", initial_terms=sets or [])  # type: ignore
+        self.set_sequence = FiniteSequence(self.name + "_sets", length=len(sets) if sets else 0, initial_terms=sets or [])  # type: ignore
         self.is_union = True
 
     def __eq__(self, other: FiniteUnion) -> bool:
@@ -620,7 +620,7 @@ class FiniteIntersection(Intersection):
 
         Set.__init__(self, name=name or f"FiniteIntersection({','.join(map(str, sets))})", latex_name=latex_name, **kwargs)  # type: ignore
         self.sets: set[Set | Variable] = set(sets) if sets else set()
-        self.set_sequence = FiniteSequence(self.name + "_sets", initial_terms=sets or [])  # type: ignore
+        self.set_sequence = FiniteSequence(self.name + "_sets", length=len(sets) if sets else 0, initial_terms=sets or [])  # type: ignore
         self.is_intersection = True
 
     def __eq__(self, other: FiniteIntersection) -> bool:
@@ -709,7 +709,7 @@ class FiniteCartesProduct(CartesProduct):
         Set.__init__(self, name=name or f"FiniteCartesProduct({','.join(map(str, sets))})", latex_name=latex_name, **kwargs)  # type: ignore
         self.sets: set[Set | Variable] = set(sets) if sets else set()
         self.set_tuple: tuple[Set | Variable, ...] = tuple(sets) if sets else tuple()
-        self.set_sequence = FiniteSequence(self.name + "_sets", initial_terms=sets or [])  # type: ignore
+        self.set_sequence = FiniteSequence(self.name + "_sets", length=len(sets) if sets else 0, initial_terms=sets or [])  # type: ignore
         self.is_cartes_product = True
 
     def __eq__(self, other: FiniteCartesProduct) -> bool:

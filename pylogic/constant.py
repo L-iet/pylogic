@@ -77,7 +77,10 @@ class Constant(Symbol, Generic[T]):
                     self._is_natural = False
             else:
                 self._is_integer = False
-        elif isinstance(value, (Decimal, float)):
+        elif isinstance(value, (Decimal, float)) and value not in [
+            float("inf"),
+            float("-inf"),
+        ]:
             self.is_real = True
 
         if is_python_real_numeric(value):

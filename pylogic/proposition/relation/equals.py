@@ -43,6 +43,7 @@ class Equals(BinaryRelation[T, U]):
             description=description,
             **kwargs,
         )
+        self._set_init_inferred_attrs()
 
     def __add__(self, other: Term | PythonNumeric | Equals) -> Equals:
         if isinstance(other, Equals):

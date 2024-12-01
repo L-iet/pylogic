@@ -81,20 +81,20 @@ class PiecewiseExpr(Expr, Generic[*Ps]):
     def update_properties(self) -> None:
         from pylogic.helpers import ternary_and
 
-        self.is_real = ternary_and(*[branch.is_real for branch in self.branches])
-        self.is_rational = ternary_and(
-            *[branch.is_rational for branch in self.branches]
-        )
-        self.is_integer = ternary_and(*[branch.is_integer for branch in self.branches])
-        self.is_natural = ternary_and(*[branch.is_natural for branch in self.branches])
-        self.is_zero = ternary_and(*[branch.is_zero for branch in self.branches])
+        branches = self.args
+
+        self.is_real = ternary_and(*[branch.is_real for branch in branches])
+        self.is_rational = ternary_and(*[branch.is_rational for branch in branches])
+        self.is_integer = ternary_and(*[branch.is_integer for branch in branches])
+        self.is_natural = ternary_and(*[branch.is_natural for branch in branches])
+        self.is_zero = ternary_and(*[branch.is_zero for branch in branches])
         self.is_nonpositive = ternary_and(
-            *[branch.is_nonpositive for branch in self.branches]
+            *[branch.is_nonpositive for branch in branches]
         )
         self.is_nonnegative = ternary_and(
-            *[branch.is_nonnegative for branch in self.branches]
+            *[branch.is_nonnegative for branch in branches]
         )
-        self.is_even = ternary_and(*[branch.is_even for branch in self.branches])
+        self.is_even = ternary_and(*[branch.is_even for branch in branches])
 
     def evaluate(self, knowledge_base: set[Proposition] | None = None) -> Term:
         """

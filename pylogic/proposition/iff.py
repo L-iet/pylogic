@@ -55,6 +55,7 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
         self.constants = left.constants.union(right.constants)
         self.sets = left.sets.union(right.sets)
         self.class_ns: set[Class] = left.class_ns.union(right.class_ns)
+        self._set_init_inferred_attrs()
 
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, Iff):

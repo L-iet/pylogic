@@ -55,6 +55,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         self.constants = antecedent.constants.union(consequent.constants)
         self.sets = antecedent.sets.union(consequent.sets)
         self.class_ns: set[Class] = antecedent.class_ns.union(consequent.class_ns)
+        self._set_init_inferred_attrs()
 
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, Implies):

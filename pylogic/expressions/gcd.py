@@ -61,7 +61,11 @@ class Gcd(Expr):
     def update_properties(self) -> None:
         from pylogic.helpers import ternary_and
 
-        self.is_real = ternary_and(*[expr.is_integer for expr in self.args])
-        self.is_rational = self._is_real
-        self.is_integer = self._is_real
-        self.is_natural = self._is_real
+        self.is_natural = ternary_and(*[expr.is_integer for expr in self.args])
+        self.is_real = self._is_natural
+        self.is_rational = self._is_natural
+        self.is_integer = self._is_natural
+        self.is_zero = False if self._is_natural else None
+        self.is_even = ternary_and(*[expr.is_even for expr in self.args])
+        self.is_nonnegative = True if self._is_natural else None
+        self.is_nonpositive = self._is_zero

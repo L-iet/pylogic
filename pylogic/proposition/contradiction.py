@@ -30,6 +30,7 @@ class Contradiction(Proposition):
             **kwargs,
         )
         self.is_atomic = True
+        self._set_init_inferred_attrs()
 
     def __eq__(self, other: Contradiction) -> bool:
         if not isinstance(other, Contradiction):

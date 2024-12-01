@@ -4,7 +4,6 @@ from typing import Callable, Generic, Self, TypeVar
 
 from pylogic import Term
 from pylogic.helpers import replace
-from pylogic.printing.printing import str_print_order
 from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.relation.relation import Relation
 
@@ -44,6 +43,8 @@ class BinaryRelation(Relation, Generic[T, U]):
         )
         self.left: T = self.args[0]
         self.right: U = self.args[1]
+
+        self._set_init_inferred_attrs()
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.left}, {self.right})"

@@ -58,7 +58,7 @@ class _Aggregate(Expr):
                 n = Variable("n")
                 return _infinite_class(
                     self.sequence.nth_term(n).to_sympy(),
-                    (n.to_sympy(), 1, self.sequence.length.to_sympy()),
+                    (n.to_sympy(), 0, self.sequence.length.to_sympy() - 1),
                 )
             elif self.sequence.length == len(self.sequence.initial_terms):
                 # if length is int numeric and does not have an nth term, but length of initial terms matches length,
@@ -90,8 +90,8 @@ class Sum(_Aggregate):
         super().__new_init__(sequence)
 
     def update_properties(self) -> None:
-        sequence = self.args[0]
         super().update_properties()
+        sequence = self.args[0]
         self._is_nonnegative = sequence.is_nonnegative
         self._is_nonpositive = sequence.is_nonpositive
 

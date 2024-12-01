@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Callable, Self, TypeVar, cast
 
 import sympy as sp
-from sympy.matrices.expressions.matexpr import MatrixElement as MatEl
 
 from pylogic import PythonNumeric, Term
 from pylogic.enviroment_settings.settings import settings
@@ -174,7 +173,11 @@ class Symbol:
 
     @property
     def is_natural(self) -> bool | None:
-        return self._is_natural
+        from pylogic.helpers import ternary_and, ternary_or
+
+        return ternary_or(
+            self._is_natural, ternary_and(self._is_integer, self._is_nonnegative)
+        )
 
     @is_natural.setter
     def is_natural(self, value: bool | None):
@@ -337,6 +340,16 @@ class Symbol:
 
     def __rpow__(self, other: Symbol | PythonNumeric | Expr) -> Pow:
         return Pow(other, self)
+
+    def __mod__(self, modulus: Symbol | PythonNumeric | Expr) -> Mod:
+        from pylogic.expressions.mod import Mod
+
+        return Mod(self, modulus)
+
+    def __rmod__(self, modulus: Symbol | PythonNumeric | Expr) -> Mod:
+        from pylogic.expressions.mod import Mod
+
+        return Mod(modulus, self)
 
     def __eq__(self, other: Any) -> bool:
         """

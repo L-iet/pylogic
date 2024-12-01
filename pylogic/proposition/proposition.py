@@ -149,6 +149,7 @@ class Proposition:
         self.args: list[Set | Term] = list(map(python_to_pylogic, args or []))
         self.arity: int = len(self.args)
         self._is_proven: bool = _is_proven
+
         self.is_atomic: bool = True
         self.description: str = description
         if self.is_assumption:
@@ -207,6 +208,22 @@ class Proposition:
         A(n expanded) definition of the proposition.
         """
         return self
+
+    def _set_init_inferred_attrs(self) -> None:
+        """
+        Set the attributes is_proven, is_assumption, and is_axiom
+        after other attributes are set, in case they depend on them.
+
+        Must be called at the end of __init__ for every immediate
+        subclass of Proposition that implements _set_is_proven,
+        _set_is_assumption, or _set_is_axiom.
+        """
+        try:
+            self._set_is_assumption(self.is_assumption)
+            self._set_is_axiom(self.is_axiom)
+            self._set_is_proven(self._is_proven)
+        except AttributeError:
+            pass
 
     def _set_is_inferred(self, value: bool) -> None:
         """

@@ -62,12 +62,13 @@ class IsContainedIn(BinaryRelation[T, U]):
         ):
             self._set_is_inferred(True)
 
+        self._set_init_inferred_attrs()
+
     @property
     def element(self) -> T:
         return self.left
 
     def _set_is_inferred(self, value: bool) -> None:
-        super()._set_is_inferred(value)
         if value:
             # TODO: add more here
             if self.right.name in {"Naturals", "Integers", "Rationals", "Reals"}:
@@ -84,29 +85,29 @@ class IsContainedIn(BinaryRelation[T, U]):
             self.left.sets_contained_in.discard(self.right)
             self.right.elements.discard(self.left)
 
-    def _set_is_proven(self, value: bool) -> None:
-        super()._set_is_proven(value)
-        if value:
-            self._set_is_inferred(True)
-        elif not (self.is_axiom or self.is_assumption):
-            self._set_is_inferred(False)
+    # def _set_is_proven(self, value: bool) -> None:
+    #     super()._set_is_proven(value)
+    #     if value:
+    #         self._set_is_inferred(True)
+    #     elif not (self.is_axiom or self.is_assumption):
+    #         self._set_is_inferred(False)
 
-    def _set_is_assumption(self, value: bool) -> None:
-        super()._set_is_assumption(value)
-        # TODO: fix this. I'm still getting some dummy variables in
-        # set's elements although we called followed_from with this prop
-        # update Oct 11 2024, did I fix this?
-        if value:
-            self._set_is_inferred(True)
-        elif not (self._is_proven or self.is_axiom):
-            self._set_is_inferred(False)
+    # def _set_is_assumption(self, value: bool) -> None:
+    #     super()._set_is_assumption(value)
+    #     # TODO: fix this. I'm still getting some dummy variables in
+    #     # set's elements although we called followed_from with this prop
+    #     # update Oct 11 2024, did I fix this?
+    #     if value:
+    #         self._set_is_inferred(True)
+    #     elif not (self._is_proven or self.is_axiom):
+    #         self._set_is_inferred(False)
 
-    def _set_is_axiom(self, value: bool) -> None:
-        super()._set_is_axiom(value)
-        if value:
-            self._set_is_inferred(True)
-        elif not (self._is_proven or self.is_assumption):
-            self._set_is_inferred(False)
+    # def _set_is_axiom(self, value: bool) -> None:
+    #     super()._set_is_axiom(value)
+    #     if value:
+    #         self._set_is_inferred(True)
+    #     elif not (self._is_proven or self.is_assumption):
+    #         self._set_is_inferred(False)
 
     def by_containment_func(self) -> Self:
         """Logical inference rule. Use the set's containment function to prove that it

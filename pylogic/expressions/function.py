@@ -264,7 +264,7 @@ class Function(Expr):
             cur_prop = Forall(
                 variable=cur_var,
                 inner_proposition=FiniteSequence(
-                    f"{name}_args", initial_terms=parameters, size=n
+                    f"{name}_args", length=n, initial_terms=parameters
                 )
                 .is_in(self.domain)
                 .implies(IsContainedIn(self(*parameters), self.codomain)),
@@ -415,10 +415,13 @@ class CalledFunction(Expr):
             )
         else:
             # domain is some other set not a Cartesian product or UniversalSet
+            # TODO: test length here to verify it makes sense
             all_args_in_domain = (
                 (
                     FiniteSequence(
-                        f"{function.name}_args", initial_terms=arguments
+                        f"{function.name}_args",
+                        length=len(arguments),
+                        initial_terms=arguments,
                     ).is_in(domain)
                     in arguments[0].knowledge_base
                 )

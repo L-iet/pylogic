@@ -41,14 +41,15 @@ class SequenceTerm(Expr, Generic[T]):
         self.is_union: bool | None = None
 
     def update_properties(self) -> None:
-        self.is_real = self.sequence.is_real
-        self.is_rational = self.sequence.is_rational
-        self.is_integer = self.sequence.is_integer
-        self.is_natural = self.sequence.is_natural
-        self.is_zero = self.sequence.is_zero
-        self.is_even = self.sequence.is_even
-        self.is_nonnegative = self.sequence.is_nonnegative
-        self.is_nonpositive = self.sequence.is_nonpositive
+        sequence = self.args[0]
+        self.is_real = sequence.is_real
+        self.is_rational = sequence.is_rational
+        self.is_integer = sequence.is_integer
+        self.is_natural = sequence.is_natural
+        self.is_zero = sequence.is_zero
+        self.is_even = sequence.is_even
+        self.is_nonnegative = sequence.is_nonnegative
+        self.is_nonpositive = sequence.is_nonpositive
 
     def predicate(self, term: Term) -> IsContainedIn:
         """
@@ -94,18 +95,6 @@ class SequenceTerm(Expr, Generic[T]):
             return res
 
         return SequenceTerm(self.sequence, indx)
-
-    def to_sympy(self) -> sp.Expr:
-        from pylogic.sympy_helpers import PylSympyExpr
-
-        return PylSympyExpr(
-            "SequenceTerm",
-            self.sequence.to_sympy(),
-            self.index.to_sympy(),
-            _pyl_class=self.__class__,
-            _pyl_init_args=self._init_args,
-            _pyl_init_kwargs=self._init_kwargs,
-        )
 
     def _latex(self) -> str:
         return f"{{{self.sequence.name}}}_{{{self.index._latex()}}}"

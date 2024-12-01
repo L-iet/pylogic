@@ -94,6 +94,7 @@ class Not(Proposition, Generic[TProposition]):
         self.constants = negated.constants.copy()
         self.sets = negated.sets.copy()
         self.class_ns = negated.class_ns.copy()
+        self._set_init_inferred_attrs()
 
     def __str__(self) -> str:
         from pylogic.proposition.quantified.quantified import _Quantified

@@ -49,6 +49,7 @@ class Divides(Relation):
         self.b = b
         self.quotient_set = quotient_set
         self._q_var = q
+        self._set_init_inferred_attrs()
 
     def __str__(self) -> str:
         return f"{self.b} / {self.a} in {self.quotient_set}"
