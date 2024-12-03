@@ -138,7 +138,16 @@ class Exists(_Quantified[TProposition]):
             }
         )
         if not other_free_vars:
-            cls = Constant
+            if self.variable.is_set_:
+                from pylogic.structures.set_ import Set
+
+                cls = Set
+            elif self.variable.is_sequence:
+                from pylogic.structures.sequence import Sequence
+
+                cls = Sequence
+            else:
+                cls = Constant
         else:
             cls = Variable
         c = cls(
@@ -146,6 +155,9 @@ class Exists(_Quantified[TProposition]):
             latex_name=latex_name or name or self.variable.latex_name,
             depends_on=other_free_vars,
             _from_existential_instance=True,
+            set_=self.variable.is_set_,
+            sequence=self.variable.is_sequence,
+            length=getattr(self.variable, "length", None),
         )
         proven_inner = self.inner_proposition.replace({self.variable: c})
         proven_inner._set_is_proven(True)
@@ -319,6 +331,56 @@ class Exists(_Quantified[TProposition]):
                     **kwargs,
                 )  # type: ignore
         raise ValueError(f"Cannot convert {self} to ExistsUniqueInSet")
+
+    def by_substitution(
+        self, term: Term, proven_proposition: Proposition | None = None
+    ) -> Self:
+        """
+        Logical inference rule.
+        If self is `exists x: P(x)` and term is `y` and `P(y)` is proven,
+        return a proven `exists x: P(x)`.
+        """
+        from pylogic.proposition.and_ import And
+
+        if proven_proposition is not None:
+            assert proven_proposition.is_proven, f"{proven_proposition} is not proven"
+
+        inner_replaced = self.inner_proposition.replace({self.variable: term})
+        if proven_proposition is not None and inner_replaced == proven_proposition:
+            new_prop = self.copy()
+            new_prop._set_is_proven(True)
+            new_prop.from_assumptions = get_assumptions(proven_proposition)
+            new_prop.deduced_from = Inference(
+                proven_proposition, rule="by_substitution"
+            )
+            return new_prop
+
+        kb = term.knowledge_base
+        if proven_proposition is not None:
+            kb = kb.union({proven_proposition})
+
+        if isinstance(inner_replaced, And):
+            for prop in inner_replaced.propositions:
+                if (not prop.by_inpection_check()) and prop not in kb:
+                    raise ValueError(
+                        f"{self} cannot be proven by substitution:\n{prop} is not true by inspection or in the knowledge base"
+                    )
+        new_prop = self.copy()
+        new_prop._set_is_proven(True)
+
+        # TODO: fix this to use the assumptions from the KB
+        new_prop.from_assumptions = (
+            get_assumptions(proven_proposition) if proven_proposition else set()
+        )
+        new_prop.deduced_from = Inference(*term.knowledge_base, rule="by_substitution")
+        return new_prop
+        # replace inner_prop with term.
+        # if result equals proven, return new prop
+        # else if result is conjunction, new kb = term kb + {proven}
+        # for each prop in conjunction, if prop true by inspection
+        # or prop in kb, cross it off
+        # if all crossed off, return new prop
+        # else raise error
 
 
 class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):

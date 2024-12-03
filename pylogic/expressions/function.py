@@ -43,7 +43,7 @@ class SelfFunc(Expr):
         super().__init__(*args)
         self.name: str | None = None  # to be modified by local context
 
-    def evaluate(self) -> Self:
+    def evaluate(self, **kwargs) -> Self:
         return self
 
     def to_sympy(self) -> UndefinedFunction:
@@ -279,7 +279,7 @@ class Function(Expr):
         self.proposition.is_assumption = True
         self.knowledge_base.add(self.proposition)
 
-    def evaluate(self) -> Self:
+    def evaluate(self, **kwargs) -> Self:
         return self
 
     def to_sympy(self) -> UndefinedFunction:
@@ -458,7 +458,7 @@ class CalledFunction(Expr):
         self._init_args = (function, arguments)
         self._init_kwargs = {}
 
-    def evaluate(self) -> Term:
+    def evaluate(self, **kwargs) -> Term:
         from pylogic.inference import Inference
         from pylogic.proposition.relation.contains import IsContainedIn
 

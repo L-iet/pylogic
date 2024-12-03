@@ -429,9 +429,9 @@ class OrderedSet(Set):
             Variable("b"),
             Variable("c"),
         )
-        a_in_self = a.is_in(self, is_assumption=True)
-        b_in_self = b.is_in(self, is_assumption=True)
-        c_in_self = c.is_in(self, is_assumption=True)
+        a_in_self = a.is_in(self).assume(_internal=True)
+        b_in_self = b.is_in(self).assume(_internal=True)
+        c_in_self = c.is_in(self).assume(_internal=True)
         # Strict order properties are theorems if we have defined total order properties
         # 1. Strict order is irreflexive
         step_1 = self.strict_order_definition.in_particular(a, a_in_self).in_particular(
@@ -451,9 +451,9 @@ class OrderedSet(Set):
         # 2. Strict order is asymmetric
         a.unbind()
         b.unbind()
-        a_in_self.assume()
-        b_in_self.assume()
-        a_lt_b = self.strict_total_order(a, b, is_assumption=True)
+        a_in_self.assume(_internal=True)
+        b_in_self.assume(_internal=True)
+        a_lt_b = self.strict_total_order(a, b).assume(_internal=True)
         step_1 = (
             self.strict_order_definition.in_particular(a, a_in_self)
             .in_particular(b, b_in_self)
@@ -485,11 +485,11 @@ class OrderedSet(Set):
         # but we are just defining it to be true here.
         a.unbind()
         b.unbind()
-        a_in_self.assume()
-        b_in_self.assume()
-        c_in_self.assume()
-        a_lt_b = self.strict_total_order(a, b, is_assumption=True)
-        b_lt_c = self.strict_total_order(b, c, is_assumption=True)
+        a_in_self.assume(_internal=True)
+        b_in_self.assume(_internal=True)
+        c_in_self.assume(_internal=True)
+        a_lt_b = self.strict_total_order(a, b).assume(_internal=True)
+        b_lt_c = self.strict_total_order(b, c).assume(_internal=True)
         a_lt_c = a_lt_b.transitive(b_lt_c)
         self.strict_order_is_transitive = (
             a_lt_c.followed_from(a_lt_b, b_lt_c)
@@ -501,9 +501,9 @@ class OrderedSet(Set):
         # 4. Strict order is connected
         a.unbind()
         b.unbind()
-        a_in_self.assume()
-        b_in_self.assume()
-        a_neq_b = neg(Equals(a, b), is_assumption=True)
+        a_in_self.assume(_internal=True)
+        b_in_self.assume(_internal=True)
+        a_neq_b = neg(Equals(a, b)).assume(_internal=True)
         a_leq_b_or_b_leq_a = self.order_is_strongly_connected.in_particular(
             a, a_in_self
         ).in_particular(b, b_in_self)
@@ -513,8 +513,8 @@ class OrderedSet(Set):
             .reverse_implication()
         )
         # to be used in the cases
-        a_leq_b = self.total_order(a, b, is_assumption=True)
-        b_leq_a = self.total_order(b, a, is_assumption=True)
+        a_leq_b = self.total_order(a, b).assume(_internal=True)
+        b_leq_a = self.total_order(b, a).assume(_internal=True)
         b_lt_a_def = (
             self.strict_order_definition.in_particular(b, b_in_self)
             .in_particular(a, a_in_self)

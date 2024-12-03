@@ -181,8 +181,8 @@ class Not(Proposition, Generic[TProposition]):
         if (not value) and not (self.is_axiom or self.is_assumption):
             self._set_is_inferred(False)
 
-    def _set_is_assumption(self, value: bool) -> None:
-        super()._set_is_assumption(value)
+    def _set_is_assumption(self, value: bool, **kwargs) -> None:
+        super()._set_is_assumption(value, **kwargs)
         if (not value) and not (self._is_proven or self.is_axiom):
             self._set_is_inferred(False)
 

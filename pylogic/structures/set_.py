@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from pylogic.expressions.expr import Expr
     from pylogic.expressions.sequence_term import SequenceTerm
     from pylogic.proposition.proposition import Proposition
+    from pylogic.proposition.quantified.exists import Exists
     from pylogic.proposition.relation.contains import IsContainedIn
     from pylogic.proposition.relation.equals import Equals
     from pylogic.proposition.relation.subsets import IsSubsetOf
@@ -68,6 +69,7 @@ class Set(metaclass=Collection):
         "is_real",
         "is_set_",
         "is_empty",
+        "theorems",
     ]
     kwargs = {
         "name": "name",
@@ -116,7 +118,11 @@ class Set(metaclass=Collection):
         knowledge_base: set[Proposition] | None = None,
         **kwargs,
     ):
-        from pylogic.helpers import python_to_pylogic
+        from pylogic.helpers import Namespace, python_to_pylogic
+        from pylogic.inference import Inference
+        from pylogic.proposition.iff import Iff
+        from pylogic.proposition.quantified.forall import Forall
+        from pylogic.variable import Variable
 
         if name is not None:
             name = name.strip()
@@ -136,14 +142,26 @@ class Set(metaclass=Collection):
             self._predicate = predicate
         elif any(x is not None for x in (elements, containment_function, predicate)):
             raise ValueError("Must provide a name for the set.")
-        self.is_finite: bool | None = None
+        self._is_finite: bool | None = None
         self.is_union: bool | None = None
         self.is_intersection: bool | None = None
         self.is_cartes_product: bool | None = None
         self.is_cartes_power: bool | None = None
-        self.is_real = False
+
+        self._is_real = kwargs.get("real", None)
+        self._is_rational = kwargs.get("rational", None)
+        self._is_integer = kwargs.get("integer", None)
+        self._is_natural = kwargs.get("natural", None)
+        self._is_nonnegative = kwargs.get("nonnegative", None)
+        self._is_nonpositive = kwargs.get("nonpositive", None)
+        self._is_even = kwargs.get("even", None)
+        self._is_zero = kwargs.get("zero", None)
+
         self.is_set_ = True
         self.is_empty: bool | None = None
+        self._is_sequence = False
+
+        self.theorems = Namespace()  # theorems about this set
 
         self._init_args = ()
         self._init_kwargs = {
@@ -169,6 +187,108 @@ class Set(metaclass=Collection):
     @property
     def is_set(self) -> bool:
         return True
+
+    @is_set.setter
+    def is_set(self, value: bool) -> None:
+        pass
+
+    @property
+    def is_sequence(self) -> bool:
+        return self._is_sequence
+
+    @is_sequence.setter
+    def is_sequence(self, value: bool) -> None:
+        self._is_sequence = value
+
+    @property
+    def is_finite(self) -> bool | None:
+        return self._is_finite
+
+    @is_finite.setter
+    def is_finite(self, value: bool) -> None:
+        self._is_finite = value
+
+    @property
+    def is_real(self) -> bool:
+        return self._is_real
+
+    @is_real.setter
+    def is_real(self, value: bool) -> None:
+        self._is_real = value
+
+    @property
+    def is_rational(self) -> bool:
+        return self._is_rational
+
+    @is_rational.setter
+    def is_rational(self, value: bool) -> None:
+        self._is_rational = value
+
+    @property
+    def is_integer(self) -> bool:
+        return self._is_integer
+
+    @is_integer.setter
+    def is_integer(self, value: bool) -> None:
+        self._is_integer = value
+
+    @property
+    def is_natural(self) -> bool:
+        return self._is_natural
+
+    @is_natural.setter
+    def is_natural(self, value: bool) -> None:
+        self._is_natural = value
+
+    @property
+    def is_nonnegative(self) -> bool:
+        return self._is_nonnegative
+
+    @is_nonnegative.setter
+    def is_nonnegative(self, value: bool) -> None:
+        self._is_nonnegative = value
+
+    @property
+    def is_nonpositive(self) -> bool:
+        return self._is_nonpositive
+
+    @is_nonpositive.setter
+    def is_nonpositive(self, value: bool) -> None:
+        self._is_nonpositive = value
+
+    @property
+    def is_even(self) -> bool:
+        return self._is_even
+
+    @is_even.setter
+    def is_even(self, value: bool) -> None:
+        self._is_even = value
+
+    @property
+    def is_zero(self) -> bool:
+        return self._is_zero
+
+    @is_zero.setter
+    def is_zero(self, value: bool) -> None:
+        self._is_zero = value
+
+    @property
+    def is_positive(self) -> bool:
+        from pylogic.helpers import ternary_and, ternary_not
+
+        return ternary_and(self.is_nonnegative, ternary_not(self.is_zero))
+
+    @property
+    def is_negative(self) -> bool:
+        from pylogic.helpers import ternary_and, ternary_not
+
+        return ternary_and(self.is_nonpositive, ternary_not(self.is_zero))
+
+    @property
+    def is_odd(self) -> bool:
+        from pylogic.helpers import ternary_not
+
+        return ternary_not(self.is_even)
 
     def illegal_occur_check(
         self,
@@ -331,7 +451,7 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
 
         return IsSubsetOf(self, other, **kwargs)
 
-    def evaluate(self) -> Set:
+    def evaluate(self, **kwargs) -> Set:
         return self
 
     def to_sympy(self) -> sp.Set:
@@ -386,7 +506,7 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
         equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Term:
         if equal_check is None:
-            return self
+            equal_check = lambda x, y: x == y
         for k in replace_dict:
             if equal_check(self, k):
                 return replace_dict[k]
@@ -418,6 +538,13 @@ SingletonEmpty = Set(
 )
 SingletonEmpty.is_empty = False
 
+AllFiniteSequences = Set(
+    "AllFiniteSequences",
+    containment_function=lambda x: x.is_sequence and x.is_finite,
+    illegal_occur_check=False,
+    latex_name=r"\text{FiniteSequences}",
+)
+
 
 class FiniteSet(Set):
     def __init__(
@@ -427,7 +554,7 @@ class FiniteSet(Set):
         **kwargs,
     ):
         super().__init__(name=name, elements=elements, **kwargs)
-        self.is_finite = True
+        self._is_finite = True
 
     def __eq__(self, other: FiniteSet) -> bool:
         if not isinstance(other, FiniteSet):
@@ -449,6 +576,12 @@ class Union(Set):
     """
     Represents the union of finitely many or countably-infinitely many sets.
     """
+
+    # TODO: implement replace for all set expressions
+    # perhaps implement one SetExpr class with the replace method
+    # and have all set expressions inherit from it
+
+    is_atomic = False
 
     def __init__(
         self,
@@ -492,6 +625,8 @@ class FiniteUnion(Union):
     """
     Represents a union of a specified number of sets.
     """
+
+    is_atomic = False
 
     @overload
     def __new__(cls) -> Set: ...
@@ -547,6 +682,8 @@ class Intersection(Set):
     Represents the intersection of finitely many or countably-infinitely many sets.
     """
 
+    is_atomic = False
+
     def __init__(
         self,
         sets: Sequence[Set | Variable],
@@ -589,6 +726,8 @@ class FiniteIntersection(Intersection):
     """
     Represents an intersection of a specified number of sets.
     """
+
+    is_atomic = False
 
     @overload
     def __new__(cls) -> Set: ...
@@ -644,6 +783,8 @@ class CartesProduct(Set):
     Represents the cartesian product of finitely many or countably-infinitely many sets.
     """
 
+    is_atomic = False
+
     def __init__(
         self,
         sets: Sequence[Set | Variable],
@@ -675,6 +816,8 @@ class FiniteCartesProduct(CartesProduct):
     """
     Represents a cartesian product of a specified number of sets.
     """
+
+    is_atomic = False
 
     @overload
     def __new__(cls) -> Set: ...
@@ -730,6 +873,7 @@ class CartesPower(Set):
     Represents the cartesian power of a set, such as R^2 = R x R.
     """
 
+    is_atomic = False
     # TODO: rules
     # note that * is left-associative (left to right)
     """
@@ -791,6 +935,8 @@ class Difference(Set):
     Represents the difference of two sets A \ B = A n B^c.
     """
 
+    is_atomic = False
+
     def __init__(
         self,
         a: Set | Variable,
@@ -828,6 +974,8 @@ class SeqSet(Set):
     Represents a set containing all elements of a sequence.
     """
 
+    is_atomic = False
+
     def __init__(
         self,
         sequence: Sequence | Variable,
@@ -838,10 +986,18 @@ class SeqSet(Set):
         from pylogic.theories.natural_numbers import Naturals
         from pylogic.variable import Variable
 
-        latex_name = (
-            kwargs.pop("latex_name", None) or rf"\{{ {sequence._latex()} \cdots \}}"
-        )
+        latex_name = kwargs.pop("latex_name", None) or rf"\{{ {sequence._latex()} \}}"
         pred0 = kwargs.pop("predicate", None)
+
+        _containment_function_ = kwargs.pop("containment_function", None)
+        containment_function = lambda x: (
+            (x.__class__.__name__ == "SequenceTerm" and x.sequence == sequence)
+            or (
+                _containment_function_(x)
+                if _containment_function_ is not None
+                else False
+            )
+        )
 
         k = Variable("k")
         pred = lambda x: (
@@ -849,8 +1005,16 @@ class SeqSet(Set):
             if pred0 is None
             else ExistsInSet(k, Naturals, x.equals(sequence[k])).and_(pred0(x))
         )
-        super().__init__(name=name, predicate=pred, latex_name=latex_name, **kwargs)
+        name = name or f"{{{sequence.name}}}"
+        super().__init__(
+            name=name,
+            predicate=pred,
+            latex_name=latex_name,
+            containment_function=containment_function,
+            **kwargs,
+        )
         self.sequence: Sequence | Variable = sequence
+        self.knowledge_base.update(sequence.knowledge_base)
 
     def __eq__(self, other: SeqSet) -> bool:
         if not isinstance(other, SeqSet):
@@ -861,7 +1025,119 @@ class SeqSet(Set):
         return hash(("SeqSet", self.sequence))
 
     def __str__(self) -> str:
-        return f"{{{self.sequence}...}}"
+        return f"{{{self.sequence}}}"
 
     def __repr__(self) -> str:
         return f"SeqSet({self.sequence!r})"
+
+    @property
+    def is_set(self) -> bool:
+        return True
+
+    @is_set.setter
+    def is_set(self, value: bool) -> None:
+        pass
+
+    @property
+    def is_sequence(self) -> bool:
+        return self._is_sequence
+
+    @is_sequence.setter
+    def is_sequence(self, value: bool) -> None:
+        self._is_sequence = value
+
+    @property
+    def is_finite(self) -> bool | None:
+        return self._is_finite
+
+    @is_finite.setter
+    def is_finite(self, value: bool) -> None:
+        self._is_finite = value
+
+    @property
+    def is_real(self) -> bool:
+        return self._is_real
+
+    @is_real.setter
+    def is_real(self, value: bool) -> None:
+        self._is_real = value
+        self.sequence.is_real = value
+
+    @property
+    def is_rational(self) -> bool:
+        return self._is_rational
+
+    @is_rational.setter
+    def is_rational(self, value: bool) -> None:
+        self._is_rational = value
+        self.sequence.is_rational = value
+
+    @property
+    def is_integer(self) -> bool:
+        return self._is_integer
+
+    @is_integer.setter
+    def is_integer(self, value: bool) -> None:
+        self._is_integer = value
+        self.sequence.is_integer = value
+
+    @property
+    def is_natural(self) -> bool:
+        return self._is_natural
+
+    @is_natural.setter
+    def is_natural(self, value: bool) -> None:
+        self._is_natural = value
+        self.sequence.is_natural = value
+
+    @property
+    def is_nonnegative(self) -> bool:
+        return self._is_nonnegative
+
+    @is_nonnegative.setter
+    def is_nonnegative(self, value: bool) -> None:
+        self._is_nonnegative = value
+        self.sequence.is_nonnegative = value
+
+    @property
+    def is_nonpositive(self) -> bool:
+        return self._is_nonpositive
+
+    @is_nonpositive.setter
+    def is_nonpositive(self, value: bool) -> None:
+        self._is_nonpositive = value
+        self.sequence.is_nonpositive = value
+
+    @property
+    def is_even(self) -> bool:
+        return self._is_even
+
+    @is_even.setter
+    def is_even(self, value: bool) -> None:
+        self._is_even = value
+        self.sequence.is_even = value
+
+    @property
+    def is_zero(self) -> bool:
+        return self._is_zero
+
+    @is_zero.setter
+    def is_zero(self, value: bool) -> None:
+        self._is_zero = value
+        self.sequence.is_zero = value
+
+    def replace(
+        self,
+        replace_dict: dict[Term, Term],
+        positions: list[list[int]] | None = None,
+        equal_check: Callable[[Term, Term], bool] | None = None,
+    ) -> Term:
+        equal_check = equal_check or (lambda x, y: x == y)
+        for k in replace_dict:
+            if equal_check(self, k):
+                return replace_dict[k]
+        return SeqSet(
+            self.sequence.replace(
+                replace_dict, positions=positions, equal_check=equal_check
+            )
+        )

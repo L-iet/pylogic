@@ -77,7 +77,7 @@ class Sequence(Generic[T]):
         )  # type: ignore
         self.terms: dict[Constant[int], T] = dict(zip(init_inds, self.initial_terms))
         self.nth_term: Callable[[Term], T] | None = nth_term
-        self.is_finite: bool | None = None
+        self._is_finite: bool | None = None
         self._predicate: Callable[[Term], Proposition] | None = predicate
         self._predicate_uses_self = predicate is not None
 
@@ -104,7 +104,7 @@ class Sequence(Generic[T]):
         self.is_pair: bool | None = self.is_graph or kwargs.get("pair", None)
         self.is_list_: bool | None = self.is_pair or kwargs.get("list_", None)
         self.is_list: bool | None = self.is_list_
-        self.is_sequence = True
+        self._is_sequence = True
 
         self._is_zero: bool | None = self._get_init_assump_attr(
             "zero", kwargs, nth_term_expr
@@ -119,6 +119,25 @@ class Sequence(Generic[T]):
             "even", kwargs, nth_term_expr
         )
 
+        explicit_assumptions_attrs = {
+            "real",
+            "rational",
+            "integer",
+            "natural",
+            "zero",
+            "nonpositive",
+            "nonnegative",
+            "even",
+        } & kwargs.keys()
+        if "positive" in explicit_assumptions_attrs:
+            explicit_assumptions_attrs.add("nonnegative")
+            explicit_assumptions_attrs.add("zero")
+        if "negative" in explicit_assumptions_attrs:
+            explicit_assumptions_attrs.add("nonpositive")
+            explicit_assumptions_attrs.add("zero")
+        if "odd" in explicit_assumptions_attrs:
+            explicit_assumptions_attrs.add("even")
+
         # expressions that contain this sequence
         self.parent_exprs: list[Expr] = []
 
@@ -128,6 +147,7 @@ class Sequence(Generic[T]):
 
         # TODO: See Symbol.__init__
         for attr in [
+            "finite",
             "real",
             "rational",
             "integer",
@@ -143,18 +163,14 @@ class Sequence(Generic[T]):
                 n = Variable("n")
                 self_n = self[n]
                 prop = _add_assumptions(self_n, attr, getattr(self, f"_is_{attr}"))
-                prop = ForallInSet(
-                    n,
-                    Naturals,
-                    prop,
-                    _is_proven=True,
-                    _assumptions=set(),
-                    _inference=Inference(None, rule="by_definition"),
+                prop = ForallInSet(n, Naturals, prop)
+                prop._set_is_assumption(
+                    True, add_to_context=attr in explicit_assumptions_attrs
                 )
+
+                # no need to add to context, added already
                 self.knowledge_base.add(prop)
                 self.properties_of_each_term.append(prop)
-                if assumptions_contexts[-1] is not None:
-                    assumptions_contexts[-1].assumptions.append(prop)
 
         # needs to be here, after setting all above attributes
         self.size = Abs(self)
@@ -299,6 +315,14 @@ class Sequence(Generic[T]):
     def is_set(self) -> bool | None:
         return self.is_set_
 
+    @property
+    def is_finite(self) -> bool | None:
+        return self._is_finite
+
+    @property
+    def is_sequence(self) -> bool:
+        return self._is_sequence
+
     def __repr__(self) -> str:
         return f"Sequence({self.name})"
 
@@ -345,7 +369,7 @@ class Sequence(Generic[T]):
 
         return IsContainedIn(other, SeqSet(self), is_assumption=is_assumption, **kwargs)
 
-    def evaluate(self) -> Self:
+    def evaluate(self, **kwargs) -> Self:
         return self
 
     def to_sympy(self):
@@ -391,7 +415,6 @@ class Sequence(Generic[T]):
         """
         from pylogic.helpers import python_to_pylogic
         from pylogic.inference import Inference
-        from pylogic.variable import Variable
 
         expr = python_to_pylogic(expr)
         assert expr.is_natural, "The argument must be a natural number"
@@ -429,6 +452,19 @@ class Sequence(Generic[T]):
             _pyl_init_kwargs=self._init_kwargs,
         )
 
+    def replace(
+        self,
+        replace_dict: dict[Term, Term],
+        positions: list[list[int]] | None = None,
+        equal_check: Callable[[Term, Term], bool] | None = None,
+    ) -> Term:
+        if equal_check is None:
+            equal_check = lambda x, y: x == y
+        for k in replace_dict:
+            if equal_check(self, k):
+                return replace_dict[k]
+        return self
+
 
 class PeriodicSequence(Sequence[T]):
     """
@@ -446,7 +482,7 @@ class PeriodicSequence(Sequence[T]):
         super().__init__(name, initial_terms, **kwargs)
         from pylogic.helpers import python_to_pylogic
 
-        self.is_finite = False
+        self._is_finite = False
         self.period = python_to_pylogic(period)  # TODO: or infinite when None
 
         self._init_args = (name,)
@@ -517,7 +553,7 @@ class FiniteSequence(Sequence[T]):
                 "The length of the sequence must be at least the number of initial terms"
             )
         super().__init__(name, initial_terms, **kwargs)
-        self.is_finite = True
+        self._is_finite = True
         self.length: Term = _length
         # TODO self.size_is_finite = self.size.is_in(Naturals0, _is_proven=True)
         self.size_at_least = self.size_at_least.and_(

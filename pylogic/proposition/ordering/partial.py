@@ -68,6 +68,25 @@ class PartialOrder(BinaryRelation[T, U], _Ordering):
             self.left.to_sympy(), self.right.to_sympy()
         )
 
+    def by_inspection_check(self) -> bool | None:
+        # better to have it here than in _Ordering since Propositon
+        # also has a by_inspection_check method
+
+        inspec = super().by_inspection_check()
+        if inspec is not None:
+            return inspec
+        from pylogic.helpers import is_numeric
+
+        comparisons = {
+            "LessThan": lambda l, r: l < r,
+            "GreaterThan": lambda l, r: l > r,
+            "LessOrEqual": lambda l, r: l <= r,
+            "GreaterOrEqual": lambda l, r: l >= r,
+        }
+        if is_numeric(self.left) and is_numeric(self.right):
+            res = comparisons[self.__class__.__name__](self.left, self.right)
+            return res
+
 
 class StrictPartialOrder(BinaryRelation[T, U], _Ordering):
     """
@@ -112,3 +131,21 @@ class StrictPartialOrder(BinaryRelation[T, U], _Ordering):
         return pyl_to_sp_classes[self.__class__.__name__](
             self.left.to_sympy(), self.right.to_sympy()
         )
+
+    def by_inspection_check(self) -> bool | None:
+        # better to have it here than in _Ordering since Propositon
+        # also has a by_inspection_check method
+
+        inspec = super().by_inspection_check()
+        if inspec is not None:
+            return inspec
+        from pylogic.helpers import is_python_numeric
+
+        comparisons = {
+            "LessThan": lambda l, r: l < r,
+            "GreaterThan": lambda l, r: l > r,
+            "LessOrEqual": lambda l, r: l <= r,
+            "GreaterOrEqual": lambda l, r: l >= r,
+        }
+        if is_python_numeric(self.left) and is_python_numeric(self.right):
+            return comparisons[self.__class__.__name__](self.left, self.right)

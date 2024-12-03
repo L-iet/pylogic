@@ -114,7 +114,7 @@ class Group(Monoid):
 
         # From the Latin square property, we can deduce that every element in
         # the group has a left inverse and a right inverse
-        a_in_self = a.is_in(self, is_assumption=True)
+        a_in_self = a.is_in(self).assume(_internal=True)
         left_and_right_inverses = self.latin_square.in_particular(
             a, a_in_self
         ).in_particular(self.identity)
@@ -178,9 +178,9 @@ class Group(Monoid):
 
         # Now we prove that the inverse is unique
         w = Variable("w")
-        w_in_self = w.is_in(self, is_assumption=True)
-        w_is_right_inv = (a | self.op | w).equals(self.identity, is_assumption=True)
-        w_is_left_inv = (w | self.op | a).equals(self.identity, is_assumption=True)
+        w_in_self = w.is_in(self).assume(_internal=True)
+        w_is_right_inv = (a | self.op | w).equals(self.identity).assume(_internal=True)
+        w_is_left_inv = (w | self.op | a).equals(self.identity).assume(_internal=True)
 
         # similar algebraic proof as above
         w_eq_cx = transitive_proof(

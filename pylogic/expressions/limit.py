@@ -87,7 +87,7 @@ class Limit(Expr):
         )
         self.knowledge_base.add(self.epsilon_N_definition)
 
-    def evaluate(self) -> Limit | Constant:
+    def evaluate(self, **kwargs) -> Limit | Constant:
         n = Variable("n")
         n_sympy = n.to_sympy()
         if self.sequence.nth_term is not None:
@@ -95,7 +95,7 @@ class Limit(Expr):
         return self
 
     def _latex(self) -> str:
-        return f"\\lim {self.sequence}"
+        return f"\\lim {self.sequence._latex()}"
 
     def __str__(self) -> str:
         return f"Limit({self.sequence})"

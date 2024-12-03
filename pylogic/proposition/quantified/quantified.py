@@ -128,6 +128,23 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
         variable.is_zero = None
         return variable
 
+    @property
+    def definition(self) -> _Quantified:
+        """
+        A(n expanded) definition of the proposition.
+        """
+        from pylogic.inference import Inference
+        from pylogic.proposition.proposition import get_assumptions
+
+        return self.__class__(
+            variable=self.variable,
+            set_=getattr(self, "set_", None),
+            inner_proposition=getattr(self, self._innermost_prop_attr).definition,
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="by_definition"),
+        )  # type: ignore
+
     def describe(self, *, _indent=0) -> str:
         """
         Return a text representation of the proposition.
@@ -195,7 +212,7 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
             inner_proposition=self.inner_proposition.replace(
                 replace_dict, positions, equal_check=equal_check
             ),
-        )
+        )  # type: ignore
         return new_p
 
     def unify(self, other: Self) -> Unification | Literal[True] | None:

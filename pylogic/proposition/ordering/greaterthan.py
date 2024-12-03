@@ -17,6 +17,7 @@ from pylogic.proposition.relation.equals import Equals
 
 if TYPE_CHECKING:
     from pylogic.proposition.not_ import Not
+    from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
     from pylogic.proposition.ordering.lessthan import LessThan
 
 T = TypeVar("T", bound=Term)
@@ -48,6 +49,13 @@ class GreaterThan(StrictTotalOrder[T, U], _Ordering):
 
     def __repr__(self) -> str:
         return f"{self.left} > {self.right}"
+
+    def by_inspection_check(self) -> bool | None:
+        inspec = super().by_inspection_check()
+        if inspec is not None:
+            return inspec
+        if self.right == 0:
+            return self.left.is_positive
 
     def to_positive_inequality(self):
         """If self is of the form a > b, returns an inequality of the form a - b > 0"""
@@ -160,18 +168,48 @@ class GreaterThan(StrictTotalOrder[T, U], _Ordering):
         new_p = self.to_less_than()
         return new_p
 
-    def by_inspection(self) -> Self:
-        """
-        Logical inference rule. Determine if the proposition is true by inspection.
-        """
-        # TODO: Implement this
-        raise NotImplementedError
-
     def __mul__(self, other: PythonNumeric) -> GreaterThan:
         return super()._mul(self, other)
 
     def __rmul__(self, other: PythonNumeric) -> GreaterThan:
         return super()._mul(self, other)
+
+    def add_nonnegative_to_left(self, nonnegative: Term) -> GreaterThan:
+        """Logical inference rule.
+        If self is of the form `a > b` and `c` is nonnegative, returns a
+        proposition of the form `a + c > b`"""
+        from pylogic.helpers import python_to_pylogic
+
+        nonnegative = python_to_pylogic(nonnegative)
+        assert nonnegative.is_nonnegative, f"{nonnegative} is not nonnegative"
+        from pylogic.inference import Inference
+
+        res = GreaterThan(
+            self.left + nonnegative,
+            self.right,
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="add_nonnegative_to_left"),
+        )
+        return res
+
+    def add_nonpositive_to_right(self, nonpositive: Term) -> GreaterThan:
+        """Logical inference rule.
+        If self is of the form `a > b` and `c` is nonpositive (c <= 0), returns a
+        proposition of the form `a > b + c`"""
+        from pylogic.helpers import python_to_pylogic
+
+        nonpositive = python_to_pylogic(nonpositive)
+        assert nonpositive.is_nonpositive, f"{nonpositive} is not nonpositive"
+        from pylogic.inference import Inference
+
+        return GreaterThan(
+            self.left,
+            self.right + nonpositive,
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="add_nonpositive_to_right"),
+        )
 
 
 def is_absolute(expr: Term, expr_not_zero: Not[Equals]) -> "GreaterThan":

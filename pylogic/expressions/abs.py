@@ -41,7 +41,7 @@ class Abs(Expr):
         self.is_nonnegative = True
         self.is_nonpositive = self.is_zero
 
-    def evaluate(self) -> Abs | Constant:
+    def evaluate(self, **kwargs) -> Abs | Constant:
         from pylogic.helpers import is_python_numeric
         from pylogic.symbol import Symbol
 

@@ -34,10 +34,7 @@ class SequenceTerm(Expr, Generic[T]):
         self.is_cartes_power: bool | None = None
         self.is_cartes_product: bool | None = None
         self.is_empty: bool | None = None
-        self.is_finite: bool | None = None
         self.is_intersection: bool | None = None
-        self.is_set = None
-        self.is_set_ = None
         self.is_union: bool | None = None
 
     def update_properties(self) -> None:
@@ -67,7 +64,7 @@ class SequenceTerm(Expr, Generic[T]):
 
         return IsContainedIn(term, self, **kwargs)
 
-    def evaluate(self) -> SequenceTerm | T:
+    def evaluate(self, **kwargs) -> SequenceTerm | T:
         from pylogic.variable import Variable
 
         if isinstance(self.sequence, Variable):
@@ -84,12 +81,11 @@ class SequenceTerm(Expr, Generic[T]):
             else:
                 res = self.sequence.nth_term(indx)
             if getattr(res, "is_set", False):
-                self.is_set = True
                 self.is_set_ = True
                 self.is_cartes_power = res.is_cartes_power
                 self.is_cartes_product = res.is_cartes_product
                 self.is_empty = res.is_empty
-                self.is_finite = res.is_finite
+                self._is_finite = res.is_finite
                 self.is_intersection = res.is_intersection
                 self.is_union = res.is_union
             return res

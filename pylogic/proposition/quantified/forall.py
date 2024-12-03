@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.not_ import Not
     from pylogic.proposition.quantified.exists import Exists
     from pylogic.proposition.relation.equals import Equals
+    from pylogic.structures.sequence import Sequence
     from pylogic.structures.set_ import Set
     from pylogic.variable import Variable
 
@@ -74,11 +75,36 @@ class Forall(_Quantified[TProposition]):
     def __hash__(self) -> int:
         return super().__hash__()
 
-    def quantified_modus_ponens(
+    def extract_conjuncts(self) -> list[Proposition]:
+        """
+        Logical inference rule. Given self is proven and is of the form
+        `forall x: P(x) and Q(x)`, (or `forall x in S: P(x) and Q(x)`, etc),
+        return the propositions
+        [`forall x: P(x)`, `forall x: Q(x)`] (or [`forall x in S: P(x)`, `forall x in S: Q(x)`]).
+        """
+        from pylogic.proposition.and_ import And
+
+        assert self.is_proven, f"{self} is not proven"
+        innermost_prop = getattr(self, self._innermost_prop_attr)
+        assert isinstance(innermost_prop, And), f"{innermost_prop} is not an `And`"
+        conjuncts = innermost_prop.propositions
+        return [
+            self.__class__(
+                self.variable,
+                set_=getattr(self, "set_", None),
+                inner_proposition=conj,
+                _is_proven=True,
+                _assumptions=get_assumptions(self),
+                _inference=Inference(self, rule="extract_conjuncts"),
+            )
+            for conj in conjuncts
+        ]
+
+    def forall_modus_ponens(
         self, other: Forall[Implies[TProposition, B]] | Exists[Implies[TProposition, B]]
     ) -> Forall[B] | Exists[B]:
         """
-        Logical inference rule. If self is forall x: P(x) and given forall x: P(x) -> Q(x)
+        Logical inference rule. If self is forall x: P(x) and given P(x) -> Q(x) or forall x: P(x) -> Q(x)
         (or exists x: P(x) -> Q(x)), and each is proven, conclude
         forall x: Q(x) (or exists x: Q(x)).
         """
@@ -86,23 +112,27 @@ class Forall(_Quantified[TProposition]):
 
         quant_class = other.__class__
         assert (
-            quant_class == Forall or quant_class == Exists
-        ), f"{other} is must be `Forall` or `Exists`"
-        assert isinstance(
-            other.inner_proposition, Implies
-        ), f"{other.inner_proposition} is not an implication"
+            quant_class == Forall or quant_class == Exists or quant_class == Implies
+        ), f"{other} is must be `Forall`, `Exists` or `Implies`"
+        if quant_class == Implies:
+            impl: Implies = other
+        else:
+            assert isinstance(
+                other.inner_proposition, Implies
+            ), f"{other.inner_proposition} is not an implication"
+            impl = other.inner_proposition
         assert self.is_proven, f"{self} is not proven"
         assert other.is_proven, f"{other} is not proven"
-        assert self.inner_proposition == other.inner_proposition.antecedent
+        assert self.inner_proposition == impl.antecedent
 
-        other_cons = other.inner_proposition.consequent
+        other_cons = impl.consequent
         new_p: Forall[B] | Exists[B] = quant_class(
             variable=other.variable,
             inner_proposition=other_cons,  # type: ignore
             is_assumption=False,
             _is_proven=True,
             _assumptions=get_assumptions(self).union(get_assumptions(other)),
-            _inference=Inference(self, other, rule="quantified_modus_ponens"),
+            _inference=Inference(self, other, rule="forall_modus_ponens"),
         )
         return new_p
 
@@ -295,6 +325,59 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
             _inference=self.deduced_from,
         )
 
+    def neq_any_thus_not_in_set(self) -> Not[IsContainedIn]:
+        """
+        Logical inference rule. Given self is proven, where self is of the form
+        `forall x in S: A != x`, return a proof of `~(A in S)`.
+        """
+        assert self.is_proven, f"{self} is not proven"
+        from pylogic.proposition.not_ import Not
+        from pylogic.proposition.relation.contains import IsContainedIn
+        from pylogic.proposition.relation.equals import Equals
+
+        match self._inner_without_set:
+            case Not(negated=Equals(left=a, right=b)) if b == self.variable:
+                new_p = Not(
+                    IsContainedIn(a, self.set_),
+                    _is_proven=True,
+                    _assumptions=get_assumptions(self),
+                    _inference=Inference(self, rule="neq_any_thus_not_in_set"),
+                )
+                return new_p
+        raise ValueError(f"{self} is not of the form `forall x in S: A != x`")
+
+    def neq_any_thus_not_in_sequence(self) -> Not[IsContainedIn]:
+        """
+        Logical inference rule. Given self is proven, where self is of the form
+        `forall k in Naturals: A != s[k]`, return a proof of `~(A in {s_n})`.
+        """
+        assert self.is_proven, f"{self} is not proven"
+        from pylogic.expressions.sequence_term import SequenceTerm
+        from pylogic.proposition.not_ import Not
+        from pylogic.proposition.relation.contains import IsContainedIn
+        from pylogic.proposition.relation.equals import Equals
+        from pylogic.structures.set_ import SeqSet
+
+        if not (
+            self.set_.name == "Naturals"
+            and self.set_.__class__.__name__ == "NaturalsSemiring"
+        ):
+            raise ValueError(
+                f"{self} is not of the form `forall k in Naturals: A != s[k]`"
+            )
+        match self._inner_without_set:
+            case Not(
+                negated=Equals(left=a, right=SequenceTerm(sequence=s, index=ind))
+            ) if ind == self.variable:
+                new_p = Not(
+                    IsContainedIn(a, SeqSet(s)),
+                    _is_proven=True,
+                    _assumptions=get_assumptions(self),
+                    _inference=Inference(self, rule="neq_any_thus_not_in_sequence"),
+                )
+                return new_p
+        raise ValueError(f"{self} is not of the form `forall k in Naturals: A != s[k]`")
+
     def in_particular(
         self,
         expression_to_substitute: Term,
@@ -306,7 +389,12 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
         assert self.is_proven, f"{self} is not proven"
         impl = super().in_particular(expression_to_substitute)
         if proof_expr_to_substitute_in_set is None:
-            ante = IsContainedIn(expression_to_substitute, self.set_).by_inspection()
+            try:
+                ante = IsContainedIn(
+                    expression_to_substitute, self.set_
+                ).by_inspection()
+            except ValueError:
+                return impl
         elif (
             self.set_.predicate is not None
             and proof_expr_to_substitute_in_set
@@ -318,10 +406,7 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
         elif isinstance(proof_expr_to_substitute_in_set, IsContainedIn):
             ante = proof_expr_to_substitute_in_set
         else:
-            raise ValueError(
-                f"Cannot use {proof_expr_to_substitute_in_set} to prove that \
-{expression_to_substitute} is in {self.set_}"
-            )
+            return impl
         new_p = impl.first_unit_definite_clause_resolve(ante)
         return new_p  # type: ignore
 
@@ -372,7 +457,12 @@ class ForallSubsets(Forall[Implies[IsSubsetOf, TProposition]]):
         assert self.is_proven, f"{self} is not proven"
         impl = super().in_particular(expression_to_substitute)
         if proof_expr_to_substitute_is_subset is None:
-            ante = IsSubsetOf(expression_to_substitute, self.right_set).by_inspection()
+            try:
+                ante = IsSubsetOf(
+                    expression_to_substitute, self.right_set
+                ).by_inspection()
+            except ValueError:
+                return impl
         else:
             ante = proof_expr_to_substitute_is_subset
         new_p = impl.first_unit_definite_clause_resolve(ante)

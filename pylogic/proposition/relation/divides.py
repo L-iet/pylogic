@@ -83,8 +83,8 @@ class Divides(Relation):
             self._definition.from_assumptions = get_assumptions(self)
             self._definition.deduced_from = Inference(self, rule="by_definition")
 
-    def _set_is_assumption(self, value: bool) -> None:
-        super()._set_is_assumption(value)
+    def _set_is_assumption(self, value: bool, **kwargs) -> None:
+        super()._set_is_assumption(value, **kwargs)
         self._definition._set_is_assumption(value)
 
     def _set_is_axiom(self, value: bool) -> None:

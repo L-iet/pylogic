@@ -77,6 +77,28 @@ right: {right}, right.is_set: {right.is_set}"
             _inference=self.deduced_from,
         )
 
+    def _set_is_inferred(self, value: bool) -> None:
+        sets_and_attrs = {
+            "Naturals": ["is_natural"],
+            "Integers": ["is_integer"],
+            "Rationals": ["is_rational"],
+            "Reals": ["is_real"],
+            "AllFiniteSequences": ["is_sequence", "is_finite"],
+        }
+        if value:
+            # TODO: add more here
+            if self.right.name in sets_and_attrs:
+                for attr in sets_and_attrs[self.right.name]:
+                    setattr(self.left, attr, True)
+            self.left.knowledge_base.add(self)
+            self.right.elements.add(self.left)
+        else:
+            if self.right.name in sets_and_attrs:
+                for attr in sets_and_attrs[self.right.name]:
+                    setattr(self.left, attr, None)
+            self.left.knowledge_base.discard(self)
+            self.right.elements.discard(self.left)
+
     def to_forall(self) -> Forall[Implies[IsContainedIn, IsContainedIn]]:
         """
         If self is `A issubset B`, return `forall x: x in A -> x in B`

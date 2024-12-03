@@ -34,8 +34,13 @@ class Variable(Symbol):
     def __new_init__(
         self, *args, depends_on: tuple[Variable, ...] = (), **kwargs
     ) -> None:
-        super().__new_init__(*args, depends_on=depends_on, **kwargs)
         context = cast(AssumptionsContext | None, kwargs.get("context", None))
+        # append to context first before appending its
+        # other assumptions
+        if context is not None:
+            context.assumptions.append(self)
+
+        super().__new_init__(*args, depends_on=depends_on, **kwargs)
         self.is_bound: bool = False
         # if the variable is created from a proven existential statement
         # it won't be equal to any other constant
@@ -47,12 +52,8 @@ class Variable(Symbol):
         self.is_empty: bool | None = None
         self.is_cartes_power: bool | None = None
         self.is_cartes_product: bool | None = None
-        self.is_finite: bool | None = None
         self.is_intersection: bool | None = None
         self.is_union: bool | None = None
-
-        if context is not None:
-            context.assumptions.append(self)
 
     def __contains__(self, item: Any) -> bool:
         """

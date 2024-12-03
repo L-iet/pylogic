@@ -89,6 +89,9 @@ class And(_Junction[*Ps]):
             return new_props
         return self.propositions
 
+    def extract_conjuncts(self):
+        return self.extract()
+
     def remove_duplicates(self) -> And:
         return super().remove_duplicates()  # type: ignore
 

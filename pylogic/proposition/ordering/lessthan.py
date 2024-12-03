@@ -38,8 +38,12 @@ class LessThan(StrictTotalOrder[T, U], _Ordering):
             **kwargs,
         )
 
-    # TODO: in _set_is_inferred, I need to set the appropriate attributes _is_nonnegative, _is_positive, etc.
-    # for self.left or self.rightfor other classes as well
+    def by_inspection_check(self) -> bool | None:
+        inspec = super().by_inspection_check()
+        if inspec is not None:
+            return inspec
+        if self.right == 0:
+            return self.left.is_negative
 
     def to_positive_inequality(self):
         """If self is of the form a < b, returns an inequality of the form b - a > 0"""
@@ -153,12 +157,6 @@ class LessThan(StrictTotalOrder[T, U], _Ordering):
         new_p = self.to_greater_than()
         return new_p
 
-    def by_inspection(self) -> LessThan:
-        """
-        Logical inference rule. Determine if the proposition is true by inspection.
-        """
-        raise NotImplementedError
-
     def by_definition(self) -> LessThan:
         """
         Logical inference rule. Determine if the proposition is true by definition.
@@ -175,6 +173,42 @@ class LessThan(StrictTotalOrder[T, U], _Ordering):
                 return new_p
             else:
                 raise ValueError(f"{self} is not true by definition")
+
+    def add_nonnegative_to_right(self, nonnegative: Term) -> LessThan:
+        """Logical inference rule.
+        If self is of the form `a < b` and `c` is nonnegative, returns a
+        proposition of the form `a < b + c`"""
+        from pylogic.helpers import python_to_pylogic
+
+        nonnegative = python_to_pylogic(nonnegative)
+        assert nonnegative.is_nonnegative, f"{nonnegative} is not nonnegative"
+        from pylogic.inference import Inference
+
+        return LessThan(
+            self.left,
+            self.right + nonnegative,
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="add_nonnegative_to_right"),
+        )
+
+    def add_nonpositive_to_left(self, nonpositive: Term) -> LessThan:
+        """Logical inference rule.
+        If self is of the form `a < b` and `c` is nonpositive (c <= 0), returns a
+        proposition of the form `a + c < b`"""
+        from pylogic.helpers import python_to_pylogic
+
+        nonpositive = python_to_pylogic(nonpositive)
+        assert nonpositive.is_nonpositive, f"{nonpositive} is not nonpositive"
+        from pylogic.inference import Inference
+
+        return LessThan(
+            self.left + nonpositive,
+            self.right,
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="add_nonpositive_to_left"),
+        )
 
     def __mul__(self, other: int | float) -> LessThan:
         return super()._mul(self, other)

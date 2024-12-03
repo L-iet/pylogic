@@ -99,12 +99,23 @@ class AssumptionsContext:
                     cons = Forall(a, cons)
                 i += 1
         cons._set_is_proven(True)
-        cons.deduced_from = Inference(
-            conclusion,  # the conclusion is included first here
-            conclusion.deduced_from.starting_premise,  # TODO: could be None
-            *conclusion.deduced_from.other_premises,
-            rule="close_assumptions_context",
-        )
+        if conclusion.deduced_from is None:
+            cons.deduced_from = Inference(conclusion, rule="close_assumptions_context")
+        else:
+            other_props = tuple(
+                filter(
+                    lambda x: x is not None,
+                    (
+                        conclusion.deduced_from.starting_premise,
+                        *conclusion.deduced_from.other_premises,
+                    ),
+                )
+            )
+            cons.deduced_from = Inference(
+                conclusion,  # the conclusion is included first here
+                *other_props,
+                rule="close_assumptions_context",
+            )
         cons.from_assumptions = get_assumptions(conclusion).difference(self.assumptions)
         return cons
 

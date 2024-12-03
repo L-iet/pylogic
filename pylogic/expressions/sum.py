@@ -21,6 +21,7 @@ class _Aggregate(Expr):
         self.mutable_attrs_to_copy = self.mutable_attrs_to_copy + ["sequence"]
 
     def __new_init__(self, sequence: Sequence) -> None:
+        assert sequence.is_sequence, "Argument must be a sequence."
         super().__new_init__(sequence)
         self.sequence = sequence
 
@@ -33,7 +34,7 @@ class _Aggregate(Expr):
         self.is_zero = sequence.is_zero
         self.is_even = sequence.is_even
 
-    def evaluate(self) -> Term:
+    def evaluate(self, **kwargs) -> Term:
         from pylogic.sympy_helpers import sympy_to_pylogic
 
         try:

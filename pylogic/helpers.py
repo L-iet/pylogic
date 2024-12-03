@@ -47,8 +47,13 @@ else:
     S = TypeVar("S")
 
 
-def replace(expr, replace_dict: dict, equal_check: Callable | None = None) -> Any:
-    return _replace(expr, replace_dict, equal_check=equal_check)
+def replace(
+    expr,
+    replace_dict: dict,
+    equal_check: Callable | None = None,
+    positions: list[list[int]] | None = None,
+) -> Any:
+    return _replace(expr, replace_dict, equal_check=equal_check, positions=positions)
 
 
 def get_vars(expr: Any) -> set[Variable]:
@@ -88,7 +93,7 @@ def get_sets(expr: Any) -> set[Set]:
 
 def get_class_ns(expr: Any) -> set[Class]:
     """
-    Get all class namespaces in expr.
+    Get all class{n} in expr.
     """
     if (
         expr.__class__.__name__.startswith("Collection")
@@ -209,6 +214,20 @@ def is_python_numeric(*args: Any) -> bool:
     return all(
         isinstance(arg, (int, float, Fraction, complex, Decimal)) for arg in args
     )
+
+
+def is_numeric(*args: Any) -> bool:
+    """
+    Check if the arguments are of numeric types.
+    """
+    from pylogic.constant import Constant
+
+    def check(arg):
+        if isinstance(arg, Constant):
+            arg = arg.value
+        return isinstance(arg, (int, float, Fraction, complex, Decimal))
+
+    return all(check(arg) for arg in args)
 
 
 def is_python_real_numeric(*args: Any) -> bool:
@@ -520,15 +539,16 @@ class Namespace(SimpleNamespace):
                 setattr(self, key, value)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        if hasattr(self, name):
-            raise TypeError("Namespace object is immutable")
         return super().__setattr__(name, value)
 
     def __delattr__(self, name: str) -> None:
-        raise TypeError("Namespace object is immutable")
+        raise TypeError("Cannot delete attributes from a Namespace")
 
     def __getitem__(self, key: str) -> Any:
         return getattr(self, key)
+
+    def __str__(self) -> str:
+        return str(vars(self))
 
 
 def _add_assumptions(term: Term, attr: str, value: bool) -> Proposition:
@@ -544,36 +564,45 @@ def _add_assumptions(term: Term, attr: str, value: bool) -> Proposition:
 
     from pylogic.proposition.not_ import Not
     from pylogic.proposition.relation.contains import IsContainedIn
+    from pylogic.proposition.relation.subsets import IsSubsetOf
+    from pylogic.structures.set_ import SeqSet
 
     set_modules = {
         "real": "pylogic.theories.real_numbers",
         "rational": "pylogic.theories.rational_numbers",
         "integer": "pylogic.theories.integers",
         "natural": "pylogic.theories.natural_numbers",
+        "finite": "pylogic.structures.set_",
     }
     set_names = {
         "real": "Reals",
         "rational": "Rationals",
         "integer": "Integers",
         "natural": "Naturals",
+        "finite": "AllFiniteSequences",
     }
 
+    positive_prop = None
     if attr in set_modules:
         mod = importlib.import_module(set_modules[attr])
         mod_set = getattr(mod, set_names[attr])
-        positive_prop = IsContainedIn(term, mod_set, is_assumption=True)
+        positive_prop = (
+            IsSubsetOf(SeqSet(term), mod_set)
+            if (term.is_sequence and attr != "finite")
+            else IsContainedIn(term, mod_set)
+        )
     elif attr == "zero":
         from pylogic.proposition.relation.equals import Equals
 
-        positive_prop = Equals(term, 0, is_assumption=True)
+        positive_prop = Equals(term, 0)
     elif attr == "nonpositive":
         from pylogic.proposition.ordering.lessorequal import LessOrEqual
 
-        positive_prop = LessOrEqual(term, 0, is_assumption=True)
+        positive_prop = LessOrEqual(term, 0)
     elif attr == "nonnegative":
         from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
 
-        positive_prop = GreaterOrEqual(term, 0, is_assumption=True)
+        positive_prop = GreaterOrEqual(term, 0)
     elif attr == "even":
         # TODO: change to Integers where appropriate
         from pylogic.theories.natural_numbers import Naturals
@@ -581,13 +610,19 @@ def _add_assumptions(term: Term, attr: str, value: bool) -> Proposition:
         # if term._is_natural is True: ... # use Naturals.even
         # else: ... # use Integers.even
 
-        positive_prop = Naturals.even(term, is_assumption=True)
+        positive_prop = Naturals.even(term)
 
+    elif attr == "finite" and term.is_sequence:
+        from pylogic.proposition.relation.contains import IsContainedIn
+        from pylogic.structures.set_ import AllFiniteSequences
+
+        positive_prop = IsContainedIn(term, AllFiniteSequences)
+    if positive_prop is None:
+        raise ValueError(f"Unknown assumption: {attr} on {term}")
     if value:
         prop = positive_prop
     else:
-        positive_prop._set_is_assumption(False)
-        prop = Not(positive_prop, is_assumption=True)
+        prop = Not(positive_prop)
     return prop
 
 
@@ -597,11 +632,11 @@ def _add_assumption_attributes(term: Symbol | Sequence, kwargs) -> None:
     Check for contradictions and raise ValueError if found.
     To be used with Symbol and Sequence.
     """
-    # no need to set natural when nonnegative and integer are True
-    # because the getter handles that
-    if kwargs.get("natural", None):
-        term.is_nonnegative = True
-        term.is_integer = True
+    # # no need to set natural when nonnegative and integer are True
+    # # because the getter handles that
+    # if kwargs.get("natural", None):
+    #     term.is_nonnegative = True
+    #     term.is_integer = True
 
     if kwargs.get("positive", None):
         term.is_real = True

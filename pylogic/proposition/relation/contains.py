@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from pylogic.proposition.or_ import Or
     from pylogic.proposition.proposition import Proposition
     from pylogic.proposition.relation.equals import Equals
+    from pylogic.proposition.relation.subsets import IsSubsetOf
     from pylogic.structures.collection import Class
     from pylogic.structures.sequence import Sequence
     from pylogic.structures.set_ import Set
@@ -69,18 +70,25 @@ class IsContainedIn(BinaryRelation[T, U]):
         return self.left
 
     def _set_is_inferred(self, value: bool) -> None:
+        sets_and_attrs = {
+            "Naturals": ["is_natural"],
+            "Integers": ["is_integer"],
+            "Rationals": ["is_rational"],
+            "Reals": ["is_real"],
+            "AllFiniteSequences": ["is_sequence", "is_finite"],
+        }
         if value:
             # TODO: add more here
-            if self.right.name in {"Naturals", "Integers", "Rationals", "Reals"}:
-                substr = self.right.name[:-1].lower()
-                setattr(self.left, f"is_{substr}", True)
+            if self.right.name in sets_and_attrs:
+                for attr in sets_and_attrs[self.right.name]:
+                    setattr(self.left, attr, True)
             self.left.knowledge_base.add(self)
             self.left.sets_contained_in.add(self.right)
             self.right.elements.add(self.left)
         else:
-            if self.right.name in {"Naturals", "Integers", "Rationals", "Reals"}:
-                substr = self.right.name[:-1].lower()
-                setattr(self.left, f"is_{substr}", None)
+            if self.right.name in sets_and_attrs:
+                for attr in sets_and_attrs[self.right.name]:
+                    setattr(self.left, attr, None)
             self.left.knowledge_base.discard(self)
             self.left.sets_contained_in.discard(self.right)
             self.right.elements.discard(self.left)
@@ -92,8 +100,8 @@ class IsContainedIn(BinaryRelation[T, U]):
     #     elif not (self.is_axiom or self.is_assumption):
     #         self._set_is_inferred(False)
 
-    # def _set_is_assumption(self, value: bool) -> None:
-    #     super()._set_is_assumption(value)
+    # def _set_is_assumption(self, value: bool, **kwargs) -> None:
+    #     super()._set_is_assumption(value, **kwargs)
     #     # TODO: fix this. I'm still getting some dummy variables in
     #     # set's elements although we called followed_from with this prop
     #     # update Oct 11 2024, did I fix this?
@@ -236,4 +244,28 @@ class IsContainedIn(BinaryRelation[T, U]):
             _is_proven=True,
             _assumptions=self.from_assumptions,
             _inference=Inference(self, rule="thus_contained_in_all"),
+        )
+
+    def thus_contained_in_b(self, a_is_subset_b: IsSubsetOf) -> IsContainedIn:
+        """Logical inference rule. If self is proven and of the form `x in A` and `A issubset B`
+        is given, returns a proven proposition of the form `x in B`"""
+        from pylogic.inference import Inference
+        from pylogic.proposition.proposition import get_assumptions
+        from pylogic.proposition.relation.subsets import IsSubsetOf
+
+        assert self.is_proven, f"{self} is not proven"
+        assert isinstance(
+            a_is_subset_b, IsSubsetOf
+        ), f"{a_is_subset_b} is not an `IsSubsetOf`"
+        assert a_is_subset_b.is_proven, f"{a_is_subset_b} is not proven"
+        assert (
+            self.right == a_is_subset_b.left
+        ), f"{self.right} in {self} is not the same as {a_is_subset_b.left} in {a_is_subset_b}"
+
+        return IsContainedIn(
+            self.left,
+            a_is_subset_b.right,
+            _is_proven=True,
+            _assumptions=get_assumptions(self).union(get_assumptions(a_is_subset_b)),
+            _inference=Inference(self, rule="thus_contained_in_b"),
         )

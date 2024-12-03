@@ -78,7 +78,7 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
 
     def _latex(self, printer=None) -> str:
         wrap = lambda p: (
-            rf"\left({p}\right)"
+            rf"\left({p._latex()}\right)"
             if p.__class__._precedence >= self.__class__._precedence
             else p._latex()
         )

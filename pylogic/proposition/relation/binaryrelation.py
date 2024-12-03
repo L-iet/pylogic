@@ -71,8 +71,8 @@ class BinaryRelation(Relation, Generic[T, U]):
         if (not value) and not (self.is_axiom or self.is_assumption):
             self._set_is_inferred(False)
 
-    def _set_is_assumption(self, value: bool) -> None:
-        super()._set_is_assumption(value)
+    def _set_is_assumption(self, value: bool, **kwargs) -> None:
+        super()._set_is_assumption(value, **kwargs)
         if (not value) and not (self._is_proven or self.is_axiom):
             self._set_is_inferred(False)
 
@@ -123,9 +123,13 @@ class BinaryRelation(Relation, Generic[T, U]):
         new_right = old_right = self.right
 
         if positions is None or [0] in positions:
-            new_left = replace(old_left, replace_dict, equal_check=equal_check)
+            new_left = replace(
+                old_left, replace_dict, equal_check=equal_check, positions=positions
+            )
         if positions is None or [1] in positions:
-            new_right = replace(old_right, replace_dict, equal_check=equal_check)
+            new_right = replace(
+                old_right, replace_dict, equal_check=equal_check, positions=positions
+            )
         return self.__class__(
             new_left,
             new_right,
@@ -208,3 +212,6 @@ class BinaryRelation(Relation, Generic[T, U]):
             _assumptions=set(),
             _inference=Inference(None, rule="reflexive"),
         )
+
+    def by_inspection_check(self) -> bool | None:
+        return True if self in self.left.knowledge_base else None

@@ -96,7 +96,9 @@ class PiecewiseExpr(Expr, Generic[*Ps]):
         )
         self.is_even = ternary_and(*[branch.is_even for branch in branches])
 
-    def evaluate(self, knowledge_base: set[Proposition] | None = None) -> Term:
+    def evaluate(
+        self, knowledge_base: set[Proposition] | None = None, **kwargs
+    ) -> Term:
         """
         For now, we assume the knowledge base contains only proven propositions.
         """
@@ -175,7 +177,7 @@ class PiecewiseBranch(Expr, Generic[P]):
         self.is_nonnegative = then.is_nonnegative
         self.is_even = then.is_even
 
-    def evaluate(self) -> Term:
+    def evaluate(self, **kwargs) -> Term:
         return self
 
     def to_sympy(self) -> sp.Basic:
@@ -209,7 +211,7 @@ class OtherwiseBranch(Expr):
         self.is_nonnegative = then.is_nonnegative
         self.is_even = then.is_even
 
-    def evaluate(self) -> Term:
+    def evaluate(self, **kwargs) -> Term:
         return self
 
     def to_sympy(self) -> ExprCondPair:

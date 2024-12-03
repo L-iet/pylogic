@@ -1,9 +1,16 @@
 from pylogic.expressions.gcd import Gcd
+from pylogic.expressions.prod import Prod
 from pylogic.helpers import Namespace
 from pylogic.inference import Inference
 from pylogic.proposition.not_ import neg
+from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
+from pylogic.proposition.ordering.greaterthan import GreaterThan
+from pylogic.proposition.ordering.lessorequal import LessOrEqual
+from pylogic.proposition.ordering.lessthan import LessThan
 from pylogic.proposition.quantified.exists import ExistsInSet
 from pylogic.proposition.quantified.forall import ForallInSet
+from pylogic.proposition.relation.equals import Equals
+from pylogic.structures.set_ import AllFiniteSequences, SeqSet
 from pylogic.theories.integers import Integers
 from pylogic.theories.natural_numbers import Naturals
 from pylogic.theories.rational_numbers import Rationals
@@ -37,10 +44,22 @@ Reals.subset_relations = Namespace(
     Q_Subset_R=Q_Subset_R,
 )
 
-r, p, q, a, b, c, k = map(Variable, "r p q a b c k".split())
+r, p, q, a, b, c, k, w, m, n, i = map(Variable, "r p q a b c k w m n i".split())
+k_nat = Variable("k_nat")
+k_nat._is_natural = True
 
-Rationals.theorems = Namespace()
-Integers.theorems = Namespace()
+a_seq, s_seq = map(
+    lambda s: Variable(s, finite=True, sequence=True, length=k_nat),
+    "a s".split(),
+)
+a_seq_set, s_seq_set = map(SeqSet, (a_seq, s_seq))
+prod_s_seq = Prod(s_seq)
+# prod_s_seq._is_natural = True  # hack, see TODO below
+s_k = s_seq[k]
+s_i = s_seq[i]
+# s_k._is_natural = True
+# s_i._is_natural = True
+
 
 Rationals.theorems.ratio_of_integers_lowest_terms = ForallInSet(
     r,
@@ -87,41 +106,243 @@ prime_divides_power = ForallInSet(
         ),
     ),
 ).todo(_internal=True)
+mul_divisible_by_factors = ForallInSet(
+    a,
+    Integers,
+    ForallInSet(
+        b,
+        Integers,
+        ForallInSet(
+            c,
+            Integers,
+            a.equals(b * c).implies(
+                Integers.divides(b, a).and_(Integers.divides(c, a))
+            ),
+        ),
+    ),
+).todo(_internal=True)
+common_factor_divides_gcd = ForallInSet(
+    a,
+    Integers,
+    ForallInSet(
+        b,
+        Integers,
+        ForallInSet(
+            c,
+            Integers,
+            Integers.divides(a, b)
+            .and_(Integers.divides(a, c))
+            .implies(Integers.divides(a, Gcd(b, c))),
+        ),
+    ),
+).todo(_internal=True)
 Integers.theorems.division_theorems = Namespace(
     {
         "prime": {
             "prime_divides_product": prime_divides_product,
             "prime_divides_power": prime_divides_power,
         },
-        "product": ForallInSet(
-            a,
-            Integers,
-            ForallInSet(
-                b,
-                Integers,
-                ForallInSet(
-                    c,
-                    Integers,
-                    a.equals(b * c).implies(
-                        Integers.divides(b, a).and_(Integers.divides(c, a))
-                    ),
-                ),
-            ),
+        "mul": mul_divisible_by_factors,
+        "gcd": common_factor_divides_gcd,
+    }
+)
+
+neq_1_has_prime_divisor_int = ForallInSet(
+    k,
+    Integers,
+    neg(Equals(k, 1))
+    .and_(neg(Equals(k, -1)))
+    .implies(ExistsInSet(p, Naturals, Naturals.prime(p).and_(Integers.divides(p, k)))),
+).todo(_internal=True)
+
+Integers.theorems.prime_theorems = Namespace(
+    {
+        "prime_divides_product": prime_divides_product,
+        "prime_divides_power": prime_divides_power,
+        "neq_1_has_prime_divisor": neq_1_has_prime_divisor_int,
+    }
+)
+
+Naturals.theorems.division_theorems = Namespace(
+    {
+        "prime": {
+            "prime_divides_product": prime_divides_product,
+            "prime_divides_power": prime_divides_power,
+        },
+        "mul": mul_divisible_by_factors,
+    }
+)
+mul_geq_some_factor = ForallInSet(
+    a,
+    Naturals,
+    ForallInSet(b, Naturals, GreaterOrEqual(a * b, a).or_(GreaterOrEqual(a * b, b))),
+).todo(_internal=True)
+mul_positive_geq_factors = ForallInSet(
+    a,
+    Naturals,
+    ForallInSet(
+        b,
+        Naturals,
+        GreaterThan(a, 0)
+        .and_(GreaterThan(b, 0))
+        .implies(GreaterOrEqual(a * b, a).and_(GreaterOrEqual(a * b, b))),
+    ),
+).todo(_internal=True)
+mul_of_factors_geq_1_is_gt_factors = ForallInSet(
+    a,
+    Naturals,
+    ForallInSet(
+        b,
+        Naturals,
+        GreaterThan(a, 1)
+        .and_(GreaterThan(b, 1))
+        .implies(GreaterThan(a * b, a).and_(GreaterThan(a * b, b))),
+    ),
+).todo(_internal=True)
+prod_geq_some_factor = ForallInSet(
+    s_seq,
+    AllFiniteSequences,
+    s_seq_set.is_subset_of(Naturals).implies(
+        ExistsInSet(k, Naturals, GreaterOrEqual(prod_s_seq, s_k))
+    ),
+).todo(_internal=True)
+prod_positive_geq_factors = ForallInSet(
+    s_seq,
+    AllFiniteSequences,
+    s_seq_set.is_subset_of(Naturals)
+    .and_(ForallInSet(k, Naturals, GreaterThan(s_k, 0)))
+    .implies(ForallInSet(k, Naturals, GreaterOrEqual(Prod(s_seq), s_k))),
+).todo(_internal=True)
+prod_of_factors_geq_1_is_gt_factors = ForallInSet(
+    s_seq,
+    AllFiniteSequences,
+    s_seq_set.is_subset_of(Naturals)
+    .and_(ForallInSet(k, Naturals, GreaterThan(s_k, 1)))
+    .implies(ForallInSet(k, Naturals, GreaterThan(prod_s_seq, s_k))),
+).todo(_internal=True)
+
+Naturals.theorems.product_theorems = Namespace(
+    {
+        "mul_divisible_by_factors": mul_divisible_by_factors,
+        "mul_geq_some_factor": mul_geq_some_factor,
+        "mul_positive_geq_factors": mul_positive_geq_factors,
+        "mul_of_factors_geq_1_is_gt_factors": mul_of_factors_geq_1_is_gt_factors,
+        "prod_geq_some_factor": prod_geq_some_factor,
+        "prod_positive_geq_factors": prod_positive_geq_factors,
+        "prod_of_factors_geq_1_is_gt_factors": prod_of_factors_geq_1_is_gt_factors,
+    }
+)
+
+
+def gt_implies_neq(set_):
+    return ForallInSet(
+        a,
+        set_,
+        ForallInSet(
+            b,
+            set_,
+            GreaterThan(a, b).implies(neg(a.equals(b))),
+        ),
+    ).todo(_internal=True)
+
+
+def lt_implies_neq(set_):
+    return ForallInSet(
+        a,
+        set_,
+        ForallInSet(
+            b,
+            set_,
+            LessThan(a, b).implies(neg(a.equals(b))),
+        ),
+    ).todo(_internal=True)
+
+
+def add_positive_gt_parts(set_):
+    return ForallInSet(
+        a,
+        set_,
+        ForallInSet(
+            b,
+            set_,
+            GreaterThan(a, 0)
+            .and_(GreaterThan(b, 0))
+            .implies(GreaterThan(a + b, a).and_(GreaterThan(a + b, b))),
+        ),
+    ).todo(_internal=True)
+
+
+Naturals.theorems.order_theorems = Namespace(
+    {
+        "gt_implies_neq": gt_implies_neq(Naturals),
+        "lt_implies_neq": lt_implies_neq(Naturals),
+        "add_positive_gt_parts": add_positive_gt_parts(Naturals),
+    }
+)
+
+Integers.theorems.order_theorems = Namespace(
+    {
+        "gt_implies_neq": gt_implies_neq(Integers),
+        "lt_implies_neq": lt_implies_neq(Integers),
+        "add_positive_gt_parts": add_positive_gt_parts(Integers),
+    }
+)
+
+Rationals.theorems.order_theorems = Namespace(
+    {
+        "gt_implies_neq": gt_implies_neq(Rationals),
+        "lt_implies_neq": lt_implies_neq(Rationals),
+        "add_positive_gt_parts": add_positive_gt_parts(Rationals),
+    }
+)
+
+Reals.theorems.order_theorems = Namespace(
+    {
+        "gt_implies_neq": gt_implies_neq(Reals),
+        "lt_implies_neq": lt_implies_neq(Reals),
+        "add_positive_gt_parts": add_positive_gt_parts(Reals),
+    }
+)
+
+prime_or_composite = ForallInSet(
+    p,
+    Naturals,
+    Naturals.prime(p).or_(neg(Naturals.prime(p))),
+).todo(_internal=True)
+neq_1_has_prime_divisor_nat = ForallInSet(
+    k,
+    Naturals,
+    neg(Equals(k, 1)).implies(
+        ExistsInSet(p, Naturals, Naturals.prime(p).and_(Naturals.divides(p, k)))
+    ),
+).todo(_internal=True)
+
+gt_1_is_prod_primes = ForallInSet(
+    k,
+    Naturals,
+    GreaterThan(k, 1).implies(
+        ExistsInSet(
+            s_seq,
+            AllFiniteSequences,
+            s_seq_set.is_subset_of(Naturals)
+            .and_(ForallInSet(i, Naturals, Naturals.prime(s_i)))
+            .and_(k.equals(prod_s_seq)),
+        )
+    ),
+).todo(_internal=True)
+
+Naturals.theorems.prime_theorems = Namespace(
+    {
+        "prime_divides_product": prime_divides_product,
+        "prime_divides_power": prime_divides_power,
+        "prime_or_composite": prime_or_composite,
+        "neq_1_has_prime_divisor": neq_1_has_prime_divisor_nat,
+        "gt_1_is_prod_primes": gt_1_is_prod_primes,
+        "prime_neq_0": ForallInSet(
+            p, Naturals, Naturals.prime(p).implies(neg(p.equals(0)))
         ).todo(_internal=True),
-        "gcd": ForallInSet(
-            a,
-            Integers,
-            ForallInSet(
-                b,
-                Integers,
-                ForallInSet(
-                    c,
-                    Integers,
-                    Integers.divides(a, b)
-                    .and_(Integers.divides(a, c))
-                    .implies(Integers.divides(a, Gcd(b, c))),
-                ),
-            ),
+        "prime_neq_1": ForallInSet(
+            p, Naturals, Naturals.prime(p).implies(neg(p.equals(1)))
         ).todo(_internal=True),
     }
 )

@@ -53,6 +53,8 @@ class Expr(ABC):
         "_is_nonpositive",
         "_is_nonnegative",
         "_is_even",
+        "_is_sequence",
+        "_is_finite",
         "args",
         "variables",
         "independent_dependencies",
@@ -107,6 +109,9 @@ class Expr(ABC):
         self._is_nonpositive: bool | None = None
         self._is_nonnegative: bool | None = None
         self._is_even: bool | None = None
+        self._is_sequence: bool | None = None
+        self._is_finite: bool | None = None
+        self.is_set_: bool = False
 
         # list of expressions that contain this expression
         # not copied
@@ -180,7 +185,9 @@ class Expr(ABC):
 
     @property
     def is_nonnegative(self) -> bool | None:
-        return self._is_nonnegative
+        from pylogic.helpers import ternary_or
+
+        return ternary_or(self._is_nonnegative, self._is_natural)
 
     @is_nonnegative.setter
     def is_nonnegative(self, value: bool | None) -> None:
@@ -221,6 +228,18 @@ class Expr(ABC):
         from pylogic.helpers import ternary_not
 
         return ternary_not(self.is_zero)
+
+    @property
+    def is_sequence(self) -> bool | None:
+        return self._is_sequence
+
+    @property
+    def is_finite(self) -> bool | None:
+        return self._is_finite
+
+    @property
+    def is_set(self) -> bool:
+        return self.is_set_
 
     @abstractmethod
     def update_properties(self) -> None:
@@ -295,8 +314,10 @@ class Expr(ABC):
 
         new_args = [to_sympy(arg) for arg in self.args]
 
-        kw = {k: getattr(self, k) for k in self.mutable_attrs_to_copy}
-        kw.update({val: getattr(self, val) for _, val in self.kwargs if val != "dummy"})
+        kw = {k: getattr(self, k, None) for k in self.mutable_attrs_to_copy}
+        kw.update(
+            {val: getattr(self, val, None) for _, val in self.kwargs if val != "dummy"}
+        )
         kw["_is_copy"] = True
 
         return PylSympyExpr(
@@ -452,12 +473,19 @@ class Expr(ABC):
     def __hash__(self) -> int:
         return hash((self.__class__.__name__, self.args))
 
-    def replace(self, replace_dict: dict, equal_check: Callable | None = None) -> Self:
+    def replace(
+        self,
+        replace_dict: dict,
+        equal_check: Callable | None = None,
+        positions: list[list[int]] | None = None,
+    ) -> Self:
         """
         For replacing subexpressions in an expression.
         `equal_check` is a function that checks if two
         objects are equal in order to replace.
         """
+        # TODO: make use of positions when replacing
+
         for old in replace_dict:
             new = replace_dict[old]
             if equal_check is None:
@@ -481,8 +509,10 @@ class Expr(ABC):
         """
         Create a copy of this expression.
         """
-        kw = {k: getattr(self, k) for k in self.mutable_attrs_to_copy}
-        kw.update({val: getattr(self, val) for _, val in self.kwargs if val != "dummy"})
+        kw = {k: getattr(self, k, None) for k in self.mutable_attrs_to_copy}
+        kw.update(
+            {val: getattr(self, val, None) for _, val in self.kwargs if val != "dummy"}
+        )
         return self.__class__(_is_copy=True, **kw)
 
     def deepcopy(self) -> Self:
@@ -731,7 +761,11 @@ class Add(Expr):
         # we are only sure that reals commute under addition
         # sympy mixes things around
         if all(arg.is_real for arg in self.args):
-            new_add = Add(*[arg.evaluate(**kwargs) for arg in self.args])
+            new_add = Add(
+                *sorted(
+                    (arg.evaluate(**kwargs) for arg in self.args), key=lambda x: str(x)
+                )
+            )
             try:
                 return sympy_to_pylogic(new_add.to_sympy().doit())
             # FromSympyError or some error associated with sympy failing to
@@ -832,12 +866,16 @@ class Mul(Expr):
         if count_odd == total_args:
             self.is_even = False
 
-    def evaluate(self) -> Mul:
+    def evaluate(self, **kwargs) -> Mul:
         from pylogic.sympy_helpers import FromSympyError, sympy_to_pylogic
 
         # see Add.evaluate
         if all(arg.is_real for arg in self.args):
-            new_mul = Mul(*[arg.evaluate() for arg in self.args])
+            new_mul = Mul(
+                *sorted(
+                    (arg.evaluate(**kwargs) for arg in self.args), key=lambda x: str(x)
+                )
+            )
             try:
                 new_mul_symp = new_mul.to_sympy()
                 new_mul_symp_doit = new_mul_symp.doit()
@@ -961,7 +999,7 @@ class Pow(Expr):
             if base.is_natural and exp.is_natural:
                 self.is_natural = True
 
-    def evaluate(self) -> Pow:
+    def evaluate(self, **kwargs) -> Pow:
         from pylogic.sympy_helpers import FromSympyError, sympy_to_pylogic
 
         # see Add.evaluate
@@ -1017,6 +1055,7 @@ def replace(
     expr: Any,
     replace_dict: dict,
     equal_check: Callable | None = None,
+    positions: list[list[int]] | None = None,
 ) -> Any:
     """
     For replacing subexpressions in an expression.
@@ -1037,14 +1076,15 @@ def replace(
 
     if isinstance(expr, (list, set, tuple)):
         return type(expr)(
-            replace(e, replace_dict, equal_check=equal_check) for e in expr
+            replace(e, replace_dict, equal_check=equal_check, positions=positions)
+            for e in expr
         )
 
     if not isinstance(expr, (Expr, Proposition, Symbol, Sequence, Set)):
         return expr
 
-    if isinstance(expr, (Expr, Proposition)):
-        return expr.replace(replace_dict, equal_check=equal_check)
+    if isinstance(expr, (Expr, Proposition, Set, Sequence)):
+        return expr.replace(replace_dict, equal_check=equal_check, positions=positions)
     return expr
 
 

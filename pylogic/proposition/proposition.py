@@ -87,9 +87,9 @@ class Proposition:
         {"name": "modus_ponens", "arguments": ["Implies"]},
         {"name": "is_one_of", "arguments": ["And"]},
         {"name": "is_special_case_of", "arguments": ["Forall"]},
-        {"name": "followed_from", "arguments": []},
+        # {"name": "followed_from", "arguments": []},
         {"name": "thus_there_exists", "arguments": ["str", "Term", "list[list[int]]"]},
-        {"name": "thus_forall", "arguments": ["Variable"]},
+        # {"name": "thus_forall", "arguments": ["Variable"]},
         {"name": "de_morgan", "arguments": []},
         {"name": "modus_tollens", "arguments": ["Implies"]},
         {"name": "de_morgan", "arguments": []},
@@ -119,7 +119,6 @@ class Proposition:
         args: list[Term] | None
             The arguments of the proposition. If None, we assume the proposition has no arguments.
         """
-        from pylogic.assumptions_context import assumptions_contexts
         from pylogic.helpers import (
             get_class_ns,
             get_consts,
@@ -141,9 +140,6 @@ class Proposition:
         self.name: str = name
         # cannot call _set_is_assumption because _is_proven and is_axiom are not set yet
         self.is_assumption: bool = is_assumption
-        context = assumptions_contexts[-1]
-        if context is not None and is_assumption:
-            context.assumptions.append(self)
 
         self.is_axiom: bool = is_axiom
         self.args: list[Set | Term] = list(map(python_to_pylogic, args or []))
@@ -217,11 +213,24 @@ class Proposition:
         Must be called at the end of __init__ for every immediate
         subclass of Proposition that implements _set_is_proven,
         _set_is_assumption, or _set_is_axiom.
+
+        This is called after every __init__, but the methods should not run
+        if the attributes are not True. For instance
+
+        ```
+        p1 = x.is_in(A, is_assumption=True)
+        p2 = x.is_in(A, is_assumption=False)
+        ```
+        `p2` calling `_set_is_assumption(False)` would affect `x.knowledge_base`
+        and future proofs using `x.is_in(A)`.
         """
         try:
-            self._set_is_assumption(self.is_assumption)
-            self._set_is_axiom(self.is_axiom)
-            self._set_is_proven(self._is_proven)
+            if self.is_assumption:
+                self._set_is_assumption(self.is_assumption)
+            if self.is_axiom:
+                self._set_is_axiom(self.is_axiom)
+            if self._is_proven:
+                self._set_is_proven(self._is_proven)
         except AttributeError:
             pass
 
@@ -241,13 +250,21 @@ class Proposition:
         if context is not None and value:
             context._proven.append(self)
 
-    def _set_is_assumption(self, value: bool) -> None:
-        from pylogic.assumptions_context import assumptions_contexts
+    def _set_is_assumption(self, value: bool, **kwargs) -> None:
 
         self.is_assumption = value
         if value:
             self._set_is_inferred(True)
 
+        # don't add to context for internal use
+        if kwargs.get("_internal", False):
+            return
+
+        from pylogic.assumptions_context import assumptions_contexts
+
+        add_to_context = kwargs.get("add_to_context", True)
+        if not add_to_context:
+            return
         context = assumptions_contexts[-1]
         if context is not None and value:
             context.assumptions.append(self)
@@ -277,11 +294,11 @@ class Proposition:
         self.deduced_from = Inference(self, rule="todo")
         return self
 
-    def assume(self) -> Self:
+    def assume(self, **kwargs) -> Self:
         """
         Mark the proposition as an assumption.
         """
-        self._set_is_assumption(True)
+        self._set_is_assumption(True, **kwargs)
         return self
 
     def eval_same(self, other: Proposition) -> bool:
@@ -432,8 +449,13 @@ class Proposition:
         equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
         r"""
+        This function currently replaces Terms in the proposition with other Terms.
+        It does not replace Propositions.
         Parameters
         ----------
+        replace_dict: dict[Term, Term]
+            A dictionary where the keys are the Terms to be replaced and the values are the
+            new Terms.
         positions: list[list[int]]
             This is a list containing the positions of the expression_to_replace in self.
             If None, we will replace for all occurences of the expression_to_replace in self.
@@ -546,18 +568,18 @@ class Proposition:
         else:
             raise ValueError(f"{self} cannot be proven by inspection")
 
-    @overload
-    def implies(
-        self,
-        other: Implies[TProposition, UProposition],
-        is_assumption: bool = False,
-        **kwargs,
-    ) -> Implies[And[Self, TProposition], UProposition]: ...
+    # @overload
+    # def implies(
+    #     self,
+    #     other: Implies[TProposition, UProposition],
+    #     is_assumption: bool = False,
+    #     **kwargs,
+    # ) -> Implies[And[Self, TProposition], UProposition]: ...
 
-    @overload
-    def implies(
-        self, other: TProposition, is_assumption: bool = False, **kwargs
-    ) -> Implies[Self, TProposition]: ...
+    # @overload
+    # def implies(
+    #     self, other: TProposition, is_assumption: bool = False, **kwargs
+    # ) -> Implies[Self, TProposition]: ...
 
     def implies(
         self,

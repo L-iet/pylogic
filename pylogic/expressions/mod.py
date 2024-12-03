@@ -174,6 +174,16 @@ class Mod(Expr):
             ):
                 return Constant(0)
 
+            from pylogic.proposition.relation.contains import IsContainedIn
+            from pylogic.structures.set_ import SeqSet
+
+            if (
+                isinstance(self.expr, Prod)
+                and IsContainedIn(self.modulus, SeqSet(self.expr.sequence))
+                in self.modulus.knowledge_base
+            ):
+                return Constant(0)
+
             if self.expr.sequence.nth_term is not None:
                 n = Variable("mod_dummy_var", integer=True)
                 new_nth_term = Mod(

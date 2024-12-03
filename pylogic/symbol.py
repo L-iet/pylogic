@@ -55,13 +55,15 @@ class Symbol:
         ("nonpositive", "_is_nonpositive"),
         ("nonnegative", "_is_nonnegative"),
         ("even", "_is_even"),
+        ("sequence", "_is_sequence"),
+        ("finite", "_is_finite"),
+        ("length", "length"),
         ("positive", "dummy"),
         ("negative", "dummy"),
         ("set_", "is_set_"),
         ("graph", "is_graph"),
         ("pair", "is_pair"),
         ("list_", "is_list_"),
-        ("sequence", "is_sequence"),
         ("latex_name", "latex_name"),
         ("depends_on", "depends_on"),
         ("sets_contained_in", "sets_contained_in"),
@@ -108,7 +110,31 @@ class Symbol:
         self.is_graph: bool | None = not self.is_set and kwargs.get("graph", None)
         self.is_pair: bool | None = self.is_graph or kwargs.get("pair", None)
         self.is_list_: bool | None = self.is_pair or kwargs.get("list_", None)
-        self.is_sequence: bool | None = self.is_list or kwargs.get("sequence", None)
+
+        # sequences, finite
+        self._is_sequence: bool | None = self.is_list or kwargs.get("sequence", None)
+        self._is_finite: bool | None = kwargs.get("finite", None)
+        explicit_assumptions_attrs = {
+            "real",
+            "rational",
+            "integer",
+            "natural",
+            "zero",
+            "nonpositive",
+            "nonnegative",
+            "even",
+            "finite",
+            "sequence",
+        } & kwargs.keys()
+        if "positive" in explicit_assumptions_attrs:
+            explicit_assumptions_attrs.add("nonnegative")
+            explicit_assumptions_attrs.add("zero")
+        if "negative" in explicit_assumptions_attrs:
+            explicit_assumptions_attrs.add("nonpositive")
+            explicit_assumptions_attrs.add("zero")
+        if "odd" in explicit_assumptions_attrs:
+            explicit_assumptions_attrs.add("even")
+        self.length: Term | None = kwargs.get("length", None)
 
         # list of expressions that contain this symbol
         # not copied
@@ -127,6 +153,7 @@ class Symbol:
         self.latex_name = (
             kwargs.get("latex_name") or self.name
         )  # using "or" instead of default here because latex_name=None is valid
+
         self.depends_on: tuple[Symbol, ...] = kwargs.get("depends_on", ())
         self.independent_dependencies = self.get_independent_dependencies()
         self.sets_contained_in: set[Set] = kwargs.get("sets_contained_in", set())
@@ -137,6 +164,7 @@ class Symbol:
         # this needs to be done after the all above attributes are set (dependencies, etc)
         # this order is important; add the set assumptions first before the others
         for attr in [
+            "finite",
             "real",
             "rational",
             "integer",
@@ -147,7 +175,9 @@ class Symbol:
             "even",
         ]:
             if getattr(self, f"_is_{attr}") is not None:
-                if self.is_sequence:
+                # adding assumptions to SequenceTerm
+                # so no need finite
+                if self.is_sequence and attr != "finite":
                     from pylogic.inference import Inference
                     from pylogic.proposition.quantified.forall import ForallInSet
                     from pylogic.theories.natural_numbers import Naturals
@@ -155,19 +185,39 @@ class Symbol:
 
                     n = Variable("n")
                     self_n = self[n]  # defined for Variable only
-                    prop = _add_assumptions(self_n, attr, getattr(self, f"_is_{attr}"))
-                    prop = ForallInSet(
+                    prop1 = _add_assumptions(self_n, attr, getattr(self, f"_is_{attr}"))
+                    prop1 = ForallInSet(
                         n,
                         Naturals,
-                        prop,
+                        prop1,
                         _is_proven=True,
                         _assumptions=set(),
                         _inference=Inference(None, rule="by_definition"),
                     )
-                    self.properties_of_each_term.append(prop)
-                else:
+                    self.properties_of_each_term.append(prop1)
+                    prop1._set_is_assumption(
+                        True, add_to_context=attr in explicit_assumptions_attrs
+                    )
+                    self.knowledge_base.add(prop1)
+
+                # we also add props for the sequence itself
+                # these are subset relations
+                if (not self.is_sequence) or (
+                    self.is_sequence
+                    and attr in {"real", "rational", "integer", "natural", "finite"}
+                ):
                     prop = _add_assumptions(self, attr, getattr(self, f"_is_{attr}"))
-                self.knowledge_base.add(prop)
+
+                    # hack: for sequence, I don't want to add the subset relation as well
+                    # to the context because ForallInSet above
+                    # is already added
+                    if self.is_sequence and attr != "finite":
+                        prop.is_assumption = True
+                    else:
+                        prop._set_is_assumption(
+                            True, add_to_context=attr in explicit_assumptions_attrs
+                        )
+                    self.knowledge_base.add(prop)
 
         self._is_copy = False
 
@@ -187,7 +237,9 @@ class Symbol:
 
     @property
     def is_integer(self) -> bool | None:
-        return self._is_integer or self.is_natural
+        from pylogic.helpers import ternary_or
+
+        return ternary_or(self._is_integer, self._is_natural)
 
     @is_integer.setter
     def is_integer(self, value: bool | None):
@@ -271,7 +323,9 @@ class Symbol:
 
     @property
     def is_nonnegative(self) -> bool | None:
-        return self._is_nonnegative
+        from pylogic.helpers import ternary_or
+
+        return ternary_or(self._is_nonnegative, self._is_natural)
 
     @is_nonnegative.setter
     def is_nonnegative(self, value: bool | None):
@@ -287,15 +341,42 @@ class Symbol:
     def is_list(self) -> bool | None:
         return self.is_list_
 
+    @property
+    def is_sequence(self) -> bool | None:
+        return self._is_sequence
+
+    @is_sequence.setter
+    def is_sequence(self, value: bool | None):
+        self._is_sequence = value
+        # parent expressions don't currently depend
+        # on this property
+        # for parent in self.parent_exprs:
+        #     parent.update_properties()
+
+    @property
+    def is_finite(self) -> bool | None:
+        return self._is_finite
+
+    @is_finite.setter
+    def is_finite(self, value: bool | None):
+        self._is_finite = value
+        # parent expressions don't currently depend
+        # on this property
+        # for parent in self.parent_exprs:
+        #     parent.update_properties()
+
     def __repr__(self):
         return f"{self.__class__.__name__}({self.name}, deps={self.depends_on})"
 
     def __str__(self):
         from pylogic.enviroment_settings.settings import settings
 
+        name_part = self.name
+        if self.is_sequence:
+            name_part += "_n"
         if len(self.independent_dependencies) > 0 and settings["SHOW_VARIABLE_DEPS"]:
-            return f"{self.name}({', '.join(str(d) for d in self.independent_dependencies)})"
-        return f"{self.name}"
+            return f"{name_part}({', '.join(str(d) for d in self.independent_dependencies)})"
+        return f"{name_part}"
 
     def __add__(self, other: Symbol | PythonNumeric | Expr) -> Add:
         return Add(self, other)
@@ -360,14 +441,13 @@ class Symbol:
         if isinstance(other, Symbol):
             return (
                 self.name == other.name
-                # TODO: fix replace not working well
-                # and self.__class__ == other.__class__
-                # and self.is_real == other.is_real
-                # and self.is_set_ == other.is_set_
+                and self.__class__ == other.__class__
+                and self.is_real == other.is_real
+                and self.is_set_ == other.is_set_
                 # and self.is_graph == other.is_graph
                 # and self.is_pair == other.is_pair
                 # and self.is_list_ == other.is_list_
-                # and self.is_sequence == other.is_sequence
+                and self.is_sequence == other.is_sequence
                 and self.depends_on == other.depends_on
             )
 
@@ -429,6 +509,8 @@ class Symbol:
         return IsSubsetOf(self, other, **kwargs)  # type: ignore
 
     def _latex(self) -> str:
+        if self.is_sequence:
+            return f"{self.latex_name}_n"
         return self.latex_name
 
     def _repr_latex_(self) -> str:
@@ -438,14 +520,21 @@ class Symbol:
         """
         Create a copy of this symbol.
         """
-        kw = {k: getattr(self, k) for k in self.mutable_attrs_to_copy}
-        kw.update({val: getattr(self, val) for _, val in self.kwargs if val != "dummy"})
+        kw = {k: getattr(self, k, None) for k in self.mutable_attrs_to_copy}
+        kw.update(
+            {val: getattr(self, val, None) for _, val in self.kwargs if val != "dummy"}
+        )
         return self.__class__(_is_copy=True, **kw)
 
     def deepcopy(self) -> Self:
         return self.copy()
 
-    def replace(self, replace_dict: dict, equal_check: Callable | None = None) -> Any:
+    def replace(
+        self,
+        replace_dict: dict,
+        equal_check: Callable | None = None,
+        positions: list[list[int]] | None = None,
+    ) -> Any:
         """
         Replace occurences of `old` with `new` in the object, where replace_dict = {old: new}.
         If `equal_check` is provided, it should be a function that takes two
@@ -460,8 +549,10 @@ class Symbol:
     def to_sympy(self) -> sp.Symbol:
         from pylogic.sympy_helpers import PylSympySymbol
 
-        kw = {k: getattr(self, k) for k in self.mutable_attrs_to_copy}
-        kw.update({val: getattr(self, val) for _, val in self.kwargs if val != "dummy"})
+        kw = {k: getattr(self, k, None) for k in self.mutable_attrs_to_copy}
+        kw.update(
+            {val: getattr(self, val, None) for _, val in self.kwargs if val != "dummy"}
+        )
         kw["_is_copy"] = True
 
         symbol_kwargs = (
@@ -486,7 +577,7 @@ class Symbol:
         # for sympy internal use
         return self.to_sympy()
 
-    def evaluate(self) -> Self:
+    def evaluate(self, **kwargs) -> Self:
         return self
 
     def is_in(
@@ -562,9 +653,6 @@ class Symbol:
                 self.name,
                 self.is_real,
                 self.is_set_,
-                self.is_graph,
-                self.is_pair,
-                self.is_list_,
                 self.is_sequence,
             )
         )

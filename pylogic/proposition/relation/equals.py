@@ -261,9 +261,13 @@ class Equals(BinaryRelation[T, U]):
         Returns True if self is provable by inspection, False if
         its negation is provable by inspection, and None if neither is provable.
         """
+        from pylogic.helpers import is_numeric
+
+        if is_numeric(self.left) and is_numeric(self.right):
+            return self.left == self.right
         return True if self.left == self.right else None
 
-    def evaluate(self) -> Equals:
+    def evaluate(self, **kwargs) -> Equals:
         """
         Evaluate the equality.
         """

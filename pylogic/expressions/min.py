@@ -21,7 +21,7 @@ class MinElement(Expr):
         self.expr = expr
         super().__new_init__(expr)
 
-    def evaluate(self) -> MinElement | Term:
+    def evaluate(self, **kwargs) -> MinElement | Term:
         from pylogic.helpers import getkey
         from pylogic.proposition.not_ import Not
         from pylogic.proposition.relation.subsets import IsSubsetOf

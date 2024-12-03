@@ -544,7 +544,7 @@ class Prime(Proposition):
         self._set_init_inferred_attrs()
 
     @property
-    def definition(self) -> ExistsInSet:
+    def definition(self) -> And:
         return self._definition
 
     def __str__(self) -> str:
@@ -574,8 +574,8 @@ class Prime(Proposition):
             self._definition.from_assumptions = get_assumptions(self)
             self._definition.deduced_from = Inference(self, rule="by_definition")
 
-    def _set_is_assumption(self, value: bool) -> None:
-        super()._set_is_assumption(value)
+    def _set_is_assumption(self, value: bool, **kwargs) -> None:
+        super()._set_is_assumption(value, **kwargs)
         self._definition._set_is_assumption(value)
 
     def _set_is_axiom(self, value: bool) -> None:

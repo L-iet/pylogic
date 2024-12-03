@@ -239,7 +239,7 @@ class Interval(Set):
         )
         self.knowledge_base.add(self.is_subset_of_reals)
 
-    def evaluate(self):
+    def evaluate(self, **kwargs):
         from pylogic.structures.set_ import EmptySet, FiniteSet
 
         if self.a == self.b:
