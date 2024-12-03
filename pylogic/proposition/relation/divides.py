@@ -73,9 +73,9 @@ class Divides(Relation):
             self.a.knowledge_base.discard(self)
         self._definition._set_is_inferred(value)
 
-    def _set_is_proven(self, value: bool) -> None:
-        super()._set_is_proven(value)
-        self._definition._set_is_proven(value)
+    def _set_is_proven(self, value: bool, **kwargs) -> None:
+        super()._set_is_proven(value, **kwargs)
+        self._definition._set_is_proven(value, **kwargs)
         if value:
             from pylogic.inference import Inference
             from pylogic.proposition.proposition import get_assumptions

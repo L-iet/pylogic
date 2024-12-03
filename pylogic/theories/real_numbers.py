@@ -7,6 +7,7 @@ from typing import (
     Callable,
     Generic,
     Iterable,
+    Literal,
     TypeAlias,
     TypeVar,
     cast,
@@ -218,6 +219,10 @@ class Interval(Set):
 
         a, b = python_to_pylogic(a), python_to_pylogic(b)  # type:ignore
 
+        assert (a.is_real and not a.is_sequence) and (
+            b.is_real and not b.is_sequence
+        ), "Bounds must be real numbers"
+
         left_symb = "[" if a_inclusive else "("
         right_symb = "]" if b_inclusive else ")"
         left_pred = LessOrEqual if a_inclusive else LessThan
@@ -229,8 +234,12 @@ class Interval(Set):
         )
         self.a = a
         self.b = b
-        self.a_inclusive = self.a._is_in_by_rule(self) if a_inclusive else None
-        self.b_inclusive = self.b._is_in_by_rule(self) if b_inclusive else None
+        self.a_inclusive: IsContainedIn | None = (
+            self.a._is_in_by_rule(self) if a_inclusive else None
+        )
+        self.b_inclusive: IsContainedIn | None = (
+            self.b._is_in_by_rule(self) if b_inclusive else None
+        )
         self.is_subset_of_reals = IsSubsetOf(
             self,
             Reals,
@@ -243,7 +252,82 @@ class Interval(Set):
         from pylogic.structures.set_ import EmptySet, FiniteSet
 
         if self.a == self.b:
-            if self.a_inclusive and self.b_inclusive:
+            if (self.a_inclusive is not None) and (self.b_inclusive is not None):
                 return FiniteSet(self.name, {self.a})
             return EmptySet
         return self
+
+    def _latex(self, printer=None) -> str:
+        s = r"\left"
+        if self.a_inclusive is not None:
+            s += "["
+        else:
+            s += "("
+        s += f"{self.a._latex()}, {self.b._latex()}"
+        if self.b_inclusive is not None:
+            s += r"\right]"
+        else:
+            s += r"\right)"
+        return s
+
+
+LeftSymbol = Literal["[", "("]
+RightSymbol = Literal["]", ")"]
+
+
+def interval(*args) -> Interval:
+    """
+    Returns an interval with the given bounds.
+
+    arguments are either:
+        left_symbol: '[' or '('
+        a: Term
+        b: Term
+        right_symbol: ']' or ')'
+
+        Returns an interval with the given bounds.
+    or:
+        *terms: Term
+        two terms representing the bounds.
+
+        Returns an open interval with the given bounds.
+    or:
+        terms: Tuple[Term, Term]
+
+        Returns an open interval with the given bounds.
+
+    or:
+        terms: list[Term]
+
+        A list of two terms. Returns a closed interval with the given bounds.
+
+    Examples:
+    >>> interval("[", 1, 2, "]")
+    [1, 2]
+    >>> interval("[", 1, 2, ")")
+    [1, 2)
+    >>> interval(1, 2)
+    (1, 2)
+    >>> interval((1, 2))
+    (1, 2)
+    >>> interval([1, 2])
+    [1, 2]
+    """
+    if len(args) == 1:
+        if isinstance(args[0], (tuple, list)):
+            if len(args[0]) != 2:
+                raise ValueError("Invalid arguments: " + str(args))
+            a, b = args[0]
+            if isinstance(args[0], list):
+                return Interval(a, b, a_inclusive=True, b_inclusive=True)
+            return Interval(a, b)
+        else:
+            raise ValueError("Invalid arguments: " + str(args))
+    elif len(args) == 2:
+        return Interval(args[0], args[1])
+    if len(args) != 4:
+        raise ValueError("Invalid arguments: " + str(args))
+    left_symbol, a, b, right_symbol = args
+    a_inclusive = left_symbol == "["
+    b_inclusive = right_symbol == "]"
+    return Interval(a, b, a_inclusive=a_inclusive, b_inclusive=b_inclusive)

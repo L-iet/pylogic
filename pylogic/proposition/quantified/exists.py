@@ -426,9 +426,9 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
             existential_var_name, latex_name=latex_name, context=context, **kwargs
         )
         if expression_to_replace is not None:
-            assert (
-                expression_to_replace in set_
-            ), f"{expression_to_replace} not in {set_}"
+            assert expression_to_replace.is_in(
+                set_
+            ).by_inspection_check(), f"{expression_to_replace} not in {set_}"
             inner_proposition = inner_proposition.replace(
                 {expression_to_replace: variable},
                 positions=positions,

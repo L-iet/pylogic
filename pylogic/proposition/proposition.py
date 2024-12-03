@@ -240,13 +240,22 @@ class Proposition:
         """
         pass
 
-    def _set_is_proven(self, value: bool) -> None:
+    def _set_is_proven(self, value: bool, **kwargs) -> None:
         from pylogic.assumptions_context import assumptions_contexts
 
         self._is_proven = value
         if value:
             self._set_is_inferred(True)
-        context = assumptions_contexts[-1]
+
+        # don't add to context for internal use
+        if (
+            kwargs.get("_internal", False)
+            or kwargs.get("add_to_context", False) is True
+        ):
+            return
+
+        # context can be None
+        context = kwargs.get("context", assumptions_contexts[-1])
         if context is not None and value:
             context._proven.append(self)
 

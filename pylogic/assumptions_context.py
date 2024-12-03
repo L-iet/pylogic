@@ -10,8 +10,12 @@ if TYPE_CHECKING:
 class AssumptionsContext:
     def __init__(self):
         self.assumptions: list[Proposition | Variable] = []
-        self._proven: list[Proposition] = []
+        self._proven: list[Proposition] = []  # all props proven inside the context
+
+        # the conclusions to use to build implications
         self._interesting_conclusions: list[Proposition] = []
+
+        # the implications true ourside the context
         self.proven_propositions: list[Proposition] = []
         self.exited = False
         assumptions_contexts.append(self)
@@ -98,7 +102,10 @@ class AssumptionsContext:
                 if a.is_bound is False and len(a.depends_on) == 0:
                     cons = Forall(a, cons)
                 i += 1
-        cons._set_is_proven(True)
+        cons._set_is_proven(
+            True,
+            context=assumptions_contexts[-2] if len(assumptions_contexts) > 1 else None,
+        )
         if conclusion.deduced_from is None:
             cons.deduced_from = Inference(conclusion, rule="close_assumptions_context")
         else:
@@ -138,6 +145,19 @@ class AssumptionsContext:
         assert (
             self == assumptions_contexts[-1]
         ), "Cannot exit context because a nested (inner) context is still open"
+
+        # these proven props were only true inside the context
+        # do these first because the _build_proven method
+        # still runs inside the context, and we want those
+        # to be True outside the context
+        # we don't call _set_is_proven(False) on these because
+        # perhaps a copy was proven in an outer context and we don't want to mutate
+        # the Terms in the props
+        for p in self._proven:
+            p._is_proven = False
+            p.from_assumptions = set()
+            p.deduced_from = None
+
         self.assumptions.reverse()
         for a in self.assumptions:
             if isinstance(a, Proposition):
@@ -146,8 +166,8 @@ class AssumptionsContext:
         for p in self._interesting_conclusions:
             self.proven_propositions.append(self._build_proven(p))
         del assumptions_contexts[-1]
-        self.exited = True
         self.assumptions.reverse()
+        self.exited = True
 
     def get_proven(self):
         if self.exited:
@@ -167,6 +187,24 @@ def conclude(conclusion: Proposition) -> Proposition:
     if assumptions_contexts[-1] is not None:
         assumptions_contexts[-1]._interesting_conclusions.append(conclusion)
     return conclusion
+
+
+def context_variable(*args, **kwargs) -> Variable:
+    from pylogic.variable import Variable
+
+    return Variable(*args, context=assumptions_contexts[-1], **kwargs)
+
+
+def ctx_var(*args, **kwargs) -> Variable:
+    return context_variable(*args, **kwargs)
+
+
+def context_variables(*names: str, **kwargs) -> list[Variable]:
+    return [context_variable(name, **kwargs) for name in names]
+
+
+def ctx_vars(*names: str, **kwargs) -> list[Variable]:
+    return context_variables(*names, **kwargs)
 
 
 assumptions_contexts: list[AssumptionsContext | None] = [None]

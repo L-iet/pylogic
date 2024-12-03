@@ -176,8 +176,8 @@ class Not(Proposition, Generic[TProposition]):
                 else:
                     self.negated.left.knowledge_base.discard(self)
 
-    def _set_is_proven(self, value: bool) -> None:
-        super()._set_is_proven(value)
+    def _set_is_proven(self, value: bool, **kwargs) -> None:
+        super()._set_is_proven(value, **kwargs)
         if (not value) and not (self.is_axiom or self.is_assumption):
             self._set_is_inferred(False)
 

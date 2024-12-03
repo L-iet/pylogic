@@ -36,6 +36,7 @@ class And(_Junction[*Ps]):
         {"name": "distribute", "arguments": []},
     ]
     _distributes_over_ = {"Or", "ExOr"}
+    _supports_by_cases = True
 
     def __init__(
         self,

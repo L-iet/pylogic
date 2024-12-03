@@ -615,7 +615,7 @@ class Union(Set):
         return hash(("Union", self.name, self.set_sequence))
 
     def __str__(self) -> str:
-        return f"Union({self.set_sequence})"
+        return f"Union{self.set_sequence}"
 
     def __repr__(self) -> str:
         return f"Union({self.set_sequence!r})"
@@ -716,7 +716,7 @@ class Intersection(Set):
         return hash(("Intersection", self.name, self.set_sequence))
 
     def __str__(self) -> str:
-        return f"Intersection({self.set_sequence})"
+        return f"Intersection{self.set_sequence}"
 
     def __repr__(self) -> str:
         return f"Intersection({self.set_sequence!r})"

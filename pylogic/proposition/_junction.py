@@ -177,7 +177,15 @@ class _Junction(Proposition, Generic[*Ps], ABC):
                 props.append(prop)
                 added.add(prop)
         if len(props) == 1:
-            return props[0]
+            # not making a copy here, I think no need
+            new_p = props[0]
+            new_p.is_assumption = self.is_assumption
+            new_p.description = self.description
+            if self._is_proven:
+                new_p._set_is_proven(True)
+                new_p.from_assumptions = self.from_assumptions
+                new_p.deduced_from = self.deduced_from
+            return new_p
         new_p = self.__class__(
             *props,  # type: ignore
             is_assumption=self.is_assumption,
@@ -309,6 +317,9 @@ Occured when trying to unify `{self}` and `{other}`"
         """
         assert self._supports_by_cases, f"{self} does not support by_cases"
         assert self.is_proven, f"{self} is not proven"
+        assert all(
+            (imp.is_proven for imp in implications)
+        ), "Not all implications are proven"
         antes = [imp.antecedent for imp in implications]
         assert len(antes) == len(
             self.propositions

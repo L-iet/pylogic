@@ -93,8 +93,8 @@ class IsContainedIn(BinaryRelation[T, U]):
             self.left.sets_contained_in.discard(self.right)
             self.right.elements.discard(self.left)
 
-    # def _set_is_proven(self, value: bool) -> None:
-    #     super()._set_is_proven(value)
+    # def _set_is_proven(self, value: bool, **kwargs) -> None:
+    #     super()._set_is_proven(value, **kwargs)
     #     if value:
     #         self._set_is_inferred(True)
     #     elif not (self.is_axiom or self.is_assumption):

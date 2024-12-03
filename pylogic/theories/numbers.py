@@ -12,7 +12,7 @@ from pylogic.proposition.quantified.forall import ForallInSet
 from pylogic.proposition.relation.equals import Equals
 from pylogic.structures.set_ import AllFiniteSequences, SeqSet
 from pylogic.theories.integers import Integers
-from pylogic.theories.natural_numbers import Naturals
+from pylogic.theories.natural_numbers import Naturals, one, zero
 from pylogic.theories.rational_numbers import Rationals
 from pylogic.theories.real_numbers import Reals
 from pylogic.variable import Variable

@@ -71,6 +71,7 @@ class Sequence(Generic[T]):
         )
 
         self.name: str = name
+        self._is_sequence = True
         self.knowledge_base: set[Proposition] = set()
         self.initial_terms: list[T] = (
             list(map(python_to_pylogic, initial_terms)) if initial_terms else []
@@ -104,7 +105,6 @@ class Sequence(Generic[T]):
         self.is_pair: bool | None = self.is_graph or kwargs.get("pair", None)
         self.is_list_: bool | None = self.is_pair or kwargs.get("list_", None)
         self.is_list: bool | None = self.is_list_
-        self._is_sequence = True
 
         self._is_zero: bool | None = self._get_init_assump_attr(
             "zero", kwargs, nth_term_expr
@@ -118,6 +118,7 @@ class Sequence(Generic[T]):
         self._is_even: bool | None = self._get_init_assump_attr(
             "even", kwargs, nth_term_expr
         )
+        self.nth_term_expr: Term | None = nth_term_expr
 
         explicit_assumptions_attrs = {
             "real",
@@ -157,6 +158,8 @@ class Sequence(Generic[T]):
             "nonnegative",
             "even",
         ]:
+            # Note: _add_assumptions depends on ._latex(), which
+            # depends on .name and .nth_term_expr
             if getattr(self, f"_is_{attr}") is not None:
                 from pylogic.theories.natural_numbers import Naturals
 
@@ -171,6 +174,16 @@ class Sequence(Generic[T]):
                 # no need to add to context, added already
                 self.knowledge_base.add(prop)
                 self.properties_of_each_term.append(prop)
+
+                if attr in {"real", "rational", "integer", "natural"}:
+                    prop = _add_assumptions(self, attr, getattr(self, f"_is_{attr}"))
+
+                    # hack: for sequence, I don't want to add the subset relation as well
+                    # to the context because ForallInSet above
+                    # is already added
+                    prop.is_assumption = True
+
+                    self.knowledge_base.add(prop)
 
         # needs to be here, after setting all above attributes
         self.size = Abs(self)
@@ -327,6 +340,8 @@ class Sequence(Generic[T]):
         return f"Sequence({self.name})"
 
     def __str__(self) -> str:
+        if self.nth_term_expr is not None:
+            return f"({self.nth_term_expr}...)"
         return f"({self.name}_n)"
 
     def __eq__(self, other: object) -> bool:
@@ -376,6 +391,8 @@ class Sequence(Generic[T]):
         raise NotImplementedError
 
     def _latex(self, printer=None) -> str:
+        if self.nth_term_expr is not None:
+            return rf"\left({self.nth_term_expr._latex()}\cdots\right)"
         return rf"\left({self.name}_n\right)"
 
     def define_predicate(
