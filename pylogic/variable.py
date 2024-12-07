@@ -116,4 +116,9 @@ def unbind(*variables: Variable) -> None:
         variable.unbind()
 
 
+def variables(*names: str, **kwargs) -> tuple[Variable, ...]:
+    """Creates variables."""
+    return tuple(Variable(name, **kwargs) for name in names)
+
+
 Var = Variable

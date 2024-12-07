@@ -23,7 +23,7 @@ from pylogic.assumptions_context import (
     ctx_var,
     ctx_vars,
 )
-from pylogic.constant import Constant
+from pylogic.constant import Constant, constants
 from pylogic.enviroment_settings.set_universe import set_universe
 from pylogic.enviroment_settings.settings import settings
 from pylogic.expressions.abs import Abs
@@ -121,7 +121,7 @@ from pylogic.syntax_helpers.if_ import If, if_
 from pylogic.theories.natural_numbers import Prime
 from pylogic.theories.numbers import Integers, Naturals, Rationals, Reals, one, zero
 from pylogic.theories.real_numbers import Interval, interval
-from pylogic.variable import Variable
+from pylogic.variable import Variable, unbind, variables
 
 
 class _PylogicObject(ABC):

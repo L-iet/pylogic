@@ -222,4 +222,14 @@ class Constant(Symbol, Generic[T]):
         return self
 
 
+def constants(
+    *args: T,
+    **kwargs: T,
+) -> tuple[Constant[T], ...]:
+    """
+    Create multiple Constant instances at once.
+    """
+    return tuple(Constant(value, **kwargs) for value in args)
+
+
 oo = Infinity = Constant(float("inf"))
