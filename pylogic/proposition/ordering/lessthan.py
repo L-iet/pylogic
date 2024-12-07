@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypeVar
 
-from pylogic import Term
 from pylogic.constant import Constant
 from pylogic.proposition.ordering.ordering import _Ordering
 from pylogic.proposition.ordering.total import StrictTotalOrder
 from pylogic.proposition.proposition import get_assumptions
+from pylogic.typing import Term
 
 if TYPE_CHECKING:
     from pylogic.proposition.ordering.greaterthan import GreaterThan

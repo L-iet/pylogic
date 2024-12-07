@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Self, TypedDict, TypeVar
 
-from pylogic import Term
 from pylogic.inference import Inference
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
+from pylogic.typing import Term
 
 if TYPE_CHECKING:
     from pylogic.expressions.sequence_term import SequenceTerm
@@ -49,6 +49,7 @@ class IsContainedIn(BinaryRelation[T, U]):
     ) -> None:
         self.right: U = right
         self.left: T = left
+        assert self.right.is_set, f"{self.right} is not a set"
         super().__init__(
             left,
             right,
@@ -76,18 +77,35 @@ class IsContainedIn(BinaryRelation[T, U]):
             "Rationals": ["is_rational"],
             "Reals": ["is_real"],
             "AllFiniteSequences": ["is_sequence", "is_finite"],
+            "AllFiniteSets": ["is_set", "is_finite"],
         }
+        assumption_attrs = [
+            "is_natural",
+            "is_integer",
+            "is_rational",
+            "is_real",
+            "is_nonnegative",
+            "is_nonpositive",
+            "is_even",
+            "is_zero",
+        ]
         if value:
             # TODO: add more here
             if self.right.name in sets_and_attrs:
                 for attr in sets_and_attrs[self.right.name]:
                     setattr(self.left, attr, True)
+            else:
+                for attr in assumption_attrs:
+                    setattr(self.left, attr, getattr(self.right, attr))
             self.left.knowledge_base.add(self)
             self.left.sets_contained_in.add(self.right)
             self.right.elements.add(self.left)
         else:
             if self.right.name in sets_and_attrs:
                 for attr in sets_and_attrs[self.right.name]:
+                    setattr(self.left, attr, None)
+            else:
+                for attr in assumption_attrs:
                     setattr(self.left, attr, None)
             self.left.knowledge_base.discard(self)
             self.left.sets_contained_in.discard(self.right)

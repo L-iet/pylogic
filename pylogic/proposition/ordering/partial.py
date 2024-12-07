@@ -9,9 +9,9 @@ from sympy.core.relational import (
     StrictLessThan,
 )
 
-from pylogic import Term
 from pylogic.proposition.ordering.ordering import _Ordering
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
+from pylogic.typing import Term
 
 T = TypeVar("T", bound=Term)
 U = TypeVar("U", bound=Term)

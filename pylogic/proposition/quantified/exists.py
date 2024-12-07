@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Self, TypedDict, TypeVar
 
-from pylogic import Term
 from pylogic.constant import Constant
 from pylogic.inference import Inference
 from pylogic.proposition.and_ import And
@@ -13,6 +12,7 @@ from pylogic.proposition.quantified.quantified import _Quantified
 from pylogic.proposition.relation.contains import IsContainedIn
 from pylogic.proposition.relation.equals import Equals
 from pylogic.proposition.relation.subsets import IsSubsetOf
+from pylogic.typing import Term
 from pylogic.variable import Variable
 
 TProposition = TypeVar("TProposition", bound="Proposition")
@@ -110,6 +110,9 @@ class Exists(_Quantified[TProposition]):
             **kwargs,
         )
 
+        # And or Proposition or None
+        self._non_inner_prop: Proposition | None = None
+
     def __eq__(self, other: Proposition) -> bool:
         if isinstance(other, Exists):
             return self.inner_proposition == other.inner_proposition
@@ -138,7 +141,7 @@ class Exists(_Quantified[TProposition]):
             }
         )
         if not other_free_vars:
-            if self.variable.is_set_:
+            if self.variable.is_set:
                 from pylogic.structures.set_ import Set
 
                 cls = Set
@@ -155,7 +158,7 @@ class Exists(_Quantified[TProposition]):
             latex_name=latex_name or name or self.variable.latex_name,
             depends_on=other_free_vars,
             _from_existential_instance=True,
-            set_=self.variable.is_set_,
+            set_=self.variable.is_set,
             sequence=self.variable.is_sequence,
             length=getattr(self.variable, "length", None),
         )
@@ -332,7 +335,7 @@ class Exists(_Quantified[TProposition]):
                 )  # type: ignore
         raise ValueError(f"Cannot convert {self} to ExistsUniqueInSet")
 
-    def by_substitution(
+    def by_single_substitution(
         self, term: Term, proven_proposition: Proposition | None = None
     ) -> Self:
         """
@@ -361,7 +364,7 @@ class Exists(_Quantified[TProposition]):
 
         if isinstance(inner_replaced, And):
             for prop in inner_replaced.propositions:
-                if (not prop.by_inpection_check()) and prop not in kb:
+                if (not prop.by_inspection_check()) and prop not in kb:
                     raise ValueError(
                         f"{self} cannot be proven by substitution:\n{prop} is not true by inspection or in the knowledge base"
                     )
@@ -372,7 +375,9 @@ class Exists(_Quantified[TProposition]):
         new_prop.from_assumptions = (
             get_assumptions(proven_proposition) if proven_proposition else set()
         )
-        new_prop.deduced_from = Inference(*term.knowledge_base, rule="by_substitution")
+        new_prop.deduced_from = Inference(
+            *term.knowledge_base, rule="by_single_substitution"
+        )
         return new_prop
         # replace inner_prop with term.
         # if result equals proven, return new prop
@@ -381,6 +386,82 @@ class Exists(_Quantified[TProposition]):
         # or prop in kb, cross it off
         # if all crossed off, return new prop
         # else raise error
+
+    def by_substitution(self, *terms: Term, proven: Proposition) -> Self:
+        """
+        Logical inference rule.
+        Continually substitute until the innermost exists proposition is unwrapped.
+
+        If self is `exists x: exists y: P(x, y)` and terms is `(a, b)` and `P(a, b)` is proven,
+        return a proven `exists x: exists y: P(x, y)`.
+        """
+        assert proven.is_proven, f"{proven} is not proven"
+        first_non_exists = getattr(self, self._innermost_prop_attr)
+        innermost_exists = self
+        i = 0
+        variables = {innermost_exists.variable: terms[i]}
+        while isinstance(first_non_exists, Exists):
+            non_inner_proven = innermost_exists._prove_non_inner(terms[i])
+            if not non_inner_proven:
+                raise ValueError(
+                    f"{self} cannot be proven by substitution:\n{innermost_exists} is not true by inspection or in the knowledge base"
+                )
+            innermost_exists = first_non_exists
+
+            first_non_exists = getattr(
+                innermost_exists, innermost_exists._innermost_prop_attr
+            )
+            i += 1
+            variables[innermost_exists.variable] = terms[i]
+        non_inner_proven = innermost_exists._prove_non_inner(terms[i])
+        if not non_inner_proven:
+            raise ValueError(
+                f"{self} cannot be proven by substitution:\n{innermost_exists} is not true by inspection or in the knowledge base"
+            )
+        if (first_non_exists_replaced := first_non_exists.replace(variables)) == proven:
+            new_prop = self.copy()
+            new_prop._set_is_proven(True)
+            new_prop.from_assumptions = get_assumptions(proven)
+            new_prop.deduced_from = Inference(proven, rule="by_substitution")
+            return new_prop
+        raise ValueError(
+            f"{self} cannot be proven by substitution:\n{first_non_exists_replaced} is not equal to {proven}"
+        )
+
+    def _prove_non_inner(self, term: Term) -> bool:
+        """
+        Given a term, return True if we can prove the non-inner parts of the existential
+        proposition, and False otherwise.
+
+        For an ExistsInSet proposition, return True if we can prove `term in self.set_`.
+
+        For an ExistsUnique proposition, return True if we can prove `term is unique`.
+
+        For an ExistsSubset proposition, return True if we can prove `term issubset self.set_`.
+
+        etc.
+        """
+        from pylogic.proposition.and_ import And
+
+        if self._non_inner_prop is None:
+            return True
+
+        proven = False
+        if isinstance(self._non_inner_prop, And):
+            replaced = [
+                prop.replace({self.variable: term})
+                for prop in self._non_inner_prop.propositions
+            ]
+            proven = all(
+                [
+                    rep in term.knowledge_base or replaced.by_inspection_check()
+                    for rep in replaced
+                ]
+            )
+        elif proven is False and isinstance(self._non_inner_prop, Proposition):
+            replaced = self._non_inner_prop.replace({self.variable: term})
+            proven = replaced in term.knowledge_base or replaced.by_inspection_check()
+        return proven
 
 
 class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
@@ -461,6 +542,7 @@ class ExistsInSet(Exists[And[IsContainedIn, TProposition]]):
         )
         self.set_ = set_
         self._inner_without_set = inner_proposition
+        self._non_inner_prop = IsContainedIn(self.variable, set_)
 
     def __hash__(self) -> int:
         return super().__hash__()
@@ -592,6 +674,9 @@ class ExistsUnique(Exists[And[TProposition, Forall[Implies[TProposition, Equals]
             **kwargs,
         )
         self._inner_without_unique = inner_proposition
+        self._non_inner_prop = Forall(
+            other_var, Implies(other_prop, Equals(other_var, self.variable))
+        )
 
     def replace(
         self,
@@ -681,16 +766,22 @@ class ExistsUniqueInSet(
         super().__init__(
             variable,
             set_,
-            inner_proposition.and_(
+            IsContainedIn(variable, set_).and_(
+                inner_proposition,
                 ForallInSet(
                     other_var, set_, other_prop.implies(Equals(other_var, variable))
-                )
+                ),
             ),
             is_assumption=is_assumption,
             description=description,
             **kwargs,
         )
         self._inner_without_set_and_unique = inner_proposition
+        self._non_inner_prop = IsContainedIn(self.variable, set_).and_(
+            ForallInSet(
+                other_var, set_, other_prop.implies(Equals(other_var, self.variable))
+            )
+        )
 
     def replace(
         self,
@@ -786,6 +877,7 @@ class ExistsSubset(Exists[And[IsSubsetOf, TProposition]]):
         self.set_ = set_
         self.right_set = set_
         self._inner_without_set = inner_proposition
+        self._non_inner_prop = IsSubsetOf(self.variable, set_)
 
     def __hash__(self) -> int:
         return super().__hash__()
@@ -836,16 +928,22 @@ class ExistsUniqueSubset(
         super().__init__(
             variable,
             set_,
-            inner_proposition.and_(
+            IsSubsetOf(variable, set_).and_(
+                inner_proposition,
                 ForallInSet(
                     other_var, set_, other_prop.implies(Equals(other_var, variable))
-                )
+                ),
             ),
             is_assumption=is_assumption,
             description=description,
             **kwargs,
         )
         self._inner_without_set_and_unique = inner_proposition
+        self._non_inner_prop = IsSubsetOf(self.variable, set_).and_(
+            ForallInSet(
+                other_var, set_, other_prop.implies(Equals(other_var, self.variable))
+            )
+        )
 
     replace = ExistsUniqueInSet.replace
     copy = ExistsUniqueInSet.copy

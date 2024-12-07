@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, Callable, Generic, Self
 from typing import Sequence as TSequence
 from typing import TypeVar, cast
 
-from pylogic import PythonNumeric, Term
 from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
+from pylogic.typing import PythonNumeric, Term
 
 if TYPE_CHECKING:
     from sympy.series.sequences import SeqBase, SeqFormula, SeqPer
@@ -54,16 +54,10 @@ class Sequence(Generic[T]):
         **kwargs,
     ) -> None:
         kwargs["real"] = real
-        from pylogic.assumptions_context import assumptions_contexts
         from pylogic.constant import Constant, Infinity
         from pylogic.expressions.abs import Abs
-        from pylogic.helpers import (
-            _add_assumption_attributes,
-            _add_assumptions,
-            python_to_pylogic,
-        )
+        from pylogic.helpers import _add_assumption_props, python_to_pylogic
         from pylogic.inference import Inference
-        from pylogic.proposition.quantified.forall import ForallInSet
         from pylogic.variable import Variable
 
         init_inds = (
@@ -100,7 +94,7 @@ class Sequence(Generic[T]):
             "natural", kwargs, nth_term_expr
         )
 
-        self.is_set_: bool | None = self._get_init_assump_attr("set_", kwargs, None)
+        self._is_set: bool | None = self._get_init_assump_attr("set_", kwargs, None)
         self.is_graph: bool | None = not self.is_set and kwargs.get("graph", None)
         self.is_pair: bool | None = self.is_graph or kwargs.get("pair", None)
         self.is_list_: bool | None = self.is_pair or kwargs.get("list_", None)
@@ -120,70 +114,11 @@ class Sequence(Generic[T]):
         )
         self.nth_term_expr: Term | None = nth_term_expr
 
-        explicit_assumptions_attrs = {
-            "real",
-            "rational",
-            "integer",
-            "natural",
-            "zero",
-            "nonpositive",
-            "nonnegative",
-            "even",
-        } & kwargs.keys()
-        if "positive" in explicit_assumptions_attrs:
-            explicit_assumptions_attrs.add("nonnegative")
-            explicit_assumptions_attrs.add("zero")
-        if "negative" in explicit_assumptions_attrs:
-            explicit_assumptions_attrs.add("nonpositive")
-            explicit_assumptions_attrs.add("zero")
-        if "odd" in explicit_assumptions_attrs:
-            explicit_assumptions_attrs.add("even")
-
         # expressions that contain this sequence
         self.parent_exprs: list[Expr] = []
 
-        _add_assumption_attributes(self, kwargs)
-
         self.properties_of_each_term: list[Proposition] = []
-
-        # TODO: See Symbol.__init__
-        for attr in [
-            "finite",
-            "real",
-            "rational",
-            "integer",
-            "natural",
-            "zero",
-            "nonpositive",
-            "nonnegative",
-            "even",
-        ]:
-            # Note: _add_assumptions depends on ._latex(), which
-            # depends on .name and .nth_term_expr
-            if getattr(self, f"_is_{attr}") is not None:
-                from pylogic.theories.natural_numbers import Naturals
-
-                n = Variable("n")
-                self_n = self[n]
-                prop = _add_assumptions(self_n, attr, getattr(self, f"_is_{attr}"))
-                prop = ForallInSet(n, Naturals, prop)
-                prop._set_is_assumption(
-                    True, add_to_context=attr in explicit_assumptions_attrs
-                )
-
-                # no need to add to context, added already
-                self.knowledge_base.add(prop)
-                self.properties_of_each_term.append(prop)
-
-                if attr in {"real", "rational", "integer", "natural"}:
-                    prop = _add_assumptions(self, attr, getattr(self, f"_is_{attr}"))
-
-                    # hack: for sequence, I don't want to add the subset relation as well
-                    # to the context because ForallInSet above
-                    # is already added
-                    prop.is_assumption = True
-
-                    self.knowledge_base.add(prop)
+        _add_assumption_props(self, kwargs)
 
         # needs to be here, after setting all above attributes
         self.size = Abs(self)
@@ -326,7 +261,13 @@ class Sequence(Generic[T]):
 
     @property
     def is_set(self) -> bool | None:
-        return self.is_set_
+        return self._is_set
+
+    @is_set.setter
+    def is_set(self, value: bool | None) -> None:
+        self._is_set = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     @property
     def is_finite(self) -> bool | None:
@@ -374,6 +315,14 @@ class Sequence(Generic[T]):
         Return the proposition `self in set_`.
         """
         return set_.contains(self)
+
+    def is_not_in(self, set_: Set | Variable, **kwargs) -> IsContainedIn:
+        """
+        Return the proposition `self not in set_`.
+        """
+        from pylogic.proposition.not_ import Not
+
+        return Not(set_.contains(self), **kwargs)
 
     def contains(
         self, other: Term, is_assumption: bool = False, **kwargs

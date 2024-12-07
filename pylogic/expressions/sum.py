@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING
 
 import sympy as sp
 
-from pylogic import Term
 from pylogic.expressions.expr import Expr
+from pylogic.typing import Term
 
 if TYPE_CHECKING:
     from pylogic.structures.sequence import Sequence

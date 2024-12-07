@@ -3,7 +3,6 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import Callable, Iterable, TypeAlias, TypeVar
 
-from pylogic import Term, Unevaluated
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.infix.infix import SpecialInfix
 from pylogic.proposition.and_ import And
@@ -15,6 +14,7 @@ from pylogic.proposition.relation.equals import Equals
 from pylogic.structures.grouplike.group import Group
 from pylogic.structures.ringlike.ring import RIng
 from pylogic.structures.set_ import Set
+from pylogic.typing import Term, Unevaluated
 from pylogic.variable import Variable
 
 T = TypeVar("T", bound=Term)

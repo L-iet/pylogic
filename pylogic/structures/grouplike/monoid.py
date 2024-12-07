@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Callable, Iterable, TypeVar
 
-from pylogic import Term
 from pylogic.constant import Constant
 from pylogic.expressions.expr import Expr
 from pylogic.helpers import is_python_numeric
@@ -14,6 +13,7 @@ from pylogic.proposition.relation.equals import Equals
 from pylogic.structures.grouplike.semigroup import Semigroup
 from pylogic.structures.set_ import Set
 from pylogic.symbol import Symbol
+from pylogic.typing import Term
 from pylogic.variable import Variable
 
 T = TypeVar("T", bound=Term)

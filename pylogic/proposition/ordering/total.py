@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TypeVar
 
-from pylogic import Term
 from pylogic.proposition.ordering.partial import PartialOrder, StrictPartialOrder
+from pylogic.typing import Term
 
 T = TypeVar("T", bound=Term)
 U = TypeVar("U", bound=Term)

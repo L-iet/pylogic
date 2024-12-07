@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 
 import sympy as sp
 
-from pylogic import Term
 from pylogic.expressions.expr import Expr, to_sympy
+from pylogic.typing import Term
 
 if TYPE_CHECKING:
     from pylogic.constant import Constant
@@ -229,21 +229,31 @@ class Mod(Expr):
         return sp.Mod(self.expr.to_sympy(), self.modulus.to_sympy())
 
     def _latex(self) -> str:
-        wrap = lambda p: (
-            rf"\left({p._latex()}\right)"
-            if not p.is_atomic
-            and not p._is_wrapped
-            and p.__class__._precedence >= self.__class__._precedence
-            else p._latex()
-        )
+        from pylogic.enviroment_settings.settings import settings
+
+        if settings["SHOW_ALL_PARENTHESES"]:
+            wrap = lambda p: rf"\left({p._latex()}\right)"
+        else:
+            wrap = lambda p: (
+                rf"\left({p._latex()}\right)"
+                if not p.is_atomic
+                and not p._is_wrapped
+                and p.__class__._precedence >= self.__class__._precedence
+                else p._latex()
+            )
         return "\\mod ".join(map(wrap, self.args))
 
     def __str__(self) -> str:
-        wrap = lambda p: (
-            f"({p})"
-            if not p.is_atomic
-            and not p._is_wrapped
-            and p.__class__._precedence >= self.__class__._precedence
-            else str(p)
-        )
+        from pylogic.enviroment_settings.settings import settings
+
+        if settings["SHOW_ALL_PARENTHESES"]:
+            wrap = lambda p: f"({p})"
+        else:
+            wrap = lambda p: (
+                f"({p})"
+                if not p.is_atomic
+                and not p._is_wrapped
+                and p.__class__._precedence >= self.__class__._precedence
+                else str(p)
+            )
         return " mod ".join(map(wrap, self.args))

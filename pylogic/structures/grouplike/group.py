@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Callable, Iterable, TypeVar, cast
 
-from pylogic import Term
 from pylogic.expressions.expr import Expr
 from pylogic.infix.infix import SpecialInfix
 from pylogic.proposition.and_ import And
@@ -13,6 +12,7 @@ from pylogic.proposition.relation.contains import IsContainedIn
 from pylogic.proposition.relation.equals import Equals
 from pylogic.structures.grouplike.monoid import Monoid
 from pylogic.structures.set_ import Set
+from pylogic.typing import Term
 from pylogic.variable import Variable
 
 T = TypeVar("T", bound=Term)

@@ -106,3 +106,6 @@ class ExOr(_Junction[*Ps]):
             _inference=Inference(positive_proven, *negations_proven, rule="one_proven"),
         )
         return new_p
+
+
+Exor = ExOr

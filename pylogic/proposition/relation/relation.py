@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Self
 
-from pylogic import Term
 from pylogic.proposition.proposition import Proposition
+from pylogic.typing import Term
 
 
 class Relation(Proposition):

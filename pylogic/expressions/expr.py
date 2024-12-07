@@ -15,8 +15,8 @@ from typing import (
 
 import sympy as sp
 
-from pylogic import PBasic, PythonNumeric, Term, Unification
 from pylogic.enviroment_settings.settings import settings
+from pylogic.typing import PBasic, PythonNumeric, Term, Unification
 
 if TYPE_CHECKING:
     from pylogic.expressions.abs import Abs
@@ -54,6 +54,7 @@ class Expr(ABC):
         "_is_nonnegative",
         "_is_even",
         "_is_sequence",
+        "_is_set",
         "_is_finite",
         "args",
         "variables",
@@ -111,7 +112,7 @@ class Expr(ABC):
         self._is_even: bool | None = None
         self._is_sequence: bool | None = None
         self._is_finite: bool | None = None
-        self.is_set_: bool = False
+        self._is_set: bool = False
 
         # list of expressions that contain this expression
         # not copied
@@ -233,13 +234,31 @@ class Expr(ABC):
     def is_sequence(self) -> bool | None:
         return self._is_sequence
 
+    @is_sequence.setter
+    def is_sequence(self, value: bool | None) -> None:
+        self._is_sequence = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
     @property
     def is_finite(self) -> bool | None:
         return self._is_finite
 
+    @is_finite.setter
+    def is_finite(self, value: bool | None) -> None:
+        self._is_finite = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
     @property
     def is_set(self) -> bool:
-        return self.is_set_
+        return self._is_set
+
+    @is_set.setter
+    def is_set(self, value: bool) -> None:
+        self._is_set = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     @abstractmethod
     def update_properties(self) -> None:
@@ -454,6 +473,11 @@ class Expr(ABC):
         from pylogic.proposition.relation.contains import IsContainedIn
 
         return IsContainedIn(self, other, **kwargs)
+
+    def is_not_in(self, other: Set | Variable, **kwargs) -> Not[IsContainedIn]:
+        from pylogic.proposition.not_ import Not
+
+        return Not(self.is_in(other), **kwargs)
 
     def _is_in_by_rule(
         self, other: Set | Class | Variable, rule: str = "by_definition"
@@ -778,23 +802,33 @@ class Add(Expr):
         return sp.Add(*[to_sympy(arg) for arg in self.args])
 
     def _latex(self) -> str:
-        wrap = lambda p: (
-            rf"\left({p._latex()}\right)"
-            if not p.is_atomic
-            and not p._is_wrapped
-            and p.__class__._precedence >= self.__class__._precedence
-            else p._latex()
-        )
+        from pylogic.enviroment_settings.settings import settings
+
+        if settings["SHOW_ALL_PARENTHESES"]:
+            wrap = lambda p: rf"\left({p._latex()}\right)"
+        else:
+            wrap = lambda p: (
+                rf"\left({p._latex()}\right)"
+                if not p.is_atomic
+                and not p._is_wrapped
+                and p.__class__._precedence >= self.__class__._precedence
+                else p._latex()
+            )
         return " + ".join(map(wrap, self.args))
 
     def __str__(self) -> str:
-        wrap = lambda p: (
-            f"({p})"
-            if not p.is_atomic
-            and not p._is_wrapped
-            and p.__class__._precedence >= self.__class__._precedence
-            else str(p)
-        )
+        from pylogic.enviroment_settings.settings import settings
+
+        if settings["SHOW_ALL_PARENTHESES"]:
+            wrap = lambda p: f"({p})"
+        else:
+            wrap = lambda p: (
+                f"({p})"
+                if not p.is_atomic
+                and not p._is_wrapped
+                and p.__class__._precedence >= self.__class__._precedence
+                else str(p)
+            )
         return " + ".join(map(wrap, self.args))
 
 
@@ -893,14 +927,18 @@ class Mul(Expr):
 
     def _latex(self) -> str:
         from pylogic.constant import Constant
+        from pylogic.enviroment_settings.settings import settings
 
-        wrap = lambda p: (
-            rf"\left({p._latex()}\right)"
-            if not p.is_atomic
-            and not p._is_wrapped
-            and p.__class__._precedence >= self.__class__._precedence
-            else p._latex()
-        )
+        if settings["SHOW_ALL_PARENTHESES"]:
+            wrap = lambda p: rf"\left({p._latex()}\right)"
+        else:
+            wrap = lambda p: (
+                rf"\left({p._latex()}\right)"
+                if not p.is_atomic
+                and not p._is_wrapped
+                and p.__class__._precedence >= self.__class__._precedence
+                else p._latex()
+            )
         s = ""
         last_was_minus = False
         for a in self.args:
@@ -920,11 +958,17 @@ class Mul(Expr):
         return s
 
     def __str__(self) -> str:
-        wrap = lambda p: (
-            f"({p})"
-            if not p.is_atomic and p.__class__._precedence >= self.__class__._precedence
-            else str(p)
-        )
+        from pylogic.enviroment_settings.settings import settings
+
+        if settings["SHOW_ALL_PARENTHESES"]:
+            wrap = lambda p: f"({p})"
+        else:
+            wrap = lambda p: (
+                f"({p})"
+                if not p.is_atomic
+                and p.__class__._precedence >= self.__class__._precedence
+                else str(p)
+            )
         s = ""
         last_was_minus = False
         for a in self.args:
@@ -1023,11 +1067,15 @@ class Pow(Expr):
     def _latex(self) -> str:
         from pylogic.constant import Constant
 
+        # no "SHOW_ALL_PARENTHESES" check for this
+        # since it is not ambiguous
+
         if (
             isinstance(self.exp, Constant)
             and isinstance(self.exp.value, Fraction)
             and self.exp.value.numerator == 1
         ):
+            self._is_wrapped = True
             if self.exp.value.denominator == 2:
                 return rf"\sqrt{{{self.base._latex()}}}"
             return rf"\sqrt[{self.exp.value.denominator}]{{{self.base._latex()}}}"
@@ -1035,7 +1083,7 @@ class Pow(Expr):
         if (
             self.base.is_atomic
             or self.base._is_wrapped
-            or self.base.__class__._precedence <= self.__class__._precedence
+            or self.base.__class__._precedence < self.__class__._precedence
         ):
             base_latex = self.base._latex()
         else:
@@ -1048,7 +1096,11 @@ class Pow(Expr):
             base_str = str(self.base)
         else:
             base_str = f"({self.base})"
-        return f"{base_str}^{self.exp}"
+        if self.exp.is_atomic:
+            exp_str = str(self.exp)
+        else:
+            exp_str = f"({self.exp})"
+        return f"{base_str}^{exp_str}"
 
 
 def replace(
@@ -1120,6 +1172,10 @@ def to_sympy(expr: PBasic | PythonNumeric | Expr) -> sp.Basic:
 
 def sqrt(expr: PBasic | PythonNumeric | Expr) -> Pow:
     return Pow(expr, Fraction(1, 2))
+
+
+def cbrt(expr: PBasic | PythonNumeric | Expr) -> Pow:
+    return Pow(expr, Fraction(1, 3))
 
 
 def mul(*args: PBasic | PythonNumeric | Expr) -> Mul:

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Generic, Self, TypeVar
 
-from pylogic import Term
 from pylogic.expressions.expr import Expr
+from pylogic.typing import Term
 
 if TYPE_CHECKING:
     import sympy as sp
@@ -47,6 +47,7 @@ class SequenceTerm(Expr, Generic[T]):
         self.is_even = sequence.is_even
         self.is_nonnegative = sequence.is_nonnegative
         self.is_nonpositive = sequence.is_nonpositive
+        self.is_set = sequence.is_set
 
     def predicate(self, term: Term) -> IsContainedIn:
         """
@@ -81,7 +82,7 @@ class SequenceTerm(Expr, Generic[T]):
             else:
                 res = self.sequence.nth_term(indx)
             if getattr(res, "is_set", False):
-                self.is_set_ = True
+                self._is_set = True
                 self.is_cartes_power = res.is_cartes_power
                 self.is_cartes_product = res.is_cartes_product
                 self.is_empty = res.is_empty

@@ -13,7 +13,6 @@ from typing import (
     cast,
 )
 
-from pylogic import Term, Unevaluated
 from pylogic.constant import Constant
 from pylogic.expressions.expr import Add, Mul
 from pylogic.proposition.and_ import And
@@ -28,6 +27,7 @@ from pylogic.proposition.relation.subsets import IsSubsetOf
 from pylogic.structures.ordered_set import OrderedSet
 from pylogic.structures.ringlike.field import Field
 from pylogic.structures.set_ import Set
+from pylogic.typing import Term, Unevaluated
 from pylogic.variable import Variable
 
 zero = Constant(0)
@@ -206,6 +206,7 @@ Reals = RealsField(
     strict_total_order=LessThan,
     latex_name="\\mathbb{R}",
 )
+Reals._is_real = True
 
 
 class Interval(Set):
@@ -228,9 +229,10 @@ class Interval(Set):
         left_pred = LessOrEqual if a_inclusive else LessThan
         right_pred = LessOrEqual if b_inclusive else LessThan
         pred = lambda x: And(x.is_in(Reals), left_pred(a, x), right_pred(x, b))
+
+        # TODO: if a.is_nonnegative and b.is_nonnegative, nonnegative=True etc
         super().__init__(
-            f"{left_symb}{a},{b}{right_symb}",
-            predicate=pred,
+            f"{left_symb}{a},{b}{right_symb}", predicate=pred, real=True, context=None
         )
         self.a = a
         self.b = b
@@ -328,6 +330,8 @@ def interval(*args) -> Interval:
     if len(args) != 4:
         raise ValueError("Invalid arguments: " + str(args))
     left_symbol, a, b, right_symbol = args
+    assert left_symbol in ["[", "("], "Invalid left symbol"
+    assert right_symbol in ["]", ")"], "Invalid right symbol"
     a_inclusive = left_symbol == "["
     b_inclusive = right_symbol == "]"
     return Interval(a, b, a_inclusive=a_inclusive, b_inclusive=b_inclusive)

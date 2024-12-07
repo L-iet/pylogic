@@ -3,7 +3,6 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Self, TypeAlias, TypeVar
 
-from pylogic import Term, Unevaluated
 from pylogic.constant import Constant
 from pylogic.expressions.expr import Add, Mul
 from pylogic.expressions.function import Function
@@ -21,6 +20,7 @@ from pylogic.proposition.relation.equals import Equals
 from pylogic.structures.ordered_set import OrderedSet
 from pylogic.structures.ringlike.semiring import SemirIng
 from pylogic.structures.set_ import Set
+from pylogic.typing import Term, Unevaluated
 from pylogic.variable import Variable
 
 if TYPE_CHECKING:
@@ -504,6 +504,11 @@ Naturals = NaturalsSemiring(
     strict_total_order=LessThan,
     latex_name="\\mathbb{N}",
 )
+Naturals._is_real = True
+Naturals._is_rational = True
+Naturals._is_integer = True
+Naturals._is_natural = True
+Naturals._is_nonnegative = True
 
 
 class Prime(Proposition):
@@ -548,13 +553,25 @@ class Prime(Proposition):
         return self._definition
 
     def __str__(self) -> str:
-        return f"{self.n} is prime"
+        from pylogic.enviroment_settings.settings import settings
+
+        if settings["SHOW_ALL_PARENTHESES"]:
+            n_str = f"({self.n})"
+        else:
+            n_str = str(self.n)
+        return f"{n_str} is prime"
 
     def __repr__(self) -> str:
         return f"Prime({self.n})"
 
     def _latex(self) -> str:
-        return f"{self.n._latex()} \\text{{ is prime }}"
+        from pylogic.enviroment_settings.settings import settings
+
+        if settings["SHOW_ALL_PARENTHESES"]:
+            n_latex = f"({self.n._latex()})"
+        else:
+            n_latex = self.n._latex()
+        return f"{n_latex} \\text{{ is prime }}"
 
     def _set_is_inferred(self, value: bool) -> None:
         super()._set_is_inferred(value)

@@ -3,12 +3,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Generic, Self, TypedDict, TypeVar
 
-from pylogic import Term
 from pylogic.helpers import find_first
 from pylogic.inference import Inference
 from pylogic.proposition.implies import Implies
 from pylogic.proposition.not_ import neg
 from pylogic.proposition.proposition import Proposition, get_assumptions
+from pylogic.typing import Term
 
 if TYPE_CHECKING:
     from sympy.logic.boolalg import Equivalent
@@ -66,22 +66,32 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
         return hash(("iff", self.left, self.right))
 
     def __str__(self) -> str:
-        wrap = lambda p: (
-            f"({p})"
-            if p.__class__._precedence >= self.__class__._precedence
-            else str(p)
-        )
+        from pylogic.enviroment_settings.settings import settings
+
+        if settings["SHOW_ALL_PARENTHESES"]:
+            wrap = lambda p: f"({p})"
+        else:
+            wrap = lambda p: (
+                f"({p})"
+                if p.__class__._precedence >= self.__class__._precedence
+                else str(p)
+            )
         return f"{wrap(self.left)} <-> {wrap(self.right)}"
 
     def __repr__(self) -> str:
         return f"Iff({self.left!r}, {self.right!r})"
 
     def _latex(self, printer=None) -> str:
-        wrap = lambda p: (
-            rf"\left({p._latex()}\right)"
-            if p.__class__._precedence >= self.__class__._precedence
-            else p._latex()
-        )
+        from pylogic.enviroment_settings.settings import settings
+
+        if settings["SHOW_ALL_PARENTHESES"]:
+            wrap = lambda p: rf"\left({p._latex()}\right)"
+        else:
+            wrap = lambda p: (
+                rf"\left({p._latex()}\right)"
+                if p.__class__._precedence >= self.__class__._precedence
+                else p._latex()
+            )
         return rf"{wrap(self.left)} \leftrightarrow {wrap(self.right)}"
 
     def copy(self) -> Self:

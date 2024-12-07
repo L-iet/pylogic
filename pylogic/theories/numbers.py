@@ -1,3 +1,4 @@
+from pylogic.expressions.expr import cbrt, sqrt
 from pylogic.expressions.gcd import Gcd
 from pylogic.expressions.prod import Prod
 from pylogic.helpers import Namespace
@@ -54,12 +55,14 @@ a_seq, s_seq = map(
 )
 a_seq_set, s_seq_set = map(SeqSet, (a_seq, s_seq))
 prod_s_seq = Prod(s_seq)
-# prod_s_seq._is_natural = True  # hack, see TODO below
 s_k = s_seq[k]
 s_i = s_seq[i]
-# s_k._is_natural = True
-# s_i._is_natural = True
 
+Reals.theorems.either_rational_or_irrational = ForallInSet(
+    r,
+    Reals,
+    r.is_in(Rationals).xor(neg(r.is_in(Rationals))),
+).todo(_internal=True)
 
 Rationals.theorems.ratio_of_integers_lowest_terms = ForallInSet(
     r,
@@ -136,6 +139,27 @@ common_factor_divides_gcd = ForallInSet(
         ),
     ),
 ).todo(_internal=True)
+
+prime_sqrt_irrational = ForallInSet(
+    n, Naturals, Naturals.prime(n).implies(neg(sqrt(n).is_in(Rationals)))
+).todo(_internal=True)
+prime_cbrt_irrational = ForallInSet(
+    n, Naturals, Naturals.prime(n).implies(neg(cbrt(n).is_in(Rationals)))
+).todo(_internal=True)
+
+root_2_irrational = neg(sqrt(2).is_in(Rationals)).todo(_internal=True)
+root_3_irrational = neg(sqrt(3).is_in(Rationals)).todo(_internal=True)
+cbrt_2_irrational = neg(cbrt(2).is_in(Rationals)).todo(_internal=True)
+cbrt_3_irrational = neg(cbrt(3).is_in(Rationals)).todo(_internal=True)
+
+Reals.theorems.root_2_irrational = root_2_irrational
+Reals.theorems.root_3_irrational = root_3_irrational
+Reals.theorems.cbrt_2_irrational = cbrt_2_irrational
+Reals.theorems.cbrt_3_irrational = cbrt_3_irrational
+Reals.theorems.prime_sqrt_irrational = prime_sqrt_irrational
+Reals.theorems.prime_cbrt_irrational = prime_cbrt_irrational
+
+
 Integers.theorems.division_theorems = Namespace(
     {
         "prime": {
@@ -288,6 +312,13 @@ Integers.theorems.order_theorems = Namespace(
     }
 )
 
+Rationals.theorems.root_2_irrational = root_2_irrational
+Rationals.theorems.root_3_irrational = root_3_irrational
+Rationals.theorems.cbrt_2_irrational = cbrt_2_irrational
+Rationals.theorems.cbrt_3_irrational = cbrt_3_irrational
+Rationals.theorems.prime_sqrt_irrational = prime_sqrt_irrational
+Rationals.theorems.prime_cbrt_irrational = prime_cbrt_irrational
+
 Rationals.theorems.order_theorems = Namespace(
     {
         "gt_implies_neq": gt_implies_neq(Rationals),
@@ -344,5 +375,11 @@ Naturals.theorems.prime_theorems = Namespace(
         "prime_neq_1": ForallInSet(
             p, Naturals, Naturals.prime(p).implies(neg(p.equals(1)))
         ).todo(_internal=True),
+        "prime_sqrt_irrational": prime_sqrt_irrational,
+        "prime_cbrt_irrational": prime_cbrt_irrational,
+        "root_2_irrational": root_2_irrational,
+        "root_3_irrational": root_3_irrational,
+        "cbrt_2_irrational": cbrt_2_irrational,
+        "cbrt_3_irrational": cbrt_3_irrational,
     }
 )

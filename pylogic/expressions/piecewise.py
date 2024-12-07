@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING, Generic, TypeVar, TypeVarTuple
 import sympy as sp
 from sympy.functions.elementary.piecewise import ExprCondPair
 
-from pylogic import Term
 from pylogic.expressions.expr import Expr
+from pylogic.typing import Term
 
 if TYPE_CHECKING:
     from pylogic.proposition.proposition import Proposition
@@ -226,3 +226,6 @@ class OtherwiseBranch(Expr):
 
 def otherwise(then: Term) -> OtherwiseBranch:
     return OtherwiseBranch(then)
+
+
+Piecewise = PiecewiseExpr

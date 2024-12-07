@@ -85,16 +85,33 @@ right: {right}, right.is_set: {right.is_set}"
             "Reals": ["is_real"],
             "AllFiniteSequences": ["is_sequence", "is_finite"],
         }
+        assumption_attrs = [
+            "is_natural",
+            "is_integer",
+            "is_rational",
+            "is_real",
+            "is_nonnegative",
+            "is_nonpositive",
+            "is_even",
+            "is_zero",
+            "is_finite",
+        ]
         if value:
             # TODO: add more here
             if self.right.name in sets_and_attrs:
                 for attr in sets_and_attrs[self.right.name]:
                     setattr(self.left, attr, True)
+            else:
+                for attr in assumption_attrs:
+                    setattr(self.left, attr, getattr(self.right, attr, None))
             self.left.knowledge_base.add(self)
             self.right.elements.add(self.left)
         else:
             if self.right.name in sets_and_attrs:
                 for attr in sets_and_attrs[self.right.name]:
+                    setattr(self.left, attr, None)
+            else:
+                for attr in assumption_attrs:
                     setattr(self.left, attr, None)
             self.left.knowledge_base.discard(self)
             self.right.elements.discard(self.left)

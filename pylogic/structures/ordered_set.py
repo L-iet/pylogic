@@ -3,7 +3,6 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import TYPE_CHECKING, Any, Callable, Iterable, TypeAlias, TypeVar, cast
 
-from pylogic import Term
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.proposition.and_ import And
 from pylogic.proposition.iff import Iff
@@ -14,6 +13,7 @@ from pylogic.proposition.ordering.total import StrictTotalOrder, TotalOrder
 from pylogic.proposition.quantified.forall import ForallInSet
 from pylogic.proposition.relation.equals import Equals
 from pylogic.structures.set_ import Set
+from pylogic.typing import Term
 from pylogic.variable import Variable
 
 if TYPE_CHECKING:

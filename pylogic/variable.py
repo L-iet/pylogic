@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
-from pylogic import Term
 from pylogic.symbol import Symbol
+from pylogic.typing import Term
 
 if TYPE_CHECKING:
     from pylogic.assumptions_context import AssumptionsContext

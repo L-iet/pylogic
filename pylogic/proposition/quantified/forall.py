@@ -4,13 +4,13 @@ from typing import TYPE_CHECKING, Any, Callable, Self, TypedDict, TypeVar
 
 import sympy as sp
 
-from pylogic import Term
 from pylogic.inference import Inference
 from pylogic.proposition.implies import Implies
 from pylogic.proposition.proposition import Proposition, get_assumptions
 from pylogic.proposition.quantified.quantified import _Quantified
 from pylogic.proposition.relation.contains import IsContainedIn
 from pylogic.proposition.relation.subsets import IsSubsetOf
+from pylogic.typing import Term
 
 if TYPE_CHECKING:
     from pylogic.proposition.not_ import Not

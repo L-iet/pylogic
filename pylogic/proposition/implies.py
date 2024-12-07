@@ -3,11 +3,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Generic, Literal, Self, TypedDict, TypeVar
 
-from pylogic import Term, Unification
 from pylogic.helpers import find_first
 from pylogic.inference import Inference
 from pylogic.proposition.not_ import neg
 from pylogic.proposition.proposition import Proposition, get_assumptions
+from pylogic.typing import Term, Unification
 
 if TYPE_CHECKING:
     from sympy.logic.boolalg import Implies as SpImplies
@@ -69,11 +69,17 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         return hash(("impl", self.antecedent, self.consequent))
 
     def __str__(self) -> str:
-        wrap = lambda p: (
-            f"({p})"
-            if not p.is_atomic and p.__class__._precedence >= self.__class__._precedence
-            else str(p)
-        )
+        from pylogic.enviroment_settings.settings import settings
+
+        if settings["SHOW_ALL_PARENTHESES"]:
+            wrap = lambda p: f"({p})"
+        else:
+            wrap = lambda p: (
+                f"({p})"
+                if not p.is_atomic
+                and p.__class__._precedence >= self.__class__._precedence
+                else str(p)
+            )
         return f"{wrap(self.antecedent)} -> {wrap(self.consequent)}"
 
     def __repr__(self) -> str:
@@ -83,11 +89,17 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         return self.definite_clause_resolve(props)
 
     def _latex(self, printer=None) -> str:
-        wrap = lambda p: (
-            rf"\left({p._latex()}\right)"
-            if not p.is_atomic and p.__class__._precedence >= self.__class__._precedence
-            else p._latex()
-        )
+        from pylogic.enviroment_settings.settings import settings
+
+        if settings["SHOW_ALL_PARENTHESES"]:
+            wrap = lambda p: rf"\left({p._latex()}\right)"
+        else:
+            wrap = lambda p: (
+                rf"\left({p._latex()}\right)"
+                if not p.is_atomic
+                and p.__class__._precedence >= self.__class__._precedence
+                else p._latex()
+            )
         return rf"{wrap(self.antecedent)} \rightarrow {wrap(self.consequent)}"
 
     def copy(self) -> Self:

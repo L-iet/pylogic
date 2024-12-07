@@ -4,13 +4,13 @@ from typing import TYPE_CHECKING, Callable, Self, TypeVar
 
 from sympy import Basic, Integer
 
-from pylogic import PythonNumeric, Term
 from pylogic.expressions.abs import Abs
 from pylogic.expressions.expr import Expr
 from pylogic.helpers import Side
 from pylogic.inference import Inference
 from pylogic.proposition.proposition import Proposition, get_assumptions
 from pylogic.proposition.relation.binaryrelation import BinaryRelation
+from pylogic.typing import PythonNumeric, Term
 
 if TYPE_CHECKING:
     from sympy.core.relational import Equality

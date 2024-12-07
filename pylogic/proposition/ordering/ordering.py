@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, Self
 
-from pylogic import PythonNumeric, Term
+from pylogic.typing import PythonNumeric, Term
 
 if TYPE_CHECKING:
     pass

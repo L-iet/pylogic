@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Self, TypeVar
 import sympy as sp
 from sympy import S as sympy_S
 
-from pylogic import PythonNumeric, Term
 from pylogic.constant import Constant
 from pylogic.expressions.abs import Abs
 from pylogic.expressions.expr import Pow
@@ -14,6 +13,7 @@ from pylogic.proposition.ordering.ordering import _Ordering
 from pylogic.proposition.ordering.total import StrictTotalOrder
 from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.relation.equals import Equals
+from pylogic.typing import PythonNumeric, Term
 
 if TYPE_CHECKING:
     from pylogic.proposition.not_ import Not

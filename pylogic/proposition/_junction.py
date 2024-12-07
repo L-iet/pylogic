@@ -12,11 +12,11 @@ from typing import (
     TypeVarTuple,
 )
 
-from pylogic import Term, Unification
 from pylogic.helpers import find_first
 from pylogic.inference import Inference
 from pylogic.proposition.not_ import neg
 from pylogic.proposition.proposition import Proposition, get_assumptions
+from pylogic.typing import Term, Unification
 
 if TYPE_CHECKING:
     from pylogic.proposition.and_ import And
@@ -197,6 +197,8 @@ class _Junction(Proposition, Generic[*Ps], ABC):
         return new_p
 
     def __str__(self) -> str:
+        from pylogic.enviroment_settings.settings import settings
+
         if self._join_symbol == "or":
             join_symbol = r" \/ "
         elif self._join_symbol == "and":
@@ -205,14 +207,18 @@ class _Junction(Proposition, Generic[*Ps], ABC):
             join_symbol = " xor "
         else:
             join_symbol = self._join_symbol
-        wrap = lambda p: (
-            f"({p})"
-            if (p.__class__.__name__ == "ExOr")  # a xor b xor c != (a xor b) xor c
-            or (
-                not p.is_atomic and p.__class__._precedence > self.__class__._precedence
+        if settings["SHOW_ALL_PARENTHESES"]:
+            wrap = lambda p: f"({p})"
+        else:
+            wrap = lambda p: (
+                f"({p})"
+                if (p.__class__.__name__ == "ExOr")  # a xor b xor c != (a xor b) xor c
+                or (
+                    not p.is_atomic
+                    and p.__class__._precedence > self.__class__._precedence
+                )
+                else str(p)
             )
-            else str(p)
-        )
         s = join_symbol.join([wrap(p) for p in self.propositions])
         return s
 
@@ -220,6 +226,8 @@ class _Junction(Proposition, Generic[*Ps], ABC):
         return f"{self.__class__.__name__}({', '.join(map(repr, self.propositions))})"
 
     def _latex(self, printer=None) -> str:
+        from pylogic.enviroment_settings.settings import settings
+
         if self._join_symbol == "or":
             join_symbol = r"\vee "
         elif self._join_symbol == "and":
@@ -228,12 +236,16 @@ class _Junction(Proposition, Generic[*Ps], ABC):
             join_symbol = r"\oplus "
         else:
             join_symbol = rf"{self._join_symbol} \ "
-        wrap = lambda p: (
-            rf"\left({p._latex()}\right)"
-            if not p.is_atomic and p.__class__._precedence >= self.__class__._precedence
-            else p._latex()
-        )
-        s = join_symbol.join([p._latex() for p in self.propositions])  # type: ignore
+        if settings["SHOW_ALL_PARENTHESES"]:
+            wrap = lambda p: rf"\left({p._latex()}\right)"
+        else:
+            wrap = lambda p: (
+                rf"\left({p._latex()}\right)"
+                if not p.is_atomic
+                and p.__class__._precedence >= self.__class__._precedence
+                else p._latex()
+            )
+        s = join_symbol.join([wrap(p) for p in self.propositions])
         return s
 
     def unify(self, other: Self) -> Unification | Literal[True] | None:
@@ -336,6 +348,16 @@ Occured when trying to unify `{self}` and `{other}`"
             _inference=Inference(self, *implications, rule="by_cases"),
         ).remove_duplicates()
         return new_p
+
+    def cases_modus_ponens(
+        self, *implications: Implies[Proposition, Proposition]
+    ) -> Proposition:
+        r"""
+        Logical inference rule.
+        If self is of the form `A \/ B \/ C...`, and there are implications
+        `A -> D`, `B -> E`, `C -> F...`, return `D \/ E \/ F...`.
+        """
+        return self.by_cases(*implications)
 
     def unit_resolve(self, p: Proposition) -> Proposition | Self:
         """

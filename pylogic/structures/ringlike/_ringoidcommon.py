@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import Any, Callable, Iterable, TypeAlias, TypeVar
 
-from pylogic import Term
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.infix.infix import SpecialInfix
 from pylogic.proposition.quantified.forall import ForallInSet
 from pylogic.proposition.relation.contains import IsContainedIn
 from pylogic.structures.grouplike.magma import Magma
 from pylogic.structures.set_ import Set
+from pylogic.typing import Term
 
 T = TypeVar("T", bound=Term)
 E = TypeVar("E", bound=Expr)

@@ -3,8 +3,8 @@ from __future__ import annotations
 from abc import ABC
 from typing import Callable, Generic, Literal, Self, TypeVar
 
-from pylogic import Term, Unification
 from pylogic.proposition.proposition import Proposition
+from pylogic.typing import Term, Unification
 from pylogic.variable import Variable
 
 TProposition = TypeVar("TProposition", bound="Proposition")
@@ -55,6 +55,7 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
         self._set_init_inferred_attrs()
 
     def __str__(self) -> str:
+        from pylogic.enviroment_settings.settings import settings
         from pylogic.proposition.not_ import Not
 
         mid_part = str(self.variable)
@@ -62,17 +63,21 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
             mid_part += f" {self._bin_symb} {self.set_}"
 
         innermost_prop = getattr(self, self._innermost_prop_attr)
-        # only wrap the innermost proposition in parentheses if it is not atomic
-        # and not a quantified proposition
-        inner_part = (
-            f"({innermost_prop})"
-            if (not innermost_prop.is_atomic)
-            and (not isinstance(innermost_prop, (_Quantified, Not)))
-            else str(innermost_prop)
-        )
+        if settings["SHOW_ALL_PARENTHESES"]:
+            inner_part = f"({innermost_prop})"
+        else:
+            # only wrap the innermost proposition in parentheses if it is not atomic
+            # and not a quantified proposition
+            inner_part = (
+                f"({innermost_prop})"
+                if (not innermost_prop.is_atomic)
+                and (not isinstance(innermost_prop, (_Quantified, Not)))
+                else str(innermost_prop)
+            )
         return f"{self._q} {mid_part}: {inner_part}"
 
     def _latex(self, printer=None) -> str:
+        from pylogic.enviroment_settings.settings import settings
         from pylogic.proposition.not_ import Not
 
         mid_part = self.variable._latex()
@@ -86,14 +91,17 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
             mid_part += f" {bin_symb_to_latex[self._bin_symb]} {self.set_._latex()}"
 
         innermost_prop = getattr(self, self._innermost_prop_attr)
-        # only wrap the innermost proposition in parentheses if it is not atomic
-        # and not a quantified proposition
-        inner_part = (
-            rf"\left({innermost_prop._latex()}\right)"
-            if (not innermost_prop.is_atomic)
-            and (not isinstance(innermost_prop, (_Quantified, Not)))
-            else innermost_prop._latex()
-        )
+        if settings["SHOW_ALL_PARENTHESES"]:
+            inner_part = rf"\left({innermost_prop._latex()}\right)"
+        else:
+            # only wrap the innermost proposition in parentheses if it is not atomic
+            # and not a quantified proposition
+            inner_part = (
+                rf"\left({innermost_prop._latex()}\right)"
+                if (not innermost_prop.is_atomic)
+                and (not isinstance(innermost_prop, (_Quantified, Not)))
+                else innermost_prop._latex()
+            )
         return rf"{quant_symb_to_latex[self._q]} {mid_part}: {inner_part}"
 
     def __repr__(self) -> str:

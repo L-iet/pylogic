@@ -1,7 +1,6 @@
 from fractions import Fraction
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Self, TypeAlias, TypeVar
 
-from pylogic import Term, Unevaluated
 from pylogic.constant import Constant
 from pylogic.expressions.expr import Add, Mul
 from pylogic.expressions.function import Function
@@ -12,6 +11,7 @@ from pylogic.proposition.quantified.exists import ExistsInSet
 from pylogic.proposition.relation.relation import Relation
 from pylogic.structures.ordered_set import OrderedSet
 from pylogic.structures.ringlike.ring import RIng
+from pylogic.typing import Term, Unevaluated
 from pylogic.variable import Variable
 
 
@@ -52,18 +52,32 @@ class Divides(Relation):
         self._set_init_inferred_attrs()
 
     def __str__(self) -> str:
-        return f"{self.b} / {self.a} in {self.quotient_set}"
+        from pylogic.enviroment_settings.settings import settings
+
+        if settings["SHOW_ALL_PARENTHESES"]:
+            wrap = lambda p: f"({p})"
+        else:
+            wrap = lambda p: str(p)
+        return f"{wrap(self.b)} / {wrap(self.a)} in {wrap(self.quotient_set)}"
 
     def __repr__(self) -> str:
         return f"Divides({self.a}, {self.b}, {self.quotient_set})"
 
     def _latex(self) -> str:
+        from pylogic.enviroment_settings.settings import settings
+
+        if settings["SHOW_ALL_PARENTHESES"]:
+            wrap = lambda p: rf"\left({p._latex()}\right)"
+        else:
+            wrap = lambda p: p._latex()
         if (
             self.quotient_set.name == "Integers"
             and self.quotient_set.__class__.__name__ == "IntegersRing"
         ):
-            return f"\\left. {self.a._latex()} \\middle| {self.b._latex()} \\right."
-        return rf"\frac{{{self.b._latex()}}}{{{self.a._latex()}}} \in {self.quotient_set._latex()}"
+            return f"\\left. {wrap(self.a)} \\middle| {wrap(self.b)} \\right."
+        return (
+            rf"\frac{{{wrap(self.b)}}}{{{wrap(self.a)}}} \in {wrap(self.quotient_set)}"
+        )
 
     def _set_is_inferred(self, value: bool) -> None:
         super()._set_is_inferred(value)

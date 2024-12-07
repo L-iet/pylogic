@@ -27,6 +27,7 @@ rules: set[str] = {
     "by_inspection",
     "by_predicate",
     "by_simplification",
+    "by_single_substitution",
     "by_substitution",
     "contradicts",
     "contrapositive",

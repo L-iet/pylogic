@@ -16,7 +16,6 @@ from typing import (
 from pylogic.enviroment_settings.settings import settings
 
 if TYPE_CHECKING:
-    from pylogic import Term, Unification
     from pylogic.constant import Constant
     from pylogic.helpers import Side
     from pylogic.proposition.and_ import And
@@ -33,6 +32,7 @@ if TYPE_CHECKING:
     from pylogic.structures.class_ import Class
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
+    from pylogic.typing import Term, Unification
     from pylogic.variable import Variable
 
 
@@ -274,7 +274,7 @@ class Proposition:
         add_to_context = kwargs.get("add_to_context", True)
         if not add_to_context:
             return
-        context = assumptions_contexts[-1]
+        context = kwargs.get("context", assumptions_contexts[-1])
         if context is not None and value:
             context.assumptions.append(self)
 
@@ -511,6 +511,10 @@ class Proposition:
 
     def substitute(self, side: Side | str, equality: "Equals", **kwargs) -> Self:
         """
+        Logical inference rule.
+        If self is proven and equality is proven, we can substitute the side of the equality
+        into self.
+
         Parameters
         ----------
         side: Side
@@ -913,6 +917,15 @@ class Proposition:
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(other))
         return new_p
 
+    def mp(self, other: Implies[Self, TProposition]) -> TProposition:
+        """
+        Logical inference rule.
+        other: Implies
+            Must be an implication that has been proven whose structure is
+            self -> OtherProposition
+        """
+        return self.modus_ponens(other)
+
     @overload
     def modus_tollens(
         self, other: Implies[Not[TProposition], Not[Self]]
@@ -952,6 +965,18 @@ class Proposition:
         new_p.deduced_from = Inference(self, other, rule="modus_tollens")
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(other))
         return new_p
+
+    def mt(
+        self,
+        other: Implies[Not[TProposition], Not[Self]] | Implies[TProposition, Not[Self]],
+    ) -> TProposition | Not[TProposition]:
+        """
+        Logical inference rule.
+        other: Implies
+            Must be an implication that has been proven whose structure is
+            OtherProposition -> ~self
+        """
+        return self.modus_tollens(other)
 
     def is_one_of(self, other: And, *, __recursing: bool = False) -> Self:
         r"""
@@ -1326,12 +1351,17 @@ def predicate(name: str) -> Callable[..., Proposition]:
     Create a predicate with a given name.
 
     A predicate is a python function that returns a proposition.
+
+    When called, the function returns a proposition with the given name and arguments.
     """
 
     def inner(*args, **kwargs) -> Proposition:
         return Proposition(name, args=args, **kwargs)
 
     return inner
+
+
+pred = predicate
 
 
 def prop(name: str, *args: Term, **kwargs) -> Proposition:

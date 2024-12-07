@@ -3,13 +3,13 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import TYPE_CHECKING, Any, Callable, Iterable, TypeAlias, TypeVar
 
-from pylogic import Term, Unevaluated
 from pylogic.constant import Constant
 from pylogic.expressions.expr import Add, Mul
 from pylogic.proposition.ordering.lessorequal import LessOrEqual
 from pylogic.proposition.ordering.lessthan import LessThan
 from pylogic.structures.ordered_set import OrderedSet
 from pylogic.structures.ringlike.field import Field
+from pylogic.typing import Term, Unevaluated
 
 zero = Constant(0)
 one = Constant(1)
@@ -108,3 +108,5 @@ Rationals = RationalsField(
     strict_total_order=LessThan,
     latex_name="\\mathbb{Q}",
 )
+Rationals._is_real = True
+Rationals._is_rational = True

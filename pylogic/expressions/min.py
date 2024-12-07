@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import sympy as sp
 
-from pylogic import Term
 from pylogic.expressions.expr import Expr
+from pylogic.typing import Term
 
 
 class MinElement(Expr):

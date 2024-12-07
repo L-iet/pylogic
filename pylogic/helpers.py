@@ -30,12 +30,12 @@ Ps = TypeVarTuple("Ps")
 TNumeric = TypeVar("TNumeric", bound=int | float | Fraction | complex | Decimal)
 
 if TYPE_CHECKING:
-    from pylogic import Term, Unification
     from pylogic.constant import Constant
     from pylogic.structures.class_ import Class
     from pylogic.structures.sequence import Sequence
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
+    from pylogic.typing import PythonNumeric, Term, Unification
     from pylogic.variable import Variable
 
     TSet = TypeVar("TSet", bound=Set)
@@ -290,6 +290,13 @@ def assume(arg: P, *args: *Ps) -> P | tuple[P, *Ps]:
     return all_args
 
 
+def has_been_proven(to_prove: Proposition, proven: Proposition) -> bool:
+    """
+    Check if `to_prove` is equal to `proven, and `proven` is proven.
+    """
+    return to_prove == proven and proven.is_proven
+
+
 @overload
 def todo(arg: P) -> P: ...
 @overload
@@ -383,13 +390,13 @@ def python_to_pylogic(arg: Any) -> Proposition | Expr | Symbol | Sequence | Set:
 
 
 def latex(arg: Any) -> str:
-    # TODO: Add support for Function
     from pylogic.expressions.expr import Expr
     from pylogic.proposition.proposition import Proposition
+    from pylogic.structures.sequence import Sequence
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol
 
-    if isinstance(arg, (Expr, Symbol, Set, Proposition)):
+    if isinstance(arg, (Expr, Symbol, Set, Proposition, Sequence)):
         return arg._latex()
     return f"{{{str(arg)}}}"
 
@@ -523,9 +530,19 @@ def is_prime(num: int | Fraction | Constant[int] | Constant[Fraction]) -> bool:
     return True
 
 
+def Rational(
+    numerator: Term | PythonNumeric, denominator: Term | PythonNumeric
+) -> Constant[Fraction]:
+    from pylogic.constant import Constant
+
+    if isinstance(numerator, int) and isinstance(denominator, int):
+        return Constant(Fraction(numerator, denominator))
+    num, denom = python_to_pylogic(numerator), python_to_pylogic(denominator)
+    return num / denom
+
+
 class Namespace(SimpleNamespace):
     """
-    An immutable namespace object.
     Attributes can be accessed using dot notation or dictionary subscript notation.
     """
 
@@ -551,10 +568,9 @@ class Namespace(SimpleNamespace):
         return str(vars(self))
 
 
-def _add_assumptions(term: Term, attr: str, value: bool) -> Proposition:
+def _make_assumption(term: Term, attr: str, value: bool) -> Proposition:
     """
-    Add propositions to the term's knowledge base and assumptions_context based
-    on the assumptions.
+    Create the assumption proposition that the assumption attribute represents.
     """
     # TODO: needs to be tested properly, somewhat hacky but
     # the most straightforward way to add assumptions on Symbols/Sequence
@@ -586,11 +602,12 @@ def _add_assumptions(term: Term, attr: str, value: bool) -> Proposition:
     if attr in set_modules:
         mod = importlib.import_module(set_modules[attr])
         mod_set = getattr(mod, set_names[attr])
-        positive_prop = (
-            IsSubsetOf(SeqSet(term), mod_set)
-            if (term.is_sequence and attr != "finite")
-            else IsContainedIn(term, mod_set)
-        )
+        if term.is_sequence and attr != "finite":
+            positive_prop = IsSubsetOf(SeqSet(term), mod_set)
+        elif term.is_set and attr != "finite":
+            positive_prop = IsSubsetOf(term, mod_set)
+        else:
+            positive_prop = IsContainedIn(term, mod_set)
     elif attr == "zero":
         from pylogic.proposition.relation.equals import Equals
 
@@ -604,19 +621,24 @@ def _add_assumptions(term: Term, attr: str, value: bool) -> Proposition:
 
         positive_prop = GreaterOrEqual(term, 0)
     elif attr == "even":
-        # TODO: change to Integers where appropriate
-        from pylogic.theories.natural_numbers import Naturals
+        if term.is_natural:
+            from pylogic.theories.natural_numbers import Naturals
 
-        # if term._is_natural is True: ... # use Naturals.even
-        # else: ... # use Integers.even
+            # if term._is_natural is True: ... # use Naturals.even
+            # else: ... # use Integers.even
 
-        positive_prop = Naturals.even(term)
+            positive_prop = Naturals.even(term)
 
     elif attr == "finite" and term.is_sequence:
         from pylogic.proposition.relation.contains import IsContainedIn
         from pylogic.structures.set_ import AllFiniteSequences
 
         positive_prop = IsContainedIn(term, AllFiniteSequences)
+    elif attr == "finite" and term.is_set:
+        from pylogic.proposition.relation.contains import IsContainedIn
+        from pylogic.structures.set_ import AllFiniteSets
+
+        positive_prop = IsContainedIn(term, AllFiniteSets)
     if positive_prop is None:
         raise ValueError(f"Unknown assumption: {attr} on {term}")
     if value:
@@ -624,6 +646,117 @@ def _add_assumptions(term: Term, attr: str, value: bool) -> Proposition:
     else:
         prop = Not(positive_prop)
     return prop
+
+
+def _add_assumption_props(term: Term, kwargs: dict[str, Any]) -> None:
+    """
+    Add assumption propositions to the term based on the assumptions.
+    """
+    from pylogic.variable import Variable
+
+    context = kwargs.get("context", None)
+
+    explicit_assumptions_attrs = {
+        "real",
+        "rational",
+        "integer",
+        "natural",
+        "zero",
+        "nonpositive",
+        "nonnegative",
+        "even",
+        "finite",
+        "sequence",
+        "set_",
+    } & kwargs.keys()
+    if "positive" in explicit_assumptions_attrs:
+        explicit_assumptions_attrs.add("nonnegative")
+        explicit_assumptions_attrs.add("zero")
+    if "negative" in explicit_assumptions_attrs:
+        explicit_assumptions_attrs.add("nonpositive")
+        explicit_assumptions_attrs.add("zero")
+    if "odd" in explicit_assumptions_attrs:
+        explicit_assumptions_attrs.add("even")
+
+    # for sequences & sets
+    if term.is_sequence or term.is_set:
+        term.properties_of_each_term = []
+
+    _add_assumption_attributes(term, kwargs)
+
+    # TODO: needs to be tested properly, somewhat hacky but
+    # the most straightforward way to add assumptions on Symbols
+    # due to cyclic dependencies
+    # this needs to be done after the all above attributes are set (dependencies, etc)
+    # this order is important; add the set assumptions first before the others
+    for attr in [
+        "finite",
+        "real",
+        "rational",
+        "integer",
+        "natural",
+        "zero",
+        "nonpositive",
+        "nonnegative",
+        "even",
+    ]:
+        if getattr(term, f"_is_{attr}") is not None:
+            # adding assumptions to SequenceTerm or set element
+            # so no need finite
+            if term.is_sequence and attr != "finite":
+                from pylogic.proposition.quantified.forall import ForallInSet
+                from pylogic.theories.natural_numbers import Naturals
+                from pylogic.variable import Variable
+
+                n = Variable("n")
+                term_n = term[n]  # defined for Variable only
+                prop1 = _make_assumption(term_n, attr, getattr(term, f"_is_{attr}"))
+                prop1 = ForallInSet(n, Naturals, prop1)
+            elif term.is_set and attr != "finite":
+                from pylogic.proposition.quantified.forall import ForallInSet
+                from pylogic.variable import Variable
+
+                x = Variable("x")
+                prop1 = _make_assumption(x, attr, getattr(term, f"_is_{attr}"))
+                prop1 = ForallInSet(x, term, prop1)
+
+            if (term.is_sequence or term.is_set) and attr != "finite":
+                # in any of the above cases, we add the assumption
+                prop1._set_is_assumption(
+                    True,
+                    add_to_context=attr in explicit_assumptions_attrs,
+                    context=context,
+                )
+                term.properties_of_each_term.append(prop1)
+                term.knowledge_base.add(prop1)
+
+            # we don't add the subset relation for finite
+            if (term.is_sequence or term.is_set) and attr not in {
+                "real",
+                "rational",
+                "integer",
+                "natural",
+                "finite",
+            }:
+                continue
+
+            # we also add props for the sequence/set itself
+            # these are subset relations, or
+            # containment relation for "finite"
+            prop = _make_assumption(term, attr, getattr(term, f"_is_{attr}"))
+
+            # hack: for sequence/set, I don't want to add the subset relation as well
+            # to the context because ForallInSet above
+            # is already added
+            if (term.is_sequence or term.is_set) and attr != "finite":
+                prop.is_assumption = True
+            else:
+                prop._set_is_assumption(
+                    True,
+                    add_to_context=attr in explicit_assumptions_attrs,
+                    context=context,
+                )
+            term.knowledge_base.add(prop)
 
 
 def _add_assumption_attributes(term: Symbol | Sequence, kwargs) -> None:
@@ -696,6 +829,8 @@ def _add_assumption_attributes(term: Symbol | Sequence, kwargs) -> None:
     if term._is_even:
         if term._is_integer is None:
             term.is_integer = True
+            if term._is_nonnegative:
+                term.is_natural = True
         elif term._is_integer is False:
             raise ValueError(
                 "Contradictory assumptions: A number cannot be both non-integer and even"

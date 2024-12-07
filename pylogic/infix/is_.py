@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, TypeVar
 
-from pylogic import Term
 from pylogic.infix.infix import Infix
 from pylogic.proposition.proposition import Proposition
 from pylogic.symbol import Symbol
+from pylogic.typing import Term
 
 if TYPE_CHECKING:
     from pylogic.proposition.relation.equals import Equals

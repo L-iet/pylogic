@@ -3,7 +3,6 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Self, TypeAlias, TypeVar
 
-from pylogic import Term, Unevaluated
 from pylogic.constant import Constant
 from pylogic.expressions.expr import Add, Mul
 from pylogic.expressions.function import Function
@@ -13,6 +12,7 @@ from pylogic.proposition.proposition import Proposition
 from pylogic.proposition.quantified.exists import ExistsInSet
 from pylogic.structures.ordered_set import OrderedSet
 from pylogic.structures.ringlike.ring import RIng
+from pylogic.typing import Term, Unevaluated
 from pylogic.variable import Variable
 
 zero = Constant(0)
@@ -134,3 +134,6 @@ Integers = IntegersRing(
     strict_total_order=LessThan,
     latex_name="\\mathbb{Z}",
 )
+Integers._is_real = True
+Integers._is_rational = True
+Integers._is_integer = True

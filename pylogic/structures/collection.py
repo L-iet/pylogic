@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING, Generic, Self, TypeVar
 if TYPE_CHECKING:
     pass
 
-    from pylogic import Term
     from pylogic.proposition.relation.equals import Equals
     from pylogic.structures.set_ import Set
+    from pylogic.typing import Term
 
     T = TypeVar("T", bound=int, covariant=True)
     U = TypeVar("U", bound=Term)

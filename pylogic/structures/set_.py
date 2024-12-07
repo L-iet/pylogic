@@ -13,9 +13,9 @@ from typing import (
 
 import sympy as sp
 
-from pylogic import Term
 from pylogic.proposition.contradiction import Contradiction
 from pylogic.structures.collection import Collection
+from pylogic.typing import Term
 
 if TYPE_CHECKING:
     from pylogic.expressions.expr import Expr
@@ -61,13 +61,12 @@ class Set(metaclass=Collection):
     # see Symbol class, not include parent_exprs
     mutable_attrs_to_copy = [
         "sympy_set",
-        "is_finite",
         "is_union",
         "is_intersection",
         "is_cartes_product",
         "is_cartes_power",
         "is_real",
-        "is_set_",
+        "_is_set",
         "is_empty",
         "theorems",
     ]
@@ -79,6 +78,7 @@ class Set(metaclass=Collection):
         "illegal_occur_check": "dummy",
         "latex_name": "latex_name",
         "knowledge_base": "knowledge_base",
+        "finite": "_is_finite",
     }
 
     @overload
@@ -118,11 +118,9 @@ class Set(metaclass=Collection):
         knowledge_base: set[Proposition] | None = None,
         **kwargs,
     ):
-        from pylogic.helpers import Namespace, python_to_pylogic
-        from pylogic.inference import Inference
-        from pylogic.proposition.iff import Iff
-        from pylogic.proposition.quantified.forall import Forall
-        from pylogic.variable import Variable
+        from pylogic.helpers import Namespace, _add_assumption_props, python_to_pylogic
+
+        # from pylogic.proposition.iff import Iff
 
         if name is not None:
             name = name.strip()
@@ -157,9 +155,17 @@ class Set(metaclass=Collection):
         self._is_even = kwargs.get("even", None)
         self._is_zero = kwargs.get("zero", None)
 
-        self.is_set_ = True
+        self._is_set = True
+        self._is_finite: bool | None = None
         self.is_empty: bool | None = None
+
+        # no set of sequences for now
+        # AllFiniteSequences is special case
         self._is_sequence = False
+
+        self.knowledge_base: set[Proposition] = knowledge_base or set()
+        # _add_assumption_props needs knowledge_base
+        _add_assumption_props(self, kwargs)
 
         self.theorems = Namespace()  # theorems about this set
 
@@ -174,7 +180,6 @@ class Set(metaclass=Collection):
             "knowledge_base": knowledge_base,
             **kwargs,
         }
-        self.knowledge_base: set[Proposition] = knowledge_base or set()
 
         self.latex_name = latex_name or rf"\text{{{self.name}}}"
 
@@ -543,6 +548,13 @@ AllFiniteSequences = Set(
     containment_function=lambda x: x.is_sequence and x.is_finite,
     illegal_occur_check=False,
     latex_name=r"\text{FiniteSequences}",
+)
+
+AllFiniteSets = Set(
+    "AllFiniteSets",
+    containment_function=lambda x: x.is_set and x.is_finite,
+    illegal_occur_check=False,
+    latex_name=r"\text{FiniteSets}",
 )
 
 
@@ -1029,14 +1041,6 @@ class SeqSet(Set):
 
     def __repr__(self) -> str:
         return f"SeqSet({self.sequence!r})"
-
-    @property
-    def is_set(self) -> bool:
-        return True
-
-    @is_set.setter
-    def is_set(self, value: bool) -> None:
-        pass
 
     @property
     def is_sequence(self) -> bool:

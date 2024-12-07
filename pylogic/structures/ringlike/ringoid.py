@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Callable, Iterable, TypeAlias, TypeVar
 
-from pylogic import Term
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.infix.infix import SpecialInfix
 from pylogic.proposition.and_ import And
@@ -12,6 +11,7 @@ from pylogic.proposition.relation.equals import Equals
 from pylogic.structures.ringlike.left_ringoid import LeftRingoid
 from pylogic.structures.ringlike.right_ringoid import RightRingoid
 from pylogic.structures.set_ import Set
+from pylogic.typing import Term
 from pylogic.variable import Variable
 
 T = TypeVar("T", bound=Term)
@@ -93,3 +93,6 @@ class Ringoid(LeftRingoid, RightRingoid):
             self.times_left_dist_over_plus,
             self.times_right_dist_over_plus,
         ).all_proven()
+
+
+RIngoid = Ringoid

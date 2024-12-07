@@ -8,7 +8,8 @@ if TYPE_CHECKING:
 
 
 class AssumptionsContext:
-    def __init__(self):
+    def __init__(self, name: str | None = None):
+        self.name = name
         self.assumptions: list[Proposition | Variable] = []
         self._proven: list[Proposition] = []  # all props proven inside the context
 
@@ -19,6 +20,12 @@ class AssumptionsContext:
         self.proven_propositions: list[Proposition] = []
         self.exited = False
         assumptions_contexts.append(self)
+
+    def __repr__(self):
+        return f"AssumptionsContext({self.name})" if self.name else super().__repr__()
+
+    def __str__(self):
+        return self.__repr__()
 
     def variable(self, *args, **kwargs) -> Variable:
         from pylogic.variable import Variable
@@ -170,6 +177,28 @@ class AssumptionsContext:
         self.exited = True
 
     def get_proven(self):
+        """
+        Returns a list of implications that have been proven as a result of
+        closing this context.
+
+        Example:
+        ```
+        p = Proposition("p")
+        q = Proposition("q")
+        r = Proposition("r")
+        p_implies_q = p.implies(q).assume()
+        q_implies_r = q.implies(r).assume()
+        with AssumptionsContext() as ctx:
+            p_true = p.assume()
+            r_true = p_true.modus_ponens(p_implies_q).modus_ponens(q_implies_r)
+            conclude(r_true)
+        print(ctx.get_proven())
+        ```
+        Output:
+        ```
+        [p -> r]
+        ```
+        """
         if self.exited:
             return self.proven_propositions
         return []

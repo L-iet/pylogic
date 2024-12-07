@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING, Any, Callable, Self, TypeVar, cast
 
 import sympy as sp
 
-from pylogic import PythonNumeric, Term
 from pylogic.enviroment_settings.settings import settings
 from pylogic.expressions.expr import Add, Expr, Mul, Pow
+from pylogic.typing import PythonNumeric, Term
 
 if TYPE_CHECKING:
     from pylogic.expressions.abs import Abs
@@ -60,7 +60,7 @@ class Symbol:
         ("length", "length"),
         ("positive", "dummy"),
         ("negative", "dummy"),
-        ("set_", "is_set_"),
+        ("set_", "_is_set"),
         ("graph", "is_graph"),
         ("pair", "is_pair"),
         ("list_", "is_list_"),
@@ -90,7 +90,7 @@ class Symbol:
         self._init_kwargs = kwargs
 
     def __new_init__(self, *args, **kwargs) -> None:
-        from pylogic.helpers import _add_assumption_attributes, _add_assumptions
+        from pylogic.helpers import _add_assumption_props
 
         name = args[0]
         assert isinstance(name, str), "The first argument must be a string"
@@ -106,7 +106,7 @@ class Symbol:
         self._is_nonnegative: bool | None = kwargs.get("nonnegative", None)
         self._is_even: bool | None = kwargs.get("even", None)
 
-        self.is_set_: bool | None = kwargs.get("set_", None)
+        self._is_set: bool | None = kwargs.get("set_", None)
         self.is_graph: bool | None = not self.is_set and kwargs.get("graph", None)
         self.is_pair: bool | None = self.is_graph or kwargs.get("pair", None)
         self.is_list_: bool | None = self.is_pair or kwargs.get("list_", None)
@@ -114,36 +114,11 @@ class Symbol:
         # sequences, finite
         self._is_sequence: bool | None = self.is_list or kwargs.get("sequence", None)
         self._is_finite: bool | None = kwargs.get("finite", None)
-        explicit_assumptions_attrs = {
-            "real",
-            "rational",
-            "integer",
-            "natural",
-            "zero",
-            "nonpositive",
-            "nonnegative",
-            "even",
-            "finite",
-            "sequence",
-        } & kwargs.keys()
-        if "positive" in explicit_assumptions_attrs:
-            explicit_assumptions_attrs.add("nonnegative")
-            explicit_assumptions_attrs.add("zero")
-        if "negative" in explicit_assumptions_attrs:
-            explicit_assumptions_attrs.add("nonpositive")
-            explicit_assumptions_attrs.add("zero")
-        if "odd" in explicit_assumptions_attrs:
-            explicit_assumptions_attrs.add("even")
-        self.length: Term | None = kwargs.get("length", None)
 
         # list of expressions that contain this symbol
         # not copied
         self.parent_exprs: list[Expr] = []
-
-        # for variable sequences
-        self.properties_of_each_term: list[Proposition] = []
-
-        _add_assumption_attributes(self, kwargs)
+        self.length: Term | None = kwargs.get("length", None)
 
         self._init_args = args
         self._init_kwargs = kwargs
@@ -158,66 +133,9 @@ class Symbol:
         self.independent_dependencies = self.get_independent_dependencies()
         self.sets_contained_in: set[Set] = kwargs.get("sets_contained_in", set())
 
-        # TODO: needs to be tested properly, somewhat hacky but
-        # the most straightforward way to add assumptions on Symbols
-        # due to cyclic dependencies
-        # this needs to be done after the all above attributes are set (dependencies, etc)
-        # this order is important; add the set assumptions first before the others
-        for attr in [
-            "finite",
-            "real",
-            "rational",
-            "integer",
-            "natural",
-            "zero",
-            "nonpositive",
-            "nonnegative",
-            "even",
-        ]:
-            if getattr(self, f"_is_{attr}") is not None:
-                # adding assumptions to SequenceTerm
-                # so no need finite
-                if self.is_sequence and attr != "finite":
-                    from pylogic.inference import Inference
-                    from pylogic.proposition.quantified.forall import ForallInSet
-                    from pylogic.theories.natural_numbers import Naturals
-                    from pylogic.variable import Variable
-
-                    n = Variable("n")
-                    self_n = self[n]  # defined for Variable only
-                    prop1 = _add_assumptions(self_n, attr, getattr(self, f"_is_{attr}"))
-                    prop1 = ForallInSet(
-                        n,
-                        Naturals,
-                        prop1,
-                        _is_proven=True,
-                        _assumptions=set(),
-                        _inference=Inference(None, rule="by_definition"),
-                    )
-                    self.properties_of_each_term.append(prop1)
-                    prop1._set_is_assumption(
-                        True, add_to_context=attr in explicit_assumptions_attrs
-                    )
-                    self.knowledge_base.add(prop1)
-
-                # we also add props for the sequence itself
-                # these are subset relations
-                if (not self.is_sequence) or (
-                    self.is_sequence
-                    and attr in {"real", "rational", "integer", "natural", "finite"}
-                ):
-                    prop = _add_assumptions(self, attr, getattr(self, f"_is_{attr}"))
-
-                    # hack: for sequence, I don't want to add the subset relation as well
-                    # to the context because ForallInSet above
-                    # is already added
-                    if self.is_sequence and attr != "finite":
-                        prop.is_assumption = True
-                    else:
-                        prop._set_is_assumption(
-                            True, add_to_context=attr in explicit_assumptions_attrs
-                        )
-                    self.knowledge_base.add(prop)
+        # for variable sequences&sets
+        self.properties_of_each_term: list[Proposition] = []
+        _add_assumption_props(self, kwargs)
 
         self._is_copy = False
 
@@ -335,7 +253,13 @@ class Symbol:
 
     @property
     def is_set(self) -> bool | None:
-        return self.is_set_
+        return self._is_set
+
+    @is_set.setter
+    def is_set(self, value: bool | None):
+        self._is_set = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     @property
     def is_list(self) -> bool | None:
@@ -369,8 +293,6 @@ class Symbol:
         return f"{self.__class__.__name__}({self.name}, deps={self.depends_on})"
 
     def __str__(self):
-        from pylogic.enviroment_settings.settings import settings
-
         name_part = self.name
         if self.is_sequence:
             name_part += "_n"
@@ -443,7 +365,7 @@ class Symbol:
                 self.name == other.name
                 and self.__class__ == other.__class__
                 and self.is_real == other.is_real
-                and self.is_set_ == other.is_set_
+                and self.is_set == other.is_set
                 # and self.is_graph == other.is_graph
                 # and self.is_pair == other.is_pair
                 # and self.is_list_ == other.is_list_
@@ -587,6 +509,13 @@ class Symbol:
 
         return IsContainedIn(self, other, **kwargs)
 
+    def is_not_in(
+        self, other: Set | Variable | Class | SequenceTerm[S], **kwargs
+    ) -> Not[IsContainedIn]:
+        from pylogic.proposition.not_ import Not
+
+        return Not(self.is_in(other), **kwargs)
+
     def _is_in_by_rule(
         self, other: Set | Class | Variable, rule: str = "by_definition"
     ) -> IsContainedIn:
@@ -652,7 +581,7 @@ class Symbol:
                 self.__class__.__name__,
                 self.name,
                 self.is_real,
-                self.is_set_,
+                self.is_set,
                 self.is_sequence,
             )
         )

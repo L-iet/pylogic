@@ -11,9 +11,9 @@ from typing import (
     overload,
 )
 
-from pylogic import Term, Unification
 from pylogic.enviroment_settings.settings import settings
 from pylogic.proposition.proposition import Proposition, get_assumptions
+from pylogic.typing import Term, Unification
 
 if TYPE_CHECKING:
     from sympy.logic.boolalg import Not as SpNot
@@ -99,14 +99,18 @@ class Not(Proposition, Generic[TProposition]):
     def __str__(self) -> str:
         from pylogic.proposition.quantified.quantified import _Quantified
 
-        # only wrap the innermost proposition in parentheses if it is not atomic
-        # and not a quantified proposition
-        inner_part = (
-            f"({self.negated})"
-            if (not self.negated.is_atomic)
-            and (not isinstance(self.negated, (_Quantified, Not)))
-            else str(self.negated)
-        )
+        if settings["SHOW_ALL_PARENTHESES"]:
+            wrap = lambda p: f"({p})"
+        else:
+            # only wrap the innermost proposition in parentheses if it is not atomic
+            # and not a quantified proposition
+            wrap = lambda p: (
+                f"({p})"
+                if (not p.is_atomic) and (not isinstance(p, (_Quantified, Not)))
+                else str(p)
+            )
+
+        inner_part = wrap(self.negated)
         return f"~{inner_part}"
 
     def _latex(self, printer=None) -> str:
@@ -114,26 +118,36 @@ class Not(Proposition, Generic[TProposition]):
         from pylogic.proposition.relation.binaryrelation import BinaryRelation
         from pylogic.proposition.relation.divides import Divides
 
+        if settings["SHOW_ALL_PARENTHESES"]:
+            wrap_expr = lambda p: rf"\left({p._latex()}\right)"
+        else:
+            wrap_expr = lambda p: p._latex()
+
         if isinstance(self.negated, Divides):
             p = self.negated
             if (
                 p.quotient_set.name == "Integers"
                 and p.quotient_set.__class__.__name__ == "IntegersRing"
             ):
-                return rf"\left. {p.a._latex()} \nmid {p.b._latex()} \right."
-            return rf"\frac{{{p.b._latex()}}}{{{p.a._latex()}}} \not\in {p.quotient_set._latex()}"
+                return rf"\left. {wrap_expr(p.a)} \nmid {wrap_expr(p.b)} \right."
+            return rf"\frac{{{wrap_expr(p.b)}}}{{{wrap_expr(p.a)}}} \not\in {wrap_expr(p.quotient_set)}"
         elif isinstance(self.negated, BinaryRelation):
             p = self.negated
-            return rf"{p.left._latex()} \not {p.infix_symbol_latex} {p.right._latex()}"
+            return (
+                rf"{wrap_expr(p.left)} \not {p.infix_symbol_latex} {wrap_expr(p.right)}"
+            )
 
-        # only wrap the innermost proposition in parentheses if it is not atomic
-        # and not a quantified proposition
-        inner_part = (
-            rf"\left({self.negated._latex()}\right)"
-            if (not self.negated.is_atomic)
-            and (not isinstance(self.negated, (_Quantified, Not)))
-            else self.negated._latex()
-        )
+        if settings["SHOW_ALL_PARENTHESES"]:
+            wrap = lambda p: rf"\left({p._latex()}\right)"
+        else:
+            # only wrap the innermost proposition in parentheses if it is not atomic
+            # and not a quantified proposition
+            wrap = lambda p: (
+                rf"\left({p._latex()}\right)"
+                if (not p.is_atomic) and (not isinstance(p, (_Quantified, Not)))
+                else p._latex()
+            )
+        inner_part = wrap(self.negated)
         return rf"\neg {inner_part}"
 
     def __repr__(self) -> str:

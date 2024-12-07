@@ -3,7 +3,6 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import TYPE_CHECKING, Any, Callable, Iterable, TypeAlias, TypeVar
 
-from pylogic import Term, Unevaluated
 from pylogic.expressions.expr import BinaryExpression, Expr
 from pylogic.proposition.and_ import And
 from pylogic.proposition.implies import Implies
@@ -12,6 +11,7 @@ from pylogic.proposition.quantified.forall import ForallInSet
 from pylogic.structures.ordered_set import OrderedSet
 from pylogic.structures.ringlike.field import Field
 from pylogic.structures.set_ import Set
+from pylogic.typing import Term, Unevaluated
 from pylogic.variable import Variable
 
 if TYPE_CHECKING:

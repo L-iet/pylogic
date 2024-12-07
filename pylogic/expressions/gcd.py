@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 
 import sympy as sp
 
-from pylogic import PBasic, PythonNumeric, Term
 from pylogic.expressions.expr import Expr, to_sympy
+from pylogic.typing import PBasic, PythonNumeric, Term
 
 if TYPE_CHECKING:
     from pylogic.constant import Constant

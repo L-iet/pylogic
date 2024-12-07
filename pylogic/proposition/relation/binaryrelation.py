@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Callable, Generic, Self, TypeVar
 
-from pylogic import Term
 from pylogic.helpers import replace
 from pylogic.proposition.proposition import get_assumptions
 from pylogic.proposition.relation.relation import Relation
+from pylogic.typing import Term
 
 C = TypeVar("C", bound="BinaryRelation")
 T = TypeVar("T", bound=Term)
@@ -50,14 +50,22 @@ class BinaryRelation(Relation, Generic[T, U]):
         return f"{self.__class__.__name__}({self.left}, {self.right})"
 
     def __str__(self) -> str:
-        return f"{self.left} {self.infix_symbol} {self.right}"
+        from pylogic.enviroment_settings.settings import settings
+
+        if settings["SHOW_ALL_PARENTHESES"]:
+            wrap = lambda p: f"({p})"
+        else:
+            wrap = lambda p: str(p)
+        return f"{wrap(self.left)} {self.infix_symbol} {wrap(self.right)}"
 
     def _latex(self, printer=None) -> str:
-        from pylogic.helpers import latex
+        from pylogic.enviroment_settings.settings import settings
 
-        left_latex = latex(self.left)
-        right_latex = latex(self.right)
-        return f"{left_latex} {self.infix_symbol_latex} {right_latex}"
+        if settings["SHOW_ALL_PARENTHESES"]:
+            wrap = lambda p: rf"\left({p._latex()}\right)"
+        else:
+            wrap = lambda p: p._latex()
+        return f"{wrap(self.left)} {self.infix_symbol_latex} {wrap(self.right)}"
 
     def _set_is_inferred(self, value: bool) -> None:
         super()._set_is_inferred(value)

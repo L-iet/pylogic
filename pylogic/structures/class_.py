@@ -286,7 +286,7 @@ def class_(n: int) -> Collection[Class[int]]:
 
 # from pylogic.proposition.not_ import Not
 # The class of all sets
-Sets = class_(1)(name="Sets", containment_function=lambda x: isinstance(x, Set))
+Sets = class_(1)(name="Sets", containment_function=lambda x: x.is_set)
 
 
 # The class of all sets that do not contain themselves
@@ -294,3 +294,7 @@ Sets = class_(1)(name="Sets", containment_function=lambda x: isinstance(x, Set))
 #     name="SetsThatDontContainThemselves",
 #     predicate=lambda x: Sets.contains(x).and_(Not(x.contains(x))),
 # )
+
+
+def Class(n: int, *args, **kwargs) -> Collection[Class[int]]:
+    return class_(n)(*args, **kwargs)
