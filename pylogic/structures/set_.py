@@ -1145,3 +1145,13 @@ class SeqSet(Set):
                 replace_dict, positions=positions, equal_check=equal_check
             )
         )
+
+
+@overload
+def sets(name: str, *elements: Term, **kwargs) -> Set: ...
+@overload
+def sets(*names: str, **kwargs) -> tuple[Set, ...]: ...
+def sets(*names, **kwargs) -> Set | tuple[Set, ...]:
+    if len(names) == 1:
+        return Set(*names, **kwargs)
+    return tuple(Set(name, **kwargs) for name in names)

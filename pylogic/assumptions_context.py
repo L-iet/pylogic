@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, overload
 
 if TYPE_CHECKING:
     from pylogic.proposition.proposition import Proposition
@@ -35,8 +35,21 @@ class AssumptionsContext:
     def var(self, *args, **kwargs) -> Variable:
         return self.variable(*args, **kwargs)
 
-    def variables(self, *names: str, **kwargs) -> list[Variable]:
-        return [self.variable(name, **kwargs) for name in names]
+    @overload
+    def variables(self, name: str, **kwargs) -> Variable: ...
+    @overload
+    def variables(*names: str, **kwargs) -> tuple[Variable, ...]: ...
+    def variables(self, *names: str, **kwargs) -> Variable | tuple[Variable, ...]:
+        if len(names) == 1:
+            return self.variable(names[0], **kwargs)
+        return tuple(self.variable(name, **kwargs) for name in names)
+
+    @overload
+    def vars(self, name: str, **kwargs) -> Variable: ...
+    @overload
+    def vars(*names: str, **kwargs) -> tuple[Variable, ...]: ...
+    def vars(self, *names: str, **kwargs) -> Variable | tuple[Variable]:
+        return self.variables(*names, **kwargs)
 
     def _build_proven(self, conclusion: Proposition) -> Proposition:
         """
@@ -228,11 +241,21 @@ def ctx_var(*args, **kwargs) -> Variable:
     return context_variable(*args, **kwargs)
 
 
-def context_variables(*names: str, **kwargs) -> list[Variable]:
-    return [context_variable(name, **kwargs) for name in names]
+@overload
+def context_variables(name: str, **kwargs) -> Variable: ...
+@overload
+def context_variables(*names: str, **kwargs) -> tuple[Variable, ...]: ...
+def context_variables(*names: str, **kwargs) -> Variable | tuple[Variable, ...]:
+    if len(names) == 1:
+        return context_variable(names[0], **kwargs)
+    return tuple(context_variable(name, **kwargs) for name in names)
 
 
-def ctx_vars(*names: str, **kwargs) -> list[Variable]:
+@overload
+def ctx_vars(name: str, **kwargs) -> Variable: ...
+@overload
+def ctx_vars(*names: str, **kwargs) -> tuple[Variable, ...]: ...
+def ctx_vars(*names: str, **kwargs) -> Variable | tuple[Variable, ...]:
     return context_variables(*names, **kwargs)
 
 

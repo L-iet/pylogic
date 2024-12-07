@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Generic, Self
 from typing import Sequence as TSequence
-from typing import TypeVar, cast
+from typing import TypeVar, cast, overload
 
 from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
 from pylogic.typing import PythonNumeric, Term
@@ -95,6 +95,8 @@ class Sequence(Generic[T]):
         )
 
         self._is_set: bool | None = self._get_init_assump_attr("set_", kwargs, None)
+        if self._is_set is None:
+            self._is_set = self._get_init_assump_attr("set", kwargs, None)
         self.is_graph: bool | None = not self.is_set and kwargs.get("graph", None)
         self.is_pair: bool | None = self.is_graph or kwargs.get("pair", None)
         self.is_list_: bool | None = self.is_pair or kwargs.get("list_", None)
@@ -149,7 +151,7 @@ class Sequence(Generic[T]):
     ) -> bool | None:
         if (kwarg_val := kwargs.get(attr, None)) is not None:
             return kwarg_val
-        return getattr(nth_term_expr, f"is_{attr}") if nth_term_expr else None
+        return getattr(nth_term_expr, f"is_{attr}", None) if nth_term_expr else None
 
     @property
     def is_natural(self) -> bool | None:
@@ -635,3 +637,16 @@ class Triple(FiniteSequence[T]):
 
 
 self = Sequence("_PylogicSelfSeq")
+
+
+@overload
+def sequences(name: str, **kwargs) -> Sequence: ...
+@overload
+def sequences(*names: str, **kwargs) -> tuple[Sequence, ...]: ...
+def sequences(*names: str, **kwargs) -> Sequence | tuple[Sequence, ...]:
+    """
+    Create one or more sequences.
+    """
+    if len(names) == 1:
+        return Sequence(names[0], **kwargs)
+    return tuple(Sequence(name, **kwargs) for name in names)

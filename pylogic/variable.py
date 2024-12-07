@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, cast, overload
 
 from pylogic.symbol import Symbol
 from pylogic.typing import Term
@@ -116,8 +116,14 @@ def unbind(*variables: Variable) -> None:
         variable.unbind()
 
 
-def variables(*names: str, **kwargs) -> tuple[Variable, ...]:
+@overload
+def variables(name: str, **kwargs) -> Variable: ...
+@overload
+def variables(*names: str, **kwargs) -> tuple[Variable, ...]: ...
+def variables(*names: str, **kwargs) -> Variable | tuple[Variable, ...]:
     """Creates variables."""
+    if len(names) == 1:
+        return Variable(names[0], **kwargs)
     return tuple(Variable(name, **kwargs) for name in names)
 
 

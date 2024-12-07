@@ -233,13 +233,19 @@ class Constant(Symbol, Generic[T]):
         return self
 
 
+@overload
+def constants(value: T, **kwargs) -> Constant[T]: ...
+@overload
+def constants(*args: T, **kwargs) -> tuple[Constant[T], ...]: ...
 def constants(
     *args: T,
     **kwargs: T,
-) -> tuple[Constant[T], ...]:
+) -> Constant | tuple[Constant[T], ...]:
     """
     Create multiple Constant instances at once.
     """
+    if len(args) == 1:
+        return Constant(args[0], **kwargs)
     return tuple(Constant(value, **kwargs) for value in args)
 
 

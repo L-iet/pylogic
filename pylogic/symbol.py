@@ -106,7 +106,7 @@ class Symbol:
         self._is_nonnegative: bool | None = kwargs.get("nonnegative", None)
         self._is_even: bool | None = kwargs.get("even", None)
 
-        self._is_set: bool | None = kwargs.get("set_", None)
+        self._is_set: bool | None = kwargs.get("set_", kwargs.get("set", None))
         self.is_graph: bool | None = not self.is_set and kwargs.get("graph", None)
         self.is_pair: bool | None = self.is_graph or kwargs.get("pair", None)
         self.is_list_: bool | None = self.is_pair or kwargs.get("list_", None)
