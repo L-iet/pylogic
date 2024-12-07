@@ -63,8 +63,9 @@ class Constant(Symbol, Generic[T]):
         )
         if isinstance(value, Constant):
             value = value.value
-        super().__new_init__(str(value), *args, **kwargs)
+        # __init__ depends on value: __init__ -> add to set -> hash -> __eq__ -> .value
         self.value: T = cast(T, value)
+        super().__new_init__(str(value), *args, **kwargs)
         # if the constant is created from a proven existential statement
         # it won't be equal to any other constant
         self._from_existential_instance = kwargs.get(

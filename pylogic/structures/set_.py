@@ -89,6 +89,8 @@ class Set(metaclass=Collection):
         if len(args) == 0 and len(kwargs) == 0:
             global EmptySet
             return EmptySet
+        if kwargs.pop("finite", None):
+            return FiniteSet(*args, **kwargs)
         return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
