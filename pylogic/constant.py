@@ -29,6 +29,17 @@ T = TypeVar("T", bound=str | int | float | complex | Fraction | Decimal)
 
 
 class Constant(Symbol, Generic[T]):
+    def __new__(cls, value: T, *args, **kwargs) -> Constant[T]:
+        if kwargs.get("set_", kwargs.get("set", False)):
+            from pylogic.structures.set_ import Set
+
+            return Set(value, *args, **kwargs)
+        if kwargs.get("sequence", False):
+            from pylogic.structures.sequence import Sequence
+
+            return Sequence(value, *args, **kwargs)
+        return object.__new__(cls)
+
     def __init__(self, value: T, *args, **kwargs) -> None:
 
         # although value can be numeric, it gets routed back
