@@ -27,7 +27,7 @@ from pylogic.constant import Constant, constants
 from pylogic.enviroment_settings.set_universe import set_universe
 from pylogic.enviroment_settings.settings import settings
 from pylogic.expressions.abs import Abs
-from pylogic.expressions.expr import Add, Mul, Pow, add, cbrt, mul, sqrt
+from pylogic.expressions.expr import Add, Expr, Mul, Pow, add, cbrt, mul, sqrt
 from pylogic.expressions.function import CalledFunction, Function, self
 from pylogic.expressions.gcd import Gcd
 from pylogic.expressions.limit import Limit
