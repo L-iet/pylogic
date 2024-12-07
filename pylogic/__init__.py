@@ -99,6 +99,7 @@ from pylogic.structures.sequence import (
     Sequence,
     Triple,
     self,
+    sequences,
 )
 from pylogic.structures.set_ import (
     CartesPower,
@@ -116,6 +117,7 @@ from pylogic.structures.set_ import (
     SingletonEmpty,
     Union,
     UniversalSet,
+    sets,
 )
 from pylogic.syntax_helpers.if_ import If, if_
 from pylogic.theories.natural_numbers import Prime
