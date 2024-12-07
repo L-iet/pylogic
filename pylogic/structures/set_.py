@@ -249,7 +249,11 @@ class Set(metaclass=Collection):
 
     @property
     def is_nonnegative(self) -> bool:
-        return self._is_nonnegative
+        return (
+            self._is_nonnegative
+            if self._is_nonnegative is not None
+            else (self._is_natural or None)
+        )
 
     @is_nonnegative.setter
     def is_nonnegative(self, value: bool) -> None:

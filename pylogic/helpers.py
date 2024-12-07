@@ -780,6 +780,10 @@ def _add_assumption_attributes(term: Symbol | Sequence, kwargs) -> None:
             raise ValueError(
                 "Contradictory assumptions: A positive number cannot be zero"
             )
+    if kwargs.get("positive", None) is False:
+        if term._is_real:
+            term.is_nonpositive = True
+
     if kwargs.get("negative", None):
         term.is_real = True
         term.is_nonpositive = True
@@ -789,6 +793,9 @@ def _add_assumption_attributes(term: Symbol | Sequence, kwargs) -> None:
             raise ValueError(
                 "Contradictory assumptions: A negative number cannot be zero"
             )
+    if kwargs.get("negative", None) is False:
+        if term._is_real:
+            term.is_nonnegative = True
     if kwargs.get("odd", None):
         term.is_integer = True
         if term._is_even is None:

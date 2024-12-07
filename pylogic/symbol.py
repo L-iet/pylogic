@@ -241,9 +241,12 @@ class Symbol:
 
     @property
     def is_nonnegative(self) -> bool | None:
-        from pylogic.helpers import ternary_or
 
-        return ternary_or(self._is_nonnegative, self._is_natural)
+        return (
+            self._is_nonnegative
+            if self._is_nonnegative is not None
+            else (self._is_natural or None)
+        )
 
     @is_nonnegative.setter
     def is_nonnegative(self, value: bool | None):
