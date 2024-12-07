@@ -678,6 +678,19 @@ def _add_assumption_props(term: Term, kwargs: dict[str, Any]) -> None:
     if "odd" in explicit_assumptions_attrs:
         explicit_assumptions_attrs.add("even")
 
+    term_is_real = kwargs.get(
+        "real",
+        kwargs.get("rational", kwargs.get("integer", kwargs.get("natural", None))),
+    )
+    if kwargs.get("nonpositive", None) is False and term_is_real:
+        kwargs["positive"] = True
+    if kwargs.get("nonnegative", None) is False and term_is_real:
+        kwargs["negative"] = True
+    if kwargs.get("even", None) is False and kwargs.get(
+        "integer", kwargs.get("natural", None)
+    ):
+        kwargs["odd"] = True
+
     # for sequences & sets
     if term.is_sequence or term.is_set:
         term.properties_of_each_term = []
@@ -781,8 +794,12 @@ def _add_assumption_attributes(term: Symbol | Sequence, kwargs) -> None:
                 "Contradictory assumptions: A positive number cannot be zero"
             )
     if kwargs.get("positive", None) is False:
-        if term._is_real:
+        if term._is_real and term._is_nonpositive is None:
             term.is_nonpositive = True
+        elif term._is_real and term._is_nonpositive is False:
+            raise ValueError(
+                "Contradictory assumptions: A number must be positive or nonpositive"
+            )
 
     if kwargs.get("negative", None):
         term.is_real = True
@@ -794,14 +811,23 @@ def _add_assumption_attributes(term: Symbol | Sequence, kwargs) -> None:
                 "Contradictory assumptions: A negative number cannot be zero"
             )
     if kwargs.get("negative", None) is False:
-        if term._is_real:
+        if term._is_real and term._is_nonnegative is None:
             term.is_nonnegative = True
+        elif term._is_real and term._is_nonnegative is False:
+            raise ValueError(
+                "Contradictory assumptions: A number must be negative or nonnegative"
+            )
     if kwargs.get("odd", None):
         term.is_integer = True
         if term._is_even is None:
             term.is_even = False
         elif term._is_even is True:
             raise ValueError("Contradictory assumptions: An odd number cannot be even")
+    if kwargs.get("odd", None) is False:
+        if term._is_integer and term._is_even is None:
+            term.is_even = True
+        elif term._is_integer and term._is_even is False:
+            raise ValueError("Contradictory assumptions: A number must be odd or even")
 
     if term._is_zero or term._is_nonpositive or term._is_nonnegative:
         if term._is_real is None:
