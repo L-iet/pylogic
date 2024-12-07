@@ -15,9 +15,7 @@ with AssumptionsContext() as ctx:
     two_prime = Naturals.prime(2).by_inspection()
 
     p2_eq_2q2 = ((rt2_eq_p_over_q**2) * q**2).evaluate().symmetric()
-    two_div_p2, _ = Integers.theorems.division_theorems.product(p**2, 2, q**2)(
-        p2_eq_2q2
-    )
+    two_div_p2, _ = Integers.theorems.division_theorems.mul(p**2, 2, q**2)(p2_eq_2q2)
     two_div_p = Integers.theorems.division_theorems.prime.prime_divides_power(2, p, 2)(
         two_prime, two_div_p2
     )
@@ -26,9 +24,7 @@ with AssumptionsContext() as ctx:
     q2_eq_2k2 = (p_eq_2k**2).substitute("right", p2_eq_2q2) / 2
     q2_eq_2k2 = q2_eq_2k2.evaluate()
 
-    two_div_q2, _ = Integers.theorems.division_theorems.product(q**2, 2, k**2)(
-        q2_eq_2k2
-    )
+    two_div_q2, _ = Integers.theorems.division_theorems.mul(q**2, 2, k**2)(q2_eq_2k2)
     two_div_q = Integers.theorems.division_theorems.prime.prime_divides_power(2, q, 2)(
         two_prime, two_div_q2
     )
