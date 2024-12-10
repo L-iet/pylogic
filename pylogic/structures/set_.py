@@ -79,6 +79,7 @@ class Set(metaclass=Collection):
         "latex_name": "latex_name",
         "knowledge_base": "knowledge_base",
         "finite": "_is_finite",
+        # TODO: add other properties eg positive, negative, even, odd, etc.
     }
 
     @overload
@@ -106,8 +107,6 @@ class Set(metaclass=Collection):
     def __copy_init__(self, *args, **kwargs):
         # name must be in kwargs
         self.__dict__.update(kwargs)
-        self._init_args = args
-        self._init_kwargs = kwargs
 
     def __new_init__(
         self,
@@ -154,6 +153,8 @@ class Set(metaclass=Collection):
         self._is_natural = kwargs.get("natural", None)
         self._is_nonnegative = kwargs.get("nonnegative", None)
         self._is_nonpositive = kwargs.get("nonpositive", None)
+        self._is_positive: bool | None = kwargs.get("positive", None)
+        self._is_negative: bool | None = kwargs.get("negative", None)
         self._is_even = kwargs.get("even", None)
         self._is_zero = kwargs.get("zero", None)
 
@@ -164,8 +165,12 @@ class Set(metaclass=Collection):
         # no set of sequences for now
         # AllFiniteSequences is special case
         self._is_sequence = False
+        self._is_list = False
 
         self.knowledge_base: set[Proposition] = knowledge_base or set()
+
+        self.properties_of_each_term: list[Proposition] = []
+
         # _add_assumption_props needs knowledge_base
         _add_assumption_props(self, kwargs)
 
@@ -192,114 +197,188 @@ class Set(metaclass=Collection):
         self._is_copy = False
 
     @property
-    def is_set(self) -> bool:
+    def is_natural(self) -> bool | None:
+        from pylogic.helpers import ternary_and, ternary_if_not_none
+
+        return ternary_if_not_none(
+            self._is_natural, ternary_and(self._is_integer, self._is_nonnegative)
+        )
+
+    @is_natural.setter
+    def is_natural(self, value: bool | None):
+        self._is_natural = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_integer(self) -> bool | None:
+        from pylogic.helpers import ternary_or
+
+        return ternary_or(self._is_integer, self._is_natural)
+
+    @is_integer.setter
+    def is_integer(self, value: bool | None):
+        self._is_integer = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_rational(self) -> bool | None:
+        from pylogic.helpers import ternary_or
+
+        return ternary_or(self._is_rational, self.is_integer)
+
+    @is_rational.setter
+    def is_rational(self, value: bool | None):
+        self._is_rational = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_real(self) -> bool | None:
+        from pylogic.helpers import ternary_or
+
+        return ternary_or(self._is_real, self.is_rational)
+
+    @is_real.setter
+    def is_real(self, value: bool | None):
+        self._is_real = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_zero(self) -> bool | None:
+        return self._is_zero
+
+    @is_zero.setter
+    def is_zero(self, value: bool | None):
+        self._is_zero = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_nonzero(self) -> bool | None:
+        from pylogic.helpers import ternary_not
+
+        return ternary_not(self.is_zero)
+
+    @property
+    def is_even(self) -> bool | None:
+        return self._is_even
+
+    @is_even.setter
+    def is_even(self, value: bool | None):
+        self._is_even = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_odd(self) -> bool | None:
+        from pylogic.helpers import ternary_not
+
+        return ternary_not(self.is_even)
+
+    @property
+    def is_positive(self) -> bool | None:
+        from pylogic.helpers import ternary_and, ternary_if_not_none, ternary_not
+
+        return ternary_if_not_none(
+            self._is_positive,
+            ternary_and(ternary_not(self.is_zero), self.is_nonnegative),
+        )
+
+    @is_positive.setter
+    def is_positive(self, value: bool | None) -> None:
+        self._is_positive = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_negative(self) -> bool | None:
+        from pylogic.helpers import ternary_and, ternary_if_not_none, ternary_not
+
+        return ternary_if_not_none(
+            self._is_negative,
+            ternary_and(ternary_not(self.is_zero), self.is_nonpositive),
+        )
+
+    @is_negative.setter
+    def is_negative(self, value: bool | None) -> None:
+        self._is_negative = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_nonpositive(self) -> bool | None:
+        from pylogic.helpers import ternary_and, ternary_if_not_none, ternary_not
+
+        # must use ._is_nonpositive to avoid infinite recursion
+        # and .is_real for correctness
+        return ternary_if_not_none(
+            self._is_nonpositive,
+            ternary_and(self.is_real, ternary_not(self._is_positive)),
+        )
+
+    @is_nonpositive.setter
+    def is_nonpositive(self, value: bool | None):
+        self._is_nonpositive = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_nonnegative(self) -> bool | None:
+        from pylogic.helpers import ternary_and, ternary_if_not_none, ternary_not
+
+        # see is_nonpositive
+        return ternary_if_not_none(
+            self._is_nonnegative,
+            ternary_if_not_none(
+                self._is_natural or None,
+                ternary_and(self.is_real, ternary_not(self._is_negative)),
+            ),
+        )
+
+    @is_nonnegative.setter
+    def is_nonnegative(self, value: bool | None):
+        self._is_nonnegative = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_set(self) -> Literal[True]:
         return True
 
     @is_set.setter
-    def is_set(self, value: bool) -> None:
-        pass
+    def is_set(self, value: bool | None):
+        return
 
     @property
-    def is_sequence(self) -> bool:
+    def is_list(self) -> bool | None:
+        return self._is_list
+
+    @property
+    def is_sequence(self) -> bool | None:
         return self._is_sequence
 
     @is_sequence.setter
-    def is_sequence(self, value: bool) -> None:
+    def is_sequence(self, value: bool | None):
         self._is_sequence = value
+        # parent expressions don't currently depend
+        # on this property
+        # for parent in self.parent_exprs:
+        #     parent.update_properties()
 
     @property
     def is_finite(self) -> bool | None:
         return self._is_finite
 
     @is_finite.setter
-    def is_finite(self, value: bool) -> None:
+    def is_finite(self, value: bool | None):
         self._is_finite = value
-
-    @property
-    def is_real(self) -> bool:
-        return self._is_real
-
-    @is_real.setter
-    def is_real(self, value: bool) -> None:
-        self._is_real = value
-
-    @property
-    def is_rational(self) -> bool:
-        return self._is_rational
-
-    @is_rational.setter
-    def is_rational(self, value: bool) -> None:
-        self._is_rational = value
-
-    @property
-    def is_integer(self) -> bool:
-        return self._is_integer
-
-    @is_integer.setter
-    def is_integer(self, value: bool) -> None:
-        self._is_integer = value
-
-    @property
-    def is_natural(self) -> bool:
-        return self._is_natural
-
-    @is_natural.setter
-    def is_natural(self, value: bool) -> None:
-        self._is_natural = value
-
-    @property
-    def is_nonnegative(self) -> bool:
-        return (
-            self._is_nonnegative
-            if self._is_nonnegative is not None
-            else (self._is_natural or None)
-        )
-
-    @is_nonnegative.setter
-    def is_nonnegative(self, value: bool) -> None:
-        self._is_nonnegative = value
-
-    @property
-    def is_nonpositive(self) -> bool:
-        return self._is_nonpositive
-
-    @is_nonpositive.setter
-    def is_nonpositive(self, value: bool) -> None:
-        self._is_nonpositive = value
-
-    @property
-    def is_even(self) -> bool:
-        return self._is_even
-
-    @is_even.setter
-    def is_even(self, value: bool) -> None:
-        self._is_even = value
-
-    @property
-    def is_zero(self) -> bool:
-        return self._is_zero
-
-    @is_zero.setter
-    def is_zero(self, value: bool) -> None:
-        self._is_zero = value
-
-    @property
-    def is_positive(self) -> bool:
-        from pylogic.helpers import ternary_and, ternary_not
-
-        return ternary_and(self.is_nonnegative, ternary_not(self.is_zero))
-
-    @property
-    def is_negative(self) -> bool:
-        from pylogic.helpers import ternary_and, ternary_not
-
-        return ternary_and(self.is_nonpositive, ternary_not(self.is_zero))
-
-    @property
-    def is_odd(self) -> bool:
-        from pylogic.helpers import ternary_not
-
-        return ternary_not(self.is_even)
+        # parent expressions don't currently depend
+        # on this property
+        # for parent in self.parent_exprs:
+        #     parent.update_properties()
 
     def illegal_occur_check(
         self,
@@ -1049,92 +1128,190 @@ class SeqSet(Set):
         return f"SeqSet({self.sequence!r})"
 
     @property
-    def is_sequence(self) -> bool:
+    def is_natural(self) -> bool | None:
+        from pylogic.helpers import ternary_and, ternary_if_not_none
+
+        return ternary_if_not_none(
+            self._is_natural, ternary_and(self._is_integer, self._is_nonnegative)
+        )
+
+    @is_natural.setter
+    def is_natural(self, value: bool | None):
+        self._is_natural = value
+        self.sequence.is_natural = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_integer(self) -> bool | None:
+        from pylogic.helpers import ternary_or
+
+        return ternary_or(self._is_integer, self._is_natural)
+
+    @is_integer.setter
+    def is_integer(self, value: bool | None):
+        self._is_integer = value
+        self.sequence.is_integer = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_rational(self) -> bool | None:
+        from pylogic.helpers import ternary_or
+
+        return ternary_or(self._is_rational, self.is_integer)
+
+    @is_rational.setter
+    def is_rational(self, value: bool | None):
+        self._is_rational = value
+        self.sequence.is_rational = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_real(self) -> bool | None:
+        from pylogic.helpers import ternary_or
+
+        return ternary_or(self._is_real, self.is_rational)
+
+    @is_real.setter
+    def is_real(self, value: bool | None):
+        self._is_real = value
+        self.sequence.is_real = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_zero(self) -> bool | None:
+        return self._is_zero
+
+    @is_zero.setter
+    def is_zero(self, value: bool | None):
+        self._is_zero = value
+        self.sequence.is_zero = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_nonzero(self) -> bool | None:
+        from pylogic.helpers import ternary_not
+
+        return ternary_not(self.is_zero)
+
+    @property
+    def is_even(self) -> bool | None:
+        return self._is_even
+
+    @is_even.setter
+    def is_even(self, value: bool | None):
+        self._is_even = value
+        self.sequence.is_even = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_odd(self) -> bool | None:
+        from pylogic.helpers import ternary_not
+
+        return ternary_not(self.is_even)
+
+    @property
+    def is_positive(self) -> bool | None:
+        from pylogic.helpers import ternary_and, ternary_if_not_none, ternary_not
+
+        return ternary_if_not_none(
+            self._is_positive,
+            ternary_and(ternary_not(self.is_zero), self.is_nonnegative),
+        )
+
+    @is_positive.setter
+    def is_positive(self, value: bool | None) -> None:
+        self._is_positive = value
+        self.sequence.is_positive = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_negative(self) -> bool | None:
+        from pylogic.helpers import ternary_and, ternary_if_not_none, ternary_not
+
+        return ternary_if_not_none(
+            self._is_negative,
+            ternary_and(ternary_not(self.is_zero), self.is_nonpositive),
+        )
+
+    @is_negative.setter
+    def is_negative(self, value: bool | None) -> None:
+        self._is_negative = value
+        self.sequence.is_negative = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_nonpositive(self) -> bool | None:
+        from pylogic.helpers import ternary_and, ternary_if_not_none, ternary_not
+
+        # must use ._is_nonpositive to avoid infinite recursion
+        # and .is_real for correctness
+        return ternary_if_not_none(
+            self._is_nonpositive,
+            ternary_and(self.is_real, ternary_not(self._is_positive)),
+        )
+
+    @is_nonpositive.setter
+    def is_nonpositive(self, value: bool | None):
+        self._is_nonpositive = value
+        self.sequence.is_nonpositive = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_nonnegative(self) -> bool | None:
+        from pylogic.helpers import ternary_and, ternary_if_not_none, ternary_not
+
+        # see is_nonpositive
+        return ternary_if_not_none(
+            self._is_nonnegative,
+            ternary_if_not_none(
+                self._is_natural or None,
+                ternary_and(self.is_real, ternary_not(self._is_negative)),
+            ),
+        )
+
+    @is_nonnegative.setter
+    def is_nonnegative(self, value: bool | None):
+        self._is_nonnegative = value
+        self.sequence.is_nonnegative = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_list(self) -> bool | None:
+        return self._is_list
+
+    @property
+    def is_sequence(self) -> bool | None:
         return self._is_sequence
 
     @is_sequence.setter
-    def is_sequence(self, value: bool) -> None:
+    def is_sequence(self, value: bool | None):
         self._is_sequence = value
+        # parent expressions don't currently depend
+        # on this property
+        # for parent in self.parent_exprs:
+        #     parent.update_properties()
 
     @property
     def is_finite(self) -> bool | None:
         return self._is_finite
 
     @is_finite.setter
-    def is_finite(self, value: bool) -> None:
+    def is_finite(self, value: bool | None):
         self._is_finite = value
-
-    @property
-    def is_real(self) -> bool:
-        return self._is_real
-
-    @is_real.setter
-    def is_real(self, value: bool) -> None:
-        self._is_real = value
-        self.sequence.is_real = value
-
-    @property
-    def is_rational(self) -> bool:
-        return self._is_rational
-
-    @is_rational.setter
-    def is_rational(self, value: bool) -> None:
-        self._is_rational = value
-        self.sequence.is_rational = value
-
-    @property
-    def is_integer(self) -> bool:
-        return self._is_integer
-
-    @is_integer.setter
-    def is_integer(self, value: bool) -> None:
-        self._is_integer = value
-        self.sequence.is_integer = value
-
-    @property
-    def is_natural(self) -> bool:
-        return self._is_natural
-
-    @is_natural.setter
-    def is_natural(self, value: bool) -> None:
-        self._is_natural = value
-        self.sequence.is_natural = value
-
-    @property
-    def is_nonnegative(self) -> bool:
-        return self._is_nonnegative
-
-    @is_nonnegative.setter
-    def is_nonnegative(self, value: bool) -> None:
-        self._is_nonnegative = value
-        self.sequence.is_nonnegative = value
-
-    @property
-    def is_nonpositive(self) -> bool:
-        return self._is_nonpositive
-
-    @is_nonpositive.setter
-    def is_nonpositive(self, value: bool) -> None:
-        self._is_nonpositive = value
-        self.sequence.is_nonpositive = value
-
-    @property
-    def is_even(self) -> bool:
-        return self._is_even
-
-    @is_even.setter
-    def is_even(self, value: bool) -> None:
-        self._is_even = value
-        self.sequence.is_even = value
-
-    @property
-    def is_zero(self) -> bool:
-        return self._is_zero
-
-    @is_zero.setter
-    def is_zero(self, value: bool) -> None:
-        self._is_zero = value
-        self.sequence.is_zero = value
+        # parent expressions don't currently depend
+        # on this property
+        # for parent in self.parent_exprs:
+        #     parent.update_properties()
 
     def replace(
         self,

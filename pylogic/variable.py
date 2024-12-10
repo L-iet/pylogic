@@ -55,6 +55,9 @@ class Variable(Symbol):
         self.is_intersection: bool | None = None
         self.is_union: bool | None = None
 
+        # for variable sequences
+        self.nth_term = None
+
     def __contains__(self, item: Any) -> bool:
         """
         For variable sets.

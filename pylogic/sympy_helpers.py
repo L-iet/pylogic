@@ -98,6 +98,20 @@ class FromSympyError(ValueError):
     pass
 
 
+SYMPY_ASSUMPTIONS = {
+    "real",
+    "rational",
+    "integer",
+    "even",
+    "odd",
+    "zero",
+    "nonpositive",
+    "nonnegative",
+    "positive",
+    "negative",
+}
+
+
 @overload
 def sympy_to_pylogic(expr: sp.Integer) -> Constant[int]: ...
 @overload

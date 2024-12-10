@@ -21,11 +21,21 @@ class SequenceTerm(Expr, Generic[T]):
     # Function MinElement Abs SequenceTerm Pow Prod Mul Sum Add Binary_Expr
     # Custom_Expr Piecewise Relation(eg <, subset)
     _precedence = 3
-    is_atomic = True
+    _is_wrapped = True
 
-    def __init__(self, sequence: Sequence[T] | Variable, index: Term) -> None:
-        super().__init__(sequence, index)
-        self.sequence: Sequence[T] | Variable = sequence
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.mutable_attrs_to_copy = self.mutable_attrs_to_copy + [
+            "sequence",
+            "index",
+            "name",
+            "elements",
+        ]
+
+    def __new_init__(self, sequence: Sequence[T] | Variable, index: Term) -> None:
+        super().__new_init__(sequence, index)
+        self.sequence: Sequence[T] | Variable = self.args[0]  # type: ignore
+        self.sequence.parent_exprs.append(self)
         self.index = self.args[1]
 
         # for sequence of sets.

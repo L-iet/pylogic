@@ -52,9 +52,12 @@ class Expr(ABC):
         "_is_zero",
         "_is_nonpositive",
         "_is_nonnegative",
+        "_is_positive",
+        "_is_negative",
         "_is_even",
         "_is_sequence",
         "_is_set",
+        "_is_list",
         "_is_finite",
         "args",
         "variables",
@@ -85,8 +88,7 @@ class Expr(ABC):
         self.parent_exprs = []
 
         self.__dict__.update(kwargs)
-        self._init_args = ()
-        self._init_kwargs = kwargs
+        # _init_args and _init_kwargs are already set in kwargs
 
     def __new_init__(
         self,
@@ -109,10 +111,13 @@ class Expr(ABC):
         self._is_zero: bool | None = None
         self._is_nonpositive: bool | None = None
         self._is_nonnegative: bool | None = None
+        self._is_positive: bool | None = None
+        self._is_negative: bool | None = None
         self._is_even: bool | None = None
         self._is_sequence: bool | None = None
         self._is_finite: bool | None = None
-        self._is_set: bool = False
+        self._is_set: bool | None = None
+        self._is_list: bool | None = None
 
         # list of expressions that contain this expression
         # not copied
@@ -121,46 +126,52 @@ class Expr(ABC):
         self.update_properties()
 
     @property
-    def is_real(self) -> bool | None:
-        return self._is_real
+    def is_natural(self) -> bool | None:
+        from pylogic.helpers import ternary_and, ternary_if_not_none
 
-    @is_real.setter
-    def is_real(self, value: bool | None) -> None:
-        self._is_real = value
-        for parent in self.parent_exprs:
-            parent.update_properties()
+        return ternary_if_not_none(
+            self._is_natural, ternary_and(self._is_integer, self._is_nonnegative)
+        )
 
-    @property
-    def is_rational(self) -> bool | None:
-        return self._is_rational
-
-    @is_rational.setter
-    def is_rational(self, value: bool | None) -> None:
-        self._is_rational = value
+    @is_natural.setter
+    def is_natural(self, value: bool | None):
+        self._is_natural = value
         for parent in self.parent_exprs:
             parent.update_properties()
 
     @property
     def is_integer(self) -> bool | None:
-        return self._is_integer
+        from pylogic.helpers import ternary_or
+
+        return ternary_or(self._is_integer, self._is_natural)
 
     @is_integer.setter
-    def is_integer(self, value: bool | None) -> None:
+    def is_integer(self, value: bool | None):
         self._is_integer = value
         for parent in self.parent_exprs:
             parent.update_properties()
 
     @property
-    def is_natural(self) -> bool | None:
-        from pylogic.helpers import ternary_and, ternary_or
+    def is_rational(self) -> bool | None:
+        from pylogic.helpers import ternary_or
 
-        return ternary_or(
-            self._is_natural, ternary_and(self._is_integer, self._is_nonnegative)
-        )
+        return ternary_or(self._is_rational, self.is_integer)
 
-    @is_natural.setter
-    def is_natural(self, value: bool | None) -> None:
-        self._is_natural = value
+    @is_rational.setter
+    def is_rational(self, value: bool | None):
+        self._is_rational = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_real(self) -> bool | None:
+        from pylogic.helpers import ternary_or
+
+        return ternary_or(self._is_real, self.is_rational)
+
+    @is_real.setter
+    def is_real(self, value: bool | None):
+        self._is_real = value
         for parent in self.parent_exprs:
             parent.update_properties()
 
@@ -169,63 +180,10 @@ class Expr(ABC):
         return self._is_zero
 
     @is_zero.setter
-    def is_zero(self, value: bool | None) -> None:
+    def is_zero(self, value: bool | None):
         self._is_zero = value
         for parent in self.parent_exprs:
             parent.update_properties()
-
-    @property
-    def is_nonpositive(self) -> bool | None:
-        return self._is_nonpositive
-
-    @is_nonpositive.setter
-    def is_nonpositive(self, value: bool | None) -> None:
-        self._is_nonpositive = value
-        for parent in self.parent_exprs:
-            parent.update_properties()
-
-    @property
-    def is_nonnegative(self) -> bool | None:
-
-        return (
-            self._is_nonnegative
-            if self._is_nonnegative is not None
-            else (self._is_natural or None)
-        )
-
-    @is_nonnegative.setter
-    def is_nonnegative(self, value: bool | None) -> None:
-        self._is_nonnegative = value
-        for parent in self.parent_exprs:
-            parent.update_properties()
-
-    @property
-    def is_even(self) -> bool | None:
-        return self._is_even
-
-    @is_even.setter
-    def is_even(self, value: bool | None) -> None:
-        self._is_even = value
-        for parent in self.parent_exprs:
-            parent.update_properties()
-
-    @property
-    def is_positive(self) -> bool | None:
-        from pylogic.helpers import ternary_and, ternary_not
-
-        return ternary_and(ternary_not(self.is_zero), self.is_nonnegative)
-
-    @property
-    def is_negative(self) -> bool | None:
-        from pylogic.helpers import ternary_and, ternary_not, ternary_or
-
-        return ternary_and(ternary_not(self.is_zero), self.is_nonpositive)
-
-    @property
-    def is_odd(self) -> bool | None:
-        from pylogic.helpers import ternary_not
-
-        return ternary_not(self.is_even)
 
     @property
     def is_nonzero(self) -> bool | None:
@@ -234,34 +192,124 @@ class Expr(ABC):
         return ternary_not(self.is_zero)
 
     @property
+    def is_even(self) -> bool | None:
+        return self._is_even
+
+    @is_even.setter
+    def is_even(self, value: bool | None):
+        self._is_even = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_odd(self) -> bool | None:
+        from pylogic.helpers import ternary_not
+
+        return ternary_not(self.is_even)
+
+    @property
+    def is_positive(self) -> bool | None:
+        from pylogic.helpers import ternary_and, ternary_if_not_none, ternary_not
+
+        return ternary_if_not_none(
+            self._is_positive,
+            ternary_and(ternary_not(self.is_zero), self.is_nonnegative),
+        )
+
+    @is_positive.setter
+    def is_positive(self, value: bool | None) -> None:
+        self._is_positive = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_negative(self) -> bool | None:
+        from pylogic.helpers import ternary_and, ternary_if_not_none, ternary_not
+
+        return ternary_if_not_none(
+            self._is_negative,
+            ternary_and(ternary_not(self.is_zero), self.is_nonpositive),
+        )
+
+    @is_negative.setter
+    def is_negative(self, value: bool | None) -> None:
+        self._is_negative = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_nonpositive(self) -> bool | None:
+        from pylogic.helpers import ternary_and, ternary_if_not_none, ternary_not
+
+        # must use ._is_nonpositive to avoid infinite recursion
+        # and .is_real for correctness
+        return ternary_if_not_none(
+            self._is_nonpositive,
+            ternary_and(self.is_real, ternary_not(self._is_positive)),
+        )
+
+    @is_nonpositive.setter
+    def is_nonpositive(self, value: bool | None):
+        self._is_nonpositive = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_nonnegative(self) -> bool | None:
+        from pylogic.helpers import ternary_and, ternary_if_not_none, ternary_not
+
+        # see is_nonpositive
+        return ternary_if_not_none(
+            self._is_nonnegative,
+            ternary_if_not_none(
+                self._is_natural or None,
+                ternary_and(self.is_real, ternary_not(self._is_negative)),
+            ),
+        )
+
+    @is_nonnegative.setter
+    def is_nonnegative(self, value: bool | None):
+        self._is_nonnegative = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_set(self) -> bool | None:
+        return self._is_set
+
+    @is_set.setter
+    def is_set(self, value: bool | None):
+        self._is_set = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
+
+    @property
+    def is_list(self) -> bool | None:
+        return self._is_list
+
+    @property
     def is_sequence(self) -> bool | None:
         return self._is_sequence
 
     @is_sequence.setter
-    def is_sequence(self, value: bool | None) -> None:
+    def is_sequence(self, value: bool | None):
         self._is_sequence = value
-        for parent in self.parent_exprs:
-            parent.update_properties()
+        # parent expressions don't currently depend
+        # on this property
+        # for parent in self.parent_exprs:
+        #     parent.update_properties()
 
     @property
     def is_finite(self) -> bool | None:
         return self._is_finite
 
     @is_finite.setter
-    def is_finite(self, value: bool | None) -> None:
+    def is_finite(self, value: bool | None):
         self._is_finite = value
-        for parent in self.parent_exprs:
-            parent.update_properties()
-
-    @property
-    def is_set(self) -> bool:
-        return self._is_set
-
-    @is_set.setter
-    def is_set(self, value: bool) -> None:
-        self._is_set = value
-        for parent in self.parent_exprs:
-            parent.update_properties()
+        # parent expressions don't currently depend
+        # on this property
+        # for parent in self.parent_exprs:
+        #     parent.update_properties()
 
     @abstractmethod
     def update_properties(self) -> None:
@@ -341,6 +389,8 @@ class Expr(ABC):
             {val: getattr(self, val, None) for _, val in self.kwargs if val != "dummy"}
         )
         kw["_is_copy"] = True
+        kw["_init_args"] = self._init_args
+        kw["_init_kwargs"] = self._init_kwargs
 
         return PylSympyExpr(
             getattr(self, "name", self.__class__.__name__),
@@ -540,7 +590,12 @@ class Expr(ABC):
         kw.update(
             {val: getattr(self, val, None) for _, val in self.kwargs if val != "dummy"}
         )
-        return self.__class__(_is_copy=True, **kw)
+        return self.__class__(
+            _is_copy=True,
+            _init_args=self._init_args,
+            _init_kwargs=self._init_kwargs,
+            **kw,
+        )
 
     def deepcopy(self) -> Self:
         return self.copy()
@@ -775,8 +830,10 @@ class Add(Expr):
 
         if all_nonnegative and exists_positive:
             self.is_zero = False
+            self.is_positive = True
         if all_nonpositive and exists_negative:
             self.is_zero = False
+            self.is_negative = True
         if count_odd % 2 == 0 and count_even == total_args - count_odd:
             self.is_even = True
         elif count_odd % 2 == 1 and count_even == total_args - count_odd:
@@ -851,6 +908,8 @@ class Mul(Expr):
         all_nonzero = True
         count_nonpositive = 0
         count_nonnegative = 0
+        count_positive = 0
+        count_negative = 0
         exists_zero = False
         count_even = 0
         count_odd = 0
@@ -878,6 +937,10 @@ class Mul(Expr):
                 count_nonpositive += 1
             if arg.is_nonnegative:
                 count_nonnegative += 1
+            if arg.is_positive:
+                count_positive += 1
+            if arg.is_negative:
+                count_negative += 1
 
         if all_real:
             self.is_real = True
@@ -898,6 +961,10 @@ class Mul(Expr):
             and count_nonnegative == total_args - count_nonpositive
         ):
             self.is_nonpositive = True
+        if count_negative % 2 == 0 and count_positive == total_args - count_negative:
+            self.is_positive = True
+        if count_negative % 2 == 1 and count_positive == total_args - count_negative:
+            self.is_negative = True
         if count_even > 0 and count_even + count_odd == total_args:
             self.is_even = True
         if count_odd == total_args:
@@ -1006,6 +1073,9 @@ class Pow(Expr):
         base, exp = self.args
         if base.is_zero and exp.is_positive:
             self.is_zero = True
+        if base.is_positive and exp.is_real:
+            self.is_positive = True
+            self.is_zero = False
         if base.is_nonnegative and exp.is_nonnegative:
             self.is_nonnegative = True
         if base.is_positive and (exp.is_even is False):
@@ -1016,6 +1086,7 @@ class Pow(Expr):
         if base.is_negative and (exp.is_even is False):
             self.is_zero = False
             self.is_nonpositive = True
+            self.is_negative = True
 
         if base.is_real and exp.is_positive:
             self.is_real = True
@@ -1034,6 +1105,7 @@ class Pow(Expr):
             if exp.is_even:
                 self.is_zero = False
                 self.is_nonnegative = True
+                self.is_positive = True
 
             if base.is_real and exp.is_integer:
                 self.is_real = True

@@ -8,8 +8,6 @@ import sympy as sp
 from pylogic.expressions.expr import Expr, distance, to_sympy
 from pylogic.proposition.quantified.exists import ExistsInSet
 from pylogic.proposition.quantified.forall import ForallInSet
-from pylogic.theories.natural_numbers import Naturals
-from pylogic.theories.real_numbers import Reals
 from pylogic.typing import Term
 from pylogic.variable import Variable
 
@@ -33,14 +31,12 @@ class Limit(Expr):
     @classmethod
     def make_epsilon_N_definition(
         cls, limit: Term, sequence: Sequence | Variable, **kwargs
-    ) -> ForallInSet[
-        Implies[
-            GreaterThan, ExistsInSet[ForallInSet[Implies[GreaterOrEqual, LessThan]]]
-        ]
-    ]:
+    ) -> ForallInSet:
         from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
         from pylogic.proposition.ordering.greaterthan import GreaterThan
         from pylogic.proposition.ordering.lessthan import LessThan
+        from pylogic.theories.natural_numbers import Naturals
+        from pylogic.theories.real_numbers import Reals
 
         eps = Variable("eps", latex_name="\\epsilon")
         N = Variable("N")

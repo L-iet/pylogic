@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from pylogic.expressions.expr import BinaryExpression, Expr
     from pylogic.proposition.ordering.total import StrictTotalOrder, TotalOrder
     from pylogic.proposition.relation.divides import Divides
+    from pylogic.proposition.relation.equals import Equals
 
     T = TypeVar("T", bound=Term)
     E = TypeVar("E", bound=Expr)
@@ -119,6 +120,32 @@ class IntegersRing(RIng[Z], OrderedSet):
         from pylogic.proposition.relation.divides import Divides
 
         return Divides(a, b, self, **kwargs)
+
+    def even(self, n: Term, **kwargs) -> ExistsInSet[Equals]:
+        from pylogic.helpers import python_to_pylogic
+
+        n = python_to_pylogic(n)
+        k = Variable("k")
+        return ExistsInSet(
+            k,
+            self,
+            Equals(n, 2 * k),
+            description=f"{n} is even",
+            **kwargs,
+        )
+
+    def odd(self, n: Term, **kwargs) -> ExistsInSet[Equals]:
+        from pylogic.helpers import python_to_pylogic
+
+        n = python_to_pylogic(n)
+        k = Variable("k")
+        return ExistsInSet(
+            k,
+            self,
+            Equals(n, 2 * k + 1),
+            description=f"{n} is odd",
+            **kwargs,
+        )
 
 
 Integers = IntegersRing(

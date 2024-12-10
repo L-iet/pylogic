@@ -116,12 +116,12 @@ class Function(Expr):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.kwargs = self.kwargs + [
-            ("name", "name"),
             ("domain", "domain"),
             ("codomain", "codomain"),
             ("parameters", "parameters"),
             ("definition", "definition"),
         ]
+        self.mutable_attrs_to_copy = self.mutable_attrs_to_copy + ["name"]
 
     def __new_init__(
         self,
@@ -362,7 +362,17 @@ class Function(Expr):
 class CalledFunction(Expr):
     _is_wrapped = True
 
-    def __init__(
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.mutable_attrs_to_copy = self.mutable_attrs_to_copy + [
+            "function",
+            "arguments",
+            "replace_dict",
+            "all_args_in_domain",
+            "add_result_to_codomain",
+        ]
+
+    def __new_init__(
         self,
         function: Function,
         arguments: tuple[Term, ...],
@@ -383,7 +393,7 @@ class CalledFunction(Expr):
             self.replace_dict = {}
         else:
             self.replace_dict = dict(zip(self.function.parameters, arguments))
-        super().__init__(function, *arguments)
+        super().__new_init__(function, *arguments)
 
         # check if the arguments are in the domain
         domain = self.function.domain

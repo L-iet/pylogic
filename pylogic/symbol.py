@@ -10,6 +10,7 @@ from pylogic.typing import PythonNumeric, Term
 
 if TYPE_CHECKING:
     from pylogic.expressions.abs import Abs
+    from pylogic.expressions.mod import Mod
     from pylogic.expressions.sequence_term import SequenceTerm
     from pylogic.proposition.not_ import Not
     from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
@@ -22,7 +23,6 @@ if TYPE_CHECKING:
     from pylogic.proposition.relation.subsets import IsSubsetOf
     from pylogic.structures.class_ import Class
     from pylogic.structures.set_ import Set
-    from pylogic.sympy_helpers import PylSympySymbol
     from pylogic.variable import Variable
 
     S = TypeVar("S", bound=Set)
@@ -58,9 +58,10 @@ class Symbol:
         ("sequence", "_is_sequence"),
         ("finite", "_is_finite"),
         ("length", "length"),
-        ("positive", "dummy"),
-        ("negative", "dummy"),
-        ("set_", "_is_set"),
+        ("positive", "_is_positive"),
+        ("negative", "_is_negative"),
+        ("set", "_is_set"),
+        ("list", "_is_list"),
         ("graph", "is_graph"),
         ("pair", "is_pair"),
         ("list_", "is_list_"),
@@ -86,8 +87,7 @@ class Symbol:
         self.parent_exprs = []
 
         self.__dict__.update(kwargs)
-        self._init_args = ()
-        self._init_kwargs = kwargs
+        # _init_args and _init_kwargs have been set in kwargs
 
     def __new_init__(self, *args, **kwargs) -> None:
         from pylogic.helpers import _add_assumption_props
@@ -104,12 +104,16 @@ class Symbol:
         self._is_zero: bool | None = kwargs.get("zero", None)
         self._is_nonpositive: bool | None = kwargs.get("nonpositive", None)
         self._is_nonnegative: bool | None = kwargs.get("nonnegative", None)
+        self._is_positive: bool | None = kwargs.get("positive", None)
+        self._is_negative: bool | None = kwargs.get("negative", None)
         self._is_even: bool | None = kwargs.get("even", None)
 
         self._is_set: bool | None = kwargs.get("set_", kwargs.get("set", None))
         self.is_graph: bool | None = not self.is_set and kwargs.get("graph", None)
         self.is_pair: bool | None = self.is_graph or kwargs.get("pair", None)
-        self.is_list_: bool | None = self.is_pair or kwargs.get("list_", None)
+        self._is_list: bool | None = self.is_pair or kwargs.get(
+            "list_", kwargs.get("list", None)
+        )
 
         # sequences, finite
         self._is_sequence: bool | None = self.is_list or kwargs.get("sequence", None)
@@ -135,15 +139,16 @@ class Symbol:
 
         # for variable sequences&sets
         self.properties_of_each_term: list[Proposition] = []
+
         _add_assumption_props(self, kwargs)
 
         self._is_copy = False
 
     @property
     def is_natural(self) -> bool | None:
-        from pylogic.helpers import ternary_and, ternary_or
+        from pylogic.helpers import ternary_and, ternary_if_not_none
 
-        return ternary_or(
+        return ternary_if_not_none(
             self._is_natural, ternary_and(self._is_integer, self._is_nonnegative)
         )
 
@@ -167,7 +172,9 @@ class Symbol:
 
     @property
     def is_rational(self) -> bool | None:
-        return self._is_rational or self.is_integer
+        from pylogic.helpers import ternary_or
+
+        return ternary_or(self._is_rational, self.is_integer)
 
     @is_rational.setter
     def is_rational(self, value: bool | None):
@@ -177,7 +184,9 @@ class Symbol:
 
     @property
     def is_real(self) -> bool | None:
-        return self._is_real or self.is_rational
+        from pylogic.helpers import ternary_or
+
+        return ternary_or(self._is_real, self.is_rational)
 
     @is_real.setter
     def is_real(self, value: bool | None):
@@ -219,19 +228,44 @@ class Symbol:
 
     @property
     def is_positive(self) -> bool | None:
-        from pylogic.helpers import ternary_and
+        from pylogic.helpers import ternary_and, ternary_if_not_none, ternary_not
 
-        return ternary_and(self.is_nonnegative, self.is_nonzero)
+        return ternary_if_not_none(
+            self._is_positive,
+            ternary_and(ternary_not(self.is_zero), self.is_nonnegative),
+        )
+
+    @is_positive.setter
+    def is_positive(self, value: bool | None) -> None:
+        self._is_positive = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     @property
     def is_negative(self) -> bool | None:
-        from pylogic.helpers import ternary_and
+        from pylogic.helpers import ternary_and, ternary_if_not_none, ternary_not
 
-        return ternary_and(self.is_nonpositive, self.is_nonzero)
+        return ternary_if_not_none(
+            self._is_negative,
+            ternary_and(ternary_not(self.is_zero), self.is_nonpositive),
+        )
+
+    @is_negative.setter
+    def is_negative(self, value: bool | None) -> None:
+        self._is_negative = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     @property
     def is_nonpositive(self) -> bool | None:
-        return self._is_nonpositive
+        from pylogic.helpers import ternary_and, ternary_if_not_none, ternary_not
+
+        # must use ._is_nonpositive to avoid infinite recursion
+        # and .is_real for correctness
+        return ternary_if_not_none(
+            self._is_nonpositive,
+            ternary_and(self.is_real, ternary_not(self._is_positive)),
+        )
 
     @is_nonpositive.setter
     def is_nonpositive(self, value: bool | None):
@@ -241,11 +275,15 @@ class Symbol:
 
     @property
     def is_nonnegative(self) -> bool | None:
+        from pylogic.helpers import ternary_and, ternary_if_not_none, ternary_not
 
-        return (
-            self._is_nonnegative
-            if self._is_nonnegative is not None
-            else (self._is_natural or None)
+        # see is_nonpositive
+        return ternary_if_not_none(
+            self._is_nonnegative,
+            ternary_if_not_none(
+                self._is_natural or None,
+                ternary_and(self.is_real, ternary_not(self._is_negative)),
+            ),
         )
 
     @is_nonnegative.setter
@@ -266,7 +304,7 @@ class Symbol:
 
     @property
     def is_list(self) -> bool | None:
-        return self.is_list_
+        return self._is_list
 
     @property
     def is_sequence(self) -> bool | None:
@@ -449,7 +487,12 @@ class Symbol:
         kw.update(
             {val: getattr(self, val, None) for _, val in self.kwargs if val != "dummy"}
         )
-        return self.__class__(_is_copy=True, **kw)
+        return self.__class__(
+            _is_copy=True,
+            _init_args=self._init_args,
+            _init_kwargs=self._init_kwargs,
+            **kw,
+        )
 
     def deepcopy(self) -> Self:
         return self.copy()
@@ -472,26 +515,24 @@ class Symbol:
         return self
 
     def to_sympy(self) -> sp.Symbol:
-        from pylogic.sympy_helpers import PylSympySymbol
+        from pylogic.sympy_helpers import SYMPY_ASSUMPTIONS, PylSympySymbol
 
         kw = {k: getattr(self, k, None) for k in self.mutable_attrs_to_copy}
         kw.update(
             {val: getattr(self, val, None) for _, val in self.kwargs if val != "dummy"}
         )
         kw["_is_copy"] = True
+        kw["_init_args"] = self._init_args
+        kw["_init_kwargs"] = self._init_kwargs
 
-        symbol_kwargs = (
-            self._init_kwargs
-            if not self._is_copy
-            else {
-                kwarg: getattr(self, val)
-                for kwarg, val in self.kwargs
-                if val != "dummy"
-            }
-        )
+        symbol_kwargs = {
+            k: getattr(self, k, None)
+            for k in SYMPY_ASSUMPTIONS
+            if k in self._init_kwargs
+        }
 
         return PylSympySymbol(
-            *self._init_args,  # TODO: _init_args are different for copy
+            *self._init_args,
             _pyl_class=self.__class__,
             _pyl_init_args=(),
             _pyl_init_kwargs=kw,

@@ -168,13 +168,14 @@ class IsContainedIn(BinaryRelation[T, U]):
                 proven_predicate.is_proven
                 and self.right.predicate(self.left) == proven_predicate
             ):
-                return IsContainedIn(
+                ret_val = IsContainedIn(
                     self.element,
                     self.right,
                     _is_proven=True,
                     _assumptions=set(),
                     _inference=Inference(self, rule="by_predicate"),
                 )  # type: ignore
+                return ret_val
         except Exception as e:
             raise ValueError(
                 f"Cannot prove that {self.right} contains {self.left}\nThis was a result of\n{e}"
