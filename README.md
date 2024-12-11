@@ -4,6 +4,8 @@ This is a simple proof assistant for propositional and higher-order logic. The g
 
 ## Installation
 
+Pylogic requires **Python 3.11** or newer versions to run.
+
 Install Pylogic directly from Github using pip.
 
 ```bash
