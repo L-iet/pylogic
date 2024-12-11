@@ -232,7 +232,9 @@ class Mod(Expr):
         from pylogic.enviroment_settings.settings import settings
 
         if settings["SHOW_ALL_PARENTHESES"]:
-            wrap = lambda p: rf"\left({p._latex()}\right)"
+            wrap = lambda p: (
+                rf"\left({p._latex()}\right)" if not p.is_atomic else p._latex()
+            )
         else:
             wrap = lambda p: (
                 rf"\left({p._latex()}\right)"
@@ -247,7 +249,7 @@ class Mod(Expr):
         from pylogic.enviroment_settings.settings import settings
 
         if settings["SHOW_ALL_PARENTHESES"]:
-            wrap = lambda p: f"({p})"
+            wrap = lambda p: f"({p})" if not p.is_atomic else str(p)
         else:
             wrap = lambda p: (
                 f"({p})"

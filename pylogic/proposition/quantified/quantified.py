@@ -44,7 +44,6 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
         ).copy()  # make a copy in case user uses the same variable elsewhere
         self.variable: Variable = var
         self.variable.is_bound = True
-        self._q = _q
         self.is_atomic = False
         self.bound_vars = inner_proposition.bound_vars.union({var})
         self.variables = inner_proposition.variables.copy()
@@ -64,7 +63,11 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
 
         innermost_prop = getattr(self, self._innermost_prop_attr)
         if settings["SHOW_ALL_PARENTHESES"]:
-            inner_part = f"({innermost_prop})"
+            inner_part = (
+                f"({innermost_prop})"
+                if not innermost_prop.is_atomic
+                else str(innermost_prop)
+            )
         else:
             # only wrap the innermost proposition in parentheses if it is not atomic
             # and not a quantified proposition
@@ -92,7 +95,11 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
 
         innermost_prop = getattr(self, self._innermost_prop_attr)
         if settings["SHOW_ALL_PARENTHESES"]:
-            inner_part = rf"\left({innermost_prop._latex()}\right)"
+            inner_part = (
+                rf"\left({innermost_prop._latex()}\right)"
+                if not innermost_prop.is_atomic
+                else innermost_prop._latex()
+            )
         else:
             # only wrap the innermost proposition in parentheses if it is not atomic
             # and not a quantified proposition

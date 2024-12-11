@@ -103,7 +103,7 @@ class Not(Proposition, Generic[TProposition]):
         from pylogic.proposition.quantified.quantified import _Quantified
 
         if settings["SHOW_ALL_PARENTHESES"]:
-            wrap = lambda p: f"({p})"
+            wrap = lambda p: f"({p})" if not p.is_atomic else str(p)
         else:
             # only wrap the innermost proposition in parentheses if it is not atomic
             # and not a quantified proposition
@@ -121,8 +121,11 @@ class Not(Proposition, Generic[TProposition]):
         from pylogic.proposition.relation.binaryrelation import BinaryRelation
         from pylogic.proposition.relation.divides import Divides
 
+        # p is an expr here
         if settings["SHOW_ALL_PARENTHESES"]:
-            wrap_expr = lambda p: rf"\left({p._latex()}\right)"
+            wrap_expr = lambda p: (
+                rf"\left({p._latex()}\right)" if not p.is_atomic else p._latex()
+            )
         else:
             wrap_expr = lambda p: p._latex()
 
@@ -141,7 +144,9 @@ class Not(Proposition, Generic[TProposition]):
             )
 
         if settings["SHOW_ALL_PARENTHESES"]:
-            wrap = lambda p: rf"\left({p._latex()}\right)"
+            wrap = lambda p: (
+                rf"\left({p._latex()}\right)" if not p.is_atomic else p._latex()
+            )
         else:
             # only wrap the innermost proposition in parentheses if it is not atomic
             # and not a quantified proposition

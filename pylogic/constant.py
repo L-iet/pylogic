@@ -149,38 +149,50 @@ class Constant(Symbol, Generic[T]):
         return NotImplemented
 
     def __lt__(self, other: Any) -> bool | LessThan:
+        from pylogic.helpers import is_python_numeric
         from pylogic.proposition.ordering.lessthan import LessThan
 
         if settings["PYTHON_OPS_RETURN_PROPS"]:
             return LessThan(self, other)
-        if isinstance(other, Constant):
+        if not is_python_numeric(self.value):
+            return NotImplemented
+        if isinstance(other, Constant) and is_python_numeric(other.value):
             return self.value < other.value
         return self.value < other
 
     def __le__(self, other: Any) -> bool | LessOrEqual:
+        from pylogic.helpers import is_python_numeric
         from pylogic.proposition.ordering.lessorequal import LessOrEqual
 
         if settings["PYTHON_OPS_RETURN_PROPS"]:
             return LessOrEqual(self, other)
-        if isinstance(other, Constant):
+        if not is_python_numeric(self.value):
+            return NotImplemented
+        if isinstance(other, Constant) and is_python_numeric(other.value):
             return self.value <= other.value
         return self.value <= other
 
     def __gt__(self, other: Any) -> bool | GreaterThan:
+        from pylogic.helpers import is_python_numeric
         from pylogic.proposition.ordering.greaterthan import GreaterThan
 
         if settings["PYTHON_OPS_RETURN_PROPS"]:
             return GreaterThan(self, other)
-        if isinstance(other, Constant):
+        if not is_python_numeric(self.value):
+            return NotImplemented
+        if isinstance(other, Constant) and is_python_numeric(other.value):
             return self.value > other.value
         return self.value > other
 
     def __ge__(self, other: Any) -> bool | GreaterOrEqual:
+        from pylogic.helpers import is_python_numeric
         from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
 
         if settings["PYTHON_OPS_RETURN_PROPS"]:
             return GreaterOrEqual(self, other)
-        if isinstance(other, Constant):
+        if not is_python_numeric(self.value):
+            return NotImplemented
+        if isinstance(other, Constant) and is_python_numeric(other.value):
             return self.value >= other.value
         return self.value >= other
 

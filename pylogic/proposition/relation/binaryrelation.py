@@ -53,7 +53,7 @@ class BinaryRelation(Relation, Generic[T, U]):
         from pylogic.enviroment_settings.settings import settings
 
         if settings["SHOW_ALL_PARENTHESES"]:
-            wrap = lambda p: f"({p})"
+            wrap = lambda p: f"({p})" if not p.is_atomic else str(p)
         else:
             wrap = lambda p: str(p)
         return f"{wrap(self.left)} {self.infix_symbol} {wrap(self.right)}"
@@ -62,7 +62,9 @@ class BinaryRelation(Relation, Generic[T, U]):
         from pylogic.enviroment_settings.settings import settings
 
         if settings["SHOW_ALL_PARENTHESES"]:
-            wrap = lambda p: rf"\left({p._latex()}\right)"
+            wrap = lambda p: (
+                rf"\left({p._latex()}\right)" if not p.is_atomic else p._latex()
+            )
         else:
             wrap = lambda p: p._latex()
         return f"{wrap(self.left)} {self.infix_symbol_latex} {wrap(self.right)}"

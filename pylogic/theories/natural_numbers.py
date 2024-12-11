@@ -556,7 +556,7 @@ class Prime(Proposition):
         from pylogic.enviroment_settings.settings import settings
 
         if settings["SHOW_ALL_PARENTHESES"]:
-            n_str = f"({self.n})"
+            n_str = f"({self.n})" if not self.n.is_atomic else str(self.n)
         else:
             n_str = str(self.n)
         return f"{n_str} is prime"
@@ -568,7 +568,9 @@ class Prime(Proposition):
         from pylogic.enviroment_settings.settings import settings
 
         if settings["SHOW_ALL_PARENTHESES"]:
-            n_latex = f"({self.n._latex()})"
+            n_latex = (
+                f"({self.n._latex()})" if not self.n.is_atomic else self.n._latex()
+            )
         else:
             n_latex = self.n._latex()
         return f"{n_latex} \\text{{ is prime }}"
