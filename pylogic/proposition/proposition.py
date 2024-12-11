@@ -125,6 +125,7 @@ class Proposition:
             get_sets,
             get_vars,
             python_to_pylogic,
+            type_check_no,
         )
         from pylogic.inference import Inference
 
@@ -142,6 +143,8 @@ class Proposition:
         self.is_assumption: bool = is_assumption
 
         self.is_axiom: bool = is_axiom
+        for arg in args or []:
+            type_check_no(arg, Proposition, str, context="Proposition.__init__")
         self.args: list[Set | Term] = list(map(python_to_pylogic, args or []))
         self.arity: int = len(self.args)
         self._is_proven: bool = _is_proven
@@ -1361,15 +1364,51 @@ def predicate(name: str) -> Callable[..., Proposition]:
     return inner
 
 
+@overload
+def predicates(name: str) -> Callable[..., Proposition]: ...
+@overload
+def predicates(*names: str) -> tuple[Callable[..., Proposition], ...]: ...
+def predicates(  # type: ignore
+    *names: str,
+) -> Callable[..., Proposition] | tuple[Callable[..., Proposition], ...]:
+    """
+    Create multiple predicates with the given names.
+    """
+    if len(names) == 1:
+        return predicate(names[0])
+    return tuple(predicate(name) for name in names)
+
+
 pred = predicate
+preds = predicates
 
 
-def prop(name: str, *args: Term, **kwargs) -> Proposition:
+def proposition(name: str, *args: Term, **kwargs) -> Proposition:
     """
     Create a proposition with a given name and arguments.
     """
     return Proposition(name, args=args, **kwargs)
 
+
+@overload
+def propositions(name: str, args: tuple[Term, ...] = (), **kwargs) -> Proposition: ...
+@overload
+def propositions(
+    *names: str, args: tuple[Term, ...] = (), **kwargs
+) -> tuple[Proposition, ...]: ...
+def propositions(  # type: ignore
+    *names: str, args: tuple[Term, ...] = (), **kwargs
+) -> Proposition | tuple[Proposition, ...]:
+    """
+    Create multiple propositions with the given names.
+    """
+    if len(names) == 1:
+        return proposition(names[0], *args, **kwargs)
+    return tuple(proposition(name, *args, **kwargs) for name in names)
+
+
+prop = proposition
+props = propositions
 
 if __name__ == "__main__":
     pass

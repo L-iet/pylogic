@@ -73,7 +73,8 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
         else:
             wrap = lambda p: (
                 f"({p})"
-                if p.__class__._precedence >= self.__class__._precedence
+                if not p.is_atomic
+                and p.__class__._precedence >= self.__class__._precedence
                 else str(p)
             )
         return f"{wrap(self.left)} <-> {wrap(self.right)}"
@@ -89,7 +90,8 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
         else:
             wrap = lambda p: (
                 rf"\left({p._latex()}\right)"
-                if p.__class__._precedence >= self.__class__._precedence
+                if not p.is_atomic
+                and p.__class__._precedence >= self.__class__._precedence
                 else p._latex()
             )
         return rf"{wrap(self.left)} \leftrightarrow {wrap(self.right)}"

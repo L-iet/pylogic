@@ -55,6 +55,9 @@ def neg(
     return Not(p, is_assumption, **kwargs)
 
 
+not_ = neg
+
+
 def are_negs(p: Proposition, q: Proposition) -> bool:
     """Given two propositions, determine if they are negations
     of each other.

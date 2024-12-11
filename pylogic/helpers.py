@@ -208,6 +208,19 @@ def type_check(arg: Any, *types: type, context: Any = None) -> Literal[True]:
     raise TypeError(msg)
 
 
+def type_check_no(arg: Any, *types: type, context: Any = None) -> Literal[True]:
+    """Assert that arg is not an instance of any of the types.
+
+    Raises TypeError if arg is an instance of any of the types.
+    """
+    msg = f"Did not expect {types} but got {type(arg)}"
+    if context:
+        msg += f" in {context}"
+    if isinstance(arg, types):
+        raise TypeError(msg)
+    return True
+
+
 def is_python_numeric(*args: Any) -> bool:
     """
     Check if the arguments are of Python numeric types.

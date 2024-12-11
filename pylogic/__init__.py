@@ -28,7 +28,7 @@ from pylogic.enviroment_settings.set_universe import set_universe
 from pylogic.enviroment_settings.settings import settings
 from pylogic.expressions.abs import Abs
 from pylogic.expressions.expr import Add, Expr, Mul, Pow, add, cbrt, mul, sqrt
-from pylogic.expressions.function import CalledFunction, Function, self
+from pylogic.expressions.function import CalledFunction, Function
 from pylogic.expressions.gcd import Gcd
 from pylogic.expressions.limit import Limit
 from pylogic.expressions.min import MinElement
@@ -57,7 +57,17 @@ from pylogic.proposition.ordering.lessorequal import LessOrEqual
 from pylogic.proposition.ordering.lessthan import LessThan
 from pylogic.proposition.ordering.partial import PartialOrder, StrictPartialOrder
 from pylogic.proposition.ordering.total import StrictTotalOrder, TotalOrder
-from pylogic.proposition.proposition import Proposition, pred, predicate, prop
+from pylogic.proposition.proposition import (
+    Proposition,
+    pred,
+    predicate,
+    predicates,
+    preds,
+    prop,
+    proposition,
+    propositions,
+    props,
+)
 from pylogic.proposition.quantified.exists import (
     Exists,
     ExistsInSet,
@@ -98,7 +108,6 @@ from pylogic.structures.sequence import (
     PeriodicSequence,
     Sequence,
     Triple,
-    self,
     sequences,
 )
 from pylogic.structures.set_ import (
