@@ -197,9 +197,18 @@ class Proposition:
             return self.name == other.name and self.args == other.args
         return NotImplemented
 
-    @property
-    def inference_rules(self) -> list[str]:
-        return [r["name"] for r in self._inference_rules]
+    @classmethod
+    def inference_rules(cls) -> list[str]:
+        ret_val = []
+        for attr, v in cls.__dict__.items():
+            if callable(v) and v.__doc__ is not None and "inference rule" in v.__doc__:
+                ret_val.append(attr)
+        # add from super classes
+        for base in cls.__bases__:
+            if hasattr(base, "inference_rules"):
+                ret_val.extend(base.inference_rules())
+        return ret_val
+        # return [r["name"] for r in self._inference_rules]
 
     @property
     def definition(self) -> Proposition:
@@ -308,6 +317,8 @@ class Proposition:
 
     def assume(self, **kwargs) -> Self:
         """
+        Logical inference rule.
+
         Mark the proposition as an assumption.
         """
         self._set_is_assumption(True, **kwargs)
@@ -515,6 +526,7 @@ class Proposition:
     def substitute(self, side: Side | str, equality: "Equals", **kwargs) -> Self:
         """
         Logical inference rule.
+
         If self is proven and equality is proven, we can substitute the side of the equality
         into self.
 
@@ -540,7 +552,6 @@ class Proposition:
 
     def p_substitute(self, side: Side | str, equality: Equals) -> Self:
         """
-        Logical inference rule.
         Parameters
         ----------
         side: Side
@@ -572,7 +583,7 @@ class Proposition:
         return None
 
     def by_inspection(self) -> Self:
-        """Logical inference rule."""
+        """Logical inference rule. Try to prove the proposition by inspection."""
         from pylogic.inference import Inference
 
         if self.by_inspection_check():
@@ -652,12 +663,24 @@ class Proposition:
         allow_duplicates: bool = False,
         **kwargs,
     ) -> And[Self, *Props] | And:
-        """
+        r"""
+        Logical inference rule.
+
         Combine this proposition with others using a conjunction.
         Continguous `And` objects are combined into one `And` sequence to reduce
         nesting.
         allow_duplicates: bool
             If True, we do not remove duplicate propositions.
+
+        If all propositions are proven, the resulting proposition is proven.
+
+        Examples
+        --------
+        >>> p1 = x.is_in(A)
+        >>> p2 = y.is_in(B)
+        >>> p3 = p1.and_(p2)
+        >>> p3
+        x in A /\ y in B
         """
         from pylogic.inference import Inference
         from pylogic.proposition.and_ import And
@@ -733,12 +756,24 @@ class Proposition:
         allow_duplicates: bool = False,
         **kwargs,
     ) -> Or[Self, *Props] | Or:
-        """
+        r"""
+        Logical inference rule.
+
         Combine this proposition with others using a disjunnction.
         Continguous `Or` objects are combined into one `Or` sequence to reduce
         nesting.
         allow_duplicates: bool
             If True, we do not remove duplicate propositions.
+
+        If any proposition is proven, the resulting proposition is proven.
+
+        Examples
+        --------
+        >>> p1 = x.is_in(A)
+        >>> p2 = y.is_in(B)
+        >>> p3 = p1.or_(p2)
+        >>> p3
+        x in A \/ y in B
         """
         from pylogic.inference import Inference
         from pylogic.proposition.or_ import Or
@@ -801,27 +836,23 @@ class Proposition:
         nesting.
         allow_duplicates: bool
             If True, we do not remove duplicate propositions.
+
+        Examples
+        --------
+        >>> p1 = x.is_in(A)
+        >>> p2 = y.is_in(B)
+        >>> p3 = p1.xor(p2)
+        >>> p3
+        x in A xor y in B
         """
-        from pylogic.inference import Inference
         from pylogic.proposition.exor import ExOr
 
         props = []
-        will_be_proven = None
         for p in (self, *others):
-            if p.is_proven and will_be_proven is None:
-                will_be_proven = True
-            elif p.is_proven:
-                will_be_proven = False
             if isinstance(p, ExOr):
                 props.extend(p.de_nest().propositions)
             else:
                 props.append(p)
-        if will_be_proven:
-            kwargs["_is_proven"] = True
-            kwargs["_assumptions"] = get_assumptions(self).union(
-                *[get_assumptions(o) for o in others]  # type:ignore
-            )
-            kwargs["_inference"] = Inference(self, *others, rule="one_proven")
         new_p = ExOr(*props, is_assumption=is_assumption, **kwargs)  # type:ignore
         if not allow_duplicates:
             return new_p.remove_duplicates()
@@ -855,7 +886,7 @@ class Proposition:
     def p_and(
         self, *others: *Props, allow_duplicates: bool = False
     ) -> And[Self, *Props]:
-        """Logical inference rule.
+        """
         Same as and_, but returns a proven proposition when self and all others are proven.
         """
         from pylogic.inference import Inference
@@ -906,6 +937,14 @@ class Proposition:
         other: Implies
             Must be an implication that has been proven whose structure is
             self -> OtherProposition
+
+        Examples
+        --------
+        >>> p1 = prop("P").assume() # P
+        >>> p2 = prop("P").implies(prop("Q")).assume() # P -> Q
+        >>> p3 = p1.modus_ponens(p2) # infer Q
+        >>> p3, p3.is_proven
+        (Q, True)
         """
         from pylogic.inference import Inference
         from pylogic.proposition.implies import Implies
@@ -920,14 +959,7 @@ class Proposition:
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(other))
         return new_p
 
-    def mp(self, other: Implies[Self, TProposition]) -> TProposition:
-        """
-        Logical inference rule.
-        other: Implies
-            Must be an implication that has been proven whose structure is
-            self -> OtherProposition
-        """
-        return self.modus_ponens(other)
+    mp = modus_ponens
 
     @overload
     def modus_tollens(
@@ -948,6 +980,14 @@ class Proposition:
         other: Implies
             Must be an implication that has been proven whose structure is
             OtherProposition -> ~self
+
+        Examples
+        --------
+        >>> p1 = neg(prop("P")).assume() # ~P
+        >>> p2 = prop("Q").implies(prop("P")).assume() # Q -> P
+        >>> p3 = p1.modus_tollens(p2) # infer ~Q
+        >>> p3, p3.is_proven
+        (~Q, True)
         """
         from pylogic.inference import Inference
         from pylogic.proposition.not_ import Not, are_negs
@@ -969,17 +1009,7 @@ class Proposition:
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(other))
         return new_p
 
-    def mt(
-        self,
-        other: Implies[Not[TProposition], Not[Self]] | Implies[TProposition, Not[Self]],
-    ) -> TProposition | Not[TProposition]:
-        """
-        Logical inference rule.
-        other: Implies
-            Must be an implication that has been proven whose structure is
-            OtherProposition -> ~self
-        """
-        return self.modus_tollens(other)
+    mt = modus_tollens
 
     def is_one_of(self, other: And, *, __recursing: bool = False) -> Self:
         r"""
@@ -987,6 +1017,16 @@ class Proposition:
         If we have proven other, we can prove any of the propositions in it.
         other: And
             Must be a conjunction that has been proven where one of the propositions is self.
+
+        Examples
+        --------
+        >>> p1 = prop("P")
+        >>> p2 = prop("Q")
+        >>> p3 = prop("R")
+        >>> p4 = And(p1, p2, p3).assume()
+        >>> p5 = p1.is_one_of(p4)
+        >>> p5, p5.is_proven
+        (P, True)
         """
         if not __recursing:
             assert other.is_proven, f"{other} is not proven"
@@ -1012,20 +1052,29 @@ class Proposition:
         Logical inference rule.
         other: Proposition
             A proven forall proposition that implies this proposition.
+
+        Examples
+        --------
+        >>> p1 = prop("P", 1)
+        >>> p2_proven = Forall(x, prop("P", x)).assume()
+        >>> p1_proven = p1.is_special_case_of(p2_proven)
+        >>> p1_proven.is_proven
+        True
         """
-        # TODO: Change unification so that we cannot prove
-        # P(x) from forall x: P(1).
         from pylogic.inference import Inference
         from pylogic.proposition.quantified.forall import Forall
 
         assert isinstance(other, Forall), f"{other} is not a forall statement"
         assert other.is_proven, f"{other} is not proven"
         unif = other.inner_proposition.unify(self)
-        if (
-            isinstance(unif, dict)
-            and len(unif) == 1
-            and list(unif.keys())[0] == other.variable
-        ) or unif is True:
+        condition1 = isinstance(unif, dict) and len(unif) == 1
+        condition2 = False
+        if condition1:
+            try:
+                condition2 = other.in_particular(unif[other.variable]) == self  # type: ignore
+            except KeyError:
+                condition2 = False
+        if condition2 or (unif is True):
             new_p = self.copy()
             new_p._set_is_proven(True)
             new_p.deduced_from = Inference(self, other, rule="is_special_case_of")
@@ -1045,7 +1094,6 @@ class Proposition:
 
     def followed_from(self, *assumptions, **kwargs):  # type: ignore
         """
-        Logical inference rule.
         Given self is proven, return a new proposition that is an implication of
         the form And(*assumptions) -> self.
         *assumptions: Proposition
@@ -1135,12 +1183,21 @@ class Proposition:
             and positions = [[0, 0, 0], [0, 2], [1]]
             we end up with
             exists q: (forall x: (p1 q -> p2 x) /\ (p3 x) /\ (p4 q)) -> (p5 q)
+
+        Examples
+        --------
+        >>> p1 = prop("P", 1).assume() # P(1)
+        >>> p2 = p1.thus_there_exists("x", 1)
+        >>> p2, p2.is_proven
+        (exists x: P(x), True)
         """
         assert self.is_proven, f"{self} is not proven"
-        from pylogic.helpers import find_first
+        from pylogic.helpers import find_first, python_to_pylogic
         from pylogic.inference import Inference
         from pylogic.proposition.quantified.exists import Exists, ExistsInSet
         from pylogic.variable import Variable
+
+        expression_to_replace = python_to_pylogic(expression_to_replace)
 
         # Check that the expression to replace does not depend on any bound variables
         # prevent the sequence
@@ -1208,7 +1265,6 @@ and is a dependency of {expression_to_replace}"
         **kwargs,
     ) -> Forall[Self] | ForallInSet[Self]:
         """
-        Logical inference rule.
         Given self is proven, return a new proposition that for all variables, self is true.
         This inference rule binds the variable, so you cannot reuse the variable
         unless you unbind it.
@@ -1248,7 +1304,6 @@ and is a dependency of {expression_to_replace}"
 
     def close_all_scopes(self) -> Proposition:
         """
-        Logical inference rule.
         Close all scopes in the proposition.
         If assumptions (A) were used to deduce this proposition (self), they are
         removed and we get a proof of A -> self.
@@ -1287,8 +1342,16 @@ and is a dependency of {expression_to_replace}"
 
     def contradicts(self, other: Proposition) -> Contradiction:
         """
-        Logical inference rule. If self and other are negations (and both proven),
+        Logical inference rule. If `self` and `other` are negations (and both proven),
         return a contradiction.
+
+        Examples
+        --------
+        >>> p1 = prop("P").assume()
+        >>> p2 = neg(prop("P")).assume()
+        >>> p3 = p1.contradicts(p2)
+        >>> p3, p3.is_proven
+        (contradiction, True)
         """
         assert self.is_proven, f"{self} is not proven"
         assert other.is_proven, f"{other} is not proven"
