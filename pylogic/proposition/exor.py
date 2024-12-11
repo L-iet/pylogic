@@ -35,10 +35,9 @@ class ExOr(_Junction[*Ps]):
         {"name": "one_proven", "arguments": ["Proposition", "Proposition"]},
         {"name": "resolve", "arguments": ["Proposition"]},
         {"name": "unit_resolve", "arguments": ["Proposition"]},
-        {"name": "by_cases", "arguments": []},
     ]
     _supports_resolve = True
-    _supports_by_cases = True
+    _supports_by_cases_with_equivalence = True
 
     def __init__(
         self,

@@ -47,6 +47,8 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
     ) -> None:
         self.antecedent = antecedent
         self.consequent = consequent
+        self.left = antecedent
+        self.right = consequent
         name = f"{antecedent.name} -> {consequent.name}"
         super().__init__(name, is_assumption, description=description, **kwargs)
         self.is_atomic = False

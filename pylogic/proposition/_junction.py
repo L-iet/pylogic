@@ -20,6 +20,7 @@ from pylogic.typing import Term, Unification
 
 if TYPE_CHECKING:
     from pylogic.proposition.and_ import And
+    from pylogic.proposition.iff import Iff
     from pylogic.proposition.implies import Implies
     from pylogic.structures.class_ import Class
     from pylogic.structures.set_ import Set
@@ -38,6 +39,7 @@ class _Junction(Proposition, Generic[*Ps], ABC):
     _distributes_over_: set[str] = set()
     _supports_resolve: bool = False
     _supports_by_cases: bool = False
+    _supports_by_cases_with_equivalence: bool = False
 
     def __init__(
         self,
@@ -323,18 +325,34 @@ Occured when trying to unify `{self}` and `{other}`"
             _assumptions=get_assumptions(self).union(p_assumptions),
         )
 
-    def by_cases(self, *implications: Implies[Proposition, Proposition]) -> Proposition:
+    def by_cases(
+        self,
+        *implications: Implies[Proposition, Proposition]
+        | Iff[Proposition, Proposition],
+    ) -> Proposition:
         r"""
         Logical inference rule.
         If self is of the form `A \/ B \/ C...`, and there are implications
         `A -> D`, `B -> E`, `C -> F...`, return `D \/ E \/ F...`.
         """
-        assert self._supports_by_cases, f"{self} does not support by_cases"
+        from pylogic.proposition.iff import Iff
+        from pylogic.proposition.implies import Implies
+
+        if not self._supports_by_cases:
+            assert (
+                self._supports_by_cases_with_equivalence
+            ), f"{self} does not support by_cases"
+            impl_classes = (Iff,)
+        else:
+            impl_classes = (Implies, Iff)
+        assert all(
+            isinstance(imp, impl_classes) for imp in implications
+        ), f"Not all implications are of the correct type. Each must be one of {impl_classes}"
         assert self.is_proven, f"{self} is not proven"
         assert all(
             (imp.is_proven for imp in implications)
         ), "Not all implications are proven"
-        antes = [imp.antecedent for imp in implications]
+        antes = [imp.left for imp in implications]
         assert len(antes) == len(
             self.propositions
         ), "Not all cases or too many cases (Number of implications must match)"
@@ -342,7 +360,7 @@ Occured when trying to unify `{self}` and `{other}`"
             self.propositions
         ), "Implications (cases) must match propositions in disjunction"
         new_p = self.__class__(
-            *[imp.consequent for imp in implications],  # type: ignore
+            *[imp.right for imp in implications],  # type: ignore
             _is_proven=True,
             _assumptions=get_assumptions(self).union(
                 *[get_assumptions(imp) for imp in implications]
@@ -351,15 +369,7 @@ Occured when trying to unify `{self}` and `{other}`"
         ).remove_duplicates()
         return new_p
 
-    def cases_modus_ponens(
-        self, *implications: Implies[Proposition, Proposition]
-    ) -> Proposition:
-        r"""
-        Logical inference rule.
-        If self is of the form `A \/ B \/ C...`, and there are implications
-        `A -> D`, `B -> E`, `C -> F...`, return `D \/ E \/ F...`.
-        """
-        return self.by_cases(*implications)
+    cases_modus_ponens = by_cases
 
     def unit_resolve(self, p: Proposition) -> Proposition | Self:
         """

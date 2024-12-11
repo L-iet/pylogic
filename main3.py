@@ -1,3 +1,5 @@
+# NOTE: This file is only used for testing and is not up-to-date.
+
 from pylogic.assumptions_context import AssumptionsContext, conclude
 from pylogic.proposition.proposition import Proposition
 from pylogic.proposition.quantified.forall import Forall, ForallInSet

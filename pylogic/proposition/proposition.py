@@ -931,7 +931,9 @@ class Proposition:
         )
         return new_p
 
-    def modus_ponens(self, other: Implies[Self, TProposition]) -> TProposition:
+    def modus_ponens(
+        self, other: Implies[Self, TProposition] | Iff[Self, TProposition]
+    ) -> TProposition:
         """
         Logical inference rule.
         other: Implies
@@ -947,13 +949,14 @@ class Proposition:
         (Q, True)
         """
         from pylogic.inference import Inference
+        from pylogic.proposition.iff import Iff
         from pylogic.proposition.implies import Implies
 
         assert self.is_proven, f"{self} is not proven"
-        assert isinstance(other, Implies), f"{other} is not an implication"
         assert other.is_proven, f"{other} is not proven"
-        assert other.antecedent == self, f"{other.antecedent} is not the same as {self}"
-        new_p = other.consequent.copy()
+        assert isinstance(other, (Implies, Iff)), f"{other} is not an implication"
+        assert other.left == self, f"{other.left} is not the same as {self}"
+        new_p = other.right.copy()
         new_p._set_is_proven(True)
         new_p.deduced_from = Inference(self, other, rule="modus_ponens")
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(other))
@@ -961,19 +964,23 @@ class Proposition:
 
     mp = modus_ponens
 
-    @overload
-    def modus_tollens(
-        self, other: Implies[Not[TProposition], Not[Self]]
-    ) -> TProposition: ...
+    # @overload
+    # def modus_tollens(
+    #     self, other: Implies[Not[TProposition], Not[Self]]
+    # ) -> TProposition: ...
 
-    @overload
-    def modus_tollens(
-        self, other: Implies[TProposition, Not[Self]]
-    ) -> Not[TProposition]: ...
+    # @overload
+    # def modus_tollens(
+    #     self, other: Implies[TProposition, Not[Self]]
+    # ) -> Not[TProposition]: ...
 
     def modus_tollens(
         self,
-        other: Implies[Not[TProposition], Not[Self]] | Implies[TProposition, Not[Self]],
+        other: (
+            Implies[Not[TProposition], Not[Self]]
+            | Implies[TProposition, Not[Self]]
+            | Iff
+        ),
     ) -> TProposition | Not[TProposition]:
         """
         Logical inference rule.
@@ -994,15 +1001,16 @@ class Proposition:
 
         assert self.is_proven, f"{self} is not proven"
         assert other.is_proven, f"{other} is not proven"
+        assert isinstance(other, (Implies, Iff)), f"{other} is not an implication"
         assert are_negs(
-            other.consequent, self
-        ), f"{other.consequent} is not the negation of {self}"
+            other.right, self
+        ), f"{other.right} is not the negation of {self}"
         # I'm using copy here because neg(Not(p)) returns p,
         # and we should avoid proving p in a different place.
-        if isinstance(other.antecedent, Not):
-            n_other_ante = other.antecedent.negated.copy()
+        if isinstance(other.left, Not):
+            n_other_ante = other.left.negated.copy()
         else:
-            n_other_ante = Not(other.antecedent)
+            n_other_ante = Not(other.left)
         new_p = cast(TProposition | Not[TProposition], n_other_ante)
         new_p._set_is_proven(True)
         new_p.deduced_from = Inference(self, other, rule="modus_tollens")
