@@ -338,16 +338,21 @@ Occured when trying to unify `{self}` and `{other}`"
         from pylogic.proposition.iff import Iff
         from pylogic.proposition.implies import Implies
 
-        if not self._supports_by_cases:
-            assert (
-                self._supports_by_cases_with_equivalence
-            ), f"{self} does not support by_cases"
-            impl_classes = (Iff,)
+        if self._supports_by_cases:
+            cls = self.__class__
+        elif self._supports_by_cases_with_equivalence:
+            if all(isinstance(imp, Iff) for imp in implications):
+                cls = self.__class__
+            else:
+                from pylogic.proposition.or_ import Or
+
+                cls = Or
         else:
-            impl_classes = (Implies, Iff)
+            raise NotImplementedError(f"{self} does not support by_cases")
+
         assert all(
-            isinstance(imp, impl_classes) for imp in implications
-        ), f"Not all implications are of the correct type. Each must be one of {impl_classes}"
+            isinstance(imp, (Implies, Iff)) for imp in implications
+        ), f"Not all implications are of the correct type. Each must be an `Implies` or `Iff`"
         assert self.is_proven, f"{self} is not proven"
         assert all(
             (imp.is_proven for imp in implications)
@@ -359,7 +364,7 @@ Occured when trying to unify `{self}` and `{other}`"
         assert set(antes) == set(
             self.propositions
         ), "Implications (cases) must match propositions in disjunction"
-        new_p = self.__class__(
+        new_p = cls(
             *[imp.right for imp in implications],  # type: ignore
             _is_proven=True,
             _assumptions=get_assumptions(self).union(

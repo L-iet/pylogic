@@ -997,6 +997,8 @@ class Proposition:
         (~Q, True)
         """
         from pylogic.inference import Inference
+        from pylogic.proposition.iff import Iff
+        from pylogic.proposition.implies import Implies
         from pylogic.proposition.not_ import Not, are_negs
 
         assert self.is_proven, f"{self} is not proven"
