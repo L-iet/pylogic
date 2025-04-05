@@ -63,6 +63,15 @@ Reals.theorems.either_rational_or_irrational = ForallInSet(
     Reals,
     r.is_in(Rationals).xor(neg(r.is_in(Rationals))),
 ).todo(_internal=True)
+Reals.theorems.completeness = Reals.bounded_above_has_lub
+
+Reals.theorems.triangle_inequality = ForallInSet(
+    a, Reals,
+    ForallInSet(
+        b, Reals,
+        LessOrEqual(abs(a + b), abs(a) + abs(b))
+    )
+).todo(_internal=True)
 
 Rationals.theorems.ratio_of_integers_lowest_terms = ForallInSet(
     r,

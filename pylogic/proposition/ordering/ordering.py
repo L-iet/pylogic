@@ -68,3 +68,32 @@ class _Ordering(Protocol):
             raise TypeError(
                 f"Cannot multiply {instance} by {other}, use multiply_by_positive or multiply_by_negative"
             )
+        
+    def __add__(
+        self, other: _Ordering
+    ) -> Self:
+        cls = type(self)
+        from pylogic.inference import Inference
+        if not isinstance(other, cls):
+            raise TypeError(f"Cannot add {self} to {other}")
+        if self.is_proven and other.is_proven:
+            from pylogic.proposition.proposition import get_assumptions
+            inf = Inference(
+                self, other, rule="add_inequalities"
+            )
+            return cls(
+                self.left + other.left,
+                self.right + other.right,
+                _is_proven=True,
+                _assumptions=get_assumptions(self).union(
+                    get_assumptions(other)
+                ),
+                _inference=inf,
+            )
+        else:
+            return cls(
+                self.left + other.left,
+                self.right + other.right,
+            )
+
+    # TODO: implement __mul__

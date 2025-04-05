@@ -464,6 +464,7 @@ class Sequence(Generic[T]):
         from sympy import oo
 
         from pylogic.sympy_helpers import PylSympySeqBase, PylSympySeqFormula
+        from pylogic.variable import Variable
 
         if self.nth_term is not None:
             n = Variable("n")

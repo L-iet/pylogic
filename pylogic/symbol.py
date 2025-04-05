@@ -526,11 +526,10 @@ class Symbol:
         kw["_init_kwargs"] = self._init_kwargs
 
         symbol_kwargs = {
-            k: getattr(self, k, None)
+            k: getattr(self, f"_is_{k}", None)
             for k in SYMPY_ASSUMPTIONS
-            if k in self._init_kwargs
+            # if k in self._init_kwargs
         }
-
         return PylSympySymbol(
             *self._init_args,
             _pyl_class=self.__class__,

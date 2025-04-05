@@ -513,9 +513,17 @@ class Expr(ABC):
         """
         if self == other:
             return True
-        if isinstance(other, Expr):
-            return self.evaluate() == other.evaluate()
-        return self.evaluate() == other
+        ret_val = False
+        if hasattr(self, "to_sympy") and hasattr(other, "to_sympy"):
+            # check if both are sympy expressions
+            # and compare them
+            try:
+                ret_val = self.to_sympy() == other.to_sympy()
+            except Exception:
+                ret_val = False
+        if ret_val is False and isinstance(other, Expr):
+            ret_val = self.evaluate() == other.evaluate()
+        return ret_val or self.evaluate() == other
 
     def equals(self, other: Term, **kwargs) -> Equals:
         from pylogic.proposition.relation.equals import Equals
@@ -644,6 +652,8 @@ class CustomExpr(Expr, Generic[U]):
     unless it is not fully evaluated.
     """
 
+    _precedence = 10
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.mutable_attrs_to_copy = self.mutable_attrs_to_copy + [
@@ -698,7 +708,9 @@ class CustomExpr(Expr, Generic[U]):
 
     def _latex(self) -> str:
         if self.latex_func is None:
-            return rf"\text{{{repr(self)}}}"
+            latex_str1 = f"CustomExpr\\_{self.name}"
+            latex_str2 = f"({', '.join([arg._latex() for arg in self.args])})"
+            return rf"\text{{{latex_str1}}}{latex_str2}"
         return self.latex_func(*self.args)
 
     def update_properties(self) -> None:
@@ -713,7 +725,7 @@ class CustomExpr(Expr, Generic[U]):
 
 def distance(
     a, b, eval_func: Callable[[U, U], Term | None] | None = None
-) -> CustomExpr:
+) -> Abs | CustomExpr:
     """
     General distance function.
 
@@ -722,6 +734,8 @@ def distance(
     When evaluated, it returns the absolute value of the difference for real numbers,
     or the result of the evaluation function for other types.
     """
+    if a.is_real and b.is_real:
+        return abs(a - b)
     return CustomExpr(
         "distance",
         a,
@@ -731,10 +745,16 @@ def distance(
             if x.is_real and y.is_real
             else (eval_func(x, y) if eval_func else None)
         ),
+        latex_func=(lambda x, y: (
+            rf"\left|{x._latex()} - {y._latex()}\right|"))
+            if a.is_real and b.is_real
+            else None
+        ,
     )
 
 
 class BinaryExpression(CustomExpr[U]):
+    _precedence = 11
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.mutable_attrs_to_copy = self.mutable_attrs_to_copy + [
@@ -1080,17 +1100,22 @@ class Pow(Expr):
         if base.is_positive and exp.is_real:
             self.is_positive = True
             self.is_zero = False
+            self.is_real = True
         if base.is_nonnegative and exp.is_nonnegative:
             self.is_nonnegative = True
+            self.is_real = True
         if base.is_positive and (exp.is_even is False):
             self.is_zero = False
             self.is_nonnegative = True
+            self.is_real = True
         if base.is_nonpositive and exp.is_even:
             self.is_nonnegative = True
+            self.is_real = True
         if base.is_negative and (exp.is_even is False):
             self.is_zero = False
             self.is_nonpositive = True
             self.is_negative = True
+            self.is_real = True
 
         if base.is_real and exp.is_positive:
             self.is_real = True
@@ -1271,3 +1296,20 @@ def sub(a: PBasic | PythonNumeric | Expr, b: PBasic | PythonNumeric | Expr) -> A
 
 def div(a: PBasic | PythonNumeric | Expr, b: PBasic | PythonNumeric | Expr) -> Mul:
     return Mul(a, Pow(b, -1))
+
+python_max = max
+python_min = min
+def max(*args):
+    # if there is only one argument:
+    # if it is a set, return MaxElement
+    # if it is a sequence, return MaxElement[SeqSet] or MaxElement[FiniteSet]
+    # else return the term
+
+    # if multiple args, assume they are terms
+    # if all numeric, return Constant[python_max]
+    # if any non-numeric:
+    #   if 2 args, return Max(a,b)
+    #   if >2 args, return MaxElement[FiniteSet]
+    from pylogic.helpers import python_to_pylogic
+    args = [python_to_pylogic(arg) for arg in args]
+    ...

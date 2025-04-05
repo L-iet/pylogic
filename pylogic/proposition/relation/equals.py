@@ -212,8 +212,6 @@ class Equals(BinaryRelation[T, U]):
         ----------
         _checking_side: str
             "left" or "right"
-        tried_doit: bool
-            Whether we have tried using doit() on the arguments.
         """
         other_side: Side = Side.RIGHT if _checking_side == Side.LEFT else Side.LEFT
         proven = False
@@ -230,20 +228,24 @@ class Equals(BinaryRelation[T, U]):
     def by_simplification(self) -> Self:
         """Logical inference rule."""
 
-        left_doit = (
-            self.left.evaluate() if isinstance(self.left, (Basic, Expr)) else self.left
-        )
-        right_doit = (
-            self.right.evaluate()
-            if isinstance(self.right, (Basic, Expr))
-            else self.right
-        )
-        doit_results: dict[Side, Term] = {
-            Side.LEFT: left_doit,
-            Side.RIGHT: right_doit,
-        }
+        if self.left.eval_same(self.right):
+            proven = True
+        else:
+            proven = False
+            left_doit = (
+                self.left.evaluate() if isinstance(self.left, (Basic, Expr)) else self.left
+            )
+            right_doit = (
+                self.right.evaluate()
+                if isinstance(self.right, (Basic, Expr))
+                else self.right
+            )
+            doit_results: dict[Side, Term] = {
+                Side.LEFT: left_doit,
+                Side.RIGHT: right_doit,
+            }
 
-        proven = self._check_provable_by_simplification(Side.LEFT, doit_results)
+            proven = self._check_provable_by_simplification(Side.LEFT, doit_results)
         if not proven:
             proven = self._check_provable_by_simplification(Side.RIGHT, doit_results)
         if proven:
@@ -254,6 +256,12 @@ class Equals(BinaryRelation[T, U]):
             return new_p
         else:
             raise ValueError(f"{self} cannot be proven by simplification")
+    
+    def by_eval(self) -> Self:
+        """
+        Return a proven equality if both sides evaluate to the same value.
+        """
+        return self.by_simplification()
 
     def by_inspection_check(self) -> bool | None:
         """

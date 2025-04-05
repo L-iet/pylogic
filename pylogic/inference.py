@@ -15,6 +15,7 @@ rules: set[str] = {
     "__pow__",
     "__truediv__",
     "absolute_value_nonnegative_f",
+    "add_inequalities",
     "add_nonnegative_to_left",
     "add_nonpositive_to_right",
     "add_positive_to_left",

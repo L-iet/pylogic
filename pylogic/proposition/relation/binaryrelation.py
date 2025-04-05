@@ -149,8 +149,8 @@ class BinaryRelation(Relation, Generic[T, U]):
 
     def transitive(self, *others: Self) -> Self:
         """
-        Logical InferenceRule. If self is of the form a Relation b and other is of the form b Relation c,
-        returns a proven relation of the form a Relation c.
+        Logical InferenceRule. If self is of the form a ~ b and other is of the form b ~ c, or of the form (b ~ c or b = c),
+        returns a proven relation of the form a ~ c.
         Will try to evaluate expressions if self.right and other.left don't have
         the same structure.
 

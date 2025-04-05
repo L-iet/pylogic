@@ -18,8 +18,8 @@ class MinElement(Expr):
         self.mutable_attrs_to_copy = self.mutable_attrs_to_copy + ["expr"]
 
     def __new_init__(self, expr: Term) -> None:
-        self.expr = expr
         super().__new_init__(expr)
+        self.expr = self.args[0]
 
     def evaluate(self, **kwargs) -> MinElement | Term:
         from pylogic.helpers import getkey

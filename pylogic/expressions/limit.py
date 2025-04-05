@@ -38,7 +38,7 @@ class Limit(Expr):
         from pylogic.theories.natural_numbers import Naturals
         from pylogic.theories.real_numbers import Reals
 
-        eps = Variable("eps", latex_name="\\epsilon")
+        eps = Variable("\\epsilon", latex_name="\\epsilon")
         N = Variable("N")
         n = Variable("n")
         inner_prop = GreaterThan(eps, 0).implies(

@@ -31,6 +31,7 @@ from pylogic.expressions.expr import Add, Expr, Mul, Pow, add, cbrt, mul, sqrt
 from pylogic.expressions.function import CalledFunction, Function
 from pylogic.expressions.gcd import Gcd
 from pylogic.expressions.limit import Limit
+from pylogic.expressions.max import Max, MaxElement
 from pylogic.expressions.min import MinElement
 from pylogic.expressions.mod import Mod
 from pylogic.expressions.piecewise import (
@@ -53,6 +54,7 @@ from pylogic.proposition.not_ import Not, are_negs, neg
 from pylogic.proposition.or_ import Or
 from pylogic.proposition.ordering.greaterorequal import GreaterOrEqual
 from pylogic.proposition.ordering.greaterthan import GreaterThan
+from pylogic.proposition.ordering.inference import transitive
 from pylogic.proposition.ordering.lessorequal import LessOrEqual
 from pylogic.proposition.ordering.lessthan import LessThan
 from pylogic.proposition.ordering.partial import PartialOrder, StrictPartialOrder

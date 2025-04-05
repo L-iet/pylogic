@@ -277,7 +277,100 @@ LeftSymbol = Literal["[", "("]
 RightSymbol = Literal["]", ")"]
 
 
-def interval(*args) -> Interval:
+class IntervalFunc:
+    """
+    Returns an interval with the given bounds.
+
+    You can create a closed interval by using the subscript operator,
+    or calling the function with the bounds as arguments for more flexibility.
+
+    arguments are either:
+        left_symbol: '[' or '('
+        a: Term
+        b: Term
+        right_symbol: ']' or ')'
+
+        Returns an interval with the given bounds.
+    or:
+        *terms: Term
+        two terms representing the bounds.
+
+        Returns an open interval with the given bounds.
+    or:
+        terms: Tuple[Term, Term]
+
+        Returns an open interval with the given bounds.
+
+    or:
+        terms: list[Term]
+
+        A list of two terms. Returns a closed interval with the given bounds.
+
+    Examples:
+    >>> interval("[", 1, 2, "]")
+    [1, 2]
+    >>> interval("[", 1, 2, ")")
+    [1, 2)
+    >>> interval(1, 2)
+    (1, 2)
+    >>> interval((1, 2))
+    (1, 2)
+    >>> interval([1, 2])
+    [1, 2]
+    >>> interval[1, 2]
+    [1, 2]
+    """
+
+    def __call__(self, *args) -> Interval:
+        """
+        Returns an interval with the given bounds.
+
+        arguments are either:
+            left_symbol: '[' or '('
+            a: Term
+            b: Term
+            right_symbol: ']' or ')'
+
+            Returns an interval with the given bounds.
+        or:
+            *terms: Term
+            two terms representing the bounds.
+
+            Returns an open interval with the given bounds.
+        or:
+            terms: Tuple[Term, Term]
+
+            Returns an open interval with the given bounds.
+
+        or:
+            terms: list[Term]
+
+            A list of two terms. Returns a closed interval with the given bounds.
+
+        Examples:
+        >>> interval("[", 1, 2, "]")
+        [1, 2]
+        >>> interval("[", 1, 2, ")")
+        [1, 2)
+        >>> interval(1, 2)
+        (1, 2)
+        >>> interval((1, 2))
+        (1, 2)
+        >>> interval([1, 2])
+        [1, 2]
+        """
+        return _interval(*args)
+
+    def __getitem__(self, item) -> Interval:
+        """
+        Creates a closed interval of real numbers with the given bounds.
+        """
+        if isinstance(item, tuple) and len(item) == 2:
+            return Interval(*item, a_inclusive=True, b_inclusive=True)
+        raise ValueError("Invalid arguments: " + str(item))
+
+
+def _interval(*args) -> Interval:
     """
     Returns an interval with the given bounds.
 
@@ -335,3 +428,6 @@ def interval(*args) -> Interval:
     a_inclusive = left_symbol == "["
     b_inclusive = right_symbol == "]"
     return Interval(a, b, a_inclusive=a_inclusive, b_inclusive=b_inclusive)
+
+
+interval = IntervalFunc()

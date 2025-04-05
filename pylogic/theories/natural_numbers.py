@@ -305,6 +305,7 @@ class NaturalsSemiring(SemirIng, OrderedSet):
         match induction_step:
             case ForallInSet(
                 variable=n1,
+                set_=induc_set,
                 _inner_without_set=Implies(
                     antecedent=ForallInSet(
                         variable=k1,
@@ -317,7 +318,8 @@ class NaturalsSemiring(SemirIng, OrderedSet):
                 ),
             ):
                 if (
-                    n1 == n2
+                    induc_set == self
+                    and n1 == n2
                     and k1 == k2
                     and p_k.replace({k1: 0}).eval_same(base_case)
                     and p_k.replace({k1: n1 + one}).eval_same(p__n_plus_1)
@@ -363,11 +365,14 @@ You may have dangling assumptions whose scopes are not properly closed."
         match induction_step:
             case ForallInSet(
                 variable=n1,
+                set_=induc_set,
                 _inner_without_set=Implies(antecedent=p_n, consequent=p__n_plus_1),
             ):
-                if p_n.replace({n1: zero}).eval_same(base_case) and p_n.replace(
-                    {n1: n1 + 1}
-                ).eval_same(p__n_plus_1):
+                if (
+                    induc_set == self
+                    and p_n.replace({n1: zero}).eval_same(base_case)
+                    and p_n.replace({n1: n1 + 1}).eval_same(p__n_plus_1)
+                ):
                     return ForallInSet(
                         n1,
                         self,

@@ -38,7 +38,7 @@ class AssumptionsContext:
     @overload
     def variables(self, name: str, **kwargs) -> Variable: ...
     @overload
-    def variables(*names: str, **kwargs) -> tuple[Variable, ...]: ...
+    def variables(self, *names: str, **kwargs) -> tuple[Variable, ...]: ...
     def variables(self, *names: str, **kwargs) -> Variable | tuple[Variable, ...]:
         if len(names) == 1:
             return self.variable(names[0], **kwargs)
@@ -215,6 +215,14 @@ class AssumptionsContext:
         if self.exited:
             return self.proven_propositions
         return []
+    
+    def get_first_proven(self) -> Proposition | None:
+        """
+        Returns the first proven proposition after the context.
+        """
+        if self.exited:
+            return self.proven_propositions[0] if self.proven_propositions else None
+        return None
 
 
 def conclude(conclusion: Proposition) -> Proposition:
