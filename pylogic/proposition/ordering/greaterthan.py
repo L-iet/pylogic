@@ -56,6 +56,13 @@ class GreaterThan(StrictTotalOrder[T, U], _Ordering):
             return inspec
         if self.right == 0:
             return self.left.is_positive
+        
+    def _set_is_inferred(self, value: bool) -> None:
+        if value and self.right == 0 and not self.left.is_positive:
+            self.left.is_positive = True
+        if value and self.left == 0 and not self.right.is_negative:
+            self.right.is_negative = True
+        super()._set_is_inferred(value)
 
     def to_positive_inequality(self):
         """If self is of the form a > b, returns an inequality of the form a - b > 0"""

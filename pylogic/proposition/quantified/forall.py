@@ -157,29 +157,33 @@ class Forall(_Quantified[TProposition]):
         )
         return new_p
 
-    def in_particular(self, expression_to_substitute: Term) -> TProposition:
+    def in_particular(self, expression_to_substitute: Term, **kwargs) -> TProposition:
         """Logical inference rule. Given self is proven, replace the variable in the inner
         proposition and get a proven proposition.
         """
         from pylogic.helpers import python_to_pylogic
         from pylogic.variable import Variable
 
+        dont_prove = kwargs.get("prove", True) is False
+
         expression_to_substitute = python_to_pylogic(expression_to_substitute)
 
         # TODO: may need to define or override .replace for Forall to prevent
         # unnecessarily replacing the variable in the inner proposition
-        assert self.is_proven, f"{self} is not proven"
+
+        if not dont_prove:
+            assert self.is_proven, f"{self} is not proven"
 
         if isinstance(expression_to_substitute, Variable):
             expression_to_substitute.unbind()
-        # I previously checked that expression_to_substitute does
-        # not contain variables, but I think it's not necessary
+    
         new_p = self.inner_proposition.replace(
             {self.variable: expression_to_substitute}
         )
-        new_p._set_is_proven(True)
-        new_p.from_assumptions = get_assumptions(self).copy()
-        new_p.deduced_from = Inference(self, rule="in_particular")
+        if not dont_prove:
+            new_p._set_is_proven(True)
+            new_p.from_assumptions = get_assumptions(self).copy()
+            new_p.deduced_from = Inference(self, rule="in_particular")
         return new_p
 
     def de_morgan(self) -> Proposition:
@@ -382,14 +386,21 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
         self,
         expression_to_substitute: Term,
         proof_expr_to_substitute_in_set: Proposition | None = None,
+        **kwargs
     ) -> TProposition:
         """Logical inference rule. Given self is proven, replace the variable in the inner
         proposition and get a proven proposition.
         """
-        assert self.is_proven, f"{self} is not proven"
-        impl = super().in_particular(expression_to_substitute)
+        dont_prove = kwargs.get("prove", True) is False
+        if not dont_prove:
+            assert self.is_proven, f"{self} is not proven"
+        impl = super().in_particular(expression_to_substitute, **kwargs)
         if proof_expr_to_substitute_in_set is None:
             try:
+                # this is fine even with prove=False because ValueError
+                # will be raised if there is no proof it is in the set
+                # so impl will be returned
+                # otherwise, it will return the inner implication at the end
                 ante = IsContainedIn(
                     expression_to_substitute, self.set_
                 ).by_inspection()
@@ -401,13 +412,13 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
             == self.set_.predicate(expression_to_substitute)
         ):
             ante = IsContainedIn(expression_to_substitute, self.set_).by_predicate(
-                proof_expr_to_substitute_in_set
+                proof_expr_to_substitute_in_set, **kwargs
             )
         elif isinstance(proof_expr_to_substitute_in_set, IsContainedIn):
             ante = proof_expr_to_substitute_in_set
         else:
             return impl
-        new_p = impl.first_unit_definite_clause_resolve(ante)
+        new_p = impl.first_unit_definite_clause_resolve(ante, **kwargs)
         return new_p  # type: ignore
 
 
@@ -450,14 +461,18 @@ class ForallSubsets(Forall[Implies[IsSubsetOf, TProposition]]):
         self,
         expression_to_substitute: Term,
         proof_expr_to_substitute_is_subset: IsSubsetOf | None = None,
+        **kwargs
     ) -> TProposition:
         """Logical inference rule. Given self is proven, replace the variable in the inner
         proposition and get a proven proposition.
         """
-        assert self.is_proven, f"{self} is not proven"
-        impl = super().in_particular(expression_to_substitute)
+        dont_prove = kwargs.get("prove", True) is False
+        if not dont_prove:
+            assert self.is_proven, f"{self} is not proven"
+        impl = super().in_particular(expression_to_substitute, **kwargs)
         if proof_expr_to_substitute_is_subset is None:
             try:
+                # see ForallInSet.in_particular for explanation
                 ante = IsSubsetOf(
                     expression_to_substitute, self.right_set
                 ).by_inspection()
@@ -465,5 +480,5 @@ class ForallSubsets(Forall[Implies[IsSubsetOf, TProposition]]):
                 return impl
         else:
             ante = proof_expr_to_substitute_is_subset
-        new_p = impl.first_unit_definite_clause_resolve(ante)
+        new_p = impl.first_unit_definite_clause_resolve(ante, **kwargs)
         return new_p  # type: ignore

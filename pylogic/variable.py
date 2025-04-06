@@ -39,8 +39,20 @@ class Variable(Symbol):
         # other assumptions
         if context is not None:
             context.assumptions.append(self)
+            import pylogic.assumptions_context as ac
+            from pylogic.proposition.quantified.forall import Forall
+            if isinstance(ac._target_to_prove, Forall):
+                try:
+                    # do a basic version of in_particular since variable does 
+                    # not have __hash__ yet
+                    name = args[0]
+                    if name == ac._target_to_prove.variable.name:
+                        ac._target_to_prove = ac._target_to_prove.inner_proposition
+                except (AssertionError, TypeError, ValueError):
+                    pass
 
         super().__new_init__(*args, depends_on=depends_on, **kwargs)
+            
         self.is_bound: bool = False
         # if the variable is created from a proven existential statement
         # it won't be equal to any other constant

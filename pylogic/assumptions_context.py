@@ -186,6 +186,10 @@ class AssumptionsContext:
             if isinstance(a, Proposition):
                 a._set_is_assumption(False)
 
+        # remove need to call conclude
+        if len(self._interesting_conclusions) == 0 and len(self._proven) > 0:
+            self.proven_propositions.append(self._build_proven(self._proven[-1]))
+
         for p in self._interesting_conclusions:
             self.proven_propositions.append(self._build_proven(p))
         del assumptions_contexts[-1]
@@ -239,6 +243,13 @@ def conclude(conclusion: Proposition) -> Proposition:
 
     if assumptions_contexts[-1] is not None:
         assumptions_contexts[-1]._interesting_conclusions.append(conclusion)
+    
+    # check if conclusion is an assumption so we can update target if needed
+    # for eg in proving p -> (q -> p)
+    global _target_to_prove
+    if conclusion.is_assumption and conclusion == _target_to_prove:
+        _target_to_prove = None
+
     return conclusion
 
 
@@ -269,5 +280,20 @@ def ctx_vars(*names: str, **kwargs) -> tuple[Variable, ...]: ...
 def ctx_vars(*names: str, **kwargs) -> Variable | tuple[Variable, ...]:
     return context_variables(*names, **kwargs)
 
+def to_prove(*target: Proposition) -> Proposition | None:
+    """
+    Set a target proposition to prove.
+
+    When called with no arguments, it returns the current target proposition.
+    """
+    global _target_to_prove
+    if len(target) == 0:
+        return _target_to_prove
+    if len(target) == 1:
+        _target_to_prove = target[0]
+        return target[0]
+    raise ValueError("to_prove() accepts zero or one argument")
+
 
 assumptions_contexts: list[AssumptionsContext | None] = [None]
+_target_to_prove: Proposition | None = None

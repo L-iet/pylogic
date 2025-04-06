@@ -245,6 +245,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
     def definite_clause_resolve(
         self,
         in_body: list[Proposition] | tuple[Proposition, ...] | And[Proposition, ...],
+        **kwargs
     ) -> Self | Implies[Proposition, UProposition] | UProposition:
         r"""
         Logical inference rule. Given self `(A /\ B /\ C...) -> D` is proven, and
@@ -253,34 +254,43 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         definite clause `(C /\ ...) -> D` or `C -> D` if only C is left in
         the body, or D if the antecedent is left empty.
         """
-        assert self.is_proven, f"{self} is not proven"
+        dont_prove = kwargs.get("prove", True) is False
+        if not dont_prove:
+            assert self.is_proven, f"{self} is not proven"
         from pylogic.proposition.and_ import And
 
         if not isinstance(self.antecedent, And):
             assert isinstance(
                 in_body, (list, tuple)
             ), f"{in_body} should be a list/tuple since the antecedent is not an And"
-            return in_body[0].modus_ponens(self)  # type: ignore
+            return in_body[0].modus_ponens(self, **kwargs)  # type: ignore
 
         in_body_is_and = isinstance(in_body, And)
         props = set(in_body.propositions if in_body_is_and else in_body)
 
         if in_body_is_and:
-            assert in_body.is_proven, f"{in_body} is not proven"
-            in_body_assumptions = get_assumptions(in_body)
+            if not dont_prove:
+                assert in_body.is_proven, f"{in_body} is not proven"
+                in_body_assumptions = get_assumptions(in_body)
         else:
             assert isinstance(
                 in_body, (list, tuple)
             ), f"{in_body} is not a list or tuple"
             in_body_assumptions: set[Proposition] = set()
-            for prop in props:
-                assert prop.is_proven, f"{prop} is not proven"
-                in_body_assumptions = in_body_assumptions.union(get_assumptions(prop))
+            if not dont_prove:
+                for prop in props:
+                    assert prop.is_proven, f"{prop} is not proven"
+                    in_body_assumptions = in_body_assumptions.union(get_assumptions(prop))
 
         rem_props = [prop for prop in self.antecedent.propositions if prop not in props]
         # TODO: the inference may contain propositions with is_proven=False
         # since we are using *props instead of in_body (the logic is valid & sound though)
         if len(rem_props) == 1:
+            if dont_prove:
+                return Implies(
+                    rem_props[0],
+                    self.consequent,
+                )
             return Implies(
                 rem_props[0],
                 self.consequent,
@@ -290,9 +300,10 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             )
         if len(rem_props) == 0:
             new_p = self.consequent.copy()
-            new_p._set_is_proven(True)
-            new_p.deduced_from = Inference(self, *props, rule="definite_clause_resolve")
-            new_p.from_assumptions = get_assumptions(self).union(in_body_assumptions)
+            if not dont_prove:
+                new_p._set_is_proven(True)
+                new_p.deduced_from = Inference(self, *props, rule="definite_clause_resolve")
+                new_p.from_assumptions = get_assumptions(self).union(in_body_assumptions)
             return new_p
         new_p = Implies(
             And(*rem_props),  # type: ignore
@@ -300,11 +311,14 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             _is_proven=True,
             _assumptions=get_assumptions(self).union(in_body_assumptions),
             _inference=Inference(self, *props, rule="definite_clause_resolve"),
+        ) if not dont_prove else Implies(
+            And(*rem_props),  # type: ignore
+            self.consequent,
         )
         return new_p  # type:ignore
 
     def unit_definite_clause_resolve(
-        self, in_body: Proposition
+        self, in_body: Proposition, **kwargs
     ) -> Self | Implies[Proposition, UProposition] | UProposition:
         r"""
         Logical inference rule. Given self `(A /\ B /\ C...) -> D` is proven, and
@@ -313,10 +327,10 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         or `A -> D` if only A is left in the body, or D if the antecedent is
         left empty.
         """
-        return self.definite_clause_resolve([in_body])
+        return self.definite_clause_resolve([in_body], **kwargs)
 
     def first_unit_definite_clause_resolve(
-        self, first_in_body: Proposition
+        self, first_in_body: Proposition, **kwargs
     ) -> Self | Implies[Proposition, UProposition] | UProposition:
         r"""
         Logical inference rule. Given self `(A /\ B /\ C...) -> D` is proven, given A is proven,
@@ -325,26 +339,28 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         Slightly faster than `unit_definite_clause_resolve`.
         """
         from pylogic.proposition.and_ import And
-
-        assert self.is_proven, f"{self} is not proven"
+        dont_prove = kwargs.get("prove", True) is False
+        if not dont_prove:
+            assert self.is_proven, f"{self} is not proven"
         if not isinstance(self.antecedent, And):
-            return first_in_body.modus_ponens(self)  # type: ignore
-
-        assert first_in_body.is_proven, f"{first_in_body} is not proven"
+            return first_in_body.modus_ponens(self, **kwargs)  # type: ignore
+        if not dont_prove:
+            assert first_in_body.is_proven, f"{first_in_body} is not proven"
         first_ante = self.antecedent.propositions[0]
         len_ante = len(self.antecedent.propositions)
         assert (
             first_in_body == first_ante
         ), f"{first_in_body} is not the first proposition {first_ante}"
+        ante = self.antecedent.propositions[1] if len_ante == 2 else And(*self.antecedent.propositions[1:])  # type: ignore
         new_p = Implies(
-            self.antecedent.propositions[1] if len_ante == 2 else And(*self.antecedent.propositions[1:]),  # type: ignore
+            ante,
             self.consequent,
             _is_proven=True,
             _assumptions=get_assumptions(self).union(get_assumptions(first_in_body)),
             _inference=Inference(
                 self, first_in_body, rule="first_unit_definite_clause_resolve"
             ),
-        )
+        ) if not dont_prove else Implies(ante, self.consequent)
         return new_p  # type:ignore
 
     def unify(self, other: Self) -> Unification | Literal[True] | None:

@@ -46,6 +46,13 @@ class LessOrEqual(TotalOrder[T, U], _Ordering):
             return inspec
         if self.right == 0:
             return self.left.is_nonpositive
+    
+    def _set_is_inferred(self, value: bool) -> None:
+        if value and self.right == 0 and not self.left.is_nonpositive:
+            self.left.is_nonpositive = True
+        if value and self.left == 0 and not self.right.is_nonnegative:
+            self.right.is_nonnegative = True
+        super()._set_is_inferred(value)
 
     def to_disjunction(self) -> Or[LessThan, Equals]:
         """If self is of the form `a <= b`, returns a proposition of the form `a < b or a = b`"""

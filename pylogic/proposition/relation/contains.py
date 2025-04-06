@@ -155,20 +155,25 @@ class IsContainedIn(BinaryRelation[T, U]):
         else:
             raise ValueError(f"Cannot prove that {self.right} contains {self.left}")
 
-    def by_predicate(self, proven_predicate: Proposition) -> Self:
+    def by_predicate(self, proven_predicate: Proposition, **kwargs) -> Self:
         """Logical inference rule. Use the set's predicate function to prove that it
         contains the element
         """
         # For sequence s = self.right, self.left would need to be a natural number n
         # representing the index of the sequence term.
         # However, (n in s).by_predicate(...) would then be nonsensical.
+
         assert self.right.is_set, f"{self.right} is not a set"
+        dont_prove = kwargs.get("prove", True) is False
         try:
             if (
-                proven_predicate.is_proven
+                (dont_prove or proven_predicate.is_proven)
                 and self.right.predicate(self.left) == proven_predicate
             ):
                 ret_val = IsContainedIn(
+                    self.element,
+                    self.right,
+                ) if dont_prove else IsContainedIn(
                     self.element,
                     self.right,
                     _is_proven=True,

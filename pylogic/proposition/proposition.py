@@ -249,11 +249,13 @@ class Proposition:
     def _set_is_inferred(self, value: bool) -> None:
         """
         Used in some subclasses like IsContainedIn for custom behaviour when a proof is made
+
+        This is a common method called by _set_is_proven, _set_is_assumption, and _set_is_axiom
         """
         pass
 
     def _set_is_proven(self, value: bool, **kwargs) -> None:
-        from pylogic.assumptions_context import assumptions_contexts
+        import pylogic.assumptions_context as ac
 
         self._is_proven = value
         if value:
@@ -262,14 +264,16 @@ class Proposition:
         # don't add to context for internal use
         if (
             kwargs.get("_internal", False)
-            or kwargs.get("add_to_context", False) is True
+            or (kwargs.get("add_to_context", False) is True) # different for _set_is_assumption
         ):
             return
 
         # context can be None
-        context = kwargs.get("context", assumptions_contexts[-1])
+        context = kwargs.get("context", ac.assumptions_contexts[-1])
         if context is not None and value:
             context._proven.append(self)
+        if ac._target_to_prove == self:
+            ac._target_to_prove = None
 
     def _set_is_assumption(self, value: bool, **kwargs) -> None:
 
@@ -281,14 +285,22 @@ class Proposition:
         if kwargs.get("_internal", False):
             return
 
-        from pylogic.assumptions_context import assumptions_contexts
+        import pylogic.assumptions_context  as ac
+        from pylogic.proposition.implies import Implies
 
         add_to_context = kwargs.get("add_to_context", True)
         if not add_to_context:
             return
-        context = kwargs.get("context", assumptions_contexts[-1])
+        context = kwargs.get("context", ac.assumptions_contexts[-1])
         if context is not None and value:
             context.assumptions.append(self)
+        if ac._target_to_prove == self:
+            ac._target_to_prove = None
+        elif isinstance(ac._target_to_prove, Implies):
+            try:
+                ac._target_to_prove = ac._target_to_prove.first_unit_definite_clause_resolve(self, prove=False)
+            except (AssertionError, TypeError, ValueError):
+                pass
 
     def _set_is_axiom(self, value: bool) -> None:
         self.is_axiom = value
@@ -933,7 +945,7 @@ class Proposition:
         return new_p
 
     def modus_ponens(
-        self, other: Implies[Self, TProposition] | Iff[Self, TProposition]
+        self, other: Implies[Self, TProposition] | Iff[Self, TProposition], **kwargs
     ) -> TProposition:
         """
         Logical inference rule.
@@ -949,15 +961,20 @@ class Proposition:
         >>> p3, p3.is_proven
         (Q, True)
         """
+        # TODO: add **kwargs to allow easy addition of kwargs
+        # like prove to all inference rules
+        # currently in modus_ponens, in_particular, by_predicate
         from pylogic.inference import Inference
         from pylogic.proposition.iff import Iff
         from pylogic.proposition.implies import Implies
 
-        assert self.is_proven, f"{self} is not proven"
-        assert other.is_proven, f"{other} is not proven"
         assert isinstance(other, (Implies, Iff)), f"{other} is not an implication"
         assert other.left == self, f"{other.left} is not the same as {self}"
         new_p = other.right.copy()
+        if kwargs.get("prove", True) is False:
+            return new_p
+        assert self.is_proven, f"{self} is not proven"
+        assert other.is_proven, f"{other} is not proven"
         new_p._set_is_proven(True)
         new_p.deduced_from = Inference(self, other, rule="modus_ponens")
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(other))
