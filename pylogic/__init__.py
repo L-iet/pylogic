@@ -7,7 +7,14 @@ from typing import Self
 
 # set the default warning filter to ignore internal warnings
 # before importing any other modules
-if not sys.warnoptions:
+for w in sys.warnoptions:
+    if "PylogicInternalWarning" in w:
+        break
+else:
+    # If no warning filter was set, set the default to ignore internal warnings
+    # This is to avoid warnings from pylogic itself, which are not useful for the user
+    # and are only used for debugging purposes.
+    # This should be removed in the future, when pylogic is more stable.
     import warnings
 
     from pylogic.warn import PylogicInternalWarning
