@@ -71,6 +71,7 @@ class AssumptionsContext:
         from pylogic.inference import Inference
         from pylogic.proposition.and_ import And
         from pylogic.proposition.contradiction import Contradiction
+        from pylogic.proposition.implies import Implies
         from pylogic.proposition.not_ import neg
         from pylogic.proposition.proposition import Proposition, get_assumptions
         from pylogic.proposition.quantified.forall import Forall, ForallInSet
@@ -108,13 +109,15 @@ class AssumptionsContext:
                     if isinstance(cons, Contradiction):
                         cons = neg(current_ante[0])
                     else:
-                        cons = current_ante[0].implies(cons)
+                        # dont de-nest, to avoid
+                        # changing a -> (b -> c) to ((a and b) -> c)
+                        cons = current_ante[0].implies(cons, de_nest=False)
                 else:
                     current_ante.reverse()
                     if isinstance(cons, Contradiction):
                         cons = neg(And(*current_ante))
                     else:
-                        cons = And(*current_ante).implies(cons)
+                        cons = And(*current_ante).implies(cons, de_nest=False)
                 current_ante = []
                 i = j
             else:

@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
     from pylogic.proposition.implies import Implies
     from pylogic.proposition.relation.binaryrelation import BinaryRelation
+    from pylogic.proposition.contradiction import Contradiction
 
     T = TypeVar("T", bound=BinaryRelation)
 else:
@@ -168,6 +169,9 @@ class Not(Proposition, Generic[TProposition]):
 
     def __hash__(self) -> int:
         return hash(("not", self.negated))
+    
+    def __call__(self, other_prop: Proposition) -> Contradiction:
+        return self.contradicts(other_prop)
 
     def _set_is_inferred(self, value: bool) -> None:
         super()._set_is_inferred(value)

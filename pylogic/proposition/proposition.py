@@ -612,16 +612,17 @@ class Proposition:
         self,
         other: TProposition | Implies[TProposition, UProposition],
         is_assumption: bool = False,
+        de_nest: bool = True,
         **kwargs,
     ) -> Implies[Self, TProposition] | Implies[And[Self, TProposition], UProposition]:
         r"""
         Create an implication from this proposition to another.
-        If other is an implication `A -> B`, we return an implication
+        If other is an implication `A -> B` and de_nest = `True`, we return an implication
         `(self /\ A) -> B`.
         """
         from pylogic.proposition.implies import Implies
 
-        if isinstance(other, Implies):
+        if de_nest and isinstance(other, Implies):
             return self.and_(other.antecedent).implies(
                 other.consequent, is_assumption=is_assumption, **kwargs
             )
