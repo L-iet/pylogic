@@ -57,20 +57,57 @@ def get_assumptions(p: Proposition) -> set[Proposition]:
 
 class Proposition:
     """
+    Create a Proposition. A proposition is a declarative logical statement.
+
+    Parameters
+    ----------
+    name: str
+        Name of the proposition.
+    is_assumption: bool
+        Whether this proposition is an assumption. Assumptions are true only within
+        the context they are made.
+    is_axiom: bool
+        Whether this proposition is an axiom. Axioms are true in all contexts.
+    description: str
+        A description of what this proposition is.
+    args: list[Term] | None
+        The arguments of the proposition. If `None`, the proposition has no arguments.
+
     Attributes
     ----------
     name: str
-        Name of the proposition. Typically the first part of the __repr__.
+        Name of the proposition.
     is_assumption: bool
-        Whether this proposition is an assumption.
-    args: list[Term|Set]
+        Whether this proposition is an assumption. Assumptions are true only within
+        the context they are made.
+    is_axiom: bool
+        Whether this proposition is an axiom. Axioms are true in all contexts.
+    description: str
+        A description of this proposition.
+    args: list[Term] | None
         The arguments of the proposition.
     arity: int
         The number of arguments of the proposition.
     is_proven: bool
-        Whether the proposition is proven.
+        Whether the proposition has been proven. If `is_proven` is `False`, the
+        proposition is not necessarily false, but it is not proven to be true.
     from_assumptions: set[Proposition]
-        The assumptions that were used to deduce this proposition. Excludes self.
+        The assumptions that were used to deduce this proposition.
+    deduced_from: Inference | None
+        The inference that was used to deduce this proposition. This will not be
+        `None` if the proposition was proven using inference rules. This is
+        `None` if `is_proven` is `False`, or if `is_axiom` is `True` while
+        `is_asumption` is `False`.
+
+    Example
+    -------
+    >>> p = Proposition("p", args=[1, 2])
+    >>> p.name
+    'p'
+    >>> p.args
+    [Constant(1, deps=()), Constant(2, deps=())]
+    >>> p.is_assumption
+    False
     """
 
     # order of operations for propositions (0-indexed)
@@ -106,19 +143,6 @@ class Proposition:
         args: list[Term] | None = None,
         **kwargs,
     ) -> None:
-        """
-        name: str
-            Name of the proposition.
-        is_assumption: bool
-            Whether this proposition is an assumption.
-        is_axiom: bool
-            Whether this proposition is an axiom. Axioms are assumptions whose
-            negations are never proven.
-        description: str
-            A description of what this proposition is.
-        args: list[Term] | None
-            The arguments of the proposition. If None, we assume the proposition has no arguments.
-        """
         from pylogic.helpers import (
             get_class_ns,
             get_consts,
@@ -182,23 +206,42 @@ class Proposition:
 
     @property
     def symbols(self) -> set[Symbol]:
+        """
+        All the symbols in the proposition. This includes variables and constants.
+        """
         return self.variables.union(self.constants)  # type: ignore
 
     @property
     def atoms(self) -> set[Symbol | Set]:
         """
         All the atomic symbols and sets in the proposition.
+        This includes variables, constants, sets and classes.
         """
         # TODO: Maybe include Function
         return self.symbols.union(self.sets).union(self.class_ns)
 
     def __eq__(self, other: object) -> bool:
+        """
+        Check if two propositions are equal. For atomic propositions, this will
+        check if the names and arguments are equal. For compound propositions,
+        this will check if they are of the same type and if all the
+        subpropositions are equal.
+        """
         if isinstance(other, Proposition):
             return self.name == other.name and self.args == other.args
         return NotImplemented
 
     @classmethod
     def inference_rules(cls) -> list[str]:
+        """
+        Return a list of inference rules that are implemented in this class.
+
+        Returns
+        -------
+        list[str]
+            A list of inference rules that are implemented in this class.
+
+        """
         ret_val = []
         for attr, v in cls.__dict__.items():
             if callable(v) and v.__doc__ is not None and "inference rule" in v.__doc__:
@@ -262,10 +305,9 @@ class Proposition:
             self._set_is_inferred(True)
 
         # don't add to context for internal use
-        if (
-            kwargs.get("_internal", False)
-            or (kwargs.get("add_to_context", False) is True) # different for _set_is_assumption
-        ):
+        if kwargs.get("_internal", False) or (
+            kwargs.get("add_to_context", False) is True
+        ):  # different for _set_is_assumption
             return
 
         # context can be None
@@ -276,7 +318,6 @@ class Proposition:
             ac._target_to_prove = None
 
     def _set_is_assumption(self, value: bool, **kwargs) -> None:
-
         self.is_assumption = value
         if value:
             self._set_is_inferred(True)
@@ -285,7 +326,7 @@ class Proposition:
         if kwargs.get("_internal", False):
             return
 
-        import pylogic.assumptions_context  as ac
+        import pylogic.assumptions_context as ac
         from pylogic.proposition.implies import Implies
 
         add_to_context = kwargs.get("add_to_context", True)
@@ -298,7 +339,11 @@ class Proposition:
             ac._target_to_prove = None
         elif isinstance(ac._target_to_prove, Implies):
             try:
-                ac._target_to_prove = ac._target_to_prove.first_unit_definite_clause_resolve(self, prove=False)
+                ac._target_to_prove = (
+                    ac._target_to_prove.first_unit_definite_clause_resolve(
+                        self, prove=False
+                    )
+                )
             except (AssertionError, TypeError, ValueError):
                 pass
 
@@ -310,6 +355,16 @@ class Proposition:
     def todo(self, **kwargs) -> Self:
         """
         Mark the proposition as proven, but not yet implemented.
+
+        Returns
+        -------
+        Self
+            The proposition itself.
+
+        Warns
+        -----
+        UserWarning
+            Lets the user know that this proposition is not actually proven yet.
         """
         from pylogic.inference import Inference
         from pylogic.warn import PylogicInternalWarning
@@ -332,11 +387,39 @@ class Proposition:
         Logical inference rule.
 
         Mark the proposition as an assumption.
+
+        Returns
+        -------
+        Self
+            The proposition itself.
         """
         self._set_is_assumption(True, **kwargs)
         return self
 
     def eval_same(self, other: Proposition) -> bool:
+        """
+        Check if two propositions evaluate to equal propositions.
+        We check if the names are equal and if all the corresponding arguments
+        evaluate to equal terms.
+
+        Parameters
+        ----------
+        other: Proposition
+            The proposition to compare to.
+
+        Returns
+        -------
+        bool
+            True if the propositions are evaluate to the same prpositin, False
+            otherwise.
+
+        Examples
+        --------
+        >>> p1 = Proposition("p", args=[2])
+        >>> p2 = Proposition("p", args=[Add(1, 1)])
+        >>> p1.eval_same(p2)
+        True
+        """
         from pylogic.helpers import eval_same
 
         return self.name == other.name and all(
@@ -362,19 +445,67 @@ class Proposition:
             return self.name
 
     def __copy__(self) -> Self:
+        """
+        Create a shallow copy of the proposition.
+        """
         return self.copy()
 
     def __bool__(self) -> bool:
+        """
+        Raises
+        ------
+        TypeError
+            Cannot convert a proposition to a boolean.
+        """
         raise TypeError("Cannot convert proposition to bool")
 
-    def __rshift__(self, other: Proposition) -> Implies[Proposition, Proposition]:
-        if settings["PYTHON_OPS_RETURN_PROPS"]:
-            from pylogic.proposition.implies import Implies
+    def __rshift__(
+        self, other: Proposition
+    ) -> Implies[Self, Proposition] | Implies[And[Self, Proposition], Proposition]:
+        """
+        Create an implication from this proposition to another. This works when
+        :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `True`.
 
-            return Implies(self, other)
+        Parameters
+        ----------
+        other: Proposition
+
+        Returns
+        -------
+        Implies[Self, Proposition] | Implies[And[Self, Proposition], Proposition]
+            An implication from this proposition to the other proposition.
+
+        Raises
+        ------
+        TypeError
+            If :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `False`, this
+            operator returns `NotImplemented` and raises a `TypeError`.
+        """
+        if settings["PYTHON_OPS_RETURN_PROPS"]:
+            return self.implies(other)
         return NotImplemented
 
     def __and__(self, other: Proposition) -> And[Proposition, Proposition]:
+        """
+        Create a conjunction from this proposition to another. This works when
+        :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `True`.
+
+        Parameters
+        ----------
+        other: Proposition
+            The other proposition to combine with this one.
+
+        Returns
+        -------
+        And[Proposition, Proposition]
+            A conjunction of this proposition and the other proposition.
+
+        Raises
+        ------
+        TypeError
+            If :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `False`, this
+            operator returns `NotImplemented` and raises a `TypeError`.
+        """
         if settings["PYTHON_OPS_RETURN_PROPS"]:
             from pylogic.proposition.and_ import And
 
@@ -382,6 +513,26 @@ class Proposition:
         return NotImplemented
 
     def __or__(self, other: Proposition) -> Or[Proposition, Proposition]:
+        """
+        Create a disjunction from this proposition to another. This works when
+        :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `True`.
+
+        Parameters
+        ----------
+        other: Proposition
+            The other proposition to combine with this one.
+
+        Returns
+        -------
+        Or[Proposition, Proposition]
+            A disjunction of this proposition and the other proposition.
+
+        Raises
+        ------
+        TypeError
+            If :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `False`, this
+            operator returns `NotImplemented` and raises a `TypeError`.
+        """
         if settings["PYTHON_OPS_RETURN_PROPS"]:
             from pylogic.proposition.or_ import Or
 
@@ -389,13 +540,48 @@ class Proposition:
         return NotImplemented
 
     def __xor__(self, other: Proposition) -> ExOr[Proposition, Proposition]:
+        """
+        Create an exclusive disjunction from this proposition to another. This works when
+        :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `True`.
+
+        Parameters
+        ----------
+        other: Proposition
+            The other proposition to combine with this one.
+
+        Returns
+        -------
+        ExOr[Proposition, Proposition]
+            An exclusive disjunction of this proposition and the other proposition.
+
+        Raises
+        ------
+        TypeError
+            If :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `False`, this
+            operator returns `NotImplemented` and raises a `TypeError`.
+        """
         if settings["PYTHON_OPS_RETURN_PROPS"]:
             from pylogic.proposition.exor import ExOr
 
             return ExOr(self, other)
         return NotImplemented
 
-    def __invert__(self) -> Not[Proposition]:
+    def __invert__(self) -> Not[Self]:
+        """
+        Create a negation of this proposition. This works when
+        :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `True`.
+
+        Returns
+        -------
+        Not[Self]
+            A negation of this proposition.
+
+        Raises
+        ------
+        TypeError
+            If :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `False`, this
+            operator returns `NotImplemented` and raises a `TypeError`.
+        """
         if settings["PYTHON_OPS_RETURN_PROPS"]:
             from pylogic.proposition.not_ import Not
 
@@ -403,6 +589,14 @@ class Proposition:
         return NotImplemented
 
     def _latex(self, printer=None) -> str:
+        """
+        Return a LaTeX representation of the proposition.
+
+        Returns
+        -------
+        str
+            A LaTeX representation of the proposition.
+        """
         from pylogic.helpers import latex
 
         args_latex = [latex(a) for a in self.args]
@@ -415,18 +609,32 @@ class Proposition:
 
     @property
     def is_proven(self) -> bool:
+        """
+        Whether the proposition has been proven. If `is_proven` is `False`, the
+        proposition is not necessarily false, but it is not proven to be true.
+        """
         return self._is_proven or self.is_assumption or self.is_axiom
 
     def as_text(self, *, _indent=0) -> str:
         """
-        Return a textual representation of the proposition. Subpropositions
+        Return a text representation of the proposition. Subpropositions
         are indented further right. One indentation is 2 spaces.
+
+        Returns
+        -------
+        str
+            A text representation of the proposition.
         """
         return "  " * _indent + repr(self) + "\n"
 
     def describe(self, *, _indent=0) -> str:
         """
         Return a description of the proposition.
+
+        Returns
+        -------
+        str
+            A description of the proposition.
         """
         if self.description:
             return "  " * _indent + self.description + "\n"
@@ -435,19 +643,32 @@ class Proposition:
     def set_description(self, description: str) -> Self:
         """
         Set the description of the proposition.
+
+        Parameters
+        ----------
+        description: str
+            The description of the proposition.
+
+        Returns
+        -------
+        Self
+            The proposition itself.
         """
         self.description = description
         return self
 
-    def set_desc(self, description: str) -> Self:
-        """
-        Set the description of the proposition.
-        """
-        return self.set_description(description)
+    set_desc = set_description
 
     def copy(self) -> Self:
         """
         Create a shallow copy of the proposition.
+        The copy keeps the same references to the arguments, assumptions, and
+        inference as the original proposition.
+
+        Returns
+        -------
+        Self
+            A shallow copy of the proposition.
         """
         return self.__class__(
             self.name,
@@ -463,6 +684,14 @@ class Proposition:
     def deepcopy(self) -> Self:
         """
         Create a deep copy of the proposition.
+        The copy creates new copies of the arguments of the proposition.
+        The copy keeps the same references to the assumptions and inference
+        as the original proposition.
+
+        Returns
+        -------
+        Self
+            A deep copy of the proposition.
         """
         from pylogic.helpers import is_python_numeric
 
@@ -486,6 +715,7 @@ class Proposition:
         r"""
         This function currently replaces Terms in the proposition with other Terms.
         It does not replace Propositions.
+
         Parameters
         ----------
         replace_dict: dict[Term, Term]
@@ -496,7 +726,7 @@ class Proposition:
             If None, we will replace for all occurences of the expression_to_replace in self.
             This is a nested list representing the path we need to go down in the proposition tree,
             For example, if self is
-            (forall x: (p1 x -> p2 x) /\ (p3 x) /\ (p4 x)) -> (p5 x)
+            `(forall x: (p1 x -> p2 x) /\ (p3 x) /\ (p4 x)) -> (p5 x)`
             current_val = x
             new_val = p
             and positions = [[0, 0, 0], [0, 2], [1]]

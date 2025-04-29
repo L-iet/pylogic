@@ -9,6 +9,7 @@ from pylogic.expressions.expr import Add, Expr, Mul, Pow
 from pylogic.typing import PythonNumeric, Term
 
 if TYPE_CHECKING:
+    from pylogic.constant import Constant
     from pylogic.expressions.abs import Abs
     from pylogic.expressions.mod import Mod
     from pylogic.expressions.sequence_term import SequenceTerm
@@ -604,7 +605,9 @@ class Symbol:
         raise ValueError(f"{self} is not a pair")
 
     @property
-    def size(self) -> Self | sp.Integer:
+    def size(self) -> Self | Constant:
+        from pylogic.constant import Constant
+
         """
         if self has `is_list` or `is_set` True, return a variable representing the
         size of self. Otherwise, raise a ValueError.
@@ -615,7 +618,7 @@ class Symbol:
         if self.is_list or self.is_set:
             return self.__class__(f"size({self.name})", nonnegative=True, integer=True)
         elif self.is_pair:
-            return sp.Integer(2)
+            return Constant(2)
         raise ValueError(f"{self} is not a list or a set")
 
     def __hash__(self):
