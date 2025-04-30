@@ -41,9 +41,7 @@ pip install -r requirements.txt
 
 Importing Pylogic
 
-After installing, check if Pylogic is w
-
-orking by importing it. Open a Python interpreter or a Jupyter notebook and run:
+After installing, check if Pylogic is working by importing it. Open a Python interpreter or a Jupyter notebook and run:
 
 ```python
 from pylogic import *
