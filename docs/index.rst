@@ -6,9 +6,11 @@
 Pylogic documentation
 =====================
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
+Pylogic is a Python library for propositional and higher-order logic. It is aimed at undergraduates
+for courses like Real Analysis, Introductory Number Theory and Logic.
+
+View the source code on Github: https://github.com/L-iet/pylogic
+
 
 
 .. toctree::

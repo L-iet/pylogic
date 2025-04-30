@@ -51,7 +51,7 @@ from pylogic import *
 
 ## Documentation
 
-Read the current documentation [here](docs/Introduction.ipynb).
+Read an introductory tutorial [here](docs/Introduction.ipynb). Or read the full documentation [here](https://l-iet.github.io/pylogic/index.html).
 
 ## Examples
 
