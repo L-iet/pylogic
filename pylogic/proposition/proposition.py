@@ -89,15 +89,15 @@ class Proposition:
     arity: int
         The number of arguments of the proposition.
     is_proven: bool
-        Whether the proposition has been proven. If `is_proven` is `False`, the
+        Whether the proposition has been proven. If :py:attr:`is_proven` is `False`, the
         proposition is not necessarily false, but it is not proven to be true.
     from_assumptions: set[Proposition]
         The assumptions that were used to deduce this proposition.
     deduced_from: Inference | None
         The inference that was used to deduce this proposition. This will not be
         `None` if the proposition was proven using inference rules. This is
-        `None` if `is_proven` is `False`, or if `is_axiom` is `True` while
-        `is_asumption` is `False`.
+        `None` if :py:attr:`is_proven` is `False`, or if :py:attr:`is_axiom` is `True` while
+        :py:attr:`is_asumption` is `False`.
 
     Example
     -------
@@ -291,9 +291,9 @@ class Proposition:
 
     def _set_is_inferred(self, value: bool) -> None:
         """
-        Used in some subclasses like IsContainedIn for custom behaviour when a proof is made
+        Used in some subclasses like `IsContainedIn` for custom behaviour when a proof is made
 
-        This is a common method called by _set_is_proven, _set_is_assumption, and _set_is_axiom
+        This is a common method called by `_set_is_proven`, `_set_is_assumption`, and `_set_is_axiom`
         """
         pass
 
@@ -410,7 +410,7 @@ class Proposition:
         Returns
         -------
         bool
-            True if the propositions are evaluate to the same prpositin, False
+            `True` if the propositions are evaluate to the same proposition, `False`
             otherwise.
 
         Examples
@@ -464,7 +464,7 @@ class Proposition:
     ) -> Implies[Self, Proposition] | Implies[And[Self, Proposition], Proposition]:
         """
         Create an implication from this proposition to another. This works when
-        :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `True`.
+        :py:attr:`~pylogic.enviroment_settings.settings["PYTHON_OPS_RETURN_PROPS"]` is `True`.
 
         Parameters
         ----------
@@ -478,17 +478,17 @@ class Proposition:
         Raises
         ------
         TypeError
-            If :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `False`, this
-            operator returns `NotImplemented` and raises a `TypeError`.
+            If :py:attr:`~pylogic.enviroment_settings.settings["PYTHON_OPS_RETURN_PROPS"]` is `False`, this
+            operator returns :py:class:`NotImplemented` and raises a :py:exc:`TypeError`.
         """
         if settings["PYTHON_OPS_RETURN_PROPS"]:
             return self.implies(other)
         return NotImplemented
 
-    def __and__(self, other: Proposition) -> And[Proposition, Proposition]:
+    def __and__(self, other: Proposition) -> And[Self, Proposition]:
         """
         Create a conjunction from this proposition to another. This works when
-        :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `True`.
+        :py:attr:`~pylogic.enviroment_settings.settings["PYTHON_OPS_RETURN_PROPS"]` is `True`.
 
         Parameters
         ----------
@@ -503,19 +503,17 @@ class Proposition:
         Raises
         ------
         TypeError
-            If :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `False`, this
-            operator returns `NotImplemented` and raises a `TypeError`.
+            If :py:attr:`~pylogic.enviroment_settings.settings["PYTHON_OPS_RETURN_PROPS"]` is `False`, this
+            operator returns :py:class:`NotImplemented` and raises a :py:exc:`TypeError`.
         """
         if settings["PYTHON_OPS_RETURN_PROPS"]:
-            from pylogic.proposition.and_ import And
-
-            return And(self, other)
+            return self.and_(other)
         return NotImplemented
 
-    def __or__(self, other: Proposition) -> Or[Proposition, Proposition]:
+    def __or__(self, other: Proposition) -> Or[Self, Proposition]:
         """
         Create a disjunction from this proposition to another. This works when
-        :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `True`.
+        :py:attr:`~pylogic.enviroment_settings.settings["PYTHON_OPS_RETURN_PROPS"]` is `True`.
 
         Parameters
         ----------
@@ -530,19 +528,17 @@ class Proposition:
         Raises
         ------
         TypeError
-            If :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `False`, this
-            operator returns `NotImplemented` and raises a `TypeError`.
+            If :py:attr:`~pylogic.enviroment_settings.settings["PYTHON_OPS_RETURN_PROPS"]` is `False`, this
+            operator returns :py:class:`NotImplemented` and raises a :py:exc:`TypeError`.
         """
         if settings["PYTHON_OPS_RETURN_PROPS"]:
-            from pylogic.proposition.or_ import Or
-
-            return Or(self, other)
+            return self.or_(other)
         return NotImplemented
 
-    def __xor__(self, other: Proposition) -> ExOr[Proposition, Proposition]:
+    def __xor__(self, other: Proposition) -> ExOr[Self, Proposition]:
         """
         Create an exclusive disjunction from this proposition to another. This works when
-        :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `True`.
+        :py:attr:`~pylogic.enviroment_settings.settings["PYTHON_OPS_RETURN_PROPS"]` is `True`.
 
         Parameters
         ----------
@@ -557,19 +553,17 @@ class Proposition:
         Raises
         ------
         TypeError
-            If :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `False`, this
-            operator returns `NotImplemented` and raises a `TypeError`.
+            If :py:attr:`~pylogic.enviroment_settings.settings["PYTHON_OPS_RETURN_PROPS"]` is `False`, this
+            operator returns :py:class:`NotImplemented` and raises a :py:exc:`TypeError`.
         """
         if settings["PYTHON_OPS_RETURN_PROPS"]:
-            from pylogic.proposition.exor import ExOr
-
-            return ExOr(self, other)
+            return self.xor(other)
         return NotImplemented
 
     def __invert__(self) -> Not[Self]:
         """
         Create a negation of this proposition. This works when
-        :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `True`.
+        :py:attr:`~pylogic.enviroment_settings.settings["PYTHON_OPS_RETURN_PROPS"]` is `True`.
 
         Returns
         -------
@@ -579,13 +573,13 @@ class Proposition:
         Raises
         ------
         TypeError
-            If :py:attr:`settings["PYTHON_OPS_RETURN_PROPS"]` is `False`, this
-            operator returns `NotImplemented` and raises a `TypeError`.
+            If :py:attr:`~pylogic.enviroment_settings.settings["PYTHON_OPS_RETURN_PROPS"]` is `False`, this
+            operator returns :py:class:`NotImplemented` and raises a :py:exc:`TypeError`.
         """
         if settings["PYTHON_OPS_RETURN_PROPS"]:
-            from pylogic.proposition.not_ import Not
+            from pylogic.proposition.not_ import neg
 
-            return Not(self)
+            return neg(self)
         return NotImplemented
 
     def _latex(self, printer=None) -> str:
@@ -605,12 +599,16 @@ class Proposition:
         return rf"\text{{{self.name}}}\left({', '.join(args_latex)}\right)"
 
     def _repr_latex_(self) -> str:
+        """
+        Return a LaTeX representation of the proposition for Jupyter notebooks.
+        This is used to render the proposition in LaTeX format.
+        """
         return f"$${self._latex()}$$"
 
     @property
     def is_proven(self) -> bool:
         """
-        Whether the proposition has been proven. If `is_proven` is `False`, the
+        Whether the proposition has been proven. If :py:attr:`is_proven` is `False`, the
         proposition is not necessarily false, but it is not proven to be true.
         """
         return self._is_proven or self.is_assumption or self.is_axiom
@@ -629,7 +627,8 @@ class Proposition:
 
     def describe(self, *, _indent=0) -> str:
         """
-        Return a description of the proposition.
+        Return a description of the proposition. If no description is set,
+        it calls :py:meth:`as_text` to get a text representation of the proposition.
 
         Returns
         -------
@@ -711,20 +710,37 @@ class Proposition:
         replace_dict: dict[Term, Term],
         positions: list[list[int]] | None = None,
         equal_check: Callable[[Term, Term], bool] | None = None,
-    ) -> Self:
+    ) -> Proposition:
         r"""
         This function currently replaces Terms in the proposition with other Terms.
         It does not replace Propositions.
 
+        For each key in `replace_dict`, we replace it in the proposition with the
+        corresponding new value.
+
+        `positions` is a list of lists of integers representing the occurences
+        of the old values in the proposition. Each list of integers represents
+        a path to the value in the proposition tree.
+        Each integer in the list represents the index of the subproposition (or
+        subexpression) in the list of subpropositions/arguments of the parent
+        proposition.
+
         Parameters
         ----------
         replace_dict: dict[Term, Term]
-            A dictionary where the keys are the Terms to be replaced and the values are the
-            new Terms.
-        positions: list[list[int]]
-            This is a list containing the positions of the expression_to_replace in self.
-            If None, we will replace for all occurences of the expression_to_replace in self.
-            This is a nested list representing the path we need to go down in the proposition tree,
+            A dictionary where the keys are the :py:class:`Term`\ s to be replaced
+            and the values are the new :py:class:`Term`\ s.
+        positions: list[list[int]] | None
+            This is a list containing the positions of the old values in this
+            instance.
+            If `None`, we will replace for all occurences of the old values with
+            the new values.
+            The nested list represents the path we need to go down in the
+            proposition tree.
+
+            TODO: finish replace, document replacing the quantified variables
+            as well
+
             For example, if self is
             `(forall x: (p1 x -> p2 x) /\ (p3 x) /\ (p4 x)) -> (p5 x)`
             current_val = x
@@ -736,9 +752,30 @@ class Proposition:
             the positions array for forall goes directly into the inner proposition.
             Same for exists.
             In the example above, the first list [0,0,0] refers to the x in p1 x, not (p1 x -> p2 x).
-
         equal_check: Callable[[Term, Term], bool] | None
-            A function that takes two arguments and returns True if they compare equal.
+            A function that takes two arguments and returns True if they compare
+            equal. By default, it uses the `==` operator.
+
+        Returns
+        -------
+        Proposition
+            A new proposition with the replaced values.
+
+        Examples
+        --------
+        >>> x, y, a = variables("x", "y", "a")
+        >>> p1, p2, p3,  p4, p5 = predicates("p1", "p2", "p3", "p4", "p5")
+        >>> prop1 = Forall(x, p1(x, y).implies(p2(y)).and_(p3(y), p4(y))).implies(p5(y))
+        >>> prop1.replace({y: a}, positions=[[0, 0, 0], [0, 2], [1]])
+        (forall x: ((p1(x, a) -> p2(y)) /\ p3(y) /\ p4(a))) -> p5(a)
+        >>> prop1.replace({x: a}, positions=[[0, 0, 0]])
+        (forall a: ((p1(a, y) -> p2(y)) /\ p3(y) /\ p4(y))) -> p5(y)
+
+        Note
+        -----
+        In the example above, the first list [0,0,0] refers to the proposition
+        `p1(x, y)`, so in the first call to :py:meth:`replace`, all occurences
+        of `y` in `p1(x, y)` are replaced with `a`.
         """
         from pylogic.expressions.expr import Expr
 

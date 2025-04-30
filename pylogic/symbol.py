@@ -449,7 +449,7 @@ class Symbol:
         """
         Check if two symbols evaluate to the same value.
         """
-        if isinstance(other, Symbol):
+        if hasattr(other, "evaluate"):
             return self.evaluate() == other.evaluate()
         return self.evaluate() == other
 

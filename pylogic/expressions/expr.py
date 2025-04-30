@@ -521,7 +521,7 @@ class Expr(ABC):
                 ret_val = self.to_sympy() == other.to_sympy()
             except Exception:
                 ret_val = False
-        if ret_val is False and isinstance(other, Expr):
+        if ret_val is False and hasattr(other, "evaluate"):
             ret_val = self.evaluate() == other.evaluate()
         return ret_val or self.evaluate() == other
 
@@ -745,16 +745,17 @@ def distance(
             if x.is_real and y.is_real
             else (eval_func(x, y) if eval_func else None)
         ),
-        latex_func=(lambda x, y: (
-            rf"\left|{x._latex()} - {y._latex()}\right|"))
+        latex_func=(
+            (lambda x, y: (rf"\left|{x._latex()} - {y._latex()}\right|"))
             if a.is_real and b.is_real
             else None
-        ,
+        ),
     )
 
 
 class BinaryExpression(CustomExpr[U]):
     _precedence = 11
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.mutable_attrs_to_copy = self.mutable_attrs_to_copy + [
@@ -1297,8 +1298,11 @@ def sub(a: PBasic | PythonNumeric | Expr, b: PBasic | PythonNumeric | Expr) -> A
 def div(a: PBasic | PythonNumeric | Expr, b: PBasic | PythonNumeric | Expr) -> Mul:
     return Mul(a, Pow(b, -1))
 
+
 python_max = max
 python_min = min
+
+
 def max(*args):
     # if there is only one argument:
     # if it is a set, return MaxElement
@@ -1311,5 +1315,6 @@ def max(*args):
     #   if 2 args, return Max(a,b)
     #   if >2 args, return MaxElement[FiniteSet]
     from pylogic.helpers import python_to_pylogic
+
     args = [python_to_pylogic(arg) for arg in args]
     ...

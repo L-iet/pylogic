@@ -142,6 +142,8 @@ class Forall(_Quantified[TProposition]):
         positions: list[list[int]] | None = None,
         equal_check: Callable[[Term, Term], bool] | None = None,
     ) -> Self:
+        from pylogic.variable import Variable
+
         new_var = self.variable
         if self.variable in replace_dict:
             assert isinstance(
@@ -176,7 +178,7 @@ class Forall(_Quantified[TProposition]):
 
         if isinstance(expression_to_substitute, Variable):
             expression_to_substitute.unbind()
-    
+
         new_p = self.inner_proposition.replace(
             {self.variable: expression_to_substitute}
         )
@@ -372,7 +374,7 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
         match self._inner_without_set:
             case Not(
                 negated=Equals(left=a, right=SequenceTerm(sequence=s, index=ind))
-            ) if ind == self.variable:
+            ) if (ind == self.variable):
                 new_p = Not(
                     IsContainedIn(a, SeqSet(s)),
                     _is_proven=True,
@@ -386,7 +388,7 @@ class ForallInSet(Forall[Implies[IsContainedIn, TProposition]]):
         self,
         expression_to_substitute: Term,
         proof_expr_to_substitute_in_set: Proposition | None = None,
-        **kwargs
+        **kwargs,
     ) -> TProposition:
         """Logical inference rule. Given self is proven, replace the variable in the inner
         proposition and get a proven proposition.
@@ -461,7 +463,7 @@ class ForallSubsets(Forall[Implies[IsSubsetOf, TProposition]]):
         self,
         expression_to_substitute: Term,
         proof_expr_to_substitute_is_subset: IsSubsetOf | None = None,
-        **kwargs
+        **kwargs,
     ) -> TProposition:
         """Logical inference rule. Given self is proven, replace the variable in the inner
         proposition and get a proven proposition.
