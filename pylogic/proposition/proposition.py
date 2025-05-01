@@ -802,21 +802,40 @@ class Proposition:
         )
         return new_p
 
-    def substitute(self, side: Side | str, equality: "Equals", **kwargs) -> Self:
+    def substitute(self, side: Side | str, equality: "Equals", **kwargs) -> Proposition:
         """
         Logical inference rule.
 
-        If self is proven and equality is proven, we can substitute the side of the equality
-        into self.
+        We substitute the required side of the equality into this proposition.
 
         Parameters
         ----------
         side: Side
-            Side.LEFT or Side.RIGHT
-            The side of the equality to appear in the result
+            :py:attr:`~pylogic.helpers.Side.LEFT` or :py:attr:`~pylogic.helpers.Side.RIGHT`
+
+            The side of the equality to appear in the result.
         equality: Equals
             An equality proposition. We look for the other side of the equality
-            in self and replace it with the 'side'.
+            in self and replace it with the required `side`. So if `side` is
+            :py:attr:`~pylogic.helpers.Side.LEFT`, the left side of the equality
+            will appear in the result.
+
+        Returns
+        -------
+        Proposition
+            A new proposition with the side of the equality substituted into
+            this proposition.
+
+        TODO: If `substitute_into` raises an exception, should we document it here?
+
+        Examples
+        --------
+        >>> x, y = variables("x", "y")
+        >>> A = Set("A")
+        >>> p1 = x.is_in(A)
+        >>> p2 = p1.substitute("right", x.equals(y))
+        >>> p2
+        y in A
         """
         if self.is_proven and equality.is_proven and not kwargs:
             from pylogic.inference import Inference
@@ -834,11 +853,14 @@ class Proposition:
         Parameters
         ----------
         side: Side
-            Side.LEFT or Side.RIGHT
+            :py:attr:`~pylogic.helpers.Side.LEFT` or :py:attr:`~pylogic.helpers.Side.RIGHT`
         equality: Equals
             An equality proposition. We look for the other side of the equality
             in self and replace it with the 'side'.
         Returns a proven proposition.
+
+        .. deprecated::0.0.1
+            Use :py:meth:`substitute` instead.
         """
         from pylogic.inference import Inference
 
@@ -855,14 +877,36 @@ class Proposition:
 
     def by_inspection_check(self) -> bool | None:
         """
-        Check if self is provable by inspection.
-        Returns True if self is provable by inspection, False if
-        its negation is provable by inspection, and None if neither is provable.
+        Check if this proposition is provable by inspection.
+        This is meant to represent proving a statement by applying some obvious
+        algorithm. For instance, we can prove that 5 is prime by inspection.
+
+        Returns
+        -------
+        bool | None
+            `True` if self is provable by inspection, `False` if
+            its negation is provable by inspection, and `None` if neither is provable.
         """
         return None
 
     def by_inspection(self) -> Self:
-        """Logical inference rule. Try to prove the proposition by inspection."""
+        """
+        Logical inference rule. Try to prove the proposition by inspection.
+
+        This is meant to represent proving a statement by applying some obvious
+        algorithm or check. For instance, we can prove that 5 is prime by
+        inspection.
+
+        Returns
+        -------
+        Self
+            A new proposition that is proven by inspection.
+
+        Raises
+        ------
+        ValueError
+            If the proposition cannot be proven by inspection.
+        """
         from pylogic.inference import Inference
 
         if self.by_inspection_check():
@@ -896,8 +940,35 @@ class Proposition:
     ) -> Implies[Self, TProposition] | Implies[And[Self, TProposition], UProposition]:
         r"""
         Create an implication from this proposition to another.
-        If other is an implication `A -> B` and de_nest = `True`, we return an implication
-        `(self /\ A) -> B`.
+
+        Parameters
+        ----------
+        other: TProposition | Implies[TProposition, UProposition]
+            The other proposition to combine with this one.
+        is_assumption: bool
+            If `True`, the resulting proposition is an assumption.
+        de_nest: bool
+            If `True`, we de-nest the implication. This means that if `other` is
+            an implication, we combine this proposition with the antecedent of
+            the implication (to make a conjunction) and return a new implication.
+
+            If `False`, we return the nested implication.
+
+        Returns
+        -------
+        Implies[Self, TProposition] | Implies[And[Self, TProposition], UProposition]
+            An implication from this proposition to the other proposition.
+
+        Examples
+        --------
+        >>> p, q, r = propositions("p", "q", "r")
+        >>> qr = q.implies(r)
+        >>> qr
+        q -> r
+        >>> p.implies(qr)
+        p /\ q -> r
+        >>> p.implies(qr, de_nest=False)
+        p -> (q -> r)
         """
         from pylogic.proposition.implies import Implies
 
@@ -913,6 +984,24 @@ class Proposition:
     ) -> Iff[Self, TProposition]:
         r"""
         Create a biconditional between this proposition and another.
+
+        Parameters
+        ----------
+        other: TProposition
+            The other proposition to combine with this one.
+        is_assumption: bool
+            If `True`, the resulting proposition is an assumption.
+
+        Returns
+        -------
+        Iff[Self, TProposition]
+            A biconditional between this proposition and the other proposition.
+
+        Examples
+        --------
+        >>> p, q = propositions("p", "q")
+        >>> p.iff(q)
+        p <-> q
         """
         from pylogic.proposition.iff import Iff
 
@@ -947,12 +1036,25 @@ class Proposition:
         Logical inference rule.
 
         Combine this proposition with others using a conjunction.
-        Continguous `And` objects are combined into one `And` sequence to reduce
-        nesting.
+        Continguous :py:class:`And` objects are combined into one :py:class:`And`
+        proposition to reduce nesting.
+
+        If all propositions are proven, the resulting proposition is proven.
+
+        Parameters
+        ----------
+        others: *Props
+            The other proposition(s) to combine with this one.
+        is_assumption: bool
+            If `True`, the resulting proposition is an assumption.
         allow_duplicates: bool
             If True, we do not remove duplicate propositions.
 
-        If all propositions are proven, the resulting proposition is proven.
+        Returns
+        -------
+        And[Self, *Props] | And
+            A conjunction of this proposition and the other proposition(s).
+            If all propositions are proven, the resulting proposition is proven.
 
         Examples
         --------
