@@ -3,6 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 from enum import Enum
 from fractions import Fraction
+from functools import wraps
 from types import SimpleNamespace
 from typing import (
     TYPE_CHECKING,
@@ -19,11 +20,9 @@ from typing import (
 
 from pylogic.expressions.expr import Expr
 from pylogic.expressions.expr import replace as _replace
-from pylogic.proposition.proposition import Proposition
 
 T = TypeVar("T")
 U = TypeVar("U")
-P = TypeVar("P", bound=Proposition)
 E = TypeVar("E", bound=Expr)
 
 Ps = TypeVarTuple("Ps")
@@ -32,6 +31,7 @@ TNumeric = TypeVar("TNumeric", bound=int | float | Fraction | complex | Decimal)
 if TYPE_CHECKING:
     from pylogic.constant import Constant
     from pylogic.expressions.sequence_term import SequenceTerm
+    from pylogic.proposition.proposition import Proposition
     from pylogic.structures.class_ import Class
     from pylogic.structures.sequence import Sequence
     from pylogic.structures.set_ import Set
@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     from pylogic.typing import PythonNumeric, Term, Unification
     from pylogic.variable import Variable
 
+    P = TypeVar("P", bound=Proposition)
     TSet = TypeVar("TSet", bound=Set)
     TSequence = TypeVar("TSequence", bound=Sequence)
     S = TypeVar("S", bound=Symbol)
@@ -46,6 +47,44 @@ else:
     TSet = TypeVar("TSet")
     TSequence = TypeVar("TSequence")
     S = TypeVar("S")
+
+
+def fn_alias(orig_func: Callable[..., T], new_name: str) -> Callable[..., T]:
+    """
+    Creates a function alias for the original function.
+
+    This is useful for creating a function that has almost the same docstring
+    as the original function, but with a different name.
+
+    Should not be used as a decorator.
+
+    Parameters
+    ----------
+    orig_func : Callable
+        The original function to create an alias for.
+    new_name : str
+        The new name for the function.
+
+    Returns
+    -------
+    Callable
+        A function that is an alias for the original function.
+    """
+
+    # so that documentation tools get the correct signature
+    @wraps(orig_func)
+    def new_func(*args: Any, **kwargs: Any) -> T:
+        return orig_func(*args, **kwargs)
+
+    new_doc = orig_func.__doc__ and orig_func.__doc__.replace(
+        orig_func.__name__, new_name
+    )
+    new_func.__doc__ = new_doc and (
+        f"Alias for :py:func:`{orig_func.__name__}`.\n" + new_doc
+    )
+    new_func.__name__ = new_name
+
+    return new_func
 
 
 def replace(
@@ -176,6 +215,7 @@ def unify(
     a: Proposition | Term, b: Proposition | Term
 ) -> Unification | Literal[True] | None:
     """Unification algorithm."""
+    from pylogic.proposition.proposition import Proposition
     from pylogic.variable import Variable
 
     # a is the variable if at least one argument is a variable
@@ -359,6 +399,7 @@ def python_to_pylogic(arg: Any) -> Proposition | Expr | Symbol | Sequence | Set:
     Raises TypeError if arg is not one of the above.
     """
     from pylogic.constant import Constant
+    from pylogic.proposition.proposition import Proposition
     from pylogic.structures.sequence import Pair, Sequence, Triple
     from pylogic.structures.set_ import Set
     from pylogic.symbol import Symbol

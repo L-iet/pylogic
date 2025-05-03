@@ -14,6 +14,7 @@ from typing import (
 )
 
 from pylogic.enviroment_settings.settings import settings
+from pylogic.helpers import fn_alias
 
 if TYPE_CHECKING:
     from pylogic.constant import Constant
@@ -857,10 +858,13 @@ class Proposition:
         equality: Equals
             An equality proposition. We look for the other side of the equality
             in self and replace it with the 'side'.
-        Returns a proven proposition.
-
         .. deprecated::0.0.1
             Use :py:meth:`substitute` instead.
+
+        Returns
+        -------
+        Proposition
+            a proven proposition.
         """
         from pylogic.inference import Inference
 
@@ -1036,8 +1040,9 @@ class Proposition:
         Logical inference rule.
 
         Combine this proposition with others using a conjunction.
-        Continguous :py:class:`And` objects are combined into one :py:class:`And`
-        proposition to reduce nesting.
+        Contiguous :py:class:`~pylogic.proposition.and_.And` objects are
+        combined into one :py:class:`~pylogic.proposition.and_.And` proposition
+        to reduce nesting.
 
         If all propositions are proven, the resulting proposition is proven.
 
@@ -1113,13 +1118,37 @@ class Proposition:
         allow_duplicates: bool = False,
         **kwargs,
     ) -> And[*Props, Self] | And:
-        """
+        r"""
+        Logical inference rule.
         Combine this proposition with others using a conjunction, with self at
         the end.
-        Continguous `And` objects are combined into one `And` sequence to reduce
+        Contiguous :py:class:`~pylogic.proposition.and_.And` objects are combined
+        into one :py:class:`~pylogic.proposition.and_.And` proposition to reduce
         nesting.
+
+        Parameters
+        ----------
+        others: *Props
+            The other proposition(s) to combine with this
+            one.
+        is_assumption: bool
+            If `True`, the resulting proposition is an assumption.
         allow_duplicates: bool
             If True, we do not remove duplicate propositions.
+
+        Returns
+        -------
+        And[*Props, Self] | And
+            A conjunction of this proposition and the other proposition(s).
+            If all propositions are proven, the resulting proposition is proven.
+
+        Examples
+        --------
+        >>> p1 = x.is_in(A)
+        >>> p2 = y.is_in(B)
+        >>> p3 = p1.and_reverse(p2)
+        >>> p3
+        y in B /\ x in A
         """
         first = others[0]
         rest = others[1:]
@@ -1141,13 +1170,30 @@ class Proposition:
         r"""
         Logical inference rule.
 
-        Combine this proposition with others using a disjunnction.
-        Continguous `Or` objects are combined into one `Or` sequence to reduce
+        Combine this proposition with others using a disjunction.
+        Contiguous :py:class:`~pylogic.proposition.or_.Or` objects are combined
+        into one :py:class:`~pylogic.proposition.or_.Or` proposition to reduce
         nesting.
-        allow_duplicates: bool
-            If True, we do not remove duplicate propositions.
 
-        If any proposition is proven, the resulting proposition is proven.
+        If any of the propositions is proven, the resulting proposition is
+        proven.
+
+        Parameters
+        ----------
+        others: *Props
+            The other proposition(s) to combine with this
+            one.
+        is_assumption: bool
+            If `True`, the resulting proposition is an assumption.
+        allow_duplicates: bool
+            If `True`, we do not remove duplicate propositions.
+
+        Returns
+        -------
+        Or[Self, *Props] | Or
+            A disjunction of this proposition and the other proposition(s).
+            If any of the propositions is proven, the resulting proposition is
+            proven.
 
         Examples
         --------
@@ -1187,13 +1233,38 @@ class Proposition:
         allow_duplicates: bool = False,
         **kwargs,
     ) -> Or[*Props, Self] | Or:
-        """
+        r"""
+        Logical inference rule.
         Combine this proposition with others using a disjunction, with self at
         the end.
-        Continguous `Or` objects are combined into one `Or` sequence to reduce
+        Contiguous :py:class:`~pylogic.proposition.or_.Or` objects are combined
+        into one :py:class:`~pylogic.proposition.or_.Or` proposition to reduce
         nesting.
+
+        Parameters
+        ----------
+        others: *Props
+            The other proposition(s) to combine with this
+            one.
+        is_assumption: bool
+            If `True`, the resulting proposition is an assumption.
         allow_duplicates: bool
-            If True, we do not remove duplicate propositions.
+            If `True`, we do not remove duplicate propositions.
+
+        Returns
+        -------
+        Or[*Props, Self] | Or
+            A disjunction of this proposition and the other proposition(s).
+            If any of the propositions is proven, the resulting proposition is
+            proven.
+
+        Examples
+        --------
+        >>> p1 = x.is_in(A)
+        >>> p2 = y.is_in(B)
+        >>> p3 = p1.or_reverse(p2)
+        >>> p3
+        y in B \/ x in A
         """
         first = others[0]
         rest = others[1:]
@@ -1214,10 +1285,24 @@ class Proposition:
     ) -> ExOr[Self, *Props] | ExOr:
         """
         Combine this proposition with others using an exclusive or.
-        Continguous `ExOr` objects are combined into one `ExOr` sequence to reduce
-        nesting.
+        Contiguous :py:class:`~pylogic.proposition.exor.ExOr` objects are
+        combined into one :py:class:`~pylogic.proposition.exor.ExOr` sequence to
+        reduce nesting.
+
+        Parameters
+        ----------
+        others: *Props
+            The other proposition(s) to combine with this one.
+        is_assumption: bool
+            If `True`, the resulting proposition is an assumption.
         allow_duplicates: bool
-            If True, we do not remove duplicate propositions.
+            If `True`, we do not remove duplicate propositions.
+
+        Returns
+        -------
+        ExOr[Self, *Props] | ExOr
+            An exclusive disjunction of this proposition and the other
+            proposition(s).
 
         Examples
         --------
@@ -1248,12 +1333,34 @@ class Proposition:
         **kwargs,
     ) -> ExOr[*Props, Self] | ExOr:
         """
-        Combine this proposition with others using an exclusive or, with self at
-        the end.
-        Continguous `ExOr` objects are combined into one `ExOr` sequence to reduce
-        nesting.
-        allow_duplicates: bool
-            If True, we do not remove duplicate propositions.
+            Combine this proposition with others using an exclusive or, with self at
+            the end.
+        Contiguous :py:class:`~pylogic.proposition.exor.ExOr` objects are
+            combined into one :py:class:`~pylogic.proposition.exor.ExOr` sequence to
+            reduce nesting.
+
+            Parameters
+            ----------
+            others: *Props
+                The other proposition(s) to combine with this one.
+            is_assumption: bool
+                If `True`, the resulting proposition is an assumption.
+            allow_duplicates: bool
+                If `True`, we do not remove duplicate propositions.
+
+            Returns
+            -------
+            ExOr[*Props, Self] | ExOr
+                An exclusive disjunction of this proposition and the other
+                proposition(s).
+
+            Examples
+            --------
+            >>> p1 = x.is_in(A)
+            >>> p2 = y.is_in(B)
+            >>> p3 = p1.xor_reverse(p2)
+            >>> p3
+            y in B xor x in A
         """
         first = others[0]
         rest = others[1:]
@@ -1270,6 +1377,9 @@ class Proposition:
     ) -> And[Self, *Props]:
         """
         Same as and_, but returns a proven proposition when self and all others are proven.
+
+        Deprecated since 0.0.1.
+        Use :py:meth:`and_` instead.
         """
         from pylogic.inference import Inference
 
@@ -1294,6 +1404,9 @@ class Proposition:
     ) -> And[*Props, Self]:
         """Logical inference rule.
         Same as and_reverse, but returns a proven proposition when self and all others are proven.
+
+        Deprecated since 0.0.1.
+        Use :py:meth:`and_reverse` instead.
         """
         from pylogic.inference import Inference
 
@@ -1318,9 +1431,24 @@ class Proposition:
     ) -> TProposition:
         """
         Logical inference rule.
-        other: Implies
-            Must be an implication that has been proven whose structure is
-            self -> OtherProposition
+
+        Parameters
+        ----------
+        other: Implies[Self, TProposition] | Iff[Self, TProposition]
+            Must be an implication that has been proven whose antecedent is
+            equal to this proposition.
+
+        Returns
+        -------
+        Proposition
+            The conclusion of the implication. This is a new proposition that
+            is proven.
+
+        Raises
+        ------
+        AssertionError
+            If the propositions are not proven or the other proposition is not
+            an implication or does not have this proposition as its antecedent.
 
         Examples
         --------
@@ -1349,7 +1477,7 @@ class Proposition:
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(other))
         return new_p
 
-    mp = modus_ponens
+    mp = fn_alias(modus_ponens, "mp")
 
     # @overload
     # def modus_tollens(
@@ -1371,9 +1499,25 @@ class Proposition:
     ) -> TProposition | Not[TProposition]:
         """
         Logical inference rule.
-        other: Implies
-            Must be an implication that has been proven whose structure is
-            OtherProposition -> ~self
+
+        Parameters
+        ----------
+        other: Implies[Not[TProposition], Not[Self]] | Implies[TProposition, Not[Self]]
+            Must be an implication that has been proven whose consequent is
+            equal to the negation of this proposition.
+
+        Returns
+        -------
+        Proposition
+            The negation of the antecedent of the implication. This is a new
+            proposition that is proven.
+
+        Raises
+        ------
+        AssertionError
+            If the propositions are not proven or the other proposition is not
+            an implication or does not have this proposition as its consequent's
+            negation.
 
         Examples
         --------
@@ -1406,7 +1550,7 @@ class Proposition:
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(other))
         return new_p
 
-    mt = modus_tollens
+    mt = fn_alias(modus_tollens, "mt")
 
     def is_one_of(self, other: And, *, __recursing: bool = False) -> Self:
         r"""
