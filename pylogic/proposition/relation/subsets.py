@@ -147,7 +147,7 @@ right: {right}, right.is_set: {right.is_set}"
         new_p = self.copy()
         new_p._set_is_proven(True)
         new_p.from_assumptions = set()
-        new_p.deduced_from = Inference(self, rule="by_empty")
+        new_p.deduced_from = Inference(self, conclusion=new_p, rule="by_empty")
         return new_p
 
     def by_inspection_check(self) -> bool | None:
@@ -174,9 +174,9 @@ right: {right}, right.is_set: {right.is_set}"
             left_pred = self.left.predicate(x)
             # left_pred._set_is_assumption(True)
             match left_pred:
-                case IsContainedIn(
-                    left=x1, right=right
-                ) if x1 == x and right == self.right:
+                case IsContainedIn(left=x1, right=right) if (
+                    x1 == x and right == self.right
+                ):
                     proven = True
                 case And(propositions=props) if IsContainedIn(x, self.right) in props:
                     proven = True

@@ -32,6 +32,9 @@ class Contradiction(Proposition):
         self.is_atomic = True
         self._set_init_inferred_attrs()
 
+    def __hash__(self) -> int:
+        return hash(("contradiction",))
+
     def __eq__(self, other: Contradiction) -> bool:
         if not isinstance(other, Contradiction):
             return NotImplemented
@@ -42,6 +45,22 @@ class Contradiction(Proposition):
 
     def copy(self) -> Self:
         return self.__class__()
+
+    def ex_falso(self, p: Proposition, **kwargs) -> Proposition:
+        """
+        Logical inference rule.
+
+        Ex falso quodlibet: from a contradiction, anything follows.
+        """
+        dont_prove = kwargs.get("dont_prove", False)
+        if dont_prove:
+            return p
+        assert self.is_proven, "Contradiction is not proven"
+        new_p = p.copy()
+        new_p._set_is_proven(True)
+        new_p.from_assumptions = self.from_assumptions
+        new_p.deduced_from = Inference(self, conclusion=new_p, rule="ex_falso")
+        return new_p
 
     # def thus_assumptions_cannot_all_hold(
     #     self,
@@ -84,3 +103,6 @@ class Contradiction(Proposition):
     #         _assumptions=self.from_assumptions,
     #         _inference=Inference(self, rule="thus_assumptions_cannot_all_hold"),
     #     )
+
+
+contradiction = Contradiction()

@@ -206,7 +206,9 @@ class _Quantified(Proposition, Generic[TProposition], ABC):
         new_p = self.replace({self.variable: new_var})
         if self.is_proven:
             new_p._set_is_proven(True)
-            new_p.deduced_from = Inference(self, rule="rename_variable")
+            new_p.deduced_from = Inference(
+                self, conclusion=new_p, rule="rename_variable"
+            )
             new_p.from_assumptions = self.from_assumptions
         return new_p
 

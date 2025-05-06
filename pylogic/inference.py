@@ -1,6 +1,11 @@
-from typing import Generic, TypeVar, TypeVarTuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Generic, TypeVar, TypeVarTuple
 
 from pylogic.proposition.proposition import Proposition
+
+if TYPE_CHECKING:
+    from pylogic.assumptions_context import AssumptionsContext
 
 
 class InvalidRuleError(Exception):
@@ -37,6 +42,7 @@ rules: set[str] = {
     "de_nest",
     "definite_clause_resolve",
     "evaluate",
+    "ex_falso",
     "exists_modus_ponens",
     "extract",
     "extract_conjuncts",
@@ -56,6 +62,7 @@ rules: set[str] = {
     "is_rational_power",
     "is_special_case_of",
     "left_distribute",
+    "left_weakening",
     "modus_ponens",
     "modus_tollens",
     "mul_inverse",
@@ -103,11 +110,8 @@ rules: set[str] = {
     "close_assumptions_context",
 }
 
-T = TypeVar("T", bound="Proposition")
-Props = TypeVarTuple("Props")
 
-
-class Inference(Generic[T, *Props]):
+class Inference:
     """
     Represents an inference in a proof.
 
@@ -117,18 +121,35 @@ class Inference(Generic[T, *Props]):
 
     def __init__(
         self,
-        starting_premise: T | None,
-        *other_premises: *Props,
+        starting_premise: Proposition | None,
+        *other_premises: Proposition,
+        conclusion: Proposition | None = None,
         rule: str = "given",
+        inner_contexts: list[AssumptionsContext] | None = None,
     ) -> None:
+        # Note: premises and conclusion can be unproven propositions
+        # happens for props that were proven within a context
         if rule not in rules:
             raise InvalidRuleError(rule)
-        self.starting_premise: T | None = starting_premise
-        self.other_premises: tuple[*Props] = other_premises
+        self.starting_premise: Proposition | None = starting_premise
+        self.other_premises: tuple[Proposition, ...] = other_premises
+        self.premises: tuple[Proposition, ...]
+        if starting_premise is not None:
+            self.premises = (starting_premise,) + self.other_premises
+        else:
+            self.premises = self.other_premises
+        self.conclusion: Proposition | None = conclusion
         self.rule: str = rule  # type:ignore
+        self.inner_contexts: list[AssumptionsContext] = inner_contexts or []
 
     def __repr__(self) -> str:
-        return f"Inference{(self.rule, self.starting_premise, *self.other_premises)}"
+        has_inner_contexts = len(self.inner_contexts) > 0
+        if has_inner_contexts:
+            return f"Inference{(self.rule, *self.premises,'has inner contexts')}"
+        return f"Inference{(self.rule, *self.premises)}"
 
     def __str__(self) -> str:
-        return str((self.rule, self.starting_premise, *self.other_premises))
+        has_inner_contexts = len(self.inner_contexts) > 0
+        if has_inner_contexts:
+            return str((self.rule, *self.premises, "has inner contexts"))
+        return str((self.rule, *self.premises))

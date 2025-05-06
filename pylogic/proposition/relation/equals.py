@@ -233,7 +233,9 @@ class Equals(BinaryRelation[T, U]):
         else:
             proven = False
             left_doit = (
-                self.left.evaluate() if isinstance(self.left, (Basic, Expr)) else self.left
+                self.left.evaluate()
+                if isinstance(self.left, (Basic, Expr))
+                else self.left
             )
             right_doit = (
                 self.right.evaluate()
@@ -252,11 +254,13 @@ class Equals(BinaryRelation[T, U]):
             new_p = self.copy()
             new_p._set_is_proven(True)
             new_p.from_assumptions = set()
-            new_p.deduced_from = Inference(self, rule="by_simplification")
+            new_p.deduced_from = Inference(
+                self, conclusion=new_p, rule="by_simplification"
+            )
             return new_p
         else:
             raise ValueError(f"{self} cannot be proven by simplification")
-    
+
     def by_eval(self) -> Self:
         """
         Return a proven equality if both sides evaluate to the same value.
@@ -312,6 +316,8 @@ class Equals(BinaryRelation[T, U]):
         new_prop._set_is_proven(kwargs.get("_is_proven", False))
         new_prop.from_assumptions = kwargs.get("_assumptions", set())
         new_prop.deduced_from = kwargs.get("_inference", None)
+        if new_prop.deduced_from is not None:
+            new_prop.deduced_from.conclusion = new_prop
         return new_prop
 
     def p_substitute_into(
@@ -335,7 +341,9 @@ class Equals(BinaryRelation[T, U]):
         new_prop.from_assumptions = get_assumptions(self).union(
             get_assumptions(other_prop)
         )
-        new_prop.deduced_from = Inference(self, other_prop, rule="p_substitute_into")
+        new_prop.deduced_from = Inference(
+            self, other_prop, conclusion=new_prop, rule="p_substitute_into"
+        )
         return new_prop
 
     def zero_abs_is_0(self) -> Equals:

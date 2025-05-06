@@ -16,7 +16,7 @@ class AssumptionsContext:
         # the conclusions to use to build implications
         self._interesting_conclusions: list[Proposition] = []
 
-        # the implications true ourside the context
+        # the implications true outside the context
         self.proven_propositions: list[Proposition] = []
         self.exited = False
         assumptions_contexts.append(self)
@@ -129,23 +129,13 @@ class AssumptionsContext:
             True,
             context=assumptions_contexts[-2] if len(assumptions_contexts) > 1 else None,
         )
-        if conclusion.deduced_from is None:
-            cons.deduced_from = Inference(conclusion, rule="close_assumptions_context")
-        else:
-            other_props = tuple(
-                filter(
-                    lambda x: x is not None,
-                    (
-                        conclusion.deduced_from.starting_premise,
-                        *conclusion.deduced_from.other_premises,
-                    ),
-                )
-            )
-            cons.deduced_from = Inference(
-                conclusion,  # the conclusion is included first here
-                *other_props,
-                rule="close_assumptions_context",
-            )
+        cons.deduced_from = Inference(
+            None,
+            conclusion=cons,
+            rule="close_assumptions_context",
+            inner_contexts=[self],
+        )
+
         cons.from_assumptions = get_assumptions(conclusion).difference(self.assumptions)
         return cons
 
@@ -171,15 +161,15 @@ class AssumptionsContext:
 
         # these proven props were only true inside the context
         # do these first because the _build_proven method
-        # still runs inside the context, and we want those
+        # still runs inside the context, and we want the results from that
         # to be True outside the context
         # we don't call _set_is_proven(False) on these because
         # perhaps a copy was proven in an outer context and we don't want to mutate
         # the Terms in the props
+        # keep the assumptions and deduced_from because they are useful for
+        # Inference and reconstructing the proof
         for p in self._proven:
             p._is_proven = False
-            p.from_assumptions = set()
-            p.deduced_from = None
 
         self.assumptions.reverse()
         for a in self.assumptions:
@@ -222,7 +212,7 @@ class AssumptionsContext:
         if self.exited:
             return self.proven_propositions
         return []
-    
+
     def get_first_proven(self) -> Proposition | None:
         """
         Returns the first proven proposition after the context.
@@ -243,7 +233,7 @@ def conclude(conclusion: Proposition) -> Proposition:
 
     if assumptions_contexts[-1] is not None:
         assumptions_contexts[-1]._interesting_conclusions.append(conclusion)
-    
+
     # check if conclusion is an assumption so we can update target if needed
     # for eg in proving p -> (q -> p)
     global _target_to_prove
@@ -279,6 +269,7 @@ def ctx_vars(name: str, **kwargs) -> Variable: ...
 def ctx_vars(*names: str, **kwargs) -> tuple[Variable, ...]: ...
 def ctx_vars(*names: str, **kwargs) -> Variable | tuple[Variable, ...]:
     return context_variables(*names, **kwargs)
+
 
 def to_prove(*target: Proposition) -> Proposition | None:
     """

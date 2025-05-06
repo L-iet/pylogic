@@ -185,7 +185,7 @@ class Forall(_Quantified[TProposition]):
         if not dont_prove:
             new_p._set_is_proven(True)
             new_p.from_assumptions = get_assumptions(self).copy()
-            new_p.deduced_from = Inference(self, rule="in_particular")
+            new_p.deduced_from = Inference(self, conclusion=new_p, rule="in_particular")
         return new_p
 
     def de_morgan(self) -> Proposition:

@@ -310,7 +310,7 @@ Occured when trying to unify `{self}` and `{other}`"
             rem_prop = rem_props[0].copy()  # type: ignore
             rem_prop._set_is_proven(True)
             rem_prop.from_assumptions = get_assumptions(self).union(p_assumptions)
-            rem_prop.deduced_from = Inference(self, *props, rule="resolve")  # type: ignore
+            rem_prop.deduced_from = Inference(self, *props, conclusion=rem_prop, rule="resolve")  # type: ignore
             return rem_prop
         if len(rem_props) == 0:
             return Contradiction(

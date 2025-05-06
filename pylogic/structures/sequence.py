@@ -457,7 +457,7 @@ class Sequence(Generic[T]):
             res = res.replace({self: inst})
         res._set_is_proven(True)
         res.from_assumptions = set()
-        res.deduced_from = Inference(None, rule="by_predicate")
+        res.deduced_from = Inference(None, conclusion=res, rule="by_predicate")
         return res
 
     def to_sympy(self) -> SeqBase | SeqFormula:

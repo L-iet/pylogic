@@ -71,7 +71,7 @@ def by_forall(p: P, prover: Forall[Proposition] | ForallInSet[Proposition]) -> P
     # not proving fallacies
     new_p = p.copy()
     new_p._set_is_proven(True)
-    new_p.deduced_from = Inference(prover, rule="in_particular")
+    new_p.deduced_from = Inference(prover, conclusion=new_p, rule="in_particular")
     new_p.from_assumptions = get_assumptions(prover)
     return new_p
 

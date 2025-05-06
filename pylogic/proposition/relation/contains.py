@@ -166,19 +166,22 @@ class IsContainedIn(BinaryRelation[T, U]):
         assert self.right.is_set, f"{self.right} is not a set"
         dont_prove = kwargs.get("prove", True) is False
         try:
-            if (
-                (dont_prove or proven_predicate.is_proven)
-                and self.right.predicate(self.left) == proven_predicate
-            ):
-                ret_val = IsContainedIn(
-                    self.element,
-                    self.right,
-                ) if dont_prove else IsContainedIn(
-                    self.element,
-                    self.right,
-                    _is_proven=True,
-                    _assumptions=set(),
-                    _inference=Inference(self, rule="by_predicate"),
+            if (dont_prove or proven_predicate.is_proven) and self.right.predicate(
+                self.left
+            ) == proven_predicate:
+                ret_val = (
+                    IsContainedIn(
+                        self.element,
+                        self.right,
+                    )
+                    if dont_prove
+                    else IsContainedIn(
+                        self.element,
+                        self.right,
+                        _is_proven=True,
+                        _assumptions=set(),
+                        _inference=Inference(self, rule="by_predicate"),
+                    )
                 )  # type: ignore
                 return ret_val
         except Exception as e:
@@ -211,7 +214,7 @@ class IsContainedIn(BinaryRelation[T, U]):
         res = self.right.predicate(self.left)
         res._set_is_proven(True)
         res.from_assumptions = get_assumptions(self)
-        res.deduced_from = Inference(self, rule="thus_predicate")
+        res.deduced_from = Inference(self, conclusion=res, rule="thus_predicate")
         return res
 
     def thus_not_empty(self) -> Not[Equals]:

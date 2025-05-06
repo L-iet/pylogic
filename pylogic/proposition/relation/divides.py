@@ -97,7 +97,9 @@ class Divides(Relation):
             from pylogic.proposition.proposition import get_assumptions
 
             self._definition.from_assumptions = get_assumptions(self)
-            self._definition.deduced_from = Inference(self, rule="by_definition")
+            self._definition.deduced_from = Inference(
+                self, conclusion=self._definition, rule="by_definition"
+            )
 
     def _set_is_assumption(self, value: bool, **kwargs) -> None:
         super()._set_is_assumption(value, **kwargs)

@@ -44,7 +44,7 @@ class LessThan(StrictTotalOrder[T, U], _Ordering):
             return inspec
         if self.right == 0:
             return self.left.is_negative
-    
+
     def _set_is_inferred(self, value: bool) -> None:
         if value and self.right == 0 and not self.left.is_negative:
             self.left.is_negative = True
@@ -174,7 +174,9 @@ class LessThan(StrictTotalOrder[T, U], _Ordering):
             if self.left.is_negative:
                 new_p = self.copy()
                 new_p._is_proven = True
-                new_p.deduced_from = Inference(self, rule="by_definition")
+                new_p.deduced_from = Inference(
+                    self, conclusion=new_p, rule="by_definition"
+                )
                 new_p.from_assumptions = set()
                 self.left.knowledge_base.add(new_p)
                 return new_p

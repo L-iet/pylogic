@@ -177,11 +177,12 @@ class Proposition:
         self.is_atomic: bool = True
         self.description: str = description
         if self.is_assumption:
-            self.deduced_from: Inference | None = Inference(self)
+            self.deduced_from: Inference | None = Inference(None, conclusion=self)
             self.from_assumptions = set()
         elif self._is_proven:
             assert _inference is not None, "Proven propositions must have an inference"
             self.deduced_from: Inference | None = _inference
+            self.deduced_from.conclusion = self
             self.from_assumptions: set[Proposition] = _assumptions or set()
         else:
             self.deduced_from: Inference | None = None
@@ -380,7 +381,7 @@ class Proposition:
         )
         self._set_is_proven(True)
         self.from_assumptions = set()
-        self.deduced_from = Inference(self, rule="todo")
+        self.deduced_from = Inference(self, conclusion=self, rule="todo")
         return self
 
     def assume(self, **kwargs) -> Self:
@@ -917,7 +918,7 @@ class Proposition:
             new_p = self.copy()
             new_p._set_is_proven(True)
             new_p.from_assumptions = set()
-            new_p.deduced_from = Inference(self, rule="by_inspection")
+            new_p.deduced_from = Inference(self, conclusion=new_p, rule="by_inspection")
             return new_p
         else:
             raise ValueError(f"{self} cannot be proven by inspection")
@@ -974,14 +975,23 @@ class Proposition:
         >>> p.implies(qr, de_nest=False)
         p -> (q -> r)
         """
+        from pylogic.inference import Inference
         from pylogic.proposition.implies import Implies
 
         if de_nest and isinstance(other, Implies):
-            return self.and_(other.antecedent).implies(
+            ret_val = self.and_(other.antecedent).implies(
                 other.consequent, is_assumption=is_assumption, **kwargs
             )
-
-        return Implies(self, other, is_assumption, **kwargs)
+        else:
+            ret_val = Implies(self, other, is_assumption, **kwargs)
+        if kwargs.get("dont_prove") or is_assumption or not other.is_proven:
+            return ret_val
+        ret_val._set_is_proven(True)
+        ret_val.from_assumptions = get_assumptions(other)
+        ret_val.deduced_from = Inference(
+            self, other, conclusion=ret_val, rule="left_weakening"
+        )
+        return ret_val
 
     def iff(
         self, other: TProposition, is_assumption: bool = False, **kwargs
@@ -1473,7 +1483,9 @@ class Proposition:
         assert self.is_proven, f"{self} is not proven"
         assert other.is_proven, f"{other} is not proven"
         new_p._set_is_proven(True)
-        new_p.deduced_from = Inference(self, other, rule="modus_ponens")
+        new_p.deduced_from = Inference(
+            self, other, conclusion=new_p, rule="modus_ponens"
+        )
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(other))
         return new_p
 
@@ -1546,7 +1558,9 @@ class Proposition:
             n_other_ante = Not(other.left)
         new_p = cast(TProposition | Not[TProposition], n_other_ante)
         new_p._set_is_proven(True)
-        new_p.deduced_from = Inference(self, other, rule="modus_tollens")
+        new_p.deduced_from = Inference(
+            self, other, conclusion=new_p, rule="modus_tollens"
+        )
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(other))
         return new_p
 
@@ -1578,7 +1592,9 @@ class Proposition:
             if p == self:
                 new_p = self.copy()
                 new_p._set_is_proven(True)
-                new_p.deduced_from = Inference(self, other, rule="is_one_of")
+                new_p.deduced_from = Inference(
+                    self, other, conclusion=new_p, rule="is_one_of"
+                )
                 new_p.from_assumptions = get_assumptions(other).copy()
                 return new_p
             elif isinstance(p, And):
@@ -1618,7 +1634,9 @@ class Proposition:
         if condition2 or (unif is True):
             new_p = self.copy()
             new_p._set_is_proven(True)
-            new_p.deduced_from = Inference(self, other, rule="is_special_case_of")
+            new_p.deduced_from = Inference(
+                self, other, conclusion=new_p, rule="is_special_case_of"
+            )
             new_p.from_assumptions = get_assumptions(other).copy()
             return new_p
         raise ValueError(f"{self} is not a special case of {other}")
@@ -1681,7 +1699,7 @@ class Proposition:
             new_p = cast(Implies[And[*Props], Self], And(*assumptions).implies(self))  # type: ignore
         new_p._set_is_proven(True)
         new_p.deduced_from = Inference(
-            self, *assumptions, rule="followed_from"  # type:ignore
+            self, *assumptions, conclusion=new_p, rule="followed_from"  # type:ignore
         )
         new_p.from_assumptions = self.from_assumptions - set(assumptions)
         return new_p

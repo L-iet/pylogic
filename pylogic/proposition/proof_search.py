@@ -1,226 +1,232 @@
 from __future__ import annotations
 
-from typing import Generic, Literal, TypeVar
+from typing import TYPE_CHECKING
 
+from pylogic.assumptions_context import AssumptionsContext, conclude
+from pylogic.inference import Inference
 from pylogic.proposition.and_ import And
+from pylogic.proposition.contradiction import Contradiction
+from pylogic.proposition.iff import Iff
 from pylogic.proposition.implies import Implies
+from pylogic.proposition.not_ import Not, are_negs, neg
 from pylogic.proposition.or_ import Or
 from pylogic.proposition.proposition import Proposition
-from pylogic.proposition.quantified.exists import Exists
-from pylogic.proposition.quantified.forall import Forall
-
-T = TypeVar("T", bound="Proposition")
-U = TypeVar("U", bound="Proposition")
-V = TypeVar("V", bound="Proposition")
-
-RuleName = Literal[
-    "modus_ponens",
-    "modus_tollens",
-    "is_one_of",
-    "is_special_case_of",
-    "thus_forall",
-    "hypothetical_syllogism",
-    "all_proven",
-    "one_proven",
-    "quantified_modus_ponens",
-    "exists_modus_ponens",
-    "unit_resolve",
-    "definite_clause_resolve",
-]
-
-rules: list[RuleName] = [
-    "modus_ponens",
-    "modus_tollens",
-    "is_one_of",
-    "is_special_case_of",
-    "thus_forall",
-    "hypothetical_syllogism",
-    "all_proven",
-    "one_proven",
-    "quantified_modus_ponens",
-    "exists_modus_ponens",
-    "unit_resolve",
-    "definite_clause_resolve",
-]
+from pylogic.proposition.relation.equals import Equals
 
 
-class InferenceResult(Generic[T, U]):
-    def __init__(
-        self,
-        starting_prem: T | InferenceResult | None,
-        *other_prems: Proposition | InferenceResult,
-        rule: RuleName | Literal["known"],
-        conclusion: U,
-    ) -> None:
-        self.starting_prem: T | InferenceResult | None = starting_prem
-        self.other_prems: tuple[Proposition | InferenceResult, ...] = other_prems
-        self.rule: RuleName = rule  # type:ignore
-        self.conclusion: U = conclusion
-
-    def __repr__(self) -> str:
-        return f"InfResult{(self.starting_prem, *self.other_prems, self.rule, self.conclusion)}"
-
-    def __str__(self) -> str:
-        return str((self.starting_prem, *self.other_prems, self.rule, self.conclusion))
-
-
-def get_prop(p: InferenceResult[T, U] | U) -> U:
-    if isinstance(p, InferenceResult):
-        return p.conclusion
-    return p
-
-
-def inference_rule_search(
-    rule: RuleName,
-    prem: T | InferenceResult[Proposition, T],
-    all_props: list[Proposition | InferenceResult],
-    premises: list[Proposition | InferenceResult],
-    target: U,
-) -> InferenceResult[T, U] | None:
+def proof_search(kb: list[Proposition], target: Proposition) -> Proposition:
     """
-    Search for if target can be inferred from the premises using the inference rule.
-    premises: propositions we haven't yet called the inference rule on
-    all_props: all proven propositions
+    Attempt to build an Inference proving `target` from premises in `kb`.
+    Raises ValueError if no proof is found.
     """
-    prem_prop = get_prop(prem)
-    for other in all_props:
-        other_prop: Proposition
-        other_prop = get_prop(other)
+    return _BackwardProver(kb).prove(target)
+
+
+def inference(
+    *,
+    premises: list[Proposition],
+    inference_rule_name: str,
+    inner_context: AssumptionsContext | None,
+    conclusion: Proposition,
+) -> Inference:
+    """
+    Create an Inference object with the given premises, inference rule name,
+    inner context, and conclusion.
+    """
+    return Inference(
+        *premises,
+        conclusion,
+        rule=inference_rule_name,
+    )
+
+
+def conc(inf: Inference) -> Proposition:
+    """
+    Get the conclusion of an Inference object.
+    """
+    return inf.other_premises[-1]
+
+
+def print_kb(kb: list[Proposition]) -> None:
+    """
+    Print the knowledge base (KB) in a readable format.
+    """
+    print("-" * 20)
+    for p in kb:
+        print(p)
+    print("\n")
+
+
+class _BackwardProver:
+    def __init__(self, kb: list[Proposition]):
+        # knowledge base of proven propositions
+        self.kb = list(kb)  # make copy in case other prover has same kb
+        for p in self.kb:
+            if isinstance(p, And) and not getattr(p, "extended", False):
+                self.kb.extend(p.extract())
+                p.extended = True
+
+    def prove(self, goal: Proposition) -> Proposition:
+        return self._prove(goal, visited=set(), no_recurse_on=set())
+
+    def _prove(
+        self, goal: Proposition, visited: set, no_recurse_on: set[Proposition]
+    ) -> Proposition:
+        """
+        no_recurse_on: propositions that have already been recursed on
+        """
+        # detect loops
+        if goal in visited:
+            raise ValueError(f"Cannot prove {goal} (cycle detected)")
+        old_visited = visited.copy()
+        visited.add(goal)
+
+        if goal.name == "C":
+            print(goal, visited, self.kb)
+
+        # by inspection, by evaluation
         try:
-            new_conc = getattr(prem_prop, rule)(other_prop)
-            if new_conc == prem_prop:
-                continue
-            inf_res = InferenceResult(prem, other, rule=rule, conclusion=new_conc)
-            premises.append(inf_res)
-            all_props.append(inf_res)
-        except (AssertionError, AttributeError) as e:
-            continue
-        if new_conc == target:
-            return inf_res
-    return None
-
-
-def proof_search_one(
-    premises: list[Proposition], target: Proposition, max_iters: int = 5000
-):
-    """
-    Perform a proof search to determine if the target statement can be derived from the given premises.
-
-    Args:
-        premises (list[Proposition]): The list of premises or statements in the knowledge base.
-        target (Proposition): The target statement to be proven.
-        max_iters (int, optional): The maximum number of iterations for the proof search. Defaults to 5000.
-
-    Returns:
-        InferenceResult[Proposition, Proposition] | None: The result of the proof search, which includes the proof if found, or None if no proof is found.
-    """
-    all_inferences: list[Proposition | InferenceResult] = premises
-    usable_props: list[Proposition | InferenceResult] = [p for p in premises]
-    res = None
-    stmt = None  # will hold the outermost non-forall statement of target
-    if isinstance(target, Forall):
-        stmt = target
-    while isinstance(stmt, Forall):
-        stmt = stmt.inner_proposition
-    iters = 0
-    while iters <= max_iters and usable_props:
-        iters += 1
-        prem = usable_props.pop()
-        prem_prop = get_prop(prem)
-        if target == prem_prop:
-            return InferenceResult(prem, rule="known", conclusion=target)
-        elif stmt == prem_prop:
-            return InferenceResult(prem, rule="thus_forall", conclusion=target)
-
-        if res := inference_rule_search(
-            "modus_ponens", prem, all_inferences, usable_props, target
-        ):
+            res = goal.by_inspection()
             return res
-        if res := inference_rule_search(
-            "modus_tollens", prem, all_inferences, usable_props, target
-        ):
-            return res
-        if isinstance(prem_prop, Implies):
-            if isinstance(target, Implies):
-                res = inference_rule_search(
-                    "hypothetical_syllogism", prem, all_inferences, usable_props, target
-                )
-            if not res and isinstance(prem_prop.antecedent, And):
-                res = inference_rule_search(
-                    "definite_clause_resolve",
-                    prem,
-                    all_inferences,
-                    usable_props,
-                    target,
-                )
-        elif isinstance(prem_prop, Or):
-            res = inference_rule_search(
-                "unit_resolve", prem, all_inferences, usable_props, target
-            )
-        elif isinstance(prem_prop, Forall):
-            res = inference_rule_search(
-                "quantified_modus_ponens",
-                prem,
-                all_inferences,
-                usable_props,
-                target,
-            )
-            if not res:
-                try:
-                    result = target.is_special_case_of(prem_prop)
-                    inf_res = InferenceResult(
-                        prem, rule="is_special_case_of", conclusion=result
-                    )
-                    usable_props.append(inf_res)
-                    all_inferences.append(inf_res)
-                    return inf_res
-                except (ValueError, AssertionError):
-                    continue
-        elif isinstance(prem_prop, Exists):
-            if isinstance(target, Exists):
-                res = inference_rule_search(
-                    "exists_modus_ponens", prem, all_inferences, usable_props, target
-                )
-        elif isinstance(prem_prop, And):
+        except ValueError:
+            pass
+
+        # try:
+        #     res = self._prove(Contradiction(), visited, no_recurse_on)
+        #     return res.ex_falso(goal)  # type:ignore
+        # except ValueError:
+        #     pass
+
+        # by inspection, by evaluation
+        if isinstance(goal, Equals):
             try:
-                result = target.is_one_of(prem_prop)
-                inf_res = InferenceResult(prem, rule="is_one_of", conclusion=result)
-                usable_props.append(inf_res)
-                all_inferences.append(inf_res)
-                return inf_res
-            except (ValueError, AssertionError):
-                continue
+                res = goal.by_eval()
+                return res
+            except ValueError:
+                pass
 
-        if res:
-            return res
-        all_props = [get_prop(p) for p in all_inferences]
-        if isinstance(target, And):
-            if all((t in all_props for t in target.propositions)):
-                return InferenceResult(None, rule="all_proven", conclusion=target)
-        elif isinstance(target, Or):
-            for t in target.propositions:
-                if t in all_props:
-                    return InferenceResult(t, rule="one_proven", conclusion=target)
+        for p in self.kb:
+            if p == goal:
+                return p
+            if isinstance(p, Contradiction):
+                # if we find a contradiction in KB, we can prove anything
+                return p.ex_falso(goal)
 
+            # Conjunction‐elim: if we find in KB some A and B … whose i-th child = goal
+            if isinstance(p, And):
+                for i, c in enumerate(p.propositions):
+                    if c == goal:
+                        return p[i]  # proven version of c
 
-def proof_search(
-    premises: list[Proposition], target: T, tries: int = 2, each_max_iters: int = 5000
-) -> InferenceResult[Proposition, T] | None:
-    """
-    Searches a knowledge base to see if a target statement follows from it.
+            # trying to get Modus Ponens or Modus Tollens
+            if isinstance(p, Implies) and p not in no_recurse_on:
+                print(1, f"Trying to prove {goal} from {p}")
+                print_kb(self.kb)
+                try:
+                    ant_inf = self._prove(
+                        p.antecedent, visited, no_recurse_on=no_recurse_on.union({p})
+                    )
+                    cons = ant_inf.modus_ponens(p)
+                    new_prover = _BackwardProver(self.kb + [cons])
+                    ret_val = new_prover._prove(
+                        goal, visited=set(), no_recurse_on=no_recurse_on.union({p})
+                    )
+                    return ret_val
+                except ValueError:
+                    pass
+                # if are_negs(p.antecedent, goal):
+                try:
+                    neg_cons_inf = self._prove(
+                        neg(p.consequent),
+                        visited,
+                        no_recurse_on=no_recurse_on.union({p}),
+                    )
+                    neg_ante = neg_cons_inf.modus_tollens(p)
+                    new_prover = _BackwardProver(self.kb + [neg_ante])
+                    ret_val = new_prover._prove(
+                        goal, visited=set(), no_recurse_on=no_recurse_on.union({p})
+                    )
+                    return ret_val
+                except ValueError:
+                    pass
 
-    Args:
-        premises (list[Proposition]): The list of premises or statements in the knowledge base.
-        target (T): The target statement to be proven.
-        tries (int, optional): The number of attempts to search for a proof. Defaults to 2. Should be small.
-        each_max_iters (int, optional): The maximum number of iterations for each attempt. Defaults to 5000.
+            # Proof-by-cases
+            # avoid case-splitting on already case-split propositions
+            if isinstance(p, Or) and p not in no_recurse_on:
+                print(2, f"Trying to prove {goal} from {p}")
+                print_kb(self.kb)
+                contexts: list[AssumptionsContext] = []
+                for i, c in enumerate(p.propositions):
+                    if TYPE_CHECKING:
+                        assert isinstance(c, Proposition)
+                    with AssumptionsContext() as ctx:
+                        c.assume()
+                        # add c to KB only within this context
+                        new_prover = _BackwardProver(self.kb + [c])
+                        try:
+                            new_prover._prove(
+                                goal,
+                                visited=set(),
+                                no_recurse_on=no_recurse_on.union({p}),
+                            )  # fresh visited for inner
+                            print(3, f"Goal {goal} proven by case {i} on {p}")
+                        except ValueError:
+                            # if we cannot prove goal in this case, break
+                            print(4, f"Goal {goal} NOT proven by case {i} on {p}")
+                            break
+                        finally:
+                            # cleanup
+                            del new_prover
+                    contexts.append(ctx)
+                else:
+                    # if we get here, we have proven goal in all cases
+                    print(5, f"Goal {goal} proven by cases on {p}")
+                    ret_val = goal.copy()
+                    ret_val._set_is_proven(True)
+                    ret_val.deduced_from = Inference(
+                        p,
+                        conclusion=ret_val,
+                        rule="by_cases",
+                        inner_contexts=contexts,
+                    )
+                    return ret_val
 
-    Returns:
-        InferenceResult[Proposition, T] | None: The result of the proof search, which includes the proof if found, or None if no proof is found.
-    """
-    res = None
-    for i in range(tries):
-        res = proof_search_one(premises, target, max_iters=each_max_iters)
-        if res:
-            break
-    return res  # type: ignore
+        # Conjunction‐intro: if goal = A ∧ B ∧ …, prove each conjunct
+        if isinstance(goal, And):
+            sub_infs = [
+                self._prove(c, visited, no_recurse_on) for c in goal.propositions
+            ]
+            conj = sub_infs[0].and_(*sub_infs[1:])  # user‐supplied rule
+            return conj
+
+        # Implication‐intro: if goal = A → B, discharge A to prove B
+        if isinstance(goal, Implies):
+            with AssumptionsContext() as ctx:
+                goal.antecedent.assume()
+                # add A to KB only within this context
+                new_prover = _BackwardProver(self.kb + [goal.antecedent])
+                b_inf = new_prover._prove(
+                    goal.consequent, visited=set(), no_recurse_on=no_recurse_on
+                )  # fresh visited for inner
+                conclude(b_inf)
+                # cleanup
+                del new_prover
+            impl = ctx.get_proven()[0]
+            return impl
+
+        # Disjunction‐intro: if goal is an Or, try to prove at least one side
+        if isinstance(goal, Or):
+            for side in goal.propositions:
+                try:
+                    side_inf = self._prove(
+                        side, visited=set(), no_recurse_on=no_recurse_on
+                    )
+                    oi = goal.one_proven(side_inf)  # user‐supplied
+                    print(6, f"Goal {goal} proven by {side} on {goal}")
+                    return oi
+                except ValueError:
+                    print(7, f"Goal {goal} NOT proven by {side} on {goal}")
+                    continue
+
+        # If we get here, no rule applies
+        raise ValueError(f"No rule found to prove {goal!r}")

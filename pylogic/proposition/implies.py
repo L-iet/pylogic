@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Callable, Generic, Literal, Self, TypedDict, T
 
 from pylogic.helpers import find_first
 from pylogic.inference import Inference
-from pylogic.proposition.not_ import neg
 from pylogic.proposition.proposition import Proposition, get_assumptions
 from pylogic.typing import Term, Unification
 
@@ -185,6 +184,8 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         r"""Logical inference rule. Given self (`A -> B`) is proven, return the corresponding
         contrapositive (`~B -> ~A`)
         """
+        from pylogic.proposition.not_ import neg
+
         assert self.is_proven, f"{self} is not proven"
         return Implies(
             neg(self.consequent),
@@ -193,6 +194,9 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             _assumptions=get_assumptions(self),
             _inference=Inference(self, rule="contrapositive"),
         )
+
+    def by_inspection_check(self) -> bool | None:
+        return self.antecedent == self.consequent or None
 
     def hypothetical_syllogism(self, *others: Implies) -> Implies:
         """
@@ -231,6 +235,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         """
         assert self.is_proven, f"{self} is not proven"
         from pylogic.enviroment_settings.settings import settings
+        from pylogic.proposition.not_ import neg
         from pylogic.proposition.or_ import Or
 
         assert settings["USE_CLASSICAL_LOGIC"], "Classical logic is not enabled"
@@ -245,7 +250,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
     def definite_clause_resolve(
         self,
         in_body: list[Proposition] | tuple[Proposition, ...] | And[Proposition, ...],
-        **kwargs
+        **kwargs,
     ) -> Self | Implies[Proposition, UProposition] | UProposition:
         r"""
         Logical inference rule. Given self `(A /\ B /\ C...) -> D` is proven, and
@@ -280,40 +285,52 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             if not dont_prove:
                 for prop in props:
                     assert prop.is_proven, f"{prop} is not proven"
-                    in_body_assumptions = in_body_assumptions.union(get_assumptions(prop))
+                    in_body_assumptions = in_body_assumptions.union(
+                        get_assumptions(prop)
+                    )
 
         rem_props = [prop for prop in self.antecedent.propositions if prop not in props]
-        # TODO: the inference may contain propositions with is_proven=False
-        # since we are using *props instead of in_body (the logic is valid & sound though)
+
         if len(rem_props) == 1:
             if dont_prove:
                 return Implies(
                     rem_props[0],
                     self.consequent,
                 )
-            return Implies(
+            ret_val = Implies(
                 rem_props[0],
                 self.consequent,
                 _is_proven=True,
                 _assumptions=get_assumptions(self).union(in_body_assumptions),
-                _inference=Inference(self, *props, rule="definite_clause_resolve"),
             )
+            ret_val.deduced_from - Inference(
+                self, *props, conclusion=ret_val, rule="definite_clause_resolve"
+            )
+            return ret_val
         if len(rem_props) == 0:
             new_p = self.consequent.copy()
             if not dont_prove:
                 new_p._set_is_proven(True)
-                new_p.deduced_from = Inference(self, *props, rule="definite_clause_resolve")
-                new_p.from_assumptions = get_assumptions(self).union(in_body_assumptions)
+                new_p.deduced_from = Inference(
+                    self, *props, conclusion=new_p, rule="definite_clause_resolve"
+                )
+                new_p.from_assumptions = get_assumptions(self).union(
+                    in_body_assumptions
+                )
             return new_p
+        if dont_prove:
+            return Implies(
+                And(*rem_props),  # type: ignore
+                self.consequent,
+            )
         new_p = Implies(
             And(*rem_props),  # type: ignore
             self.consequent,
             _is_proven=True,
             _assumptions=get_assumptions(self).union(in_body_assumptions),
-            _inference=Inference(self, *props, rule="definite_clause_resolve"),
-        ) if not dont_prove else Implies(
-            And(*rem_props),  # type: ignore
-            self.consequent,
+        )
+        new_p.deduced_from = Inference(
+            self, *props, conclusion=new_p, rule="definite_clause_resolve"
         )
         return new_p  # type:ignore
 
@@ -339,6 +356,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         Slightly faster than `unit_definite_clause_resolve`.
         """
         from pylogic.proposition.and_ import And
+
         dont_prove = kwargs.get("prove", True) is False
         if not dont_prove:
             assert self.is_proven, f"{self} is not proven"
@@ -352,15 +370,21 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             first_in_body == first_ante
         ), f"{first_in_body} is not the first proposition {first_ante}"
         ante = self.antecedent.propositions[1] if len_ante == 2 else And(*self.antecedent.propositions[1:])  # type: ignore
-        new_p = Implies(
-            ante,
-            self.consequent,
-            _is_proven=True,
-            _assumptions=get_assumptions(self).union(get_assumptions(first_in_body)),
-            _inference=Inference(
-                self, first_in_body, rule="first_unit_definite_clause_resolve"
-            ),
-        ) if not dont_prove else Implies(ante, self.consequent)
+        new_p = (
+            Implies(
+                ante,
+                self.consequent,
+                _is_proven=True,
+                _assumptions=get_assumptions(self).union(
+                    get_assumptions(first_in_body)
+                ),
+                _inference=Inference(
+                    self, first_in_body, rule="first_unit_definite_clause_resolve"
+                ),
+            )
+            if not dont_prove
+            else Implies(ante, self.consequent)
+        )
         return new_p  # type:ignore
 
     def unify(self, other: Self) -> Unification | Literal[True] | None:

@@ -12,15 +12,17 @@ from typing import (
 )
 
 from pylogic.enviroment_settings.settings import settings
-from pylogic.proposition.proposition import Proposition, get_assumptions
+from pylogic.proposition.contradiction import contradiction
+from pylogic.proposition.implies import Implies
+from pylogic.proposition.proposition import get_assumptions
 from pylogic.typing import Term, Unification
 
 if TYPE_CHECKING:
     from sympy.logic.boolalg import Not as SpNot
 
-    from pylogic.proposition.implies import Implies
-    from pylogic.proposition.relation.binaryrelation import BinaryRelation
     from pylogic.proposition.contradiction import Contradiction
+    from pylogic.proposition.proposition import Proposition
+    from pylogic.proposition.relation.binaryrelation import BinaryRelation
 
     T = TypeVar("T", bound=BinaryRelation)
 else:
@@ -70,7 +72,7 @@ def are_negs(p: Proposition, q: Proposition) -> bool:
     return False
 
 
-class Not(Proposition, Generic[TProposition]):
+class Not(Implies, Generic[TProposition]):
     # order of operations for propositions (0-indexed)
     # not xor and or => <=> forall forallInSet forallSubsets exists existsInSet existsUnique
     # existsUniqueInSet existsSubset existsUniqueSubset Proposition
@@ -91,8 +93,13 @@ class Not(Proposition, Generic[TProposition]):
     ) -> None:
         self.negated: TProposition = negated
         name = rf"~{negated}"
-        super().__init__(name, is_assumption, description=description, **kwargs)
-        self.is_atomic = False
+        super().__init__(
+            negated,
+            contradiction,
+            is_assumption=is_assumption,
+            description=description,
+            **kwargs,
+        )
         self.bound_vars = negated.bound_vars.copy()
         self.variables = negated.variables.copy()
         self.constants = negated.constants.copy()
@@ -169,9 +176,6 @@ class Not(Proposition, Generic[TProposition]):
 
     def __hash__(self) -> int:
         return hash(("not", self.negated))
-    
-    def __call__(self, other_prop: Proposition) -> Contradiction:
-        return self.contradicts(other_prop)
 
     def _set_is_inferred(self, value: bool) -> None:
         super()._set_is_inferred(value)
@@ -264,7 +268,7 @@ class Not(Proposition, Generic[TProposition]):
         replace_dict: dict[Term, Term],
         positions: list[list[int]] | None = None,
         equal_check: Callable[[Term, Term], bool] | None = None,
-    ) -> Self:
+    ) -> Not:
         new_p = self.__class__(
             self.negated.replace(
                 replace_dict, positions=positions, equal_check=equal_check

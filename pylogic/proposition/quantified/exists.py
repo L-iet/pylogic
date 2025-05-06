@@ -165,7 +165,9 @@ class Exists(_Quantified[TProposition]):
         proven_inner = self.inner_proposition.replace({self.variable: c})
         proven_inner._set_is_proven(True)
         proven_inner.from_assumptions = get_assumptions(self).copy()
-        proven_inner.deduced_from = Inference(self, rule="extract")
+        proven_inner.deduced_from = Inference(
+            self, conclusion=proven_inner, rule="extract"
+        )
         if isinstance(proven_inner, And):
             c.knowledge_base.update(proven_inner.extract())
         else:
@@ -354,7 +356,7 @@ class Exists(_Quantified[TProposition]):
             new_prop._set_is_proven(True)
             new_prop.from_assumptions = get_assumptions(proven_proposition)
             new_prop.deduced_from = Inference(
-                proven_proposition, rule="by_substitution"
+                proven_proposition, conclusion=new_prop, rule="by_substitution"
             )
             return new_prop
 
@@ -376,7 +378,7 @@ class Exists(_Quantified[TProposition]):
             get_assumptions(proven_proposition) if proven_proposition else set()
         )
         new_prop.deduced_from = Inference(
-            *term.knowledge_base, rule="by_single_substitution"
+            *term.knowledge_base, conclusion=new_prop, rule="by_single_substitution"
         )
         return new_prop
         # replace inner_prop with term.
@@ -422,7 +424,9 @@ class Exists(_Quantified[TProposition]):
             new_prop = self.copy()
             new_prop._set_is_proven(True)
             new_prop.from_assumptions = get_assumptions(proven)
-            new_prop.deduced_from = Inference(proven, rule="by_substitution")
+            new_prop.deduced_from = Inference(
+                proven, conclusion=new_prop, rule="by_substitution"
+            )
             return new_prop
         raise ValueError(
             f"{self} cannot be proven by substitution:\n{first_non_exists_replaced} is not equal to {proven}"
