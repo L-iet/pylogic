@@ -303,7 +303,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
                 _is_proven=True,
                 _assumptions=get_assumptions(self).union(in_body_assumptions),
             )
-            ret_val.deduced_from - Inference(
+            ret_val.deduced_from = Inference(
                 self, *props, conclusion=ret_val, rule="definite_clause_resolve"
             )
             return ret_val

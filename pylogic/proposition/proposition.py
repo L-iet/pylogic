@@ -180,9 +180,9 @@ class Proposition:
             self.deduced_from: Inference | None = Inference(None, conclusion=self)
             self.from_assumptions = set()
         elif self._is_proven:
-            assert _inference is not None, "Proven propositions must have an inference"
             self.deduced_from: Inference | None = _inference
-            self.deduced_from.conclusion = self
+            if self.deduced_from is not None:
+                self.deduced_from.conclusion = self
             self.from_assumptions: set[Proposition] = _assumptions or set()
         else:
             self.deduced_from: Inference | None = None
@@ -977,8 +977,9 @@ class Proposition:
         """
         from pylogic.inference import Inference
         from pylogic.proposition.implies import Implies
+        from pylogic.proposition.not_ import Not
 
-        if de_nest and isinstance(other, Implies):
+        if de_nest and isinstance(other, Implies) and not isinstance(other, Not):
             ret_val = self.and_(other.antecedent).implies(
                 other.consequent, is_assumption=is_assumption, **kwargs
             )
@@ -1542,7 +1543,7 @@ class Proposition:
         from pylogic.inference import Inference
         from pylogic.proposition.iff import Iff
         from pylogic.proposition.implies import Implies
-        from pylogic.proposition.not_ import Not, are_negs
+        from pylogic.proposition.not_ import are_negs, neg
 
         assert self.is_proven, f"{self} is not proven"
         assert other.is_proven, f"{other} is not proven"
@@ -1552,17 +1553,14 @@ class Proposition:
         ), f"{other.right} is not the negation of {self}"
         # I'm using copy here because neg(Not(p)) returns p,
         # and we should avoid proving p in a different place.
-        if isinstance(other.left, Not):
-            n_other_ante = other.left.negated.copy()
-        else:
-            n_other_ante = Not(other.left)
-        new_p = cast(TProposition | Not[TProposition], n_other_ante)
+        n_other_ante = neg(other.left).copy()
+        new_p = n_other_ante
         new_p._set_is_proven(True)
         new_p.deduced_from = Inference(
             self, other, conclusion=new_p, rule="modus_tollens"
         )
         new_p.from_assumptions = get_assumptions(self).union(get_assumptions(other))
-        return new_p
+        return new_p  # type:ignore
 
     mt = fn_alias(modus_tollens, "mt")
 

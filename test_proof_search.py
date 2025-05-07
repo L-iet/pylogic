@@ -60,4 +60,48 @@ def test3():
     print(proof.deduced_from)
 
 
-test3()
+def test4():
+    A, B = propositions("A", "B")
+    p1 = A.or_(B).assume()
+    p2 = neg(B).assume()
+
+    target = A
+    kb = [
+        p1,
+        p2,
+    ]
+    proof = proof_search(kb, target)
+    print(proof.deduced_from)
+
+
+def test5():
+    from pylogic.enviroment_settings.settings import settings
+
+    settings["USE_CLASSICAL_LOGIC"] = False
+    P, Q, R, S = propositions("P", "Q", "R", "S")
+
+    p1 = P.assume()
+    kb = [
+        p1,
+    ]
+    target = neg(neg(P))
+    proof = proof_search(kb, target)
+    print(proof.deduced_from)
+
+
+def test6():
+    from pylogic.enviroment_settings.settings import settings
+
+    settings["USE_CLASSICAL_LOGIC"] = False
+    P, Q, R, S = propositions("P", "Q", "R", "S")
+
+    p1 = neg(neg(P)).assume()
+    kb = [
+        p1,
+    ]
+    target = P
+    proof = proof_search(kb, target)
+    print(proof.deduced_from)
+
+
+test6()

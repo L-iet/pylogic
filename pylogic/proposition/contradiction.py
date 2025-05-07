@@ -23,7 +23,7 @@ class Contradiction(Proposition):
     A contradiction can be assumed.
     """
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, name: str = "contradiction", **kwargs) -> None:
         super().__init__(
             "contradiction",
             description="contradiction",

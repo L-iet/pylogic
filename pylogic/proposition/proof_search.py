@@ -57,6 +57,20 @@ def print_kb(kb: list[Proposition]) -> None:
     print("\n")
 
 
+def check_kb(kb: list[Proposition]) -> None:
+    """
+    Check the knowledge base (KB) for any unproven proposition.
+    """
+    for i, p in enumerate(kb):
+        if not p.is_proven:
+            raise Exception(
+                f"{p} at index {i} is not proven,kb length = "
+                + str(len(kb))
+                + "\n"
+                + str(kb)
+            )
+
+
 class _BackwardProver:
     def __init__(
         self, kb: list[Proposition], no_extend: set[Proposition] | None = None
@@ -119,13 +133,15 @@ class _BackwardProver:
                 return p
             if isinstance(p, Contradiction):
                 # if we find a contradiction in KB, we can prove anything
-                return p.ex_falso(goal)
+                ret_val = p.ex_falso(goal)
+                return ret_val
 
             # Conjunction‐elim: if we find in KB some A and B … whose i-th child = goal
             if isinstance(p, And):
                 for i, c in enumerate(p.propositions):
                     if c == goal:
-                        return p[i]  # proven version of c
+                        ret_val = p[i]  # proven version of c
+                        return ret_val
 
             # trying to get Modus Ponens or Modus Tollens
             if isinstance(p, Implies) and p not in no_recurse_on:
@@ -169,12 +185,10 @@ class _BackwardProver:
                     return ret_val
                 except ValueError:
                     pass
-
             # Proof-by-cases
             # avoid case-splitting on already case-split propositions
             if isinstance(p, Or) and p not in no_recurse_on:
                 # print(2, f"Trying to prove {goal} from {p}")
-                # print_kb(self.kb)
                 contexts: list[AssumptionsContext] = []
                 for i, c in enumerate(p.propositions):
                     if TYPE_CHECKING:
@@ -185,6 +199,7 @@ class _BackwardProver:
                     new_prover = _BackwardProver(
                         self.kb + [c], no_extend=self.no_extend
                     )
+                    not_proven = False
                     try:
                         new_prover._prove(
                             goal,
@@ -195,13 +210,14 @@ class _BackwardProver:
                     except ValueError:
                         # if we cannot prove goal in this case, break
                         # print(4, f"Goal {goal} NOT proven by case {i} on {p}")
-                        pass
+                        not_proven = True
                     finally:
                         # cleanup
                         ctx.close()
                         # del new_prover # might be needed to avoid
                         # accidentally using it beyond this point
-                        break
+                        if not_proven:
+                            break
                     contexts.append(ctx)
                 else:
                     # if we get here, we have proven goal in all cases
@@ -262,6 +278,5 @@ class _BackwardProver:
                 except ValueError:
                     # print(7, f"Goal {goal} NOT proven by {side} on {goal}")
                     continue
-
         # If we get here, no rule applies
         raise ValueError(f"No rule found to prove {goal}")

@@ -187,6 +187,16 @@ class AssumptionsContext:
 
         for p in self._interesting_conclusions:
             self.proven_propositions.append(self._build_proven(p))
+
+        # reset all assumptions of the previous context to be true
+        # we need to do this because we has reset all of self's assumptions
+        # to be false, but self.assumptions may contain references to
+        # assumptions in the previous context
+        if assumptions_contexts[-2] is not None:
+            for a in assumptions_contexts[-2].assumptions:
+                if isinstance(a, Proposition):
+                    a._set_is_assumption(True)
+
         del assumptions_contexts[-1]
         self.assumptions.reverse()
         self.exited = True
