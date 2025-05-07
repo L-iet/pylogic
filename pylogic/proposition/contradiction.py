@@ -44,7 +44,12 @@ class Contradiction(Proposition):
         return self.__class__()
 
     def copy(self) -> Self:
-        return self.__class__()
+        return self.__class__(
+            is_assumption=self.is_assumption,
+            _is_proven=self._is_proven,
+            _assumptions=self.from_assumptions,
+            _inference=self.deduced_from,
+        )
 
     def ex_falso(self, p: Proposition, **kwargs) -> Proposition:
         """
@@ -52,7 +57,7 @@ class Contradiction(Proposition):
 
         Ex falso quodlibet: from a contradiction, anything follows.
         """
-        dont_prove = kwargs.get("dont_prove", False)
+        dont_prove = kwargs.get("prove", True) is False
         if dont_prove:
             return p
         assert self.is_proven, "Contradiction is not proven"

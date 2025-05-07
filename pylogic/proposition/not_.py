@@ -391,7 +391,10 @@ Occured when trying to unify `{self}` and `{other}`"
         False if self.negated.by_inspection() returns True, and None if neither is provable.
         """
         from pylogic.helpers import ternary_not
+        from pylogic.proposition.contradiction import Contradiction
 
+        if isinstance(self.negated, Contradiction):
+            return True
         return ternary_not(self.negated.by_inspection_check())
 
     def to_sympy(self) -> SpNot:

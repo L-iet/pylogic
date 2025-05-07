@@ -8,10 +8,11 @@ if TYPE_CHECKING:
 
 
 class AssumptionsContext:
-    def __init__(self, name: str | None = None):
+    def __init__(self, name: str | None = None, auto_conclude: bool = True):
         self.name = name
         self.assumptions: list[Proposition | Variable] = []
         self._proven: list[Proposition] = []  # all props proven inside the context
+        self.auto_conclude = auto_conclude
 
         # the conclusions to use to build implications
         self._interesting_conclusions: list[Proposition] = []
@@ -177,7 +178,11 @@ class AssumptionsContext:
                 a._set_is_assumption(False)
 
         # remove need to call conclude
-        if len(self._interesting_conclusions) == 0 and len(self._proven) > 0:
+        if (
+            self.auto_conclude
+            and len(self._interesting_conclusions) == 0
+            and len(self._proven) > 0
+        ):
             self.proven_propositions.append(self._build_proven(self._proven[-1]))
 
         for p in self._interesting_conclusions:

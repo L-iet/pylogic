@@ -58,31 +58,39 @@ def print_kb(kb: list[Proposition]) -> None:
 
 
 class _BackwardProver:
-    def __init__(self, kb: list[Proposition]):
+    def __init__(
+        self, kb: list[Proposition], no_extend: set[Proposition] | None = None
+    ) -> None:
         # knowledge base of proven propositions
         self.kb = list(kb)  # make copy in case other prover has same kb
+        self.no_extend = no_extend.copy() if no_extend else set()
         for p in self.kb:
-            if isinstance(p, And) and not getattr(p, "extended", False):
+            if isinstance(p, And) and not p in self.no_extend:
                 self.kb.extend(p.extract())
-                p.extended = True
+                self.no_extend.add(p)
 
     def prove(self, goal: Proposition) -> Proposition:
         return self._prove(goal, visited=set(), no_recurse_on=set())
 
     def _prove(
-        self, goal: Proposition, visited: set, no_recurse_on: set[Proposition]
+        self,
+        goal: Proposition,
+        visited: set,
+        no_recurse_on: set[Proposition],
     ) -> Proposition:
         """
         no_recurse_on: propositions that have already been recursed on
+        no_extend: conjunctions whose conjuncts have already been added
+        to this KB in a higher-up (shallower) recursive call
         """
+        visited = visited.copy()
         # detect loops
         if goal in visited:
             raise ValueError(f"Cannot prove {goal} (cycle detected)")
-        old_visited = visited.copy()
         visited.add(goal)
 
-        if goal.name == "C":
-            print(goal, visited, self.kb)
+        # if goal.name == "C":
+        #    print(goal, visited, self.kb)
 
         # by inspection, by evaluation
         try:
@@ -105,7 +113,8 @@ class _BackwardProver:
             except ValueError:
                 pass
 
-        for p in self.kb:
+        for indx in range(len(self.kb) - 1, -1, -1):
+            p = self.kb[indx]
             if p == goal:
                 return p
             if isinstance(p, Contradiction):
@@ -120,21 +129,22 @@ class _BackwardProver:
 
             # trying to get Modus Ponens or Modus Tollens
             if isinstance(p, Implies) and p not in no_recurse_on:
-                print(1, f"Trying to prove {goal} from {p}")
-                print_kb(self.kb)
                 try:
                     ant_inf = self._prove(
                         p.antecedent, visited, no_recurse_on=no_recurse_on.union({p})
                     )
                     cons = ant_inf.modus_ponens(p)
-                    new_prover = _BackwardProver(self.kb + [cons])
+                    if cons == p:
+                        continue
+                    new_prover = _BackwardProver(
+                        self.kb + [cons], no_extend=self.no_extend
+                    )
                     ret_val = new_prover._prove(
                         goal, visited=set(), no_recurse_on=no_recurse_on.union({p})
                     )
                     return ret_val
-                except ValueError:
+                except ValueError as e:
                     pass
-                # if are_negs(p.antecedent, goal):
                 try:
                     neg_cons_inf = self._prove(
                         neg(p.consequent),
@@ -142,7 +152,17 @@ class _BackwardProver:
                         no_recurse_on=no_recurse_on.union({p}),
                     )
                     neg_ante = neg_cons_inf.modus_tollens(p)
-                    new_prover = _BackwardProver(self.kb + [neg_ante])
+                    if neg_ante == p:
+                        continue
+                    # for _i, _p in enumerate(self.kb + [neg_ante]):
+                    #     if not _p.is_proven:
+                    #         raise Exception(
+                    #             f"{_p} at index {_i} is not proven "
+                    #             + str(len(self.kb) + 1)
+                    #         )
+                    new_prover = _BackwardProver(
+                        self.kb + [neg_ante], no_extend=self.no_extend
+                    )
                     ret_val = new_prover._prove(
                         goal, visited=set(), no_recurse_on=no_recurse_on.union({p})
                     )
@@ -153,34 +173,39 @@ class _BackwardProver:
             # Proof-by-cases
             # avoid case-splitting on already case-split propositions
             if isinstance(p, Or) and p not in no_recurse_on:
-                print(2, f"Trying to prove {goal} from {p}")
-                print_kb(self.kb)
+                # print(2, f"Trying to prove {goal} from {p}")
+                # print_kb(self.kb)
                 contexts: list[AssumptionsContext] = []
                 for i, c in enumerate(p.propositions):
                     if TYPE_CHECKING:
                         assert isinstance(c, Proposition)
-                    with AssumptionsContext() as ctx:
-                        c.assume()
-                        # add c to KB only within this context
-                        new_prover = _BackwardProver(self.kb + [c])
-                        try:
-                            new_prover._prove(
-                                goal,
-                                visited=set(),
-                                no_recurse_on=no_recurse_on.union({p}),
-                            )  # fresh visited for inner
-                            print(3, f"Goal {goal} proven by case {i} on {p}")
-                        except ValueError:
-                            # if we cannot prove goal in this case, break
-                            print(4, f"Goal {goal} NOT proven by case {i} on {p}")
-                            break
-                        finally:
-                            # cleanup
-                            del new_prover
+                    ctx = AssumptionsContext().open()
+                    c.assume()
+                    # add c to KB only within this context
+                    new_prover = _BackwardProver(
+                        self.kb + [c], no_extend=self.no_extend
+                    )
+                    try:
+                        new_prover._prove(
+                            goal,
+                            visited=set(),
+                            no_recurse_on=no_recurse_on.union({p}),
+                        )  # fresh visited for inner
+                        # print(3, f"Goal {goal} proven by case {i} on {p}")
+                    except ValueError:
+                        # if we cannot prove goal in this case, break
+                        # print(4, f"Goal {goal} NOT proven by case {i} on {p}")
+                        pass
+                    finally:
+                        # cleanup
+                        ctx.close()
+                        # del new_prover # might be needed to avoid
+                        # accidentally using it beyond this point
+                        break
                     contexts.append(ctx)
                 else:
                     # if we get here, we have proven goal in all cases
-                    print(5, f"Goal {goal} proven by cases on {p}")
+                    # print(5, f"Goal {goal} proven by cases on {p}")
                     ret_val = goal.copy()
                     ret_val._set_is_proven(True)
                     ret_val.deduced_from = Inference(
@@ -201,17 +226,27 @@ class _BackwardProver:
 
         # Implication‐intro: if goal = A → B, discharge A to prove B
         if isinstance(goal, Implies):
-            with AssumptionsContext() as ctx:
-                goal.antecedent.assume()
-                # add A to KB only within this context
-                new_prover = _BackwardProver(self.kb + [goal.antecedent])
+            ctx = AssumptionsContext(auto_conclude=False).open()
+            goal.antecedent.assume()
+            # add A to KB only within this context
+            new_prover = _BackwardProver(
+                self.kb + [goal.antecedent], no_extend=self.no_extend
+            )
+            try:
                 b_inf = new_prover._prove(
                     goal.consequent, visited=set(), no_recurse_on=no_recurse_on
                 )  # fresh visited for inner
                 conclude(b_inf)
+            except ValueError:
+                pass
+            finally:
                 # cleanup
-                del new_prover
-            impl = ctx.get_proven()[0]
+                ctx.close()
+                # del new_prover # might be needed to avoid
+                # accidentally using it beyond this point
+            impl = ctx.get_first_proven()
+            if impl is None:
+                raise ValueError(f"Goal {goal} not proven")
             return impl
 
         # Disjunction‐intro: if goal is an Or, try to prove at least one side
@@ -222,11 +257,11 @@ class _BackwardProver:
                         side, visited=set(), no_recurse_on=no_recurse_on
                     )
                     oi = goal.one_proven(side_inf)  # user‐supplied
-                    print(6, f"Goal {goal} proven by {side} on {goal}")
+                    # print(6, f"Goal {goal} proven by {side} on {goal}")
                     return oi
                 except ValueError:
-                    print(7, f"Goal {goal} NOT proven by {side} on {goal}")
+                    # print(7, f"Goal {goal} NOT proven by {side} on {goal}")
                     continue
 
         # If we get here, no rule applies
-        raise ValueError(f"No rule found to prove {goal!r}")
+        raise ValueError(f"No rule found to prove {goal}")
