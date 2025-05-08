@@ -12,7 +12,7 @@ from typing import (
 )
 
 from pylogic.enviroment_settings.settings import settings
-from pylogic.proposition.contradiction import contradiction
+
 from pylogic.proposition.implies import Implies
 from pylogic.proposition.proposition import get_assumptions
 from pylogic.typing import Term, Unification
@@ -91,6 +91,8 @@ class Not(Implies, Generic[TProposition]):
         description: str = "",
         **kwargs,
     ) -> None:
+        from pylogic.proposition.contradiction import contradiction
+
         self.negated: TProposition = negated
         name = rf"~{negated}"
         super().__init__(

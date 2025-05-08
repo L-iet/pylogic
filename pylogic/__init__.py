@@ -53,7 +53,7 @@ from pylogic.expressions.sequence_term import SequenceTerm
 from pylogic.expressions.sum import Sum
 from pylogic.helpers import Rational, assume, has_been_proven, is_prime, latex, todo
 from pylogic.proposition.and_ import And
-from pylogic.proposition.contradiction import Contradiction
+from pylogic.proposition.contradiction import Contradiction, contradiction
 from pylogic.proposition.exor import ExOr, Exor
 from pylogic.proposition.iff import Iff
 from pylogic.proposition.implies import Implies

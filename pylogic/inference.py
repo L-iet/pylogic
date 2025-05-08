@@ -105,6 +105,7 @@ rules: set[str] = {
     "todo",
     "transitive",
     "unit_resolve",
+    "vacuous_implies",
     "weak_induction",
     "zero_abs_is_0",
     "close_assumptions_context",

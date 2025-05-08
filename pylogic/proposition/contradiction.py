@@ -4,6 +4,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Self, TypedDict, TypeVar
 
 from pylogic.inference import Inference
+from pylogic.proposition.and_ import And
+from pylogic.proposition.implies import Implies
 from pylogic.proposition.proposition import Proposition
 
 if TYPE_CHECKING:
@@ -66,6 +68,21 @@ class Contradiction(Proposition):
         new_p.from_assumptions = self.from_assumptions
         new_p.deduced_from = Inference(self, conclusion=new_p, rule="ex_falso")
         return new_p
+
+    def implies(
+        self,
+        other: TProposition | Implies[TProposition, UProposition],
+        is_assumption: bool = False,
+        de_nest: bool = True,
+        **kwargs,
+    ) -> Implies[Self, TProposition] | Implies[And[Self, TProposition], UProposition]:
+        res = super().implies(other, is_assumption, de_nest, **kwargs)
+        if (kwargs.get("dont_prove") is True) or is_assumption:
+            return res
+        inf = Inference(self, rule="vacuous_implies", conclusion=res)
+        res._is_proven = True
+        res.deduced_from = inf
+        return res
 
     # def thus_assumptions_cannot_all_hold(
     #     self,
