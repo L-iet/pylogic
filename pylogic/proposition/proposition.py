@@ -993,10 +993,10 @@ class Proposition:
             prove = False
         elif other.is_proven:
             prove = True
-            rule = "tautology"
+            rule = "left_weakening"
         elif self == other:
             prove = True
-            rule = "left_weakening"
+            rule = "tautology"
         if prove:
             assert rule is not None
             ret_val._set_is_proven(True)
