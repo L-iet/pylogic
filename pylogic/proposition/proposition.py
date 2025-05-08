@@ -985,13 +985,23 @@ class Proposition:
             )
         else:
             ret_val = Implies(self, other, is_assumption, **kwargs)
-        if kwargs.get("dont_prove") or is_assumption or not other.is_proven:
-            return ret_val
-        ret_val._set_is_proven(True)
-        ret_val.from_assumptions = get_assumptions(other)
-        ret_val.deduced_from = Inference(
-            self, other, conclusion=ret_val, rule="left_weakening"
-        )
+
+        prove = False
+        rule = None
+        # assumption is already proven
+        if kwargs.get("dont_prove") or is_assumption:
+            prove = False
+        elif other.is_proven:
+            prove = True
+            rule = "tautology"
+        elif self == other:
+            prove = True
+            rule = "left_weakening"
+        if prove:
+            assert rule is not None
+            ret_val._set_is_proven(True)
+            ret_val.from_assumptions = get_assumptions(other)
+            ret_val.deduced_from = Inference(self, other, conclusion=ret_val, rule=rule)
         return ret_val
 
     def iff(

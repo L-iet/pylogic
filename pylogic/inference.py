@@ -87,6 +87,7 @@ rules: set[str] = {
     "right_distribute",
     "strong_induction",
     "symmetric",
+    "tautology",
     "thus_assumptions_cannot_all_hold",
     "thus_contained_in_all",
     "thus_contained_in_b",

@@ -13,3 +13,6 @@ print(r.deduced_from)
 
 print(s.is_proven)
 print(s.deduced_from)
+
+print(p.implies(p).is_proven)
+print(p.implies(p).deduced_from)
