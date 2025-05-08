@@ -177,7 +177,11 @@ class Expr(ABC):
 
     @property
     def is_zero(self) -> bool | None:
-        return self._is_zero
+        from pylogic.helpers import ternary_if_not_none
+
+        return ternary_if_not_none(
+            self._is_zero, (False if (self._is_positive or self._is_negative) else None)
+        )
 
     @is_zero.setter
     def is_zero(self, value: bool | None):
@@ -1184,12 +1188,14 @@ class Pow(Expr):
             if self.exp.value.denominator == 2:
                 return rf"\sqrt{{{self.base._latex()}}}"
             return rf"\sqrt[{self.exp.value.denominator}]{{{self.base._latex()}}}"
-
-        if (
+        if isinstance(self.base, Constant) and self.base.value < 0:
+            base_latex = rf"\left({self.base._latex()}\right)"
+        elif (
             self.base.is_atomic
             or self.base._is_wrapped
             or self.base.__class__._precedence < self.__class__._precedence
         ):
+            print("here", self.base, self.exp)
             base_latex = self.base._latex()
         else:
             base_latex = rf"\left({self.base._latex()}\right)"
@@ -1197,6 +1203,10 @@ class Pow(Expr):
         return f"{base_latex}^{{{exp_latex}}}"
 
     def __str__(self) -> str:
+        from pylogic.constant import Constant
+
+        if isinstance(self.base, Constant) and self.base.value < 0:
+            base_str = f"({self.base})"
         if self.base.is_atomic:
             base_str = str(self.base)
         else:
