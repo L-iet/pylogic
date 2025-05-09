@@ -226,7 +226,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
         )
         return i
 
-    def impl_elim(self) -> Or:
+    def impl_to_or(self) -> Or:
         r"""Logical inference rule. Given self (`A -> B`) is proven, return the corresponding
         disjunction form (`~A \/ B`).
 
@@ -244,7 +244,7 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             self.consequent,
             _is_proven=True,
             _assumptions=get_assumptions(self),
-            _inference=Inference(self, rule="impl_elim"),
+            _inference=Inference(self, rule="impl_to_or"),
         )
 
     def definite_clause_resolve(

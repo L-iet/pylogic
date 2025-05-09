@@ -54,6 +54,7 @@ rules: set[str] = {
     "given",
     "hypothetical_syllogism",
     "impl_elim",
+    "impl_to_or",
     "in_particular",
     "inverse",
     "is_absolute",
