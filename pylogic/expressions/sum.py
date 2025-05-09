@@ -33,6 +33,7 @@ class _Aggregate(Expr):
         self.is_natural = sequence.is_natural
         self.is_zero = sequence.is_zero
         self.is_even = sequence.is_even
+        self.is_odd = sequence.is_odd
 
     def evaluate(self, **kwargs) -> Term:
         from pylogic.sympy_helpers import sympy_to_pylogic

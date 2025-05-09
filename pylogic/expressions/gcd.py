@@ -67,5 +67,6 @@ class Gcd(Expr):
         self.is_integer = self._is_natural
         self.is_zero = False if self._is_natural else None
         self.is_even = ternary_and(*[expr.is_even for expr in self.args])
+        self.is_odd = ternary_and(*[expr.is_odd for expr in self.args])
         self.is_nonnegative = True if self._is_natural else None
         self.is_nonpositive = self._is_zero

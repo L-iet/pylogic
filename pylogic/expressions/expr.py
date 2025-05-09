@@ -55,6 +55,7 @@ class Expr(ABC):
         "_is_positive",
         "_is_negative",
         "_is_even",
+        "_is_odd",
         "_is_sequence",
         "_is_set",
         "_is_list",
@@ -114,6 +115,7 @@ class Expr(ABC):
         self._is_positive: bool | None = None
         self._is_negative: bool | None = None
         self._is_even: bool | None = None
+        self._is_odd: bool | None = None
         self._is_sequence: bool | None = None
         self._is_finite: bool | None = None
         self._is_set: bool | None = None
@@ -197,7 +199,11 @@ class Expr(ABC):
 
     @property
     def is_even(self) -> bool | None:
-        return self._is_even
+        from pylogic.helpers import ternary_if_not_none, ternary_not, ternary_and
+
+        return ternary_if_not_none(
+            self._is_even, ternary_and(self.is_integer, ternary_not(self._is_odd))
+        )
 
     @is_even.setter
     def is_even(self, value: bool | None):
@@ -207,9 +213,17 @@ class Expr(ABC):
 
     @property
     def is_odd(self) -> bool | None:
-        from pylogic.helpers import ternary_not
+        from pylogic.helpers import ternary_not, ternary_if_not_none, ternary_and
 
-        return ternary_not(self.is_even)
+        return ternary_if_not_none(
+            self._is_odd, ternary_and(self.is_integer, ternary_not(self.is_even))
+        )
+
+    @is_odd.setter
+    def is_odd(self, value: bool | None):
+        self._is_odd = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     @property
     def is_positive(self) -> bool | None:
@@ -838,7 +852,7 @@ class Add(Expr):
                 count_even += 1
             elif not arg.is_even:
                 all_even = False
-            if arg.is_even is False:
+            if arg.is_odd:
                 count_odd += 1
             if arg.is_positive:
                 exists_positive = True
@@ -862,7 +876,7 @@ class Add(Expr):
         if count_odd % 2 == 0 and count_even == total_args - count_odd:
             self.is_even = True
         elif count_odd % 2 == 1 and count_even == total_args - count_odd:
-            self.is_even = False
+            self.is_odd = True
 
     def evaluate(self, **kwargs) -> Add:
         from pylogic.sympy_helpers import FromSympyError, sympy_to_pylogic
@@ -955,7 +969,7 @@ class Mul(Expr):
                 all_nonzero = False
             if arg.is_even:
                 count_even += 1
-            if arg.is_even is False:
+            if arg.is_odd:
                 count_odd += 1
             if arg.is_zero:
                 exists_zero = True
@@ -995,7 +1009,7 @@ class Mul(Expr):
         if count_even > 0 and count_even + count_odd == total_args:
             self.is_even = True
         if count_odd == total_args:
-            self.is_even = False
+            self.is_odd = True
 
     def evaluate(self, **kwargs) -> Mul:
         from pylogic.sympy_helpers import FromSympyError, sympy_to_pylogic
@@ -1109,33 +1123,37 @@ class Pow(Expr):
         if base.is_nonnegative and exp.is_nonnegative:
             self.is_nonnegative = True
             self.is_real = True
-        if base.is_positive and (exp.is_even is False):
+        if base.is_positive and exp.is_odd:
             self.is_zero = False
             self.is_nonnegative = True
             self.is_real = True
         if base.is_nonpositive and exp.is_even:
             self.is_nonnegative = True
             self.is_real = True
-        if base.is_negative and (exp.is_even is False):
+        if base.is_negative and exp.is_odd:
             self.is_zero = False
             self.is_nonpositive = True
             self.is_negative = True
             self.is_real = True
 
         if base.is_real and exp.is_positive:
-            self.is_real = True
             if exp.is_even:
+                self.is_real = True
                 self.is_nonnegative = True
             if base.is_integer and exp.is_even:
+                self.is_real = True
                 self.is_natural = True
             if base.is_integer and exp.is_natural:
+                self.is_real = True
                 self.is_integer = True
             if base.is_rational and exp.is_integer:
+                self.is_real = True
                 self.is_rational = True
             if base.is_natural and exp.is_natural:
+                self.is_real = True
                 self.is_natural = True
 
-        if base.is_zero is False:
+        if base.is_nonzero:
             if exp.is_even:
                 self.is_zero = False
                 self.is_nonnegative = True

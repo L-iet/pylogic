@@ -65,10 +65,10 @@ class Set(metaclass=Collection):
         "is_intersection",
         "is_cartes_product",
         "is_cartes_power",
-        "is_real",
         "_is_set",
         "is_empty",
         "theorems",
+        "properties_of_each_term",
     ]
     kwargs = {
         "name": "name",
@@ -79,7 +79,19 @@ class Set(metaclass=Collection):
         "latex_name": "latex_name",
         "knowledge_base": "knowledge_base",
         "finite": "_is_finite",
-        # TODO: add other properties eg positive, negative, even, odd, etc.
+        "real": "_is_real",
+        "rational": "_is_rational",
+        "integer": "_is_integer",
+        "natural": "_is_natural",
+        "nonnegative": "_is_nonnegative",
+        "nonpositive": "_is_nonpositive",
+        "positive": "_is_positive",
+        "negative": "_is_negative",
+        "even": "_is_even",
+        "odd": "_is_odd",
+        "zero": "_is_zero",
+        # "sequence": "_is_sequence",
+        # "list": "_is_list",
     }
 
     @overload
@@ -106,6 +118,10 @@ class Set(metaclass=Collection):
 
     def __copy_init__(self, *args, **kwargs):
         # name must be in kwargs
+
+        # these attrs are not copied
+        self.parent_exprs = []
+
         self.__dict__.update(kwargs)
 
     def __new_init__(
@@ -156,6 +172,7 @@ class Set(metaclass=Collection):
         self._is_positive: bool | None = kwargs.get("positive", None)
         self._is_negative: bool | None = kwargs.get("negative", None)
         self._is_even = kwargs.get("even", None)
+        self._is_odd = kwargs.get("odd", None)
         self._is_zero = kwargs.get("zero", None)
 
         self._is_set = True
@@ -264,7 +281,11 @@ class Set(metaclass=Collection):
 
     @property
     def is_even(self) -> bool | None:
-        return self._is_even
+        from pylogic.helpers import ternary_if_not_none, ternary_not, ternary_and
+
+        return ternary_if_not_none(
+            self._is_even, ternary_and(self.is_integer, ternary_not(self._is_odd))
+        )
 
     @is_even.setter
     def is_even(self, value: bool | None):
@@ -274,9 +295,17 @@ class Set(metaclass=Collection):
 
     @property
     def is_odd(self) -> bool | None:
-        from pylogic.helpers import ternary_not
+        from pylogic.helpers import ternary_not, ternary_if_not_none, ternary_and
 
-        return ternary_not(self.is_even)
+        return ternary_if_not_none(
+            self._is_odd, ternary_and(self.is_integer, ternary_not(self.is_even))
+        )
+
+    @is_odd.setter
+    def is_odd(self, value: bool | None):
+        self._is_odd = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     @property
     def is_positive(self) -> bool | None:

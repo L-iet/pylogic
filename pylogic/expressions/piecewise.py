@@ -95,6 +95,7 @@ class PiecewiseExpr(Expr, Generic[*Ps]):
             *[branch.is_nonnegative for branch in branches]
         )
         self.is_even = ternary_and(*[branch.is_even for branch in branches])
+        self.is_odd = ternary_and(*[branch.is_odd for branch in branches])
 
     def evaluate(
         self, knowledge_base: set[Proposition] | None = None, **kwargs
@@ -176,6 +177,7 @@ class PiecewiseBranch(Expr, Generic[P]):
         self.is_nonpositive = then.is_nonpositive
         self.is_nonnegative = then.is_nonnegative
         self.is_even = then.is_even
+        self.is_odd = then.is_odd
 
     def evaluate(self, **kwargs) -> Term:
         return self
@@ -210,6 +212,7 @@ class OtherwiseBranch(Expr):
         self.is_nonpositive = then.is_nonpositive
         self.is_nonnegative = then.is_nonnegative
         self.is_even = then.is_even
+        self.is_odd = then.is_odd
 
     def evaluate(self, **kwargs) -> Term:
         return self

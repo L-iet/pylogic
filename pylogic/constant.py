@@ -110,8 +110,13 @@ class Constant(Symbol, Generic[T]):
                 self._is_zero = False
             if value % 2 == 0:
                 self._is_even = True
+                self._is_odd = False
+            elif value % 2 == 1:
+                self._is_odd = True
+                self._is_even = False
             else:
                 self._is_even = False
+                self._is_odd = False
 
         # Warning: this will raise an error if a Constant prime number is created
         # in an initializer that runs in the call stack to create Naturals

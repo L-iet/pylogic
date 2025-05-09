@@ -56,6 +56,7 @@ class Symbol:
         ("nonpositive", "_is_nonpositive"),
         ("nonnegative", "_is_nonnegative"),
         ("even", "_is_even"),
+        ("odd", "_is_odd"),
         ("sequence", "_is_sequence"),
         ("finite", "_is_finite"),
         ("length", "length"),
@@ -108,6 +109,7 @@ class Symbol:
         self._is_positive: bool | None = kwargs.get("positive", None)
         self._is_negative: bool | None = kwargs.get("negative", None)
         self._is_even: bool | None = kwargs.get("even", None)
+        self._is_odd: bool | None = kwargs.get("odd", None)
 
         self._is_set: bool | None = kwargs.get("set_", kwargs.get("set", None))
         self.is_graph: bool | None = not self.is_set and kwargs.get("graph", None)
@@ -213,7 +215,11 @@ class Symbol:
 
     @property
     def is_even(self) -> bool | None:
-        return self._is_even
+        from pylogic.helpers import ternary_if_not_none, ternary_not, ternary_and
+
+        return ternary_if_not_none(
+            self._is_even, ternary_and(self.is_integer, ternary_not(self._is_odd))
+        )
 
     @is_even.setter
     def is_even(self, value: bool | None):
@@ -223,9 +229,17 @@ class Symbol:
 
     @property
     def is_odd(self) -> bool | None:
-        from pylogic.helpers import ternary_not
+        from pylogic.helpers import ternary_not, ternary_if_not_none, ternary_and
 
-        return ternary_not(self.is_even)
+        return ternary_if_not_none(
+            self._is_odd, ternary_and(self.is_integer, ternary_not(self.is_even))
+        )
+
+    @is_odd.setter
+    def is_odd(self, value: bool | None):
+        self._is_odd = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     @property
     def is_positive(self) -> bool | None:

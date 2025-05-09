@@ -55,6 +55,7 @@ class SequenceTerm(Expr, Generic[T]):
         self.is_natural = sequence.is_natural
         self.is_zero = sequence.is_zero
         self.is_even = sequence.is_even
+        self.is_odd = sequence.is_odd
         self.is_nonnegative = sequence.is_nonnegative
         self.is_nonpositive = sequence.is_nonpositive
         self.is_set = sequence.is_set

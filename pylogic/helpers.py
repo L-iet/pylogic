@@ -699,6 +699,16 @@ def _make_assumption(
 
             positive_prop = Integers.even(term)
 
+    elif attr == "odd":
+        if term.is_natural:
+            from pylogic.theories.natural_numbers import Naturals
+
+            positive_prop = Naturals.odd(term)
+        elif term.is_integer:
+            from pylogic.theories.integers import Integers
+
+            positive_prop = Integers.odd(term)
+
     elif attr == "finite" and term.is_sequence:
         from pylogic.proposition.relation.contains import IsContainedIn
         from pylogic.structures.set_ import AllFiniteSequences
@@ -750,8 +760,6 @@ def _add_assumption_props(
     # if "negative" in explicit_assumptions_attrs:
     #     explicit_assumptions_attrs.add("nonpositive")
     #     explicit_assumptions_attrs.add("zero")
-    if "odd" in explicit_assumptions_attrs:
-        explicit_assumptions_attrs.add("even")
 
     new_kwargs = kwargs.copy()
 
@@ -790,7 +798,8 @@ def _add_assumption_props(
         "nonnegative",
         "positive",
         "negative",
-        "even",  # no add odd because it's negation of even
+        "even",
+        "odd",
     ]:
         if getattr(term, f"_is_{attr}") is None:
             continue
@@ -923,16 +932,19 @@ def _add_assumption_attributes(term: Symbol | Set | Sequence, kwargs) -> None:
                 "Contradictory assumptions: A number must be negative or nonnegative"
             )
     if kwargs.get("odd", None):
-        term.is_integer = True
-        if term._is_even is None:
+        if term._is_integer and term._is_odd is None:
+            term.is_odd = True
             term.is_even = False
-        elif term._is_even is True:
+        elif term._is_integer and term._is_odd is False:
             raise ValueError("Contradictory assumptions: An odd number cannot be even")
-    if kwargs.get("odd", None) is False:
+    if kwargs.get("even", None):
         if term._is_integer and term._is_even is None:
             term.is_even = True
+            term.is_odd = False
         elif term._is_integer and term._is_even is False:
-            raise ValueError("Contradictory assumptions: A number must be odd or even")
+            raise ValueError(
+                "Contradictory assumptions: An integer must be odd or even"
+            )
 
     if term._is_zero or term._is_nonpositive or term._is_nonnegative:
         if term._is_real is None:
@@ -964,7 +976,7 @@ def _add_assumption_attributes(term: Symbol | Set | Sequence, kwargs) -> None:
             raise ValueError(
                 "Contradictory assumptions: A number cannot be nonnegative, nonpositive and nonzero"
             )
-    if term._is_even:
+    if term._is_even or term._is_odd:
         if term._is_integer is None:
             term.is_integer = True
             if term._is_nonnegative:

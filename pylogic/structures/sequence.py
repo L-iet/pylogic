@@ -122,6 +122,9 @@ class Sequence(Generic[T]):
         self._is_even: bool | None = self._get_init_assump_attr(
             "even", kwargs, nth_term_expr
         )
+        self._is_odd: bool | None = self._get_init_assump_attr(
+            "odd", kwargs, nth_term_expr
+        )
         self.nth_term_expr: Term | None = nth_term_expr
 
         # expressions that contain this sequence
@@ -229,7 +232,11 @@ class Sequence(Generic[T]):
 
     @property
     def is_even(self) -> bool | None:
-        return self._is_even
+        from pylogic.helpers import ternary_if_not_none, ternary_not, ternary_and
+
+        return ternary_if_not_none(
+            self._is_even, ternary_and(self.is_integer, ternary_not(self._is_odd))
+        )
 
     @is_even.setter
     def is_even(self, value: bool | None):
@@ -239,9 +246,17 @@ class Sequence(Generic[T]):
 
     @property
     def is_odd(self) -> bool | None:
-        from pylogic.helpers import ternary_not
+        from pylogic.helpers import ternary_not, ternary_if_not_none, ternary_and
 
-        return ternary_not(self.is_even)
+        return ternary_if_not_none(
+            self._is_odd, ternary_and(self.is_integer, ternary_not(self.is_even))
+        )
+
+    @is_odd.setter
+    def is_odd(self, value: bool | None):
+        self._is_odd = value
+        for parent in self.parent_exprs:
+            parent.update_properties()
 
     @property
     def is_positive(self) -> bool | None:

@@ -66,13 +66,17 @@ class Mod(Expr):
         self.is_integer = self._is_natural
         self.is_zero = None
 
-        if expr_lt_modulus:
+        if expr_lt_modulus and self._is_natural:
             self.is_even = expr.is_even
-        elif expr_gt_modulus:
+            self.is_odd = expr.is_odd
+        elif expr_gt_modulus and self._is_natural:
             if modulus.is_even:
                 self.is_even = expr.is_even
+                self.is_odd = expr.is_odd
             elif modulus.is_odd:
-                self.is_even = None
+                # self.is_even and self.is_odd are
+                # already None
+                pass
 
         self.is_nonnegative = True if self._is_natural else None
         self.is_nonpositive = self._is_zero

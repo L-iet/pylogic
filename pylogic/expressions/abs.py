@@ -38,6 +38,7 @@ class Abs(Expr):
         self.is_natural = ternary_or(self.args[0].is_natural, self.args[0].is_integer)
         self.is_zero = True if self.args[0].is_zero else None
         self.is_even = self.args[0].is_even
+        self.is_odd = self.args[0].is_odd
         self.is_nonnegative = True
         self.is_nonpositive = self.is_zero
 
