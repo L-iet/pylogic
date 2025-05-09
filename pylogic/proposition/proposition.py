@@ -262,6 +262,57 @@ class Proposition:
         """
         return self
 
+    def by_definition(self, proven_def: Proposition) -> Self:
+        """
+        Logical inference rule.
+        Given its definition is proven, return a proven version of this
+        proposition.
+
+        Parameters
+        ----------
+        proven_def: Proposition
+            The definition of this proposition that is proven.
+
+        Returns
+        -------
+        Self
+            The proven proposition.
+
+        Raises
+        ------
+        AssertionError
+            If the argument does not match the defintion, or is not proven.
+
+        Examples
+        --------
+        >>> p = constants("p")
+        >>> a, b = variables("a", "b")
+        >>> divides = Naturals.divides
+        >>> prop = ForallInSet(a, Naturals,
+        ...     ForallInSet(b, Naturals,
+        ...             divides(p, a * b).implies(divides(p, a).or_(divides(p, b)))
+        ...     )
+        ... ).assume()
+        >>> not_0_or_1 = neg(p.equals(0)).and_(neg(p.equals(1))).assume()
+        >>> p_prime = Naturals.prime(p).by_definition(not_0_or_1.and_(prop))
+        >>> p_prime
+        Prime(p)
+        >>> p_prime.is_proven
+        True
+        """
+        assert proven_def.is_proven, f"{proven_def} is not proven"
+        assert (
+            self.definition == proven_def
+        ), f"The definition of '{self}' does not match '{proven_def}'\
+\n{self.definition}\n != \n{proven_def}"
+        from pylogic.inference import Inference
+
+        new_p = self.copy()
+        new_p._set_is_proven(True)
+        new_p.from_assumptions = get_assumptions(proven_def)
+        new_p.deduced_from = Inference(self, conclusion=new_p, rule="by_definition")
+        return new_p
+
     def _set_init_inferred_attrs(self) -> None:
         """
         Set the attributes is_proven, is_assumption, and is_axiom
@@ -944,7 +995,12 @@ class Proposition:
         **kwargs,
     ) -> Implies[Self, TProposition] | Implies[And[Self, TProposition], UProposition]:
         r"""
+        Logical inference rule.
         Create an implication from this proposition to another.
+
+        If this proposition is the same as `other`, or this proposition is
+        `contradiction`, or `other` is proven, the resulting implication is
+        proven.
 
         Parameters
         ----------

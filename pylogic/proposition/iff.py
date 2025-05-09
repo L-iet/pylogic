@@ -174,7 +174,9 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
             self.right,
             _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),
-            _inference=Inference(self, rule="forward_implication"),
+            _inference=(
+                Inference(self, rule="forward_implication") if self.is_proven else None
+            ),
         )
 
     def reverse_implication(self) -> Implies[UProposition, TProposition]:
@@ -186,7 +188,9 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
             self.left,
             _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),
-            _inference=Inference(self, rule="reverse_implication"),
+            _inference=(
+                Inference(self, rule="reverse_implication") if self.is_proven else None
+            ),
         )
 
     def converse(self) -> Iff[UProposition, TProposition]:
@@ -198,7 +202,7 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
             self.left,
             _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),
-            _inference=Inference(self, rule="converse"),
+            _inference=Inference(self, rule="converse") if self.is_proven else None,
         )
 
     def inverse(self) -> Iff[Not[TProposition], Not[UProposition]]:
@@ -210,7 +214,7 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
             neg(self.right),
             _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),
-            _inference=Inference(self, rule="inverse"),
+            _inference=Inference(self, rule="inverse") if self.is_proven else None,
         )
 
     def contrapositive(self) -> Iff[Not[UProposition], Not[TProposition]]:
@@ -222,7 +226,9 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
             neg(self.left),
             _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),
-            _inference=Inference(self, rule="contrapositive"),
+            _inference=(
+                Inference(self, rule="contrapositive") if self.is_proven else None
+            ),
         )
 
     def to_conjunction(
@@ -235,7 +241,9 @@ class Iff(Proposition, Generic[TProposition, UProposition]):
             description=self.description,
             _is_proven=self.is_proven,
             _assumptions=get_assumptions(self),
-            _inference=Inference(self, rule="to_conjunction"),
+            _inference=(
+                Inference(self, rule="to_conjunction") if self.is_proven else None
+            ),
         )
 
     def has_as_subproposition(self, other: Proposition) -> bool:

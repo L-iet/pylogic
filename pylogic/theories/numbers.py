@@ -101,20 +101,30 @@ prime_divides_product = ForallInSet(
 prime_irreducible = ForallInSet(
     p,
     Naturals,
-    ForallInSet(
-        a,
-        Naturals,
+    Naturals.prime(p).iff(
         ForallInSet(
-            b,
+            a,
             Naturals,
-            Naturals.prime(p)
-            .and_(p.equals(a * b))
-            .implies(a.equals(1).xor(b.equals(1))),
+            ForallInSet(
+                b, Naturals, p.equals(a * b).implies(a.equals(1).xor(b.equals(1)))
+            ),
         ),
     ),
-    description=f"primes are irreducible",
+    description="primes are irreducible",
 ).todo(_internal=True)
-
+prime_irreducible_b = ForallInSet(
+    p,
+    Naturals,
+    Naturals.prime(p).iff(
+        GreaterThan(p, 1).and_(
+            ForallInSet(
+                a,
+                Naturals,
+                Naturals.divides(a, p).implies(a.equals(1).or_(a.equals(p))),
+            ),
+        ),
+    ),
+).todo(_internal=True)
 nat_divides_implies_int_divides = ForallInSet(
     n,
     Naturals,
@@ -429,6 +439,7 @@ Naturals.theorems.prime_theorems = Namespace(
         ).todo(_internal=True),
         "prime_gt_1": prime_gt_1,
         "prime_irreducible": prime_irreducible,
+        "prime_irreducible_b": prime_irreducible_b,
         "prime_sqrt_irrational": prime_sqrt_irrational,
         "prime_cbrt_irrational": prime_cbrt_irrational,
         "root_2_irrational": root_2_irrational,

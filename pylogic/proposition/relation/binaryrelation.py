@@ -103,6 +103,20 @@ class BinaryRelation(Relation, Generic[T, U]):
             _inference=self.deduced_from,
         )
 
+    def evaluate(self, **kwargs) -> Self:
+        """
+        Evaluate the Relation.
+        """
+        from pylogic.inference import Inference
+
+        return self.__class__(
+            self.left.evaluate(),
+            self.right.evaluate(),
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self) if self.is_proven else set(),
+            _inference=Inference(self, rule="evaluate") if self.is_proven else None,
+        )
+
     def deepcopy(self) -> Self:
         from pylogic.helpers import deepcopy
 

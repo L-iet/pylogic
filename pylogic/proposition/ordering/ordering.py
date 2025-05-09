@@ -68,26 +68,22 @@ class _Ordering(Protocol):
             raise TypeError(
                 f"Cannot multiply {instance} by {other}, use multiply_by_positive or multiply_by_negative"
             )
-        
-    def __add__(
-        self, other: _Ordering
-    ) -> Self:
+
+    def __add__(self, other: _Ordering) -> Self:
         cls = type(self)
         from pylogic.inference import Inference
+
         if not isinstance(other, cls):
             raise TypeError(f"Cannot add {self} to {other}")
         if self.is_proven and other.is_proven:
             from pylogic.proposition.proposition import get_assumptions
-            inf = Inference(
-                self, other, rule="add_inequalities"
-            )
+
+            inf = Inference(self, other, rule="add_inequalities")
             return cls(
                 self.left + other.left,
                 self.right + other.right,
                 _is_proven=True,
-                _assumptions=get_assumptions(self).union(
-                    get_assumptions(other)
-                ),
+                _assumptions=get_assumptions(self).union(get_assumptions(other)),
                 _inference=inf,
             )
         else:
@@ -95,5 +91,28 @@ class _Ordering(Protocol):
                 self.left + other.left,
                 self.right + other.right,
             )
+
+    def __rtruediv__(self, other: Term) -> Self:
+        """
+        Currently, only used to invert an inequality.
+        """
+        from pylogic.helpers import python_to_pylogic
+        from pylogic.proposition.proposition import get_assumptions
+        from pylogic.inference import Inference
+
+        other = python_to_pylogic(other)
+        if other == 1:
+            return self.__class__(
+                1 / self.right,
+                1 / self.left,
+                _is_proven=self.is_proven,
+                _assumptions=get_assumptions(self),
+                _inference=(
+                    Inference(self, rule="invert_inequality")
+                    if self.is_proven
+                    else None
+                ),
+            )
+        raise ValueError(f"Cannot invert {self} with {other}. Only 1 is supported.")
 
     # TODO: implement __mul__

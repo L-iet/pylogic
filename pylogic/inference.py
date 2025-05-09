@@ -57,6 +57,7 @@ rules: set[str] = {
     "impl_to_or",
     "in_particular",
     "inverse",
+    "invert_inequality",
     "is_absolute",
     "is_even_power",
     "is_one_of",

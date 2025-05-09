@@ -281,6 +281,8 @@ class Implies(Proposition, Generic[TProposition, UProposition]):
             assert isinstance(
                 in_body, (list, tuple)
             ), f"{in_body} is not a list or tuple"
+            if len(in_body) == 1 and isinstance(in_body[0], And):
+                return self.definite_clause_resolve(in_body[0], **kwargs)
             in_body_assumptions: set[Proposition] = set()
             if not dont_prove:
                 for prop in props:
