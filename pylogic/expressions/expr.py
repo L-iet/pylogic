@@ -1175,6 +1175,7 @@ class Pow(Expr):
 
     def _latex(self) -> str:
         from pylogic.constant import Constant
+        from pylogic.helpers import is_numeric
 
         # no "SHOW_ALL_PARENTHESES" check for this
         # since it is not ambiguous
@@ -1188,14 +1189,17 @@ class Pow(Expr):
             if self.exp.value.denominator == 2:
                 return rf"\sqrt{{{self.base._latex()}}}"
             return rf"\sqrt[{self.exp.value.denominator}]{{{self.base._latex()}}}"
-        if isinstance(self.base, Constant) and self.base.value < 0:
+        if (
+            isinstance(self.base, Constant)
+            and is_numeric(self.base.value)
+            and self.base.value < 0
+        ):
             base_latex = rf"\left({self.base._latex()}\right)"
         elif (
             self.base.is_atomic
             or self.base._is_wrapped
             or self.base.__class__._precedence < self.__class__._precedence
         ):
-            print("here", self.base, self.exp)
             base_latex = self.base._latex()
         else:
             base_latex = rf"\left({self.base._latex()}\right)"
@@ -1204,8 +1208,13 @@ class Pow(Expr):
 
     def __str__(self) -> str:
         from pylogic.constant import Constant
+        from pylogic.helpers import is_numeric
 
-        if isinstance(self.base, Constant) and self.base.value < 0:
+        if (
+            isinstance(self.base, Constant)
+            and is_numeric(self.base.value)
+            and self.base.value < 0
+        ):
             base_str = f"({self.base})"
         if self.base.is_atomic:
             base_str = str(self.base)

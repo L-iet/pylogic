@@ -66,11 +66,7 @@ Reals.theorems.either_rational_or_irrational = ForallInSet(
 Reals.theorems.completeness = Reals.bounded_above_has_lub
 
 Reals.theorems.triangle_inequality = ForallInSet(
-    a, Reals,
-    ForallInSet(
-        b, Reals,
-        LessOrEqual(abs(a + b), abs(a) + abs(b))
-    )
+    a, Reals, ForallInSet(b, Reals, LessOrEqual(abs(a + b), abs(a) + abs(b)))
 ).todo(_internal=True)
 
 Rationals.theorems.ratio_of_integers_lowest_terms = ForallInSet(
@@ -101,6 +97,39 @@ prime_divides_product = ForallInSet(
             .implies(Integers.divides(p, a).or_(Integers.divides(p, b))),
         ),
     ),
+).todo(_internal=True)
+prime_irreducible = ForallInSet(
+    p,
+    Naturals,
+    ForallInSet(
+        a,
+        Naturals,
+        ForallInSet(
+            b,
+            Naturals,
+            Naturals.prime(p)
+            .and_(p.equals(a * b))
+            .implies(a.equals(1).xor(b.equals(1))),
+        ),
+    ),
+    description=f"primes are irreducible",
+).todo(_internal=True)
+
+nat_divides_implies_int_divides = ForallInSet(
+    n,
+    Naturals,
+    ForallInSet(
+        m,
+        Naturals,
+        Naturals.divides(n, m).implies(Integers.divides(n, m)),
+    ),
+).todo(_internal=True)
+
+prime_gt_1 = ForallInSet(
+    p,
+    Naturals,
+    Naturals.prime(p).implies(GreaterThan(p, 1)),
+    description="primes are greater than 1",
 ).todo(_internal=True)
 
 prime_divides_power = ForallInSet(
@@ -149,6 +178,14 @@ common_factor_divides_gcd = ForallInSet(
     ),
 ).todo(_internal=True)
 
+divides_1_eq_1 = ForallInSet(
+    n, Naturals, Naturals.divides(n, 1).implies(Equals(n, 1))
+).todo(_internal=True)
+
+divides_1_eq_1_or_minus1 = ForallInSet(
+    a, Integers, Integers.divides(a, 1).implies(Equals(a, 1).or_(Equals(a, -1)))
+).todo(_internal=True)
+
 prime_sqrt_irrational = ForallInSet(
     n, Naturals, Naturals.prime(n).implies(neg(sqrt(n).is_in(Rationals)))
 ).todo(_internal=True)
@@ -177,6 +214,8 @@ Integers.theorems.division_theorems = Namespace(
         },
         "mul": mul_divisible_by_factors,
         "gcd": common_factor_divides_gcd,
+        "nat_divides_implies_int_divides": nat_divides_implies_int_divides,
+        "divides_1_eq_1_or_minus1": divides_1_eq_1_or_minus1,
     }
 )
 
@@ -203,6 +242,8 @@ Naturals.theorems.division_theorems = Namespace(
             "prime_divides_power": prime_divides_power,
         },
         "mul": mul_divisible_by_factors,
+        "nat_divides_implies_int_divides": nat_divides_implies_int_divides,
+        "divides_1_eq_1": divides_1_eq_1,
     }
 )
 mul_geq_some_factor = ForallInSet(
@@ -263,6 +304,7 @@ Naturals.theorems.product_theorems = Namespace(
         "prod_geq_some_factor": prod_geq_some_factor,
         "prod_positive_geq_factors": prod_positive_geq_factors,
         "prod_of_factors_geq_1_is_gt_factors": prod_of_factors_geq_1_is_gt_factors,
+        "prime_irreducible": prime_irreducible,
     }
 )
 
@@ -310,6 +352,7 @@ Naturals.theorems.order_theorems = Namespace(
         "gt_implies_neq": gt_implies_neq(Naturals),
         "lt_implies_neq": lt_implies_neq(Naturals),
         "add_positive_gt_parts": add_positive_gt_parts(Naturals),
+        "prime_gt_1": prime_gt_1,
     }
 )
 
@@ -384,6 +427,8 @@ Naturals.theorems.prime_theorems = Namespace(
         "prime_neq_1": ForallInSet(
             p, Naturals, Naturals.prime(p).implies(neg(p.equals(1)))
         ).todo(_internal=True),
+        "prime_gt_1": prime_gt_1,
+        "prime_irreducible": prime_irreducible,
         "prime_sqrt_irrational": prime_sqrt_irrational,
         "prime_cbrt_irrational": prime_cbrt_irrational,
         "root_2_irrational": root_2_irrational,

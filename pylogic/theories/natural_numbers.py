@@ -530,13 +530,18 @@ class Prime(Proposition):
         n = self.args[0]
         a = Variable("a")
         b = Variable("b")
-        self._definition = And(
-            Naturals.greater_than(n, 1),
+        # works for prime element of a ring
+        self._definition = Not(n.equals(0)).and_(
+            Not(n.equals(1)),  # technically, n has no multiplicative inverse
             ForallInSet(
                 a,
                 Naturals,
                 ForallInSet(
-                    b, Naturals, n.equals(a * b).implies(a.equals(1).xor(b.equals(1)))
+                    b,
+                    Naturals,
+                    Naturals.divides(n, a * b).implies(
+                        Naturals.divides(n, a).or_(Naturals.divides(n, b))
+                    ),
                 ),
             ),
             description=description or f"{n} is prime",

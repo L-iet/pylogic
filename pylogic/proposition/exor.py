@@ -9,6 +9,7 @@ from pylogic.proposition.proposition import Proposition, get_assumptions
 
 if TYPE_CHECKING:
     from pylogic.proposition.and_ import And
+    from pylogic.proposition.or_ import Or
 
 Ps = TypeVarTuple("Ps")
 InferenceRule = TypedDict("InferenceRule", {"name": str, "arguments": list[str]})
@@ -59,6 +60,21 @@ class ExOr(_Junction[*Ps]):
 
     def remove_duplicates(self) -> ExOr:
         return super().remove_duplicates()  # type: ignore
+
+    def then_or(self) -> Or:
+        """
+        Logical inference rule.
+        Converts the ExOr to an Or proposition, which is
+        implied by this proposition.
+        """
+        from pylogic.proposition.or_ import Or
+
+        return Or(
+            *self.propositions,
+            _is_proven=self.is_proven,
+            _assumptions=get_assumptions(self),
+            _inference=Inference(self, rule="then_or") if self.is_proven else None,
+        )
 
     def one_proven_rem_false(self, p: Proposition) -> And[*Props]:
         """
