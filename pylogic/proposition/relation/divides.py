@@ -64,6 +64,7 @@ class Divides(Relation):
         return f"Divides({self.a}, {self.b}, {self.quotient_set})"
 
     def _latex(self) -> str:
+        # TODO: may want to change __str__ as well
         from pylogic.enviroment_settings.settings import settings
 
         if settings["SHOW_ALL_PARENTHESES"]:
@@ -77,9 +78,7 @@ class Divides(Relation):
             and self.quotient_set.__class__.__name__ == "IntegersRing"
         ):
             return f"\\left. {wrap(self.a)} \\middle| {wrap(self.b)} \\right."
-        return (
-            rf"\frac{{{wrap(self.b)}}}{{{wrap(self.a)}}} \in {wrap(self.quotient_set)}"
-        )
+        return f"\\left. {wrap(self.a)} \\middle|_{wrap(self.quotient_set)} {wrap(self.b)} \\right."
 
     def _set_is_inferred(self, value: bool) -> None:
         super()._set_is_inferred(value)
