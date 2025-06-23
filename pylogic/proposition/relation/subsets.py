@@ -54,6 +54,7 @@ class IsSubsetOf(BinaryRelation[T, U]):
             self.left.is_set and self.right.is_set
         ), f"Both left and right must be sets, left: {left}, left.is_set: {left.is_set}, \
 right: {right}, right.is_set: {right.is_set}"
+        self._definition = self.to_forall()
 
     def copy(self) -> Self:
         return self.__class__(
@@ -122,6 +123,7 @@ right: {right}, right.is_set: {right.is_set}"
         """
         from pylogic.inference import Inference
         from pylogic.proposition.quantified.forall import Forall
+        from pylogic.proposition.relation.contains import IsContainedIn
         from pylogic.variable import Variable
 
         x = Variable("x")

@@ -75,6 +75,13 @@ class SequenceTerm(Expr, Generic[T]):
         from pylogic.proposition.relation.contains import IsContainedIn
 
         return IsContainedIn(term, self, **kwargs)
+    
+    def is_subset_of(
+        self, other: Term, **kwargs
+    ) -> IsSubsetOf:
+        from pylogic.proposition.relation.subsets import IsSubsetOf
+
+        return IsSubsetOf(self, other, **kwargs)
 
     def evaluate(self, **kwargs) -> SequenceTerm | T:
         from pylogic.variable import Variable

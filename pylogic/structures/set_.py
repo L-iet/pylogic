@@ -90,6 +90,7 @@ class Set(metaclass=Collection):
         "even": "_is_even",
         "odd": "_is_odd",
         "zero": "_is_zero",
+        "sets_contained_in": "sets_contained_in",
         # "sequence": "_is_sequence",
         # "list": "_is_list",
     }
@@ -157,6 +158,9 @@ class Set(metaclass=Collection):
             self._predicate = predicate
         elif any(x is not None for x in (elements, containment_function, predicate)):
             raise ValueError("Must provide a name for the set.")
+        if name is None:
+        	# TODO: set name using other attrs
+        	self.name = "Unknown_Set"
         self._is_finite: bool | None = None
         self.is_union: bool | None = None
         self.is_intersection: bool | None = None
@@ -185,9 +189,9 @@ class Set(metaclass=Collection):
         self._is_list = False
 
         self.knowledge_base: set[Proposition] = knowledge_base or set()
-
+        self.sets_contained_in: set[Set] = kwargs.get("sets_contained_in", set())
         self.properties_of_each_term: list[Proposition] = []
-
+        
         # _add_assumption_props needs knowledge_base
         _add_assumption_props(self, kwargs)
 
@@ -539,6 +543,20 @@ See https://en.wikipedia.org/wiki/Axiom_schema_of_specification#In_Quine%27s_New
         """elementhood"""
 
         return IsContainedIn(other, self, is_assumption=is_assumption, **kwargs)
+    
+    def is_in(
+        self, other: Term, **kwargs
+    ) -> IsContainedIn:
+        from pylogic.proposition.relation.contains import IsContainedIn
+
+        return IsContainedIn(self, other, **kwargs)
+
+    def is_not_in(
+        self, other: Term, **kwargs
+    ) -> Not[IsContainedIn]:
+        from pylogic.proposition.not_ import Not
+
+        return Not(self.is_in(other), **kwargs)
 
     def countable(self, is_assumption: bool = False, **kwargs) -> Exists:
         # TODO: make this  ExistsInSet where set is the class of
@@ -663,6 +681,12 @@ AllFiniteSequences = Set(
     illegal_occur_check=False,
     latex_name=r"\text{FiniteSequences}",
 )
+AllSequences = Set(
+    "AllSequences",
+    containment_function=lambda x: x.is_sequence,
+    illegal_occur_check=False,
+    latex_name=r"\text{Sequences}",
+)
 
 AllFiniteSets = Set(
     "AllFiniteSets",
@@ -728,6 +752,7 @@ class Union(Set):
             else ExistsInSet(k, Naturals, x.is_in(sets[k])).and_(pred0(x))
         )
         latex_name = kwargs.pop("latex_name", None) or rf"\bigcup {sets._latex()}"
+        name = name or f"Union({sets})"
         super().__init__(name=name, predicate=pred, latex_name=latex_name, **kwargs)
         self.set_sequence: Sequence[Set | Variable] = sets
         self.is_union = True
@@ -781,7 +806,7 @@ class FiniteUnion(Union):
         latex_name = kwargs.pop("latex_name", None) or r"\cup".join(
             map(lambda x: x._latex(), sets)
         )
-
+        
         Set.__init__(self, name=name or f"FiniteUnion({','.join(map(str, sets))})", latex_name=latex_name, **kwargs)  # type: ignore
         self.sets: set[Set | Variable] = set(sets) if sets else set()
         self.set_sequence = FiniteSequence(self.name + "_sets", length=len(sets) if sets else 0, initial_terms=sets or [])  # type: ignore
@@ -829,6 +854,7 @@ class Intersection(Set):
             else ForallInSet(k, Naturals, x.is_in(sets[k])).and_(pred0(x))
         )
         latex_name = kwargs.pop("latex_name", None) or rf"\bigcap {sets._latex()}"
+        name = name or "Inter({sets})"
         super().__init__(name=name, predicate=pred, latex_name=latex_name, **kwargs)
         self.set_sequence: Sequence[Set | Variable] = sets
         self.is_intersection = True
@@ -919,6 +945,7 @@ class CartesProduct(Set):
     ):
         latex_name = kwargs.pop("latex_name", None) or rf"\prod {sets._latex()}"
         # pred = kwargs.pop("predicate", None)
+        name = name or f"Prod({sets})"
         super().__init__(name=name, latex_name=latex_name, **kwargs)
         self.set_sequence: Sequence[Set | Variable] = sets
         self.is_cartes_product = True
@@ -1019,6 +1046,7 @@ class CartesPower(Set):
             kwargs.pop("latex_name", None)
             or rf"{{{base_set._latex()}}}^{{{power._latex()}}}"
         )
+        name = name or f"{base_set}^{power}"
         super().__init__(name=name, latex_name=latex_name, **kwargs)
         self.base_set: Set | Variable = base_set
         self.power: Term = power  # TODO: check that power is natural number, int, etc.
@@ -1052,8 +1080,51 @@ class Complement(Set):
         **kwargs,
     ):
         latex_name = kwargs.pop("latex_name", None) or rf"{base_set._latex()}^{{c}}"
-        super().__init__(name=name, latex_name=latex_name, **kwargs)
+        pred = lambda x: x.is_not_in(base_set)
+        super().__init__(name=name or f"compl({base_set.name})", latex_name=latex_name, predicate=pred, **kwargs)
         self.base_set: Set | Variable = base_set
+    
+    def __eq__(self, other: Complement) -> bool:
+        if not isinstance(other, Complement):
+            return NotImplemented
+        return self.base_set == other.base_set
+    def __hash__(self) -> int:
+        return hash(("Complement", self.base_set))
+
+    def __str__(self) -> str:
+        return f"compl({self.base_set})"
+
+    def __repr__(self) -> str:
+        return f"Complement({self.base_set!r})"
+
+class PowerSet(Set):
+    """
+    Represents the power set of a set.
+    """
+
+    def __init__(
+        self,
+        base_set: Set | Variable,
+        name: str | None = None,
+        **kwargs,
+    ):
+        latex_name = kwargs.pop("latex_name", None) or rf"\mathcal{{P}}\left({base_set._latex()}\right)"
+        pred = lambda x: x.is_subset_of(base_set)
+        super().__init__(name=name or f"P({base_set.name})", latex_name=latex_name, predicate=pred, **kwargs)
+        self.base_set: Set | Variable = base_set
+    
+    def __eq__(self, other: PowerSet) -> bool:
+        if not isinstance(other, PowerSet):
+            return NotImplemented
+        return self.base_set == other.base_set
+    def __hash__(self) -> int:
+        return hash(("PowerSet", self.base_set))
+
+    def __str__(self) -> str:
+        return f"P({self.base_set})"
+
+    def __repr__(self) -> str:
+        return f"PowerSet({self.base_set!r})"
 
 
 class Difference(Set):
@@ -1073,6 +1144,7 @@ class Difference(Set):
         latex_name = (
             kwargs.pop("latex_name", None) or rf"{a._latex()} \setminus {b._latex()}"
         )
+        name = name or f"{a} \\ {b}"
         super().__init__(name=name, latex_name=latex_name, **kwargs)
         self.a: Set | Variable = a
         self.b: Set | Variable = b

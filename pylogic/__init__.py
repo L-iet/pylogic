@@ -130,6 +130,7 @@ from pylogic.structures.set_ import (
     FiniteSet,
     FiniteUnion,
     Intersection,
+    PowerSet,
     SeqSet,
     Set,
     SingletonEmpty,

@@ -190,6 +190,7 @@ class Proposition:
 
         self.bound_vars: set[Variable] = set()  # Variables that are bound to
         # quantifiers in the proposition.
+        self._definition = self
 
         self.is_todo: bool = False
 
@@ -260,7 +261,7 @@ class Proposition:
         """
         A(n expanded) definition of the proposition.
         """
-        return self
+        return self._definition
 
     def by_definition(self, proven_def: Proposition) -> Self:
         """
