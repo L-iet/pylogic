@@ -190,7 +190,7 @@ class Proposition:
 
         self.bound_vars: set[Variable] = set()  # Variables that are bound to
         # quantifiers in the proposition.
-        self._definition = self
+        self._definition = self.construct_definition()
 
         self.is_todo: bool = False
 
@@ -255,12 +255,29 @@ class Proposition:
                 ret_val.extend(base.inference_rules())
         return ret_val
         # return [r["name"] for r in self._inference_rules]
+    
+    def construct_definition(self) -> Proposition:
+        """
+        Construct a proposition representing the definition
+        of this one.
+        
+        Returns
+        -------
+        Proposition
+            A proposition representing the definition
+        of this one.
+        """
+        return self
 
     @property
     def definition(self) -> Proposition:
         """
         A(n expanded) definition of the proposition.
         """
+        # sometimes, _definition is not proven but self is proven
+        # because _definition was constructed earlier
+        if not self._definition.is_proven and self.is_proven:
+            self._definition = self.construct_definition()
         return self._definition
 
     def by_definition(self, proven_def: Proposition) -> Self:

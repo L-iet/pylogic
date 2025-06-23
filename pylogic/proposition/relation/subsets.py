@@ -54,7 +54,9 @@ class IsSubsetOf(BinaryRelation[T, U]):
             self.left.is_set and self.right.is_set
         ), f"Both left and right must be sets, left: {left}, left.is_set: {left.is_set}, \
 right: {right}, right.is_set: {right.is_set}"
-        self._definition = self.to_forall()
+    
+    def construct_definition(self) -> Forall[Implies[IsContainedIn, IsContainedIn]]:
+        return self.to_forall()
 
     def copy(self) -> Self:
         return self.__class__(
