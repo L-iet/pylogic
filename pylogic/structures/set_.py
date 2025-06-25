@@ -703,7 +703,16 @@ class FiniteSet(Set):
         elements: Iterable[Term] | None = None,
         **kwargs,
     ):
-        super().__init__(name=name, elements=elements, **kwargs)
+        from pylogic.proposition.or_ import Or
+        
+        pred0 = kwargs.pop("predicate", None)
+        pred = lambda x: (
+            Or(*(x.equals(y) for y in elements))
+            if pred0 is None
+            else Or(*(x.equals(y) for y in elements)).and_(pred0(x))
+        )
+        
+        super().__init__(name=name, elements=elements, predicate=pred,**kwargs)
         self._is_finite = True
 
     def __eq__(self, other: FiniteSet) -> bool:
@@ -860,18 +869,51 @@ class Intersection(Set):
         self.is_intersection = True
 
     def __eq__(self, other: Intersection) -> bool:
-        if not isinstance(other, Intersection):
+        if not isinstance(other, self.__class__):
             return NotImplemented
         return self.set_sequence == other.set_sequence
 
     def __hash__(self) -> int:
-        return hash(("Intersection", self.name, self.set_sequence))
+        return hash((self.__class__.__name__, self.name, self.set_sequence))
 
     def __str__(self) -> str:
-        return f"Intersection{self.set_sequence}"
+        return f"{self.__class__.__name__}{self.set_sequence}"
 
     def __repr__(self) -> str:
-        return f"Intersection({self.set_sequence!r})"
+        return f"{self.__class__.__name__}({self.set_sequence!r})"
+    
+    def evaluate(self) -> Set:
+        if self.set_sequence.is_empty:
+            return EmptySet
+        return self
+
+class GLB(Intersection):
+    """
+    Given a collection of subsets of some set S (not checked),
+    the greatest lower bound of this collection, if empty, is
+    S. Otherwise, it is the same as the intersection.
+    https://math.stackexchange.com/a/2514104
+    """
+    
+    def __init__(
+        self,
+        sets: Sequence[Set | Variable],
+        S: Set | Variable,
+        name: str | None = None,
+        **kwargs,
+    ):
+        super().__init__(sets, name=name, **kwargs)
+        self.major_set = S
+        
+    @property
+    def S(self):
+        return self.major_set
+    
+    def evaluate(self) -> Set:
+        if self.set_sequence.is_empty:
+            return self.S
+        return super().evaluate()
+        
 
 
 class FiniteIntersection(Intersection):

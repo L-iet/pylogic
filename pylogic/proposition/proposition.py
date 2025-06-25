@@ -1906,6 +1906,7 @@ and is a dependency of {expression_to_replace}"
         **kwargs,
     ) -> Forall[Self] | ForallInSet[Self]:
         """
+        DEPRECATED
         Given self is proven, return a new proposition that for all variables, self is true.
         This inference rule binds the variable, so you cannot reuse the variable
         unless you unbind it.
@@ -1945,6 +1946,7 @@ and is a dependency of {expression_to_replace}"
 
     def close_all_scopes(self) -> Proposition:
         """
+        DEPRECATED
         Close all scopes in the proposition.
         If assumptions (A) were used to deduce this proposition (self), they are
         removed and we get a proof of A -> self.

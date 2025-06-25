@@ -17,10 +17,11 @@ X = Set("X")
 T = Set("T")
 
 def is_topology(T, X):
+    intersec = lambda c: GLB(c, X)
     p1 = T.is_subset_of(PowerSet(X))
     p2 = X.is_in(T)
     p3 = EmptySet.is_in(T)
-    p4 = forall_finite_collections_of(T, lambda c: Intersection(c).is_in(T))
+    p4 = forall_finite_collections_of(T, lambda c: intersec(c).is_in(T))
     p5 = forall_collections_of(T, lambda c: Union(c).is_in(T))
     res = p1.and_(p2, p3, p4, p5)
     res.set_description(f"{T} is a top. on {X}")
@@ -71,7 +72,7 @@ with AssumptionsContext() as ctx:
     c = ctx.var("c_1", sequence=True, set=True)
     Uc = Union(c)
     hyp = ForallInSet(n, Naturals, c[n].is_in(pset)).assume()
-    
+
     # prove Union(c) is subset of X
     with AssumptionsContext() as ctxb:
         x = ctxb.var("x")
