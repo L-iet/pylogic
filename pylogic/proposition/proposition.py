@@ -255,12 +255,12 @@ class Proposition:
                 ret_val.extend(base.inference_rules())
         return ret_val
         # return [r["name"] for r in self._inference_rules]
-    
+
     def construct_definition(self) -> Proposition:
         """
         Construct a proposition representing the definition
         of this one.
-        
+
         Returns
         -------
         Proposition
@@ -897,8 +897,6 @@ class Proposition:
             A new proposition with the side of the equality substituted into
             this proposition.
 
-        TODO: If `substitute_into` raises an exception, should we document it here?
-
         Examples
         --------
         >>> x, y = variables("x", "y")
@@ -921,6 +919,8 @@ class Proposition:
 
     def p_substitute(self, side: Side | str, equality: Equals) -> Self:
         """
+        Deprecated
+
         Parameters
         ----------
         side: Side
@@ -955,11 +955,23 @@ class Proposition:
         This is meant to represent proving a statement by applying some obvious
         algorithm. For instance, we can prove that 5 is prime by inspection.
 
+        This method is used by the :py:meth:`by_inspection` method to determine
+        if the proposition can be proven by inspection.
+
         Returns
         -------
         bool | None
             `True` if self is provable by inspection, `False` if
             its negation is provable by inspection, and `None` if neither is provable.
+
+        Examples
+        --------
+        >>> Naturals.prime(5).by_inspection_check()
+        True
+        >>> Naturals.prime(4).by_inspection_check()
+        False
+        >>> print(Naturals.prime(x).by_inspection_check())
+        None
         """
         return None
 
@@ -980,6 +992,16 @@ class Proposition:
         ------
         ValueError
             If the proposition cannot be proven by inspection.
+
+        Examples
+        --------
+        >>> x = Variable("x")
+        >>> Naturals.prime(5).by_inspection()
+        Prime(5)
+        >>> Naturals.prime(4).by_inspection()
+        Traceback (most recent call last):
+            ...
+        ValueError: Prime(4) cannot be proven by inspection
         """
         from pylogic.inference import Inference
 
@@ -1651,9 +1673,25 @@ class Proposition:
     def is_one_of(self, other: And, *, __recursing: bool = False) -> Self:
         r"""
         Logical inference rule.
-        If we have proven other, we can prove any of the propositions in it.
+        If we have proven `other`, we can prove any of the propositions in it.
+
+        Parameters
+        ----------
         other: And
-            Must be a conjunction that has been proven where one of the propositions is self.
+            Must be a conjunction that has been proven where one of the propositions
+            is this one.
+
+        Returns
+        -------
+        Self
+            This proposition, but proven.
+
+        Raises
+        ------
+        ValueError
+            If `other` does not contain this proposition.
+        AssertionError
+            If `other` is not proven.
 
         Examples
         --------
@@ -1688,6 +1726,9 @@ class Proposition:
 
     def is_special_case_of(self, other: Forall[Self]) -> Self:
         """
+        Deprecated since 0.0.1.
+        Use :py:meth:`in_particular` instead.
+
         Logical inference rule.
         other: Proposition
             A proven forall proposition that implies this proposition.
@@ -1735,6 +1776,10 @@ class Proposition:
 
     def followed_from(self, *assumptions, **kwargs):  # type: ignore
         """
+        Deprecated since 0.0.1.
+        Use :py:class:`~pylogic.assumptions_context.AssumptionsContext`
+        instead.
+
         Given self is proven, return a new proposition that is an implication of
         the form And(*assumptions) -> self.
         *assumptions: Proposition
@@ -1799,31 +1844,48 @@ class Proposition:
     ) -> Exists[Self]:
         r"""
         Logical inference rule.
-        Given self is proven, return a new proposition that there exists an existential_var such that
-        self is true, when self is expressed in terms of that existential_var.
+        Given this proposition is proven, return a proven proposition that there
+        exists an `existential_var` that makes this proposition true.
+
         For example, if self is x^2 + x > 0, existential_var is y and expression_to_replace is x^2, then
         we return the proven proposition Exists y: y + x > 0.
 
+        Parameters
+        ----------
         existential_var: str
-            A new variable that is introduced into our new existential proposition.
-        expression_to_replace: Set | SympyExpression
+            The name of a new variable that is introduced into our new existential
+            proposition.
+        expression_to_replace: Term
             An expression that is replaced by the new variable.
-        set_: Set
+        set_: Set | Variable
             The set in which the existential variable is contained.
         expression_to_replace_is_in_set: IsContainedIn
-            A proposition that states that the expression_to_replace is in the set_.
+            A proven proposition that states that the expression_to_replace is
+            in `set_`.
         latex_name: str | None
             The latex representation of the existential variable.
         positions: list[list[int]]
-            This is a list containing the positions of the expression_to_replace in self.
-            If None, we will search for all occurences of the expression_to_replace in self.
-            This is a nested list representing the path we need to go down in the proposition tree,
-            For example, if self is
-            (forall x: (p1 x -> p2 x) /\ (p3 x) /\ (p4 x)) -> (p5 x)
-            existential_var = q
-            and positions = [[0, 0, 0], [0, 2], [1]]
-            we end up with
-            exists q: (forall x: (p1 q -> p2 x) /\ (p3 x) /\ (p4 q)) -> (p5 q)
+            positions: list[list[int]] | None
+            This is a list containing the positions of `expression_to_replace`
+            in this instance.
+            If `None`, we will replace for all occurences of `expression_to_replace`
+            with the variable.
+            The nested list represents the path we need to go down in the
+            proposition tree.
+
+        Returns
+        -------
+        Exists
+            A new proposition that states that there exists an `existential_var`
+            that makes this proposition true. (Existential introduction)
+
+        Raises
+        ------
+        AssertionError
+            If this proposition is not proven.
+        ValueError
+            If the expression_to_replace is not in the atoms of this proposition,
+            or depends on a bound variable.
 
         Examples
         --------
@@ -1972,7 +2034,9 @@ and is a dependency of {expression_to_replace}"
         return new_p
 
     def de_morgan(self) -> Self:
-        """
+        r"""
+        Logical inference rule.
+
         Apply De Morgan's law to self to return an equivalent proposition.
 
         In intuitionistic logic, the only valid De Morgan's laws are
@@ -1980,13 +2044,45 @@ and is a dependency of {expression_to_replace}"
         `~A and ~B <-> ~(A or B)`
 
         `~A or ~B -> ~(A and B)`.
+
+        Returns
+        -------
+        Proposition
+            A proposition that is equivalent to self, but with De Morgan's law applied.
+
+        Examples
+        --------
+        >>> p1 = prop("P").assume()
+        >>> p1.de_morgan()
+        P
+        >>> p2 = neg(prop("P")).and_(neg(prop("Q"))).assume()
+        >>> p2
+        ~P /\ ~Q
+        >>> p2.de_morgan()
+        ~(P \/ Q)
         """
         return self
 
     def contradicts(self, other: Proposition) -> Contradiction:
         """
-        Logical inference rule. If `self` and `other` are negations (and both proven),
-        return a contradiction.
+        Logical inference rule. If this proposition and `other` are negations
+        of each other (and both proven), return a contradiction.
+
+        Parameters
+        ----------
+        other: Proposition
+            A proposition that is a negation of this proposition.
+
+        Returns
+        -------
+        Contradiction
+            A proven :py:class:`~pylogic.proposition.contradiction.Contradiction`
+            instance.
+
+        Raises
+        ------
+        AssertionError
+            If either this proposition or `other` is not proven.
 
         Examples
         --------
@@ -2012,7 +2108,26 @@ and is a dependency of {expression_to_replace}"
 
     def has_as_subproposition(self, other: Proposition) -> bool:
         """
-        Check if other is a subproposition of self.
+        Check if other is a subproposition of this one.
+
+        Parameters
+        ----------
+        other: Proposition
+            The proposition to check if it is a subproposition of this one.
+
+        Returns
+        -------
+        bool
+            `True` if `other` is a subproposition of this proposition, `False`
+            otherwise.
+
+        Examples
+        --------
+        >>> p = prop("P")
+        >>> q = prop("Q")
+        >>> r = p.and_(q)
+        >>> r.has_as_subproposition(p)
+        True
         """
         return self == other
 
@@ -2021,14 +2136,39 @@ and is a dependency of {expression_to_replace}"
         Algorithm to unify two propositions.
         If unification succeeds, a dictionary of values to instantiate variables
         to is returned.
-        The dictionary never instantiates a variable `y` to variable `y`.
-        It may instantiate a variable `y` to variable `x` or a variable
-        `y` to a symbol or value `y`.
-        If no instantiations need to be made (eg propositions are equal),
-        return True.
-        Otherwise (unification fails), return None.
 
-        Will also unify pylogic.Expr (unevaluated expressions).
+        Parameters
+        ----------
+        other: Proposition
+            The proposition to unify with this one.
+
+        Returns
+        -------
+        Unification | Literal[True] | None
+            A dictionary of variable instantiations if unification succeeds,
+            `True` if no instantiations are needed (the propositions are equal),
+            or `None` if unification fails.
+
+            The dictionary never instantiates a variable `y` to variable `y`.
+            It may instantiate a variable `y` to variable `x` or a variable
+            `y` to a symbol or value `y`.
+
+        Raises
+        ------
+        TypeError
+            If `other` is not a proposition.
+
+        Examples
+        --------
+        >>> x, y = variables("x", "y")
+        >>> p1 = prop("P", x)
+        >>> p2 = prop("P", y)
+        >>> p1.unify(p2)
+        {Variable(x, deps=()): Variable(y, deps=())}
+        >>> p1.unify(p1)
+        True
+        >>> print(p1.unify(prop("Q", x)))
+        None
         """
         if not isinstance(other, Proposition):
             raise TypeError(f"{other} is not a proposition")
@@ -2062,6 +2202,24 @@ def predicate(name: str) -> Callable[..., Proposition]:
     A predicate is a python function that returns a proposition.
 
     When called, the function returns a proposition with the given name and arguments.
+
+    Parameters
+    ----------
+    name: str
+        The name of the predicate.
+
+    Returns
+    -------
+    Callable[..., Proposition]
+        A function that takes any number of arguments and returns a proposition
+        with the given name and the arguments as its arguments.
+
+    Examples
+    --------
+    >>> x, y = variables("x", "y")
+    >>> p = predicate("P")
+    >>> p(x, y)
+    P(x, y)
     """
 
     def inner(*args, **kwargs) -> Proposition:
@@ -2079,6 +2237,29 @@ def predicates(  # type: ignore
 ) -> Callable[..., Proposition] | tuple[Callable[..., Proposition], ...]:
     """
     Create multiple predicates with the given names.
+
+    A predicate is a python function that returns a proposition.
+
+    Parameters
+    ----------
+    *names: str
+        The names of the predicates.
+
+    Returns
+    -------
+    Callable[..., Proposition] | tuple[Callable[..., Proposition], ...]
+        A function that takes any number of arguments and returns a proposition
+        with the given name and the arguments as its arguments, or a tuple of
+        such functions if multiple names are provided.
+
+    Examples
+    --------
+    >>> x, y = variables("x", "y")
+    >>> p, q = predicates("P", "Q")
+    >>> p(x, y)
+    P(x, y)
+    >>> q(x)
+    Q(x)
     """
     if len(names) == 1:
         return predicate(names[0])
@@ -2092,6 +2273,27 @@ preds = predicates
 def proposition(name: str, *args: Term, **kwargs) -> Proposition:
     """
     Create a proposition with a given name and arguments.
+
+    Parameters
+    ----------
+    name: str
+        The name of the proposition.
+    *args: Term
+        The arguments of the proposition.
+    **kwargs: dict
+        Additional keyword arguments to pass to the Proposition constructor.
+
+    Returns
+    -------
+    Proposition
+        A proposition with the given name and arguments.
+
+    Examples
+    --------
+    >>> x, y = variables("x", "y")
+    >>> p = proposition("P", x, y)
+    >>> p
+    P(x, y)
     """
     return Proposition(name, args=args, **kwargs)
 
@@ -2106,7 +2308,34 @@ def propositions(  # type: ignore
     *names: str, args: tuple[Term, ...] = (), **kwargs
 ) -> Proposition | tuple[Proposition, ...]:
     """
-    Create multiple propositions with the given names.
+    Create multiple propositions with the given names and arguments.
+
+    Parameters
+    ----------
+    *names: str
+        The names of the propositions.
+    args: tuple[Term, ...]
+        The arguments of the propositions.
+    **kwargs: dict
+        Additional keyword arguments to pass to the Proposition constructor.
+
+    Returns
+    -------
+    Proposition | tuple[Proposition, ...]
+        A proposition with the given name and arguments, or a tuple of such
+        propositions if multiple names are provided.
+
+    Examples
+    --------
+    >>> x, y = variables("x", "y")
+    >>> p = propositions("P", args=(x, y))
+    >>> p
+    P(x, y)
+    >>> q, r = propositions("Q", "R", args=(x,))
+    >>> q
+    Q(x)
+    >>> r
+    R(x)
     """
     if len(names) == 1:
         return proposition(names[0], *args, **kwargs)
