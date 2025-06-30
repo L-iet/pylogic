@@ -2,8 +2,6 @@
 from __future__ import annotations
 
 import sys
-from abc import ABC, abstractmethod
-from typing import Self
 
 # set the default warning filter to ignore internal warnings
 # before importing any other modules
@@ -144,16 +142,3 @@ from pylogic.theories.natural_numbers import Prime
 from pylogic.theories.numbers import Integers, Naturals, Rationals, Reals, one, zero
 from pylogic.theories.real_numbers import Interval, interval
 from pylogic.variable import Variable, unbind, variables
-
-
-class _PylogicObject(ABC):
-    """
-    Base class for all pylogic objects.
-    """
-
-    @abstractmethod
-    def replace(self, **kwargs) -> Self:
-        """
-        Replace the attributes of the object with the given values.
-        """
-        ...
