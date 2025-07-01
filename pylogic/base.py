@@ -43,6 +43,10 @@ class _PylogicObject(ABC):
 
     reference_object: Optional reference object to update independent attributes.
     This is used to update attributes that do not depend on the children of the object.
+
+    `children` should not contain an object that has this object as a descendant.
+    This is to avoid infinite recursion with most of the methods, such as `__repr__`,
+    `__eq__` etc.
     """
 
     children: list[_PylogicObject]
@@ -106,11 +110,15 @@ class _PylogicObject(ABC):
     def __init__(
         self,
         *,
-        children: Iterable[_PylogicObject] | None = None,
+        children: list[_PylogicObject] | None = None,
         reference_object: Self | None = None,
         **kwargs,
     ) -> None:
-        self.children: list[_PylogicObject] = list(children) if children else []
+        self.children: list[_PylogicObject] = (
+            children
+            if isinstance(children, list)
+            else list(children) if children is not None else []
+        )
         self.update_child_dependent_attrs()
         if reference_object is None:
             self.init_child_independent_attrs(**kwargs)
@@ -143,6 +151,9 @@ class _PylogicObject(ABC):
     ) -> _PylogicObject:
         """
         Create a deep copy of the object.
+
+        In case the object is already in `children`, it will return the same object
+        as the original object, to avoid infinite recursion.
         """
         if memo is None:
             memo = {}
@@ -238,10 +249,34 @@ class _PylogicObject(ABC):
         **kwargs,
     ) -> _PylogicObject:
         """
-        Replace the attributes of the object with the given values.
+        Replace (substitute) the objects in the `children` list based on the provided
+        `replace_dict` and `positions`.
 
-        equal_check checks if the key in `replace_dict` is equal to the object.
-        If it is not a symmetric function, it could lead to unexpected behavior.
+        Parameters
+        ----------
+        replace_dict : dict[_PylogicObject, _PylogicObject]
+            A dictionary where keys are objects to be replaced and values are the
+            new objects to replace them with.
+        positions : list[list[int]] | None, optional
+            A list of paths to the positions where the replacements
+            should occur.
+            Each path is a list of indices representing the path to the object
+            in the children list.
+
+            For example, if the object has children `[a, b, c]`, `b` has children
+            `[d, e]`, and `c` has children `[e]`, and you want to replace only the
+            `e` in `c`, you would pass `positions=[[2, 0]]`, where `2` is the index
+            of `c` in the children list, and `0` is the index of `e` in `c`'s children
+            list.
+
+            If `None`, all occurrences of the keys in `replace_dict` will be replaced
+            in the object, regardless of their position.
+
+            If an empty list is provided, no replacements will be made.
+        equal_check : Callable[[_PylogicObject, _PylogicObject], bool] | None, optional
+            A function that checks if the key in `replace_dict` is equal to the object.
+            If not provided, it defaults to a simple equality check (`x == y`).
+            If it is not a symmetric function, it could lead to unexpected behavior.
         """
         equal_check = equal_check or (lambda x, y: x == y)
         for old in replace_dict:
