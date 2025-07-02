@@ -39,14 +39,30 @@ the children, but it is still an attribute of the object.
 
 class _PylogicObject(ABC):
     """
-    Base class for all Pylogic objects.
+    Base class for all Pylogic objects. The structure is essentially a tree.
 
-    reference_object: Optional reference object to update independent attributes.
-    This is used to update attributes that do not depend on the children of the object.
+    Parameters
+    ----------
+    children : list[_PylogicObject] | None, optional
+        A list of child objects. If None, an empty list is used.
+    reference_object : Self | None, optional
+        A reference to the object itself, used to update independent attributes.
+        This is useful when the object is being copied, and the independent attributes
+        need to be updated based on the original object.
+    kwargs : dict[str, Any], optional
+        Additional keyword arguments that can be used to initialize independent attributes.
 
-    `children` should not contain an object that has this object as a descendant.
-    This is to avoid infinite recursion with most of the methods, such as `__repr__`,
-    `__eq__` etc.
+    Attributes
+    ----------
+    children : list[_PylogicObject]
+        A list of child objects. `children` should not contain an object that has
+        this object as a descendant to avoid infinite recursion with most of the
+        methods, such as `__repr__`, `__eq__` etc.
+    child_dependent_attrs : tuple[str, ...]
+        A tuple of attribute names that depend on the children of the object.
+        These attributes should be updated when `children` is set or modified.
+    child_independent_attrs : tuple[str, ...]
+        A tuple of attribute names that do not depend on the children of the object.
     """
 
     children: list[_PylogicObject]
@@ -54,10 +70,22 @@ class _PylogicObject(ABC):
     child_independent_attrs: tuple[str, ...] = ()
     __slots__: tuple[str, ...] = child_dependent_attrs + child_independent_attrs
 
+    @staticmethod
+    def _from_dict(dct: dict[str, Any]) -> dict[str, Any] | _PylogicObject:
+        if "class_name" not in dct or "class_module" not in dct:
+            return dct
+        # __import__ needs fromlist to actually import the module for some reason
+        mod = __import__(dct["class_module"], fromlist=[dct["class_name"]])
+        cls = getattr(mod, dct["class_name"])
+        args = cls.dict_to_constructor_args(dct)
+        return cls(**args)
+
     @classmethod
     def dict_to_constructor_args(cls, dct: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a dictionary representation of the object to constructor arguments.
+        The class it is called on should match the keys `class_module` and `class_name`
+        in the dictionary.
 
         Parameters
         ----------
@@ -69,6 +97,28 @@ class _PylogicObject(ABC):
         dict[str, Any]
             A dictionary with keys as constructor argument names and values as their values.
         """
+        assert dct.get("class_module") == cls.__module__, (
+            f"Module name mismatch: expected {cls.__module__}, "
+            f"but got {dct.get('class_module')}"
+        )
+        assert dct.get("class_name") == cls.__qualname__, (
+            f"Class name mismatch: expected {cls.__qualname__}, "
+            f"but got {dct.get('class_name')}"
+        )
+        dct.pop("class_module", None)
+        dct.pop("class_name", None)
+        for key in dct:
+            if isinstance(dct[key], dict):
+                dct[key] = _PylogicObject._from_dict(dct[key])
+            elif isinstance(dct[key], list):
+                dct[key] = [
+                    (
+                        _PylogicObject._from_dict(child)
+                        if isinstance(child, dict)
+                        else child
+                    )
+                    for child in dct[key]
+                ]
         return dct
 
     @classmethod
@@ -165,6 +215,20 @@ class _PylogicObject(ABC):
         memo[id(self)] = new_object
         return new_object
 
+    def copy(self) -> _PylogicObject:
+        """
+        Create a shallow copy of the object.
+        This is an alias for `__copy__`.
+        """
+        return self.__copy__()
+
+    def deepcopy(self) -> _PylogicObject:
+        """
+        Create a deep copy of the object.
+        This is an alias for `__deepcopy__`.
+        """
+        return self.__deepcopy__()
+
     @abstractmethod
     def update_child_dependent_attrs(self) -> None:
         """
@@ -186,6 +250,12 @@ class _PylogicObject(ABC):
         as it should not depend on them.
         It should receive other arguments in the `__init__` method needed to
         initialize the independent attributes.
+
+        Parameters
+        ----------
+        kwargs : dict[str, Any]
+            Additional keyword arguments that can be used to initialize independent
+            attributes, passed from the `__init__` method.
         """
         pass
 
@@ -197,6 +267,11 @@ class _PylogicObject(ABC):
         This method should be implemented by subclasses.
         This is called during copying, where `reference_object` received in
         the initializer is not `None`.
+
+        Parameters
+        ----------
+        reference_object : Self
+            The object from which to copy the independent attributes.
         """
         pass
 
@@ -216,6 +291,8 @@ class _PylogicObject(ABC):
         -------
         dict[str, Any]
             A dictionary representation of the object.
+            The dictionary will contain the class name (key `class_name`) and
+            the module name (key `class_module`) of the class, as well as all
         """
         dct = {}
         for attr in self.__slots__:
@@ -226,6 +303,8 @@ class _PylogicObject(ABC):
                 dct[attr] = [to_dict(child) for child in value]
             else:
                 dct[attr] = to_dict(value)
+        dct["class_module"] = self.__class__.__module__
+        dct["class_name"] = self.__class__.__qualname__
         return dct
 
     def to_json(self, **kwargs) -> str:
@@ -277,6 +356,12 @@ class _PylogicObject(ABC):
             A function that checks if the key in `replace_dict` is equal to the object.
             If not provided, it defaults to a simple equality check (`x == y`).
             If it is not a symmetric function, it could lead to unexpected behavior.
+
+        Returns
+        -------
+        _PylogicObject
+            A new object with the replacements made. The original object is not
+            modified.
         """
         equal_check = equal_check or (lambda x, y: x == y)
         for old in replace_dict:
