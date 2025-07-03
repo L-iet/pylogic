@@ -37,6 +37,24 @@ the children, but it is still an attribute of the object.
 """
 
 
+class _Path(list[int]):
+    """
+    A class representing a path in a tree structure, where each element is an index
+    of a child in the parent's children list.
+
+    This class is used to represent the path to a specific object in a tree structure,
+    allowing for easy traversal and manipulation of the tree.
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        if not all(isinstance(i, int) for i in self):
+            raise TypeError("All elements of Path must be integers.")
+
+
+Path = _Path | list[int] | tuple[int, ...]
+
+
 class _PylogicObject(ABC):
     """
     Base class for all Pylogic objects. The structure is essentially a tree.
@@ -66,7 +84,7 @@ class _PylogicObject(ABC):
     """
 
     children: list[_PylogicObject]
-    child_dependent_attrs: tuple[str, ...] = ("children",)
+    child_dependent_attrs: tuple[str, ...] = ("children", "leaves")
     child_independent_attrs: tuple[str, ...] = ()
     __slots__: tuple[str, ...] = child_dependent_attrs + child_independent_attrs
 
@@ -77,15 +95,19 @@ class _PylogicObject(ABC):
         # __import__ needs fromlist to actually import the module for some reason
         mod = __import__(dct["class_module"], fromlist=[dct["class_name"]])
         cls = getattr(mod, dct["class_name"])
-        args = cls.dict_to_constructor_args(dct)
+        args = cls.dict_to_constructor_kwargs(dct)
         return cls(**args)
 
     @classmethod
-    def dict_to_constructor_args(cls, dct: dict[str, Any]) -> dict[str, Any]:
+    def dict_to_constructor_kwargs(cls, dct: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a dictionary representation of the object to constructor arguments.
         The class it is called on should match the keys `class_module` and `class_name`
         in the dictionary.
+
+        Subclasses can override this method to match different dictionary structures
+        and convert them to the corresponding constructor arguments. But they
+        must handle the case where the dictionary contains the key `"children"`.
 
         Parameters
         ----------
@@ -95,7 +117,8 @@ class _PylogicObject(ABC):
         Returns
         -------
         dict[str, Any]
-            A dictionary with keys as constructor argument names and values as their values.
+            A dictionary with keys as constructor argument names and values as
+            their values.
         """
         assert dct.get("class_module") == cls.__module__, (
             f"Module name mismatch: expected {cls.__module__}, "
@@ -122,7 +145,7 @@ class _PylogicObject(ABC):
         return dct
 
     @classmethod
-    def from_dict(cls, dct: dict[str, Any]) -> _PylogicObject:
+    def from_dict(cls, dct: dict[str, Any]) -> Self:
         """
         Create an instance of the class from a dictionary representation.
 
@@ -133,14 +156,14 @@ class _PylogicObject(ABC):
 
         Returns
         -------
-        _PylogicObject
+        Self
             An instance of the class.
         """
-        args = cls.dict_to_constructor_args(dct)
-        return cls(**args)
+        kwargs = cls.dict_to_constructor_kwargs(dct)
+        return cls(**kwargs)
 
     @classmethod
-    def from_json(cls, json_str: str) -> _PylogicObject:
+    def from_json(cls, json_str: str) -> Self:
         """
         Create an instance of the class from a JSON string representation.
 
@@ -190,15 +213,13 @@ class _PylogicObject(ABC):
             return NotImplemented
         return isinstance(other, self.__class__) and self.children == other.children
 
-    def __copy__(self) -> _PylogicObject:
+    def __copy__(self) -> Self:
         """
         Create a shallow copy of the object.
         """
         return self.__class__(children=self.children, reference_object=self)
 
-    def __deepcopy__(
-        self, memo: dict[int, _PylogicObject] | None = None
-    ) -> _PylogicObject:
+    def __deepcopy__(self, memo: dict[int, _PylogicObject] | None = None) -> Self:
         """
         Create a deep copy of the object.
 
@@ -208,21 +229,21 @@ class _PylogicObject(ABC):
         if memo is None:
             memo = {}
         if id(self) in memo:
-            return memo[id(self)]
+            return memo[id(self)]  # type: ignore
         new_object = self.__class__(
             children=copy.deepcopy(self.children, memo=memo), reference_object=self
         )
         memo[id(self)] = new_object
         return new_object
 
-    def copy(self) -> _PylogicObject:
+    def copy(self) -> Self:
         """
         Create a shallow copy of the object.
         This is an alias for `__copy__`.
         """
         return self.__copy__()
 
-    def deepcopy(self) -> _PylogicObject:
+    def deepcopy(self) -> Self:
         """
         Create a deep copy of the object.
         This is an alias for `__deepcopy__`.
@@ -235,8 +256,16 @@ class _PylogicObject(ABC):
         Update the attributes that depend on the children of the object.
         This method should be implemented by subclasses.
         This is called during initialization after `children` has been set.
+
+        This method should not take any argumets. If a subclass does not have more
+        child-dependent attributes, just call `super().update_child_dependent_attrs()`.
         """
-        pass
+        self.leaves: list[_PylogicObject] = []
+        for child in self.children:
+            if len(child.children) == 0:
+                self.leaves.append(child)
+            else:
+                self.leaves.extend(child.leaves)
 
     @abstractmethod
     def init_child_independent_attrs(self, **kwargs) -> None:
@@ -248,8 +277,9 @@ class _PylogicObject(ABC):
 
         This method does not receive the children or `reference_object` as arguments,
         as it should not depend on them.
-        It should receive other arguments in the `__init__` method needed to
-        initialize the independent attributes.
+        It should receive other arguments from the `__init__` method needed to
+        initialize the independent attributes. It should also handle unknown
+        or unexpected keyword arguments appropriately.
 
         Parameters
         ----------
@@ -323,13 +353,19 @@ class _PylogicObject(ABC):
     def replace(
         self,
         replace_dict: dict[_PylogicObject, _PylogicObject],
-        positions: list[list[int]] | None = None,
+        positions: list[Path] | None = None,
         equal_check: Callable[[_PylogicObject, _PylogicObject], bool] | None = None,
         **kwargs,
     ) -> _PylogicObject:
         """
         Replace (substitute) the objects in the `children` list based on the provided
         `replace_dict` and `positions`.
+
+        Objects at higher levels (closer to the root) will be replaced prior to
+        objects at lower levels (closer to the leaves). So if `a` has children
+        `[b, c]`, and `replace_dict` is `{a: d, b: e}`, then `a` will be replaced
+        with `d` and `e` will not appear in the result (assuming it does not appear
+        elsewhere in the tree).
 
         Parameters
         ----------
