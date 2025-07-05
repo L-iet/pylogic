@@ -464,10 +464,6 @@ class _PylogicObject(ABC):
             modified.
         """
         equal_check = equal_check or (lambda x, y: x == y)
-        for old in replace_dict:
-            new = replace_dict[old]
-            if equal_check(old, self):
-                return new
 
         # the index to look at in each path in positions
         _depth: int = kwargs.get("_depth", 0)
@@ -494,15 +490,27 @@ class _PylogicObject(ABC):
         # but enable equal_check to work with something like `x is y`
         new_children = copy.copy(self.children)
         if replace_all:
+            # may or may not be a recursive call
+            # we need to replace all occurrences of the keys in replace_dict
+            for old in replace_dict:
+                new = replace_dict[old]
+                if equal_check(old, self):
+                    return new
             for i, child in enumerate(new_children):
                 new_child = child.replace(
                     replace_dict, positions, equal_check, _depth=_depth, _path=_path
                 )
                 new_children[i] = new_child
         elif _path is None:
+            # this is the root object, not a recursive call
             if TYPE_CHECKING:
                 assert positions is not None
             for pth in positions:
+                if not pth:
+                    for old in replace_dict:
+                        new = replace_dict[old]
+                        if equal_check(old, self):
+                            return new
                 if (
                     not pth
                     or (-len(new_children) > pth[0])
@@ -513,6 +521,7 @@ class _PylogicObject(ABC):
                     replace_dict, positions, equal_check, _depth=1, _path=pth
                 )
         else:
+            # this is a recursive call
             if (
                 not _path
                 or (-len(new_children) > _path[_depth])
