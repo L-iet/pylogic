@@ -42,8 +42,8 @@ class _Path(list[int]):
     A class representing a path in a tree structure, where each element is an index
     of a child in the parent's children list.
 
-    This class is used to represent the path to a specific object in a tree structure,
-    allowing for easy traversal and manipulation of the tree.
+    An empty path `[]` represents the root object, while a path `[0]`
+    represents the first child of the root object.
     """
 
     def __init__(self, *args, **kwargs) -> None:
@@ -440,7 +440,8 @@ class _PylogicObject(ABC):
             A list of paths to the positions where the replacements
             should occur.
             Each path is a list of indices representing the path to the object
-            in the children list.
+            in the children list. An empty path `[]` represents the root object,
+            while a path `[0]` represents the first child of the root object.
 
             For example, if the object has children `[a, b, c]`, `b` has children
             `[d, e]`, and `c` has children `[e]`, and you want to replace only the
