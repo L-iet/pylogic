@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Any, Self, Callable, Iterable, TYPE_CHECKING, cast
+from typing import Any, Literal, Self, Callable, Iterable, TYPE_CHECKING, cast
 import copy
 import json
 
@@ -81,11 +81,15 @@ class _PylogicObject(ABC):
         These attributes should be updated when `children` is set or modified.
     child_independent_attrs : tuple[str, ...]
         A tuple of attribute names that do not depend on the children of the object.
+    hash_attrs : tuple[str, ...]
+        A tuple of attribute names that should be used to compute the hash of the
+        object.
     """
 
     children: list[_PylogicObject]
     child_dependent_attrs: tuple[str, ...] = ("children", "leaves")
     child_independent_attrs: tuple[str, ...] = ()
+    hash_attrs: tuple[str, ...] = ()
     __slots__: tuple[str, ...] = child_dependent_attrs + child_independent_attrs
 
     @staticmethod
@@ -203,15 +207,75 @@ class _PylogicObject(ABC):
         """
         Return a hash of the object based on its class and children.
         """
-        return hash((self.__class__.__name__, *self.children))
+        hash_attrs = tuple(getattr(self, attr) for attr in self.hash_attrs)
+        return hash((self.__class__.__qualname__, *hash_attrs, *self.children))
+
+    def eq_child_independent_attrs(self, other: _PylogicObject) -> bool:
+        """
+        Check if the child-independent attributes of this object and `other`
+        are equal.
+        """
+        if self.child_independent_attrs != other.child_independent_attrs:
+            return False
+        for attr in self.child_independent_attrs:
+            value = getattr(self, attr)
+            other_value = getattr(other, attr)
+            if value != other_value:
+                return False
+        return True
 
     def __eq__(self, other: object) -> bool:
         """
-        Check if two objects are equal based on their class and children.
+        Check if two objects are equal.
+
+        To be equal, `other` must be an instance of the class of this object (not
+        a subclass), their child-independent attributes must be equal and their
+        children must be equal.
         """
         if not isinstance(other, _PylogicObject):
             return NotImplemented
-        return isinstance(other, self.__class__) and self.children == other.children
+        return (
+            self.__class__ == other.__class__
+            and self.eq_child_independent_attrs(other)
+            and self.children == other.children
+        )
+
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the object, including its class name,
+        and child-independent attributes.
+        """
+        attrs = [
+            f"{attr}={getattr(self, attr)!r}" for attr in self.child_independent_attrs
+        ]
+        if len(self.children) == 0:
+            attrs.append("children=[]")
+        else:
+            attrs.append("children=[...]")  # Avoid printing all children in repr
+        attrs = ", ".join(attrs)
+        return f"{self.__class__.__qualname__}({attrs})"
+
+    def equal_up_to_subclass(self, other: object) -> bool:
+        """
+        Check if two objects are essentially equal, but may be of different classes.
+
+        To compare equal, the following conditions must be met:
+        - `other` is an instance of this class, or this object is an instance
+        of `other.__class__`
+        - their child-independent attributes must be equal
+        - their children must be equal, up to subclasses.
+        """
+        if not isinstance(other, _PylogicObject):
+            return NotImplemented
+        return (
+            (isinstance(other, self.__class__) or isinstance(self, other.__class__))
+            and self.eq_child_independent_attrs(other)
+            and len(self.children) == len(other.children)
+            and all(
+                selfchild.equal_up_to_subclass(otherchild)
+                for selfchild, otherchild in zip(self.children, other.children)
+            )
+        )
 
     def __copy__(self) -> Self:
         """
@@ -461,6 +525,100 @@ class _PylogicObject(ABC):
 
         new_object = self.__class__(children=new_children, reference_object=self)
         return new_object
+
+    def _final_possible_unif(
+        self, other: _PylogicObject, key_check: Callable[[_PylogicObject], bool]
+    ) -> Unification | None:
+        if key_check(self):
+            return Unification({self: other})
+        return None
+
+    def unify(
+        self,
+        other: _PylogicObject,
+        key_check: Callable[[_PylogicObject], bool] | None = None,
+    ) -> Unification | None:
+        """
+        Unify two objects.
+
+        If the objects are equal, return `True`. Otherwise, return a mapping of
+        what objects in this object should be replaced with what objects in the
+        other object to make them equal, or `None` if they cannot be unified.
+
+        Parameters
+        ----------
+        other : _PylogicObject
+            The object to unify with.
+
+        key_check : Callable[[_PylogicObject], bool] | None, optional
+            A function that checks if a subobject in this one can be a key in the
+            unification dictionary returned. That is, it checks for what objects
+            can serve as the "variables" or "basic objects" in the unification
+            process. These objects will unify with any others.
+
+        Returns
+        -------
+        dict[_PylogicObject, _PylogicObject] | None
+            A dictionary mapping objects in this object to objects in the other
+            object that should replace them to make the objects equal.
+
+            If the objects are already equal, a **truthy** empty dictionary is
+            returned.
+
+            If they cannot be unified, `None` is returned.
+        """
+        key_check = key_check or (lambda o: len(o.children) == 0)
+        if not (
+            self.__class__ == other.__class__ and self.eq_child_independent_attrs(other)
+        ):
+            return self._final_possible_unif(other, key_check)  # type: ignore
+
+        if len(self.children) == 0:
+            if len(other.children) == 0:
+                return Unification()
+            return self._final_possible_unif(other, key_check)  # type: ignore
+
+        if len(self.children) != len(other.children):
+            return self._final_possible_unif(other, key_check)  # type: ignore
+
+        unif_so_far: dict[_PylogicObject, _PylogicObject] = {}
+        for selfchild, otherchild in zip(self.children, other.children):
+            unif = selfchild.unify(otherchild, key_check=key_check)
+            if unif == Unification():
+                continue
+            elif isinstance(unif, dict):
+                for k, v in unif.items():
+                    if (
+                        val_so_far := unif_so_far.get(k)
+                    ) is not None and val_so_far != v:
+                        return None
+                unif_so_far |= unif
+            else:
+                # unif is None so those children could not be unified
+                return None
+
+        # if unif_so_far was not modified and we are here,
+        # all unifs were True
+        if len(unif_so_far) == 0:
+            return Unification()
+        return Unification(unif_so_far)
+
+
+class Unification(dict[_PylogicObject, _PylogicObject]):
+    """
+    A dictionary-like class for unification results, where keys are objects
+    that should be replaced and values are the objects to replace them with.
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+    def __bool__(self) -> Literal[True]:
+        """
+        Always returns True, as an instance of Unification is always considered
+        a valid unification result.
+        """
+        return True
 
 
 def to_dict(value: Any) -> dict[str, Any] | list[Any] | Any:
