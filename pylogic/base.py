@@ -1,6 +1,17 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Any, Literal, Self, Callable, Iterable, TYPE_CHECKING, cast
+from typing import (
+    Any,
+    Literal,
+    Self,
+    Callable,
+    Iterable,
+    TYPE_CHECKING,
+    Sequence,
+    cast,
+    TypeVar,
+    Generic,
+)
 import copy
 import json
 
@@ -35,6 +46,11 @@ Proposition.is_proven is an independent attribute because it does not depend on
 the children, but it is still an attribute of the object.
 
 """
+
+T = TypeVar("T", bound="_PylogicObject")
+U = TypeVar("U")
+A = TypeVar("A")
+B = TypeVar("B")
 
 
 class _Path(list[int]):
@@ -540,6 +556,8 @@ class _PylogicObject(ABC):
         self, other: _PylogicObject, key_check: Callable[[_PylogicObject], bool]
     ) -> Unification | None:
         if key_check(self):
+            if self == other:
+                return Unification()
             return Unification({self: other})
         return None
 
@@ -547,6 +565,9 @@ class _PylogicObject(ABC):
         self,
         other: _PylogicObject,
         key_check: Callable[[_PylogicObject], bool] | None = None,
+        equal_excluding_children: (
+            Callable[[_PylogicObject, _PylogicObject], bool] | None
+        ) = None,
     ) -> Unification | None:
         """
         Unify two objects.
@@ -566,6 +587,11 @@ class _PylogicObject(ABC):
             can serve as the "variables" or "basic objects" in the unification
             process. These objects will unify with any others.
 
+        equal_excluding_children : Callable[[_PylogicObject, _PylogicObject], bool] | None, optional
+            A function that checks if two objects are equal, ignoring their children.
+            If not provided, it defaults to checking if the classes are the same and
+            their child-independent attributes are equal.
+
         Returns
         -------
         dict[_PylogicObject, _PylogicObject] | None
@@ -578,25 +604,36 @@ class _PylogicObject(ABC):
             If they cannot be unified, `None` is returned.
         """
         key_check = key_check or (lambda o: len(o.children) == 0)
-        if not (
-            self.__class__ == other.__class__ and self.eq_child_independent_attrs(other)
-        ):
-            return self._final_possible_unif(other, key_check)  # type: ignore
+        equal_excluding_children = equal_excluding_children or (
+            lambda x, y: (
+                x.__class__ == y.__class__ and x.eq_child_independent_attrs(y)
+            )
+        )
+        if (res := self._final_possible_unif(other, key_check)) is not None:
+            return res
+        if not equal_excluding_children(self, other):
+            return None
 
         if len(self.children) == 0:
             if len(other.children) == 0:
                 return Unification()
-            return self._final_possible_unif(other, key_check)  # type: ignore
+            return None
 
         if len(self.children) != len(other.children):
-            return self._final_possible_unif(other, key_check)  # type: ignore
+            return None
 
-        unif_so_far: dict[_PylogicObject, _PylogicObject] = {}
+        unif_so_far: dict[_PylogicObject, _PylogicObject] = Unification()
         for selfchild, otherchild in zip(self.children, other.children):
-            unif = selfchild.unify(otherchild, key_check=key_check)
+            unif = selfchild.unify(
+                otherchild,
+                key_check=key_check,
+                equal_excluding_children=equal_excluding_children,
+            )
             if unif == Unification():
                 continue
-            elif isinstance(unif, dict):
+            elif unif is not None:
+                # check that the unification is consistent
+                # with the unification so far
                 for k, v in unif.items():
                     if (
                         val_so_far := unif_so_far.get(k)
@@ -608,13 +645,161 @@ class _PylogicObject(ABC):
                 return None
 
         # if unif_so_far was not modified and we are here,
-        # all unifs were True
+        # all unifs were {}
         if len(unif_so_far) == 0:
             return Unification()
-        return Unification(unif_so_far)
+        return unif_so_far
+
+    def _final_possible_multi_unif(
+        self,
+        other: _PylogicObject,
+        key_check: Callable[[_PylogicObject], bool],
+        key_for_list_check: Callable[[_PylogicObject], bool],
+    ) -> MultiUnification | None:
+        if key_for_list_check(self):
+            if self == other:
+                return MultiUnification()
+            return MultiUnification({self: [other]})
+        if key_check(self):
+            return MultiUnification({self: other})
+        return None
+
+    def multi_unify(
+        self,
+        other: _PylogicObject,
+        key_check: Callable[[_PylogicObject], bool] | None = None,
+        key_for_list_check: Callable[[_PylogicObject], bool] | None = None,
+        equal_excluding_children: (
+            Callable[[_PylogicObject, _PylogicObject], bool] | None
+        ) = None,
+    ) -> MultiUnification | None:
+        """
+        Unify this object with another object. In the return value, one object
+        can be unified with a list of objects.
+
+        Parameters
+        ----------
+        other : _PylogicObject
+            The object to unify with.
+
+        key_check : Callable[[_PylogicObject], bool] | None, optional
+            A function that checks if a subobject in this one can be a key in the
+            unification dictionary returned. That is, it checks for what objects
+            can serve as the "variables" or "basic objects" in the unification
+            process. These objects will unify with any others.
+
+        key_for_list_check : Callable[[_PylogicObject], bool] | None, optional
+            A function that checks if a subobject in this one can be a key in the
+            unification dictionary returned. The value of this key will be a list
+            of objects from `others` that unify with it. If not provided, it defaults
+            to always returning `False`, so a regular unification will be
+            performed.
+
+        equal_excluding_children : Callable[[_PylogicObject, _PylogicObject], bool] | None, optional
+            A function that checks if two objects are equal, ignoring their children.
+            If not provided, it defaults to checking if the classes are the same and
+            their child-independent attributes are equal.
+
+        Returns
+        -------
+        dict[_PylogicObject, _PylogicObject | list[_PylogicObject]] | None
+            A dictionary mapping objects in this object to objects (or lists of
+            objects) in the `others`
+            that should replace them to make the objects equal.
+
+            This is just the first unification found. It may not be the only unification
+            possible, but it is guaranteed to be a valid unification. By "first",
+            we mean that the length of the value (a list) of the highest and leftmost
+            multi-unifiable ("key-for-list") object is the smallest possible.
+
+            If the objects are already equal, a **truthy** empty dictionary is
+            returned.
+
+            If they cannot be unified, `None` is returned.
+        """
+        key_check = key_check or (lambda o: len(o.children) == 0)
+        equal_excluding_children = equal_excluding_children or (
+            lambda x, y: (
+                x.__class__ == y.__class__ and x.eq_child_independent_attrs(y)
+            )
+        )
+        key_for_list_check = key_for_list_check or (lambda _: False)
+        if (
+            res := self._final_possible_multi_unif(other, key_check, key_for_list_check)
+        ) is not None:
+            return res
+
+        if not equal_excluding_children(self, other):
+            return None
+
+        if len(self.children) == 0:
+            if len(other.children) == 0:
+                return MultiUnification()
+            return None
+
+        possible_ways_to_match_children = matches_to_actual(
+            string_match(self.children, other.children, key_for_list_check),
+            other.children,
+        )
+        possible_ways_to_match_children = cast(
+            list[dict[_PylogicObject, _PylogicObject | list[_PylogicObject]]],
+            possible_ways_to_match_children,
+        )
+        for way in possible_ways_to_match_children:
+            unif_so_far = MultiUnification()
+            conflict = False
+            for k in way:
+                # case 1: a key that unifies with a list
+                if key_for_list_check(k):
+                    v = cast(list[_PylogicObject], way[k])
+                    # if its a singleton list with the key itself,
+                    # we should ignore it
+                    if not (len(v) == 1 and v[0] == k):
+                        unif_so_far[k] = v
+                    continue
+
+                # case 2: a key that unifies with a single object
+                # or a non-key
+                selfchild = k
+                otherchild = cast(_PylogicObject, way[k])
+                unif = selfchild.multi_unify(
+                    otherchild,
+                    key_check=key_check,
+                    key_for_list_check=key_for_list_check,
+                    equal_excluding_children=equal_excluding_children,
+                )
+                # both objects are equal
+                if unif == MultiUnification():
+                    continue
+                elif unif is not None:
+                    # check that the unification is consistent
+                    # with the unification so far
+                    for k, v in unif.items():
+                        if (
+                            val_so_far := unif_so_far.get(k)
+                        ) is not None and val_so_far != v:
+                            conflict = True
+                            break
+                    if not conflict:
+                        unif_so_far |= unif
+                    else:
+                        break
+                else:
+                    # unif is None so those children could not be unified
+                    # so go to the next way
+                    break
+
+            # if unif_so_far was not modified and we are here,
+            # all unifs were {}
+            if not conflict and len(unif_so_far) == 0:
+                return MultiUnification()
+            if conflict:
+                continue
+            # first unification found that works
+            return unif_so_far
 
 
-class Unification(dict[_PylogicObject, _PylogicObject]):
+class Unif(dict[_PylogicObject, U]):
     """
     A dictionary-like class for unification results, where keys are objects
     that should be replaced and values are the objects to replace them with.
@@ -629,6 +814,10 @@ class Unification(dict[_PylogicObject, _PylogicObject]):
         a valid unification result.
         """
         return True
+
+
+Unification = Unif[_PylogicObject]
+MultiUnification = Unif[_PylogicObject | list[_PylogicObject]]
 
 
 def to_dict(value: Any) -> dict[str, Any] | list[Any] | Any:
@@ -659,3 +848,86 @@ def to_dict(value: Any) -> dict[str, Any] | list[Any] | Any:
     elif isinstance(value, dict):
         return {k: to_dict(v) for k, v in value.items()}
     return value
+
+
+def string_match(
+    pattern: Sequence[A],
+    target: Sequence,
+    is_tuple_var: Callable[[A], bool],
+    _patternstart=0,
+    _targetstart=0,
+) -> list[dict[A, int | tuple[int, int]]]:
+    # given a pattern string and another string, this is an algorithm
+    # to match them up (unify them). Return all possible matches,
+    # or an empty collection.
+
+    # each match is a dict of tupleVar -> range indicies in target
+    # and var -> index
+
+    # The pattern string is made of two types of symbols: variables
+    # and tupleVariables. Examples of variables: w,x,y,z.
+    # Examples of tupleVars: *x, *y, etc.
+    # A var matches to any character.
+    # A tupleVar matches to a list of characters, which can be empty.
+    # A string is a comma-separated sequence (i guess a python list)
+    # in this case.
+    # Example: inputs *a,y,*b,z and 1,2,3,4
+    # outputs:
+    # {a: [], y: 1, b: [2,3], z: 4},
+    # {a: [1], y: 2, b: [3], z: 4},
+    # {a: [1,2], y: 3, b: [], z: 4}
+
+    # both empty
+    if len(pattern) == _patternstart and len(target) == _targetstart:
+        return [{}]  # the do-nothing match
+
+    # pattern empty
+    if len(pattern) == _patternstart:
+        return []  # no match
+
+    if is_tuple_var(pattern[_patternstart]):
+        results = []
+        for i in range(_targetstart, len(target) + 1):
+            result = {}
+            result[pattern[_patternstart]] = (_targetstart, i)
+            remaining = string_match(
+                pattern,
+                target,
+                _patternstart=_patternstart + 1,
+                _targetstart=i,
+                is_tuple_var=is_tuple_var,
+            )
+            if not remaining:
+                continue
+            results.extend([result | r for r in remaining])
+        return results
+
+    else:
+        result = {}
+        result[pattern[_patternstart]] = _targetstart
+        remaining = string_match(
+            pattern,
+            target,
+            _patternstart=_patternstart + 1,
+            _targetstart=_targetstart + 1,
+            is_tuple_var=is_tuple_var,
+        )
+        if not remaining:
+            return []
+        else:
+            return [result | r for r in remaining]
+
+
+def matches_to_actual(
+    matches: list[dict[A, int | tuple[int, int]]], target: Sequence[B]
+) -> list[dict[A, B | Sequence[B]]]:
+    def _match(m):
+        d = {}
+        for k, v in m.items():
+            if isinstance(v, int):
+                d[k] = target[v]
+            else:
+                d[k] = target[slice(*v)]
+        return d
+
+    return list(map(_match, matches))
