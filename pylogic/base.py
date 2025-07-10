@@ -1,16 +1,19 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
+from types import UnionType
 from typing import (
     Any,
+    Generic,
     Literal,
+    Mapping,
     Self,
     Callable,
-    Iterable,
     TYPE_CHECKING,
     Sequence,
     cast,
     TypeVar,
-    Generic,
+    overload,
+    NewType,
 )
 import copy
 import json
@@ -51,6 +54,10 @@ T = TypeVar("T", bound="_PylogicObject")
 U = TypeVar("U")
 A = TypeVar("A")
 B = TypeVar("B")
+C = TypeVar("C")
+D = TypeVar("D")
+E = TypeVar("E")
+F = TypeVar("F")
 
 
 class _Path(list[int]):
@@ -741,10 +748,6 @@ class _PylogicObject(ABC):
             string_match(self.children, other.children, key_for_list_check),
             other.children,
         )
-        possible_ways_to_match_children = cast(
-            list[dict[_PylogicObject, _PylogicObject | list[_PylogicObject]]],
-            possible_ways_to_match_children,
-        )
         for way in possible_ways_to_match_children:
             unif_so_far = MultiUnification()
             conflict = False
@@ -850,13 +853,58 @@ def to_dict(value: Any) -> dict[str, Any] | list[Any] | Any:
     return value
 
 
+if TYPE_CHECKING:
+
+    class MatchIndicesDict(dict[A | B, int | tuple[int, int]]):
+        """
+        A is a variable, B is a tuple variable (variable that unifies to a list
+        of values).
+        """
+
+        @overload
+        def __getitem__(self, key: A) -> int: ...
+        @overload
+        def __getitem__(self, key: B) -> tuple[int, int]: ...
+        def __getitem__(self, key: A | B) -> int | tuple[int, int]: ...
+
+        def __or__(self, value: MatchIndicesDict[A, B]) -> MatchIndicesDict[A, B]: ...
+
+    class MatchDict(dict[A | B, C | D]):
+        """
+        A is a variable, B is a tuple variable (variable that unifies to a list
+        of values).
+        C is the type of the values in the target sequence.
+        D is the type of the target eg `str`, `tuple[C]`.
+        """
+
+        @overload
+        def __getitem__(self: MatchDict[A, B, C, list[C]], key: A) -> C: ...
+        @overload
+        def __getitem__(self: MatchDict[A, B, C, list[C]], key: B) -> list[C]: ...
+        @overload
+        def __getitem__(self: MatchDict[A, B, C, list[C]], key: A) -> C: ...
+        @overload
+        def __getitem__(
+            self: MatchDict[A, B, C, tuple[C, ...]], key: B
+        ) -> tuple[C, ...]: ...
+        @overload
+        def __getitem__(self: MatchDict[A, B, C, str], key: A | B) -> str: ...
+        @overload
+        def __getitem__(self: MatchDict[A, B, C, D], key: A) -> C: ...
+        @overload
+        def __getitem__(self: MatchDict[A, B, C, D], key: B) -> Sequence[C]: ...
+        def __getitem__(self: MatchDict[A, B, C, D], key: A | B) -> C | Sequence[C]: ...  # type: ignore
+
+        def __or__(self, value: MatchDict[A, B, C, D]) -> MatchDict[A, B, C, D]: ...
+
+
 def string_match(
-    pattern: Sequence[A],
+    pattern: Sequence[A | B],
     target: Sequence,
-    is_tuple_var: Callable[[A], bool],
+    is_tuple_var: Callable[[A | B], bool],
     _patternstart=0,
     _targetstart=0,
-) -> list[dict[A, int | tuple[int, int]]]:
+) -> list[MatchIndicesDict[A, B]]:
     # given a pattern string and another string, this is an algorithm
     # to match them up (unify them). Return all possible matches,
     # or an empty collection.
@@ -879,7 +927,7 @@ def string_match(
 
     # both empty
     if len(pattern) == _patternstart and len(target) == _targetstart:
-        return [{}]  # the do-nothing match
+        return [{}]  # the do-nothing match # type: ignore[return-value]
 
     # pattern empty
     if len(pattern) == _patternstart:
@@ -888,7 +936,7 @@ def string_match(
     if is_tuple_var(pattern[_patternstart]):
         results = []
         for i in range(_targetstart, len(target) + 1):
-            result = {}
+            result = cast("MatchIndicesDict[A, B]", {})
             result[pattern[_patternstart]] = (_targetstart, i)
             remaining = string_match(
                 pattern,
@@ -903,7 +951,7 @@ def string_match(
         return results
 
     else:
-        result = {}
+        result = cast("MatchIndicesDict[A, B]", {})
         result[pattern[_patternstart]] = _targetstart
         remaining = string_match(
             pattern,
@@ -918,9 +966,22 @@ def string_match(
             return [result | r for r in remaining]
 
 
+# overload for each subtype of Sequence
+@overload
 def matches_to_actual(
-    matches: list[dict[A, int | tuple[int, int]]], target: Sequence[B]
-) -> list[dict[A, B | Sequence[B]]]:
+    matches: list[MatchIndicesDict[A, B]], target: list[C]
+) -> list[MatchDict[A, B, C, list[C]]]: ...
+@overload
+def matches_to_actual(
+    matches: list[MatchIndicesDict[A, B]], target: tuple[C, ...]
+) -> list[MatchDict[A, B, C, tuple[C, ...]]]: ...
+@overload
+def matches_to_actual(
+    matches: list[MatchIndicesDict[A, B]], target: str
+) -> list[MatchDict[A, B, str, str]]: ...
+def matches_to_actual(  # type: ignore
+    matches: list[MatchIndicesDict[A, B]], target: Sequence[C]
+) -> list[MatchDict[A, B, C, Sequence[C]]]:
     def _match(m):
         d = {}
         for k, v in m.items():
@@ -930,4 +991,4 @@ def matches_to_actual(
                 d[k] = target[slice(*v)]
         return d
 
-    return list(map(_match, matches))
+    return list(map(_match, matches))  # type: ignore
