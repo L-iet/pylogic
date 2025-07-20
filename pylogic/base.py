@@ -660,6 +660,8 @@ class _PylogicObject(ABC):
                 return MultiUnification()
             return MultiUnification({self: [other]})
         if key_check(self):
+            if self == other:
+                return MultiUnification()
             return MultiUnification({self: other})
         return None
 
