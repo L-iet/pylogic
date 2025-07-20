@@ -1,15 +1,14 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from types import UnionType
+from collections.abc import Iterable
 from typing import (
     Any,
-    Generic,
     Literal,
-    Mapping,
     Self,
     Callable,
     TYPE_CHECKING,
     Sequence,
+    TypeIs,
     cast,
     TypeVar,
     overload,
@@ -50,14 +49,8 @@ the children, but it is still an attribute of the object.
 
 """
 
-T = TypeVar("T", bound="_PylogicObject")
-U = TypeVar("U")
-A = TypeVar("A")
-B = TypeVar("B")
-C = TypeVar("C")
-D = TypeVar("D")
-E = TypeVar("E")
-F = TypeVar("F")
+if TYPE_CHECKING:
+    from pylogic.typing.collection import ReadOnlyList
 
 
 class _Path(list[int]):
@@ -69,10 +62,8 @@ class _Path(list[int]):
     represents the first child of the root object.
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        if not all(isinstance(i, int) for i in self):
-            raise TypeError("All elements of Path must be integers.")
 
 
 Path = _Path | list[int] | tuple[int, ...]
@@ -163,7 +154,7 @@ class _PylogicObject(ABC):
             elif isinstance(dct[key], list):
                 dct[key] = [
                     (
-                        _PylogicObject._from_dict(child)
+                        _PylogicObject._from_dict(child)  # type: ignore
                         if isinstance(child, dict)
                         else child
                     )
@@ -210,11 +201,11 @@ class _PylogicObject(ABC):
     def __init__(
         self,
         *,
-        children: list[_PylogicObject] | None = None,
+        children: Sequence[_PylogicObject] | None = None,
         reference_object: Self | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
-        self.children: list[_PylogicObject] = (
+        self.children = (
             children
             if isinstance(children, list)
             else list(children) if children is not None else []
@@ -355,7 +346,7 @@ class _PylogicObject(ABC):
                 self.leaves.extend(child.leaves)
 
     @abstractmethod
-    def init_child_independent_attrs(self, **kwargs) -> None:
+    def init_child_independent_attrs(self, **kwargs: Any) -> None:
         """
         Set the initial values for the independent attributes of the object.
         This method should be implemented by subclasses.
@@ -411,12 +402,13 @@ class _PylogicObject(ABC):
             The dictionary will contain the class name (key `class_name`) and
             the module name (key `class_module`) of the class, as well as all
         """
-        dct = {}
+        dct: dict[str, Any] = {}
         for attr in self.__slots__:
             value = getattr(self, attr)
             if isinstance(value, _PylogicObject):
                 dct[attr] = value.to_dict()
             elif isinstance(value, (list, tuple, set)):
+                value: Iterable[Any]
                 dct[attr] = [to_dict(child) for child in value]
             else:
                 dct[attr] = to_dict(value)
@@ -424,7 +416,7 @@ class _PylogicObject(ABC):
         dct["class_name"] = self.__class__.__qualname__
         return dct
 
-    def to_json(self, **kwargs) -> str:
+    def to_json(self, **kwargs: Any) -> str:
         """
         Convert the object to a JSON string representation.
 
@@ -442,7 +434,7 @@ class _PylogicObject(ABC):
         replace_dict: dict[_PylogicObject, _PylogicObject],
         positions: list[Path] | None = None,
         equal_check: Callable[[_PylogicObject, _PylogicObject], bool] | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> _PylogicObject:
         """
         Replace (substitute) the objects in the `children` list based on the provided
@@ -490,10 +482,10 @@ class _PylogicObject(ABC):
         equal_check = equal_check or (lambda x, y: x == y)
 
         # the index to look at in each path in positions
-        _depth: int = kwargs.get("_depth", 0)
+        _depth = cast(int, kwargs.get("_depth", 0))
         # the path we are currently going through
         # if None, this is the root object
-        _path: list[int] | None = kwargs.get("_path")
+        _path = cast(list[int] | None, kwargs.get("_path"))
         replace_all: bool = False
         if _path is None:
             assert _depth == 0, "Depth must be 0 if path is None."
@@ -503,10 +495,6 @@ class _PylogicObject(ABC):
             raise ValueError(
                 "Depth must be at most the length of the path if path is provided."
             )
-
-        if TYPE_CHECKING:
-            _depth = int(_depth)
-            _path = cast(list[int] | None, _path)
 
         replace_all = positions is None or replace_all
 
@@ -560,7 +548,9 @@ class _PylogicObject(ABC):
         return new_object
 
     def _final_possible_unif(
-        self, other: _PylogicObject, key_check: Callable[[_PylogicObject], bool]
+        self,
+        other: _PylogicObject,
+        key_check: Callable[[_PylogicObject], TypeIs[UniVar]],
     ) -> Unification | None:
         if key_check(self):
             if self == other:
@@ -571,7 +561,7 @@ class _PylogicObject(ABC):
     def unify(
         self,
         other: _PylogicObject,
-        key_check: Callable[[_PylogicObject], bool] | None = None,
+        key_check: Callable[[_PylogicObject], TypeIs[UniVar]] | None = None,
         equal_excluding_children: (
             Callable[[_PylogicObject, _PylogicObject], bool] | None
         ) = None,
@@ -610,7 +600,9 @@ class _PylogicObject(ABC):
 
             If they cannot be unified, `None` is returned.
         """
-        key_check = key_check or (lambda o: len(o.children) == 0)
+        # default to leaf nodes
+        if key_check is None:
+            key_check = lambda o: cast(TypeIs[UniVar], len(o.children) == 0)
         equal_excluding_children = equal_excluding_children or (
             lambda x, y: (
                 x.__class__ == y.__class__ and x.eq_child_independent_attrs(y)
@@ -629,7 +621,7 @@ class _PylogicObject(ABC):
         if len(self.children) != len(other.children):
             return None
 
-        unif_so_far: dict[_PylogicObject, _PylogicObject] = Unification()
+        unif_so_far = Unification()
         for selfchild, otherchild in zip(self.children, other.children):
             unif = selfchild.unify(
                 otherchild,
@@ -660,8 +652,8 @@ class _PylogicObject(ABC):
     def _final_possible_multi_unif(
         self,
         other: _PylogicObject,
-        key_check: Callable[[_PylogicObject], bool],
-        key_for_list_check: Callable[[_PylogicObject], bool],
+        key_check: Callable[[_PylogicObject], TypeIs[UniVar]],
+        key_for_list_check: Callable[[_PylogicObject | MultiVar], TypeIs[MultiVar]],
     ) -> MultiUnification | None:
         if key_for_list_check(self):
             if self == other:
@@ -674,8 +666,8 @@ class _PylogicObject(ABC):
     def multi_unify(
         self,
         other: _PylogicObject,
-        key_check: Callable[[_PylogicObject], bool] | None = None,
-        key_for_list_check: Callable[[_PylogicObject], bool] | None = None,
+        key_check: Callable[[_PylogicObject], TypeIs[UniVar]] | None = None,  # type: ignore
+        key_for_list_check: Callable[[_PylogicObject | MultiVar], TypeIs[MultiVar]] | None = None,  # type: ignore
         equal_excluding_children: (
             Callable[[_PylogicObject, _PylogicObject], bool] | None
         ) = None,
@@ -697,10 +689,10 @@ class _PylogicObject(ABC):
 
         key_for_list_check : Callable[[_PylogicObject], bool] | None, optional
             A function that checks if a subobject in this one can be a key in the
-            unification dictionary returned. The value of this key will be a list
-            of objects from `others` that unify with it. If not provided, it defaults
-            to always returning `False`, so a regular unification will be
-            performed.
+            unification dictionary returned (a "multi-variable"). The value of
+            this key will be a list of objects from `others` that unify with it.
+            If not provided, it defaults to always returning `False`, so a regular
+            unification will be performed.
 
         equal_excluding_children : Callable[[_PylogicObject, _PylogicObject], bool] | None, optional
             A function that checks if two objects are equal, ignoring their children.
@@ -724,13 +716,17 @@ class _PylogicObject(ABC):
 
             If they cannot be unified, `None` is returned.
         """
-        key_check = key_check or (lambda o: len(o.children) == 0)
+        key_check: Callable[[_PylogicObject], TypeIs[UniVar]] = key_check or (
+            (lambda o: len(o.children) == 0)
+        )  # type: ignore
         equal_excluding_children = equal_excluding_children or (
             lambda x, y: (
                 x.__class__ == y.__class__ and x.eq_child_independent_attrs(y)
             )
         )
-        key_for_list_check = key_for_list_check or (lambda _: False)
+        key_for_list_check: Callable[[_PylogicObject | MultiVar], TypeIs[MultiVar]] = (
+            key_for_list_check or (lambda _: False)  # type: ignore
+        )
         if (
             res := self._final_possible_multi_unif(other, key_check, key_for_list_check)
         ) is not None:
@@ -743,9 +739,9 @@ class _PylogicObject(ABC):
             if len(other.children) == 0:
                 return MultiUnification()
             return None
-
+        self_children = cast(list[MultiVar | NonMultiVar], self.children)
         possible_ways_to_match_children = matches_to_actual(
-            string_match(self.children, other.children, key_for_list_check),
+            string_match(self_children, other.children, key_for_list_check),
             other.children,
         )
         for way in possible_ways_to_match_children:
@@ -754,7 +750,7 @@ class _PylogicObject(ABC):
             for k in way:
                 # case 1: a key that unifies with a list
                 if key_for_list_check(k):
-                    v = cast(list[_PylogicObject], way[k])
+                    v = way[k]
                     # if its a singleton list with the key itself,
                     # we should ignore it
                     if not (len(v) == 1 and v[0] == k):
@@ -762,11 +758,9 @@ class _PylogicObject(ABC):
                     continue
 
                 # case 2: a key that unifies with a single object
-                # or a non-key
-                selfchild = k
-                otherchild = cast(_PylogicObject, way[k])
-                unif = selfchild.multi_unify(
-                    otherchild,
+                # or a non-key # selfchild = k
+                unif = k.multi_unify(
+                    way[k],
                     key_check=key_check,
                     key_for_list_check=key_for_list_check,
                     equal_excluding_children=equal_excluding_children,
@@ -802,13 +796,18 @@ class _PylogicObject(ABC):
             return unif_so_far
 
 
-class Unif(dict[_PylogicObject, U]):
+UniVar = NewType("UniVar", _PylogicObject)
+MultiVar = NewType("MultiVar", _PylogicObject)
+NonMultiVar = NewType("NonMultiVar", _PylogicObject)
+
+
+class Unif[T, U, V, W](dict[T | U, V | W]):
     """
     A dictionary-like class for unification results, where keys are objects
     that should be replaced and values are the objects to replace them with.
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
     def __bool__(self) -> Literal[True]:
@@ -818,9 +817,31 @@ class Unif(dict[_PylogicObject, U]):
         """
         return True
 
+    if TYPE_CHECKING:
 
-Unification = Unif[_PylogicObject]
-MultiUnification = Unif[_PylogicObject | list[_PylogicObject]]
+        A = TypeVar("A")
+        B = TypeVar("B")
+
+        @overload
+        def __getitem__(self, key: T) -> V: ...
+        @overload
+        def __getitem__(self, key: U) -> W: ...
+        def __getitem__(self, key: T | U) -> V | W: ...
+
+        @overload
+        def __or__(self, value: Unif[T, U, V, W]) -> Unif[T, U, V, W]: ...
+        @overload
+        def __or__(self, value: dict[T | U, V | W]) -> dict[T | U, V | W]: ...
+        @overload
+        def __or__(self, value: dict[A, B]) -> dict[A | T | U, B | V | W]: ...
+        def __or__(
+            self, value: Unif[T, U, V, W] | dict[T | U, V | W] | dict[A, B]
+        ) -> Unif[T, U, V, W] | dict[T | U, V | W] | dict[A | T | U, B | V | W]: ...
+
+
+dict[str, int].__or__
+Unification = Unif[UniVar, UniVar, _PylogicObject, _PylogicObject]
+MultiUnification = Unif[UniVar, MultiVar, _PylogicObject, Sequence[_PylogicObject]]
 
 
 def to_dict(value: Any) -> dict[str, Any] | list[Any] | Any:
@@ -847,17 +868,17 @@ def to_dict(value: Any) -> dict[str, Any] | list[Any] | Any:
     if isinstance(value, _PylogicObject):
         return value.to_dict()
     elif isinstance(value, (list, tuple, set)):
-        return [to_dict(item) for item in value]
+        return [to_dict(item) for item in cast(Iterable[Any], value)]
     elif isinstance(value, dict):
-        return {k: to_dict(v) for k, v in value.items()}
+        return {k: to_dict(v) for k, v in cast(dict[Any, Any], value).items()}
     return value
 
 
 if TYPE_CHECKING:
 
-    class MatchIndicesDict(dict[A | B, int | tuple[int, int]]):
+    class MatchIndicesDict[A, B](dict[A | B, int | tuple[int, int]]):
         """
-        A is a variable, B is a tuple variable (variable that unifies to a list
+        A is a variable, B is a multi-variable (variable that unifies to a list
         of values).
         """
 
@@ -869,54 +890,46 @@ if TYPE_CHECKING:
 
         def __or__(self, value: MatchIndicesDict[A, B]) -> MatchIndicesDict[A, B]: ...
 
-    class MatchDict(dict[A | B, C | D]):
+    class MatchDict[M1, M2, M3, M4](dict[M1 | M2, M3 | M4]):
         """
-        A is a variable, B is a tuple variable (variable that unifies to a list
+        M1 is a variable, M2 is a multi-variable (variable that unifies to a list
         of values).
-        C is the type of the values in the target sequence.
-        D is the type of the target eg `str`, `tuple[C]`.
+        M3 is the type of the values in the target sequence.
+        M4 is the type of the target eg `str`, `tuple[M3]`.
+
+        Start from more specific types (subtypes) to more general types.
         """
 
         @overload
-        def __getitem__(self: MatchDict[A, B, C, list[C]], key: A) -> C: ...
+        def __getitem__(self, key: M1) -> M3: ...
         @overload
-        def __getitem__(self: MatchDict[A, B, C, list[C]], key: B) -> list[C]: ...
-        @overload
-        def __getitem__(self: MatchDict[A, B, C, list[C]], key: A) -> C: ...
-        @overload
-        def __getitem__(
-            self: MatchDict[A, B, C, tuple[C, ...]], key: B
-        ) -> tuple[C, ...]: ...
-        @overload
-        def __getitem__(self: MatchDict[A, B, C, str], key: A | B) -> str: ...
-        @overload
-        def __getitem__(self: MatchDict[A, B, C, D], key: A) -> C: ...
-        @overload
-        def __getitem__(self: MatchDict[A, B, C, D], key: B) -> Sequence[C]: ...
-        def __getitem__(self: MatchDict[A, B, C, D], key: A | B) -> C | Sequence[C]: ...  # type: ignore
+        def __getitem__(self, key: M2) -> M4: ...
+        def __getitem__(self, key: M1 | M2) -> M3 | M4: ...
 
-        def __or__(self, value: MatchDict[A, B, C, D]) -> MatchDict[A, B, C, D]: ...
+        def __or__(
+            self, value: MatchDict[M1, M2, M3, M4]
+        ) -> MatchDict[M1, M2, M3, M4]: ...
 
 
-def string_match(
+def string_match[A, B](
     pattern: Sequence[A | B],
-    target: Sequence,
-    is_tuple_var: Callable[[A | B], bool],
-    _patternstart=0,
-    _targetstart=0,
+    target: Sequence[Any],
+    is_multi_var: Callable[[A | B], TypeIs[A]],
+    _patternstart: int = 0,
+    _targetstart: int = 0,
 ) -> list[MatchIndicesDict[A, B]]:
     # given a pattern string and another string, this is an algorithm
     # to match them up (unify them). Return all possible matches,
     # or an empty collection.
 
-    # each match is a dict of tupleVar -> range indicies in target
+    # each match is a dict of multiVar -> range indicies in target
     # and var -> index
 
     # The pattern string is made of two types of symbols: variables
-    # and tupleVariables. Examples of variables: w,x,y,z.
-    # Examples of tupleVars: *x, *y, etc.
+    # and multiVariables. Examples of variables: w,x,y,z.
+    # Examples of multiVars: *x, *y, etc.
     # A var matches to any character.
-    # A tupleVar matches to a list of characters, which can be empty.
+    # A multiVar matches to a list of characters, which can be empty.
     # A string is a comma-separated sequence (i guess a python list)
     # in this case.
     # Example: inputs *a,y,*b,z and 1,2,3,4
@@ -927,14 +940,14 @@ def string_match(
 
     # both empty
     if len(pattern) == _patternstart and len(target) == _targetstart:
-        return [{}]  # the do-nothing match # type: ignore[return-value]
+        return [{}]  # the do-nothing match # type: ignore
 
     # pattern empty
     if len(pattern) == _patternstart:
         return []  # no match
 
-    if is_tuple_var(pattern[_patternstart]):
-        results = []
+    if is_multi_var(pattern[_patternstart]):
+        results: list[MatchIndicesDict[A, B]] = []
         for i in range(_targetstart, len(target) + 1):
             result = cast("MatchIndicesDict[A, B]", {})
             result[pattern[_patternstart]] = (_targetstart, i)
@@ -943,7 +956,7 @@ def string_match(
                 target,
                 _patternstart=_patternstart + 1,
                 _targetstart=i,
-                is_tuple_var=is_tuple_var,
+                is_multi_var=is_multi_var,
             )
             if not remaining:
                 continue
@@ -958,7 +971,7 @@ def string_match(
             target,
             _patternstart=_patternstart + 1,
             _targetstart=_targetstart + 1,
-            is_tuple_var=is_tuple_var,
+            is_multi_var=is_multi_var,
         )
         if not remaining:
             return []
@@ -966,24 +979,11 @@ def string_match(
             return [result | r for r in remaining]
 
 
-# overload for each subtype of Sequence
-@overload
-def matches_to_actual(
-    matches: list[MatchIndicesDict[A, B]], target: list[C]
-) -> list[MatchDict[A, B, C, list[C]]]: ...
-@overload
-def matches_to_actual(
-    matches: list[MatchIndicesDict[A, B]], target: tuple[C, ...]
-) -> list[MatchDict[A, B, C, tuple[C, ...]]]: ...
-@overload
-def matches_to_actual(
-    matches: list[MatchIndicesDict[A, B]], target: str
-) -> list[MatchDict[A, B, str, str]]: ...
-def matches_to_actual(  # type: ignore
-    matches: list[MatchIndicesDict[A, B]], target: Sequence[C]
-) -> list[MatchDict[A, B, C, Sequence[C]]]:
-    def _match(m):
-        d = {}
+def matches_to_actual[M1, M2, M3](
+    matches: ReadOnlyList[MatchIndicesDict[M1, M2]], target: Sequence[M3]
+) -> list[MatchDict[M1, M2, Sequence[M3], M3]]:
+    def _match(m: MatchIndicesDict[M1, M2]) -> MatchDict[M1, M2, Sequence[M3], M3]:
+        d = cast("MatchDict[M1, M2, Sequence[M3], M3]", {})
         for k, v in m.items():
             if isinstance(v, int):
                 d[k] = target[v]
@@ -991,4 +991,4 @@ def matches_to_actual(  # type: ignore
                 d[k] = target[slice(*v)]
         return d
 
-    return list(map(_match, matches))  # type: ignore
+    return list(map(_match, matches))
