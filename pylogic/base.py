@@ -17,6 +17,7 @@ from typing import (
 import copy
 import json
 
+
 """
 Methods:
 - replace
@@ -50,7 +51,7 @@ the children, but it is still an attribute of the object.
 """
 
 if TYPE_CHECKING:
-    from pylogic.typing.collection import ReadOnlyList
+    from pylogic.typing.collection import ReadOnlyList, MutableOnlyList
 
 
 class _Path(list[int]):
@@ -863,6 +864,77 @@ class _PylogicObject(ABC):
         ):
             return unif
         return None
+
+    def _subobject_find(
+        self,
+        obj: _PylogicObject,
+        path: list[int],
+    ) -> Path | None:
+        for i, child in enumerate(self.children):
+            if child == obj:
+                path.append(i)
+                return path
+            if (pth := child._subobject_find(obj, path + [i])) is not None:
+                return pth
+        return None
+
+    def subobject_find(self, obj: _PylogicObject) -> Path | None:
+        """
+        Find the path to a subobject in the children of this object.
+
+        A path can be empty, which means that the object is this one itself.
+
+        If the object is not found, `None` is returned.
+
+        Parameters
+        ----------
+        obj : _PylogicObject
+            The object to find in the children.
+
+        Returns
+        -------
+        list[int] | None
+            The path to the subobject if found, or `None` if not found.
+        """
+        if self == obj:
+            return []
+        return self._subobject_find(obj, list[int]())
+
+    def _subobject_find_all(
+        self,
+        obj: _PylogicObject,
+        path: list[int],
+        paths: MutableOnlyList[list[int]],
+    ) -> None:
+        for i, child in enumerate(self.children):
+            if child == obj:
+                paths.append(path + [i])
+                continue
+            child._subobject_find_all(obj, path + [i], paths)
+
+    def subobject_find_all(self, obj: _PylogicObject) -> list[list[int]]:
+        """
+        Find all paths to a subobject in the children of this object.
+
+        A path can be empty, which means that the object is this one itself.
+
+        If the object is not found, an empty list is returned.
+
+        Parameters
+        ----------
+        obj : _PylogicObject
+            The object to find in the children.
+
+        Returns
+        -------
+        list[list[int]]
+            A list of paths to the subobject if found, or an empty list if not found.
+        """
+        if self == obj:
+            return [[]]
+        paths: list[list[int]] = []
+        self._subobject_find_all(obj, [], paths)
+        return paths
 
 
 UniVar = NewType("UniVar", _PylogicObject)
