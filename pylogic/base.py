@@ -19,24 +19,19 @@ import json
 
 
 """
-Methods:
+Some Methods:
 - replace
 - __hash__
 - __eq__
-- has_as_subtree
-- find_subtree
-- find_all_subtree
+- subobject_find_all
 - unify
-- eval_same
 - copy
 - deepcopy
-- __new_init__
-- __copy_init__
 
 Attrs:
 - children
 
-Each class will define lists of child-dependent attributes,
+Each class will define tuples of child-dependent attributes,
 and independent attributes.
 
 For instance, Expr.symbols is a child-dependent attribute because it depends on
@@ -47,7 +42,6 @@ on it).
 
 Proposition.is_proven is an independent attribute because it does not depend on
 the children, but it is still an attribute of the object.
-
 """
 
 if TYPE_CHECKING:
